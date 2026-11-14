@@ -3,6 +3,8 @@ import LeetQ.Rel.RepComp
 import LeetQ.Rel.RepDiv
 import LeetQ.Rel.RepMem
 import LeetQ.Rel.RepFold
+import LeetQ.Rel.CRelRel
+import LeetQ.Rel.CRelLoop
 
 /-! # AC-3 (arc consistency, Mackworth's algorithm 3): the delta-round kernel of `νX : s ∩ ⋂ₖ Aₖ\(X Cₖ)` and its agreement with the naive rounds -/
 
@@ -17,134 +19,158 @@ structure Revise (V D : Obj) where
   UV : Rel V V
   UD : Rel D D
 
-/-- The AC-3 body `s ∩ ⋂ₖ Aₖ\(X Cₖ)`, one naive round: `fixOn` on it is `νX` the naive way. -/
-def acRound {V D : Obj} (s : Rel V D) (as : List (Revise V D)) (X : Rel V D) : Rel V D :=
-  as.foldl (fun Y a => Y ∩ leftDiv a.A (X ≫ a.C) a.UV.key a.UD.key) s
+/-- `as.foldl step Y` on a step twin, and whether it ran within capacity: the `&&` of every step's bit. -/
+def foldlC {V D : Obj} {γ : Type} (step : Rel V D → γ → Rel V D × Bool) (as : List γ) (Y : Rel V D) : Rel V D × Bool :=
+  as.foldl (fun p a => let r := step p.1 a; (r.1, p.2 && r.2)) (Y, true)
+
+/-- The naive round's arc step `Y ∩ A\(X C)`, and its bit: `compC`'s, `leftDivC`'s, `interC`'s. -/
+def naiveStepC {V D : Obj} (X Y : Rel V D) (a : Revise V D) : Rel V D × Bool :=
+  let c := compC X a.C; let L := leftDivC a.A c.1 a.UV.key a.UD.key; let i := interC Y L.1
+  (i.1, c.2 && L.2 && i.2)
+
+/-- The AC-3 body `s ∩ ⋂ₖ Aₖ\(X Cₖ)`, one naive round, and whether it ran within capacity. -/
+def acRoundC {V D : Obj} (s : Rel V D) (as : List (Revise V D)) (X : Rel V D) : Rel V D × Bool :=
+  foldlC (naiveStepC X) as s
+
+/-- The AC-3 body, one naive round: `fixOn` on it is `νX` the naive way. -/
+def acRound {V D : Obj} (s : Rel V D) (as : List (Revise V D)) (X : Rel V D) : Rel V D := (acRoundC s as X).1
+
+/-- The delta round's arc step `(antiJoin Y° T)° ∪ (Y ∩ (Δ A)\(Δ X C))`, `T = ran(Δ A)`: `(Δ A)\…` is `⊤` at every
+    `x ∉ T`, so the division runs only on the rows `T` (its universe there, so no vacuous row is made) and `Y`'s other
+    rows are kept. The bit is the `&&` of its ops'. -/
+def deltaStepC {V D : Obj} (X : Rel V D) (Δ : Rel V V) (Y : Rel V D) (a : Revise V D) : Rel V D × Bool :=
+  let R := compC Δ a.A; let T := ranC R.1; let j := antiJoinC Y° T.1
+  let ΔX := compC Δ X; let S := compC ΔX.1 a.C
+  let L := leftDivC R.1 S.1 T.1.key a.UD.key; let i := interC Y L.1; let u := unionC j.1° i.1
+  (u.1, R.2 && T.2 && j.2 && ΔX.2 && S.2 && L.2 && i.2 && u.2)
 
 /-- One delta round of the AC-3 body, from `(X, Δ)`, `Δ ⊑ 𝟙(V)` the variables whose domain shrank last round:
-    `X′ = X ∩ ⋂ₖ (Δ Aₖ)\(X Cₖ)` and `Δ′ = dom(X − X′)`. `(Δ A)\…` is `⊤` at every `x ∉ ran(Δ A)`, so each
-    division runs only on the rows `ran(Δ A)` (its universe there, so no vacuous row is made) and keeps `X`'s
-    other rows; `X − X′` is the anti-join of the pairs. The tie to the naive round is `AC3.acDelta_round`: from
-    a state satisfying `AcInv`, one delta round denotes one `acRound`, and `Δ′` keeps `AcInv`; `k` rounds of each
-    agree by `AC3.acDelta_iterate`. -/
-def acDelta {V D : Obj} (as : List (Revise V D)) (p : Rel V D × Rel V V) : Rel V D × Rel V V :=
-  let (X, Δ) := p
-  let X' := as.foldl (fun Y a =>
-    let R := Δ ≫ a.A; let T := ran R
-    (antiJoin Y° T)° ∪ (Y ∩ leftDiv R (Δ ≫ X ≫ a.C) T.key a.UD.key)) X
-  (X', ran (outl (antiJoin (idU (X.key, X.val)) (idU (X'.key, X'.val)))))
+    `X′ = X ∩ ⋂ₖ (Δ Aₖ)\(X Cₖ)` and `Δ′ = dom(X − X′)`, `X − X′` the anti-join of the pairs; and whether it ran
+    within capacity. The tie to the naive round is `AC3.acDelta_round`. -/
+def acDeltaC {V D : Obj} (as : List (Revise V D)) (p : Rel V D × Rel V V) : (Rel V D × Rel V V) × Bool :=
+  let X' := foldlC (deltaStepC p.1 p.2) as p.1
+  let g := antiJoinC (idU (t := Obj.prod V D) (p.1.key, p.1.val)) (idU (t := Obj.prod V D) (X'.1.key, X'.1.val))
+  let r := ranC (outl g.1)
+  ((X'.1, r.1), X'.2 && g.2 && r.2)
+
+/-- One delta round: `acDeltaC`'s state. -/
+def acDelta {V D : Obj} (as : List (Revise V D)) (p : Rel V D × Rel V V) : Rel V D × Rel V V := (acDeltaC as p).1
 
 /-- `νX : s ∩ ⋂ₖ Aₖ\(X Cₖ)` by delta rounds from `(s, 𝟙(V))` — the first the naive round — until `Δ′ = 𝟘`,
-    at most `|s| + 1`, with the rounds run. -/
-def acFix {V D : Obj} (s : Rel V D) (as : List (Revise V D)) (U : Rel V V) : Rel V D × Nat :=
-  let x := s.nub
-  let r := iter (x.n.toNat + 1) (fun (_, Δ, _) => Δ.n == 0)
-    (fun (X, Δ, k) => let (X', Δ') := acDelta as (X, Δ); (X', Δ', k + 1)) (x, U, 0)
-  (r.1, r.2.2)
+    at most `|s| + 1`, with the rounds run; and whether it ran within capacity: `nubC`'s bit `&&` `iterC`'s. -/
+def acFixC {V D : Obj} (s : Rel V D) (as : List (Revise V D)) (U : Rel V V) : (Rel V D × Nat) × Bool :=
+  let x := nubC s
+  let r := iterC (x.1.n.toNat + 1) (fun st => st.2.1.n == 0)
+    (fun st => let d := acDeltaC as (st.1, st.2.1); ((d.1.1, d.1.2, st.2.2 + 1), d.2)) (x.1, U, 0)
+  ((r.1.1, r.1.2.2), x.2 && r.2)
+
+/-- `νX : s ∩ ⋂ₖ Aₖ\(X Cₖ)` by delta rounds: `acFixC`'s answer. -/
+def acFix {V D : Obj} (s : Rel V D) (as : List (Revise V D)) (U : Rel V V) : Rel V D × Nat := (acFixC s as U).1
 
 end LeetQ.Rel.Alg
 
 /-!
   The delta AC-3 round (`Alg.acDelta`) read in `Rel(Set)` against the naive round (`Alg.acRound`): from a state
   satisfying the invariant `AcInv`, one delta round denotes what one naive round does, and its `Δ′` re-establishes
-  the invariant.
-
-  Each op of a round is assumed to denote its `Rel(Set)` op at the arguments the round meets (`StepMeets`): that is
-  the conclusion `rep_inter`, `rep_leftDiv`, `rep_comp`, `rep_union`, `rep_antiJoin`, `rep_conv` give under their
-  own code and fit hypotheses, which this module does not restate.
+  the invariant. Every op is read back under its twin's bit; the bits of a run are one bit, `fixOnC`'s or `acFixC`'s.
 -/
 
 namespace LeetQ.Rel.AC3
 
+open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF LeetQ.Rel.Rep LeetQ.Rel.Rep.OpsN LeetQ.Rel.Rep.FoldN
+open Freyd.Alg.RelSet (comp_apply inter_apply union_apply recip_apply hom_ext)
 
-open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.Rep LeetQ.Rel.Rep.OpsN
+-- `unionC`'s `hat`, as `CRelLoop`'s (local there): `razeTo`'s read-back of two atom parts
+set_option quotPrecheck false in
+local notation "hatOK" => ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
+  (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
+    USize.size), Vals.RazeFits (.atom t) x y → (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList
 
 variable {V D : Obj}
 
-/-! ## The fold of a round, read pointwise -/
+/-! ## The rounds, pointwise -/
 
-/-- Every step of `as.foldl step s` denotes the relation before it met with `M a`: what the ops of the step give
-    at the arguments that step meets (`pre` the arcs already folded). -/
-def StepMeets {γ : Type} (step : Rel V D → γ → Rel V D) (s : Rel V D) (as : List γ)
-    (M : γ → V.El → D.El → Prop) : Prop :=
-  ∀ pre a suf, as = pre ++ a :: suf → ∀ x d,
-    rep (step (pre.foldl step s) a) x d ↔ rep (pre.foldl step s) x d ∧ M a x d
-
-/-- **`rep (as.foldl step s) = rep s ∩ ⋂ₐ M a`**, by induction on the arcs. -/
-theorem rep_foldl {γ : Type} (step : Rel V D → γ → Rel V D) (M : γ → V.El → D.El → Prop) :
-    ∀ (as : List γ) (s : Rel V D), StepMeets step s as M →
-      ∀ x d, rep (as.foldl step s) x d ↔ rep s x d ∧ ∀ a ∈ as, M a x d
-  | [], s, _, x, d => by simp
-  | a :: t, s, h, x, d => by
-    have ih := rep_foldl step M t (step s a) (fun pre b suf e => h (a :: pre) b suf (by rw [e]; rfl)) x d
-    have h0 := h [] a t rfl x d; rw [List.foldl_nil] at h0
-    rw [List.foldl_cons, ih, h0, List.forall_mem_cons, and_assoc]
-
-/-! ## The two rounds, pointwise -/
+/-- **`rep (foldlC step as Y) = rep Y ∩ ⋂ₐ M a`** under its bit, each step denoting the relation before it met with
+    `M a` under the step's bit; by induction on the arcs, from any carried bit. -/
+theorem rep_foldlC {γ : Type} (step : Rel V D → γ → Rel V D × Bool) (M : γ → V.El → D.El → Prop)
+    (h : ∀ Y a, (step Y a).2 = true → ∀ x d, rep (step Y a).1 x d ↔ rep Y x d ∧ M a x d) :
+    ∀ (as : List γ) (Y : Rel V D) (b : Bool),
+      (as.foldl (fun p a => let r := step p.1 a; (r.1, p.2 && r.2)) (Y, b)).2 = true →
+      b = true ∧ ∀ x d, rep (as.foldl (fun p a => let r := step p.1 a; (r.1, p.2 && r.2)) (Y, b)).1 x d ↔
+        rep Y x d ∧ ∀ a ∈ as, M a x d
+  | [], Y, b, hb => ⟨hb, fun x d => by simp⟩
+  | a :: t, Y, b, hb => by
+    obtain ⟨hb', ih⟩ := rep_foldlC step M h t (step Y a).1 (b && (step Y a).2) hb
+    simp only [Bool.and_eq_true] at hb'
+    refine ⟨hb'.1, fun x d => ?_⟩
+    rw [List.foldl_cons]
+    exact (ih x d).trans (by rw [h Y a hb'.2 x d, List.forall_mem_cons, and_assoc])
 
 /-- The vacuous part of `A\(X C)` at `(x, d)`: `x` has an `A`-predecessor, or `x`, `d` are in the universes. -/
 def Vac (a : Revise V D) (x : V.El) (d : D.El) : Prop :=
   (∃ w, rep a.A w x) ∨ ((∃ p, a.UV.key.row p = x) ∧ ∃ j, a.UD.key.row j = d)
 
-/-- `A\(X C)` at `(x, d)`, as `rep_leftDiv` reads it with `rep_comp` for `X C`. -/
+/-- `A\(X C)` at `(x, d)`, as `rep_leftDivC` reads it with `rep_compC` for `X C`. -/
 def Nv (a : Revise V D) (X : V.El → D.El → Prop) (x : V.El) (d : D.El) : Prop :=
   (∀ w, rep a.A w x → ∃ e, X w e ∧ rep a.C e d) ∧ Vac a x d
 
-/-- One delta arc at `(x, d)`, as the laws read `(antiJoin Y° T)° ∪ (Y ∩ (Δ A)\(Δ X C))` after the `Y` they share:
-    `x ∉ ran(Δ A)`, or the division by `Δ A` with `rep_comp` for `Δ A` and `Δ X C`, its vacuous part on `T`. -/
-def Ld (a : Revise V D) (X : V.El → D.El → Prop) (Δ : V.El → V.El → Prop) (T : Rel V V) (x : V.El) (d : D.El) :
-    Prop :=
-  (¬ ∃ w v, Δ w v ∧ rep a.A v x) ∨
-    ((∀ w, (∃ v, Δ w v ∧ rep a.A v x) → ∃ v e, Δ w v ∧ X v e ∧ rep a.C e d) ∧
-      ((∃ w v, Δ w v ∧ rep a.A v x) ∨ ((∃ p, T.key.row p = x) ∧ ∃ j, a.UD.key.row j = d)))
-
-/-- The delta arc after the simplification: `A\(X C)` checked only at the predecessors `w` in `Δ`. -/
+/-- The delta arc, for a coreflexive `Δ`: `A\(X C)` checked only at the predecessors `w` in `Δ`. -/
 def Dl (a : Revise V D) (X : V.El → D.El → Prop) (Δ : V.El → V.El → Prop) (x : V.El) (d : D.El) : Prop :=
   ∀ w, Δ w w → rep a.A w x → ∃ e, X w e ∧ rep a.C e d
 
-/-- **`Ld = Dl` for a coreflexive `Δ`**: the vacuous part of `(Δ A)\…` matters only off `ran(Δ A)`, where the
-    anti-join side already holds; on `Δ`, `Δ w v` is `w = v`. -/
-theorem ld_iff (a : Revise V D) (X : V.El → D.El → Prop) {Δ : V.El → V.El → Prop} (hΔ : ∀ w v, Δ w v → w = v)
-    (T : Rel V V) (x : V.El) (d : D.El) : Ld a X Δ T x d ↔ Dl a X Δ x d := by
+/-- The naive body read in `Rel(Set)`, on a predicate `X`: `s ∩ ⋂ₐ Aₐ\(X Cₐ)`. -/
+def body (s : Rel V D) (as : List (Revise V D)) (X : V.El → D.El → Prop) (x : V.El) (d : D.El) : Prop :=
+  rep s x d ∧ ∀ a ∈ as, Nv a X x d
+
+/-- **`body` is monotone in `X`**: `Nv` is. -/
+theorem body_mono (s : Rel V D) (as : List (Revise V D)) {X Y : V.El → D.El → Prop} (h : ∀ x d, X x d → Y x d) :
+    ∀ x d, body s as X x d → body s as Y x d := fun _ _ ⟨hs, hN⟩ =>
+  ⟨hs, fun a ha => ⟨fun w hA => let ⟨e, hX, hC⟩ := (hN a ha).1 w hA; ⟨e, h w e hX, hC⟩, (hN a ha).2⟩⟩
+
+theorem body_congr (s : Rel V D) (as : List (Revise V D)) {X Y : V.El → D.El → Prop} (h : ∀ x d, X x d ↔ Y x d) :
+    ∀ x d, body s as X x d ↔ body s as Y x d := fun x d =>
+  ⟨body_mono s as (fun x d => (h x d).1) x d, body_mono s as (fun x d => (h x d).2) x d⟩
+
+/-- **The naive arc step under its bit**: `rep_interC`, `rep_leftDivC`, `rep_compC`. -/
+theorem rep_naiveStepC (X Y : Rel V D) (a : Revise V D) (hb : (naiveStepC X Y a).2 = true) (x : V.El) (d : D.El) :
+    rep (naiveStepC X Y a).1 x d ↔ rep Y x d ∧ Nv a (rep X) x d := by
+  simp only [naiveStepC, Bool.and_eq_true] at hb ⊢
+  obtain ⟨⟨hc, hL⟩, hi⟩ := hb
+  rw [rep_interC _ _ hi, inter_apply, rep_leftDivC _ _ _ _ hL]
+  simp only [rep_compC _ _ hc, comp_apply]
+  exact Iff.rfl
+
+/-- **The delta arc step under its bit**, `Δ` coreflexive: `rep_unionC`, `rep_antiJoinC`, `rep_ranC`, `rep_interC`,
+    `rep_leftDivC`, `rep_compC`. The vacuous part of `(Δ A)\…` matters only off `ran(Δ A)`, where the anti-join side
+    already holds; on `Δ`, `Δ w v` is `w = v`. -/
+theorem rep_deltaStepC (hat : hatOK) (X : Rel V D) (Δ : Rel V V) (hΔ : ∀ w v, rep Δ w v → w = v) (Y : Rel V D)
+    (a : Revise V D) (hb : (deltaStepC X Δ Y a).2 = true) (x : V.El) (d : D.El) :
+    rep (deltaStepC X Δ Y a).1 x d ↔ rep Y x d ∧ Dl a (rep X) (rep Δ) x d := by
   classical
-  calc Ld a X Δ T x d
-      ↔ ∀ w, (∃ v, Δ w v ∧ rep a.A v x) → ∃ v e, Δ w v ∧ X v e ∧ rep a.C e d := by
-        -- excluded middle on `x ∈ ran(Δ A)`: off it both sides hold vacuously, on it the vacuous part is true
-        by_cases hr : ∃ w v, Δ w v ∧ rep a.A v x
-        · simp only [Ld, hr, not_true_eq_false, true_or, and_true, false_or]
-        · simp only [Ld, hr, not_false_eq_true, true_or, true_iff]
-          exact fun w hw => (hr ⟨w, hw⟩).elim
-    _ ↔ Dl a X Δ x d := by
-        -- `Δ` coreflexive: `Δ w v ↔ v = w ∧ Δ w w`
-        constructor
-        · intro h w hw hA
-          obtain ⟨v, e, hv, hX, hC⟩ := h w ⟨w, hw, hA⟩
-          exact ⟨e, hΔ w v hv ▸ hX, hC⟩
-        · intro h w ⟨v, hv, hA⟩
-          have e := hΔ w v hv; subst e
-          obtain ⟨e, hX, hC⟩ := h w hv hA
-          exact ⟨w, e, hv, hX, hC⟩
-
-/-- The naive round's arc step, as `acRound` folds it. -/
-abbrev naiveStep (X : Rel V D) : Rel V D → Revise V D → Rel V D :=
-  fun Y a => Y ∩ leftDiv a.A (X ≫ a.C) a.UV.key a.UD.key
-
-/-- The delta round's arc step, as `acDelta` folds it. -/
-abbrev deltaStep (X : Rel V D) (Δ : Rel V V) : Rel V D → Revise V D → Rel V D :=
-  fun Y a => (antiJoin Y° (Alg.ran (Δ ≫ a.A)))° ∪ (Y ∩ leftDiv (Δ ≫ a.A) (Δ ≫ X ≫ a.C) (Alg.ran (Δ ≫ a.A)).key a.UD.key)
-
-/-- **`rep (acRound s as X) = rep s ∩ ⋂ₐ Aₐ\(X Cₐ)`**. -/
-theorem rep_acRound (s : Rel V D) (as : List (Revise V D)) (X : Rel V D)
-    (h : StepMeets (naiveStep X) s as fun a => Nv a (rep X)) (x : V.El) (d : D.El) :
-    rep (acRound s as X) x d ↔ rep s x d ∧ ∀ a ∈ as, Nv a (rep X) x d :=
-  rep_foldl _ _ as s h x d
-
-/-- **`rep (acDelta as (X, Δ)).1 = rep X ∩ ⋂ₐ (Δ Aₐ)\(X Cₐ)`**, `Δ` coreflexive (`ld_iff`). -/
-theorem rep_acDelta (as : List (Revise V D)) (X : Rel V D) (Δ : Rel V V) (hΔ : ∀ w v, rep Δ w v → w = v)
-    (h : StepMeets (deltaStep X Δ) X as fun a => Ld a (rep X) (rep Δ) (Alg.ran (Δ ≫ a.A))) (x : V.El) (d : D.El) :
-    rep (acDelta as (X, Δ)).1 x d ↔ rep X x d ∧ ∀ a ∈ as, Dl a (rep X) (rep Δ) x d := by
-  rw [show (acDelta as (X, Δ)).1 = as.foldl (deltaStep X Δ) X from rfl, rep_foldl _ _ as X h x d]
-  exact and_congr Iff.rfl (forall₂_congr fun a _ => ld_iff a _ hΔ _ x d)
+  simp only [deltaStepC, Bool.and_eq_true] at hb ⊢
+  obtain ⟨⟨⟨⟨⟨⟨⟨hR, hT⟩, hj⟩, hΔX⟩, hS⟩, hL⟩, hi⟩, hu⟩ := hb
+  have hR' : ∀ w, rep (compC Δ a.A).1 w x ↔ rep Δ w w ∧ rep a.A w x := fun w => by
+    rw [rep_compC _ _ hR, comp_apply]
+    exact ⟨fun ⟨v, h1, h2⟩ => by obtain rfl := hΔ w v h1; exact ⟨h1, h2⟩, fun ⟨h1, h2⟩ => ⟨w, h1, h2⟩⟩
+  have hS' : ∀ w, rep (compC (compC Δ X).1 a.C).1 w d ↔ rep Δ w w ∧ ∃ e, rep X w e ∧ rep a.C e d := fun w => by
+    rw [rep_compC _ _ hS, comp_apply]
+    simp only [rep_compC _ _ hΔX, comp_apply]
+    exact ⟨fun ⟨e, ⟨v, h1, h2⟩, h3⟩ => by obtain rfl := hΔ w v h1; exact ⟨h1, e, h2, h3⟩,
+      fun ⟨h1, e, h2, h3⟩ => ⟨e, ⟨w, h1, h2⟩, h3⟩⟩
+  have hT' : (∃ z, rep (ranC (compC Δ a.A).1).1 z x) ↔ ∃ w, rep (compC Δ a.A).1 w x := by
+    rw [rep_ranC _ hT]
+    exact ⟨fun ⟨_, _, w, _, h⟩ => ⟨w, h⟩, fun ⟨w, h⟩ => ⟨x, rfl, w, h, h⟩⟩
+  rw [rep_unionC hat _ _ hu, union_apply, rep_conv, recip_apply, rep_antiJoinC _ _ hj, comp_apply, rep_conv,
+    rep_interC _ _ hi, inter_apply, rep_leftDivC _ _ _ _ hL]
+  constructor
+  · rintro (⟨y, hY, rfl, hn⟩ | ⟨hY, hall, -⟩)
+    · exact ⟨hY, fun w hw hA => (hn (hT'.2 ⟨w, (hR' w).2 ⟨hw, hA⟩⟩)).elim⟩
+    · exact ⟨hY, fun w hw hA => ((hS' w).1 (hall w ((hR' w).2 ⟨hw, hA⟩))).2⟩
+  · rintro ⟨hY, hDl⟩
+    by_cases h : ∃ w, rep (compC Δ a.A).1 w x
+    · exact Or.inr ⟨hY, fun w hw => (hS' w).2 ⟨((hR' w).1 hw).1, hDl w ((hR' w).1 hw).1 ((hR' w).1 hw).2⟩,
+        Or.inl h⟩
+    · exact Or.inl ⟨x, hY, rfl, fun hz => h (hT'.1 hz)⟩
 
 /-! ## The invariant and one round -/
 
@@ -156,26 +182,55 @@ def AcInv (s : Rel V D) (as : List (Revise V D)) (X : V.El → D.El → Prop) (�
     (∀ x d, rep s x d → (∀ a ∈ as, Nv a X x d) → X x d) ∧
     ∀ a ∈ as, ∀ x d, X x d → ∀ w, ¬ Δ w w → rep a.A w x → ∃ e, X w e ∧ rep a.C e d
 
-/-- **One delta round is one naive round, and keeps the invariant**: from `AcInv s as (rep X) (rep Δ)`,
-    `rep (acDelta as (X, Δ)).1 = rep (acRound s as X)`, and `AcInv` holds of the new `X′` with the new `Δ′`.
-    Hypotheses: each op of either round denotes its `Rel(Set)` op where the round meets it (`hN`, `hD`), and
-    `Δ′ = ran(outl(antiJoin(𝟙_X, 𝟙_X′)))` the variables with a pair of `X` not in `X′` (`hΔ'`: `rep_ran_corefl`,
-    `rep_outl`, `rep_antiJoin`, `rep_idU` at those arguments). -/
-theorem acDelta_round (s : Rel V D) (as : List (Revise V D)) (X : Rel V D) (Δ : Rel V V)
-    (hI : AcInv s as (rep X) (rep Δ))
-    (hN : StepMeets (naiveStep X) s as fun a => Nv a (rep X))
-    (hD : StepMeets (deltaStep X Δ) X as fun a => Ld a (rep X) (rep Δ) (Alg.ran (Δ ≫ a.A)))
-    (hΔ' : ∀ w v, rep (acDelta as (X, Δ)).2 w v ↔ w = v ∧ ∃ e, rep X w e ∧ ¬ rep (acDelta as (X, Δ)).1 w e) :
-    rep (acDelta as (X, Δ)).1 = rep (acRound s as X) ∧
+-- `𝟙_X`, the coreflexive on the pairs of `X`; the pairs of `X` not in `X′`, as
+-- `acDeltaC` names them (fields applied, not projected: `X.key` would be one identifier, not the parameter `X`)
+set_option hygiene false in
+local notation "pairsU(" X ")" => idU (t := Obj.prod V D) (Rel.key X, Rel.val X)
+set_option hygiene false in
+local notation "gone(" X ", " X' ")" => antiJoinC (pairsU(X)) (pairsU(X'))
+
+/-- `rep 𝟙_X` is `𝟙` on the pairs of `X` (`idU_holds`). -/
+theorem rep_idU_pairs (X : Rel V D) (p q : V.El × D.El) : rep (pairsU(X)) p q ↔ p = q ∧ rep X p.1 p.2 := by
+  rw [rep_apply, idU_holds]
+  exact and_congr Iff.rfl ⟨fun ⟨i, e⟩ => by subst e; exact ⟨i, rfl, rfl⟩, fun ⟨i, e1, e2⟩ => ⟨i, Prod.ext e1 e2⟩⟩
+
+/-- **`Δ′ = ran(outl(antiJoin(𝟙_X, 𝟙_X′)))` is the variables with a pair of `X` not in `X′`**, under the bits of
+    `antiJoinC` and `ranC`: `rep_ranC`, `outl_holds`, `rep_antiJoinC`, `rep_idU_pairs`. -/
+theorem rep_dPrime (X X' : Rel V D) (hg : (gone(X, X')).2 = true) (hr : (ranC (outl (gone(X, X')).1)).2 = true)
+    (w v : V.El) : rep (ranC (outl (gone(X, X')).1)).1 w v ↔ w = v ∧ ∃ e, rep X w e ∧ ¬ rep X' w e := by
+  have hJ : ∀ a b, rep (gone(X, X')).1 a b ↔ ∃ y, rep (pairsU(X)) a y ∧ y = b ∧ ¬ ∃ x, rep (pairsU(X')) x y :=
+    fun a b => by rw [rep_antiJoinC _ _ hg]; exact Iff.rfl
+  rw [rep_ranC _ hr]
+  show w = v ∧ (∃ a, rep (outl (gone(X, X')).1) a w ∧ rep (outl (gone(X, X')).1) a v) ↔ _
+  constructor
+  · rintro ⟨rfl, a, ha, -⟩
+    obtain ⟨z, hz⟩ := (outl_holds _ a w).1 ha
+    obtain ⟨y, hy, rfl, hn⟩ := (hJ a _).1 hz
+    obtain ⟨rfl, hX⟩ := (rep_idU_pairs X a _).1 hy
+    exact ⟨rfl, z, hX, fun h' => hn ⟨(w, z), (rep_idU_pairs X' _ _).2 ⟨rfl, h'⟩⟩⟩
+  · rintro ⟨rfl, e, hX, hn⟩
+    have ho : rep (outl (gone(X, X')).1) (w, e) w :=
+      (outl_holds _ _ w).2 ⟨e, (hJ _ _).2 ⟨(w, e), (rep_idU_pairs X _ _).2 ⟨rfl, hX⟩, rfl, fun ⟨x, hx⟩ => by
+        obtain ⟨rfl, h'⟩ := (rep_idU_pairs X' _ _).1 hx
+        exact hn h'⟩⟩
+    exact ⟨rfl, (w, e), ho, ho⟩
+
+/-- **One delta round is one naive round, and keeps the invariant**: from `AcInv s as (rep X) (rep Δ)`, under the
+    round's bit, `rep (acDelta as (X, Δ)).1 = body s as (rep X)`, and `AcInv` holds of the new `X′` with the new
+    `Δ′` (`rep_foldlC` at `rep_deltaStepC`, `rep_dPrime`). -/
+theorem acDelta_round (hat : hatOK) (s : Rel V D) (as : List (Revise V D)) (X : Rel V D) (Δ : Rel V V)
+    (hI : AcInv s as (rep X) (rep Δ)) (hb : (acDeltaC as (X, Δ)).2 = true) :
+    (∀ x d, rep (acDelta as (X, Δ)).1 x d ↔ body s as (rep X) x d) ∧
       AcInv s as (rep (acDelta as (X, Δ)).1) (rep (acDelta as (X, Δ)).2) := by
   classical
   obtain ⟨hΔ, hXs, hXv, hXn, hXo⟩ := hI
-  have hd := rep_acDelta as X Δ hΔ hD
-  have hn := rep_acRound s as X hN
+  simp only [acDeltaC, Bool.and_eq_true] at hb
+  obtain ⟨⟨hf, hg⟩, hr⟩ := hb
+  have hd := (rep_foldlC _ _ (rep_deltaStepC hat X Δ hΔ) as X true hf).2
+  have hΔ' := rep_dPrime X (foldlC (deltaStepC X Δ) as X).1 hg hr
   -- the two rounds agree pointwise
-  have key : ∀ x d, rep (acDelta as (X, Δ)).1 x d ↔ rep (acRound s as X) x d := fun x d => by
-    rw [hd, hn]
-    constructor
+  have key : ∀ x d, rep (acDelta as (X, Δ)).1 x d ↔ body s as (rep X) x d := fun x d => by
+    refine (hd x d).trans ⟨?_, ?_⟩
     · rintro ⟨hX, hDl⟩
       refine ⟨hXs x d hX, fun a ha => ⟨fun w hA => ?_, hXv a ha x d hX⟩⟩
       by_cases hw : rep Δ w w
@@ -184,14 +239,14 @@ theorem acDelta_round (s : Rel V D) (as : List (Revise V D)) (X : Rel V D) (Δ :
     · rintro ⟨hs, hNv⟩
       exact ⟨hXn x d hs hNv, fun a ha w _ hA => (hNv a ha).1 w hA⟩
   have hle : ∀ x d, rep (acDelta as (X, Δ)).1 x d → rep X x d := fun x d h => ((hd x d).1 h).1
-  refine ⟨Freyd.Alg.RelSet.hom_ext key, fun w v h => ((hΔ' w v).1 h).1, fun x d h => hXs x d (hle x d h),
+  refine ⟨key, fun w v h => ((hΔ' w v).1 h).1, fun x d h => hXs x d (hle x d h),
     fun a ha x d h => hXv a ha x d (hle x d h), fun x d hs hNv => ?_, fun a ha x d h w hw hA => ?_⟩
   · -- `Nv` is monotone in `X`, and `X′ ⊑ X`
-    refine (key x d).2 ((hn x d).2 ⟨hs, fun a ha => ⟨fun w hA => ?_, (hNv a ha).2⟩⟩)
+    refine (key x d).2 ⟨hs, fun a ha => ⟨fun w hA => ?_, (hNv a ha).2⟩⟩
     obtain ⟨e, hX, hC⟩ := (hNv a ha).1 w hA
     exact ⟨e, hle w e hX, hC⟩
   · -- off `Δ′` the pairs of `X` at `w` are pairs of `X′`
-    obtain ⟨e, hX, hC⟩ := (((hn x d).1 ((key x d).1 h)).2 a ha).1 w hA
+    obtain ⟨e, hX, hC⟩ := (((key x d).1 h).2 a ha).1 w hA
     refine ⟨e, ?_, hC⟩
     exact Classical.byContradiction fun hX' => hw ((hΔ' w w).2 ⟨rfl, e, hX, hX'⟩)
 
@@ -204,155 +259,53 @@ theorem acInv_init (s : Rel V D) (as : List (Revise V D)) (X₀ : Rel V D) (U : 
   rw [hX₀]
   exact ⟨hU, fun _ _ h => h, hsV, fun _ _ h _ => h, fun a ha _ _ _ w hw hA => (hw (hUA a ha w _ hA)).elim⟩
 
-/-! ## The rounds, one by one -/
+/-! ## The naive iterates in `Rel(Set)` -/
 
-/-- `R`'s two columns, each coded alone, fit their objects. -/
-def Coded {A B : Obj} (R : Rel A B) : Prop := A.CodesFit #v[⟨R.n, R.key⟩] ∧ B.CodesFit #v[⟨R.n, R.val⟩]
+/-- The `k`-th iterate of the naive body from `s`. -/
+def naive (s : Rel V D) (as : List (Revise V D)) : Nat → V.El → D.El → Prop
+  | 0 => fun x d => rep s x d
+  | k + 1 => body s as (naive s as k)
 
-/-- `R`'s two columns pick back at all its rows. -/
-def Fits {A B : Obj} (R : Rel A B) : Prop :=
-  Vals.PickFits A R.key (List.range R.n.toNat) ∧ Vals.PickFits B R.val (List.range R.n.toNat)
+theorem naive_le (s : Rel V D) (as : List (Revise V D)) : ∀ k x d, naive s as k x d → rep s x d
+  | 0, _, _, h => h
+  | _ + 1, _, _, h => h.1
 
-/-- `R`'s two columns fit their objects: what `rep_nub` and `nub_rows_inj` take, through `one_ok`. -/
-def NubFit {A B : Obj} (R : Rel A B) : Prop := Coded R ∧ Fits R
+/-- **The iterates decrease**: `body ⊑ s`, and `body` is monotone. -/
+theorem naive_anti (s : Rel V D) (as : List (Revise V D)) : ∀ k x d, naive s as (k + 1) x d → naive s as k x d
+  | 0, x, d, h => naive_le s as 1 x d h
+  | k + 1, x, d, h => body_mono s as (naive_anti s as k) x d h
 
-/-- **A fold of `∩` from `Y` fits where `Y` does**: `inter_fits` at each step, which asks nothing of the right side. -/
-theorem foldl_inter_fits {γ : Type} (L : γ → Rel V D) :
-    ∀ (as : List γ) (Y : Rel V D), Fits Y → Fits (as.foldl (fun Y a => Y ∩ L a) Y)
-  | [], _, h => h
-  | a :: t, Y, h => by
-    obtain ⟨hk, hv, -⟩ := inter_fits Y (L a) h.1 h.2
-    exact foldl_inter_fits L t (Y ∩ L a) ⟨hk, hv⟩
+/-- **From a fixed iterate on, the iterates stay**. -/
+theorem naive_stable (s : Rel V D) (as : List (Revise V D)) {c : Nat}
+    (hc : ∀ x d, naive s as (c + 1) x d ↔ naive s as c x d) : ∀ k, c ≤ k → ∀ x d, naive s as k x d ↔ naive s as c x d := by
+  intro k hk
+  obtain ⟨m, rfl⟩ := Nat.exists_eq_add_of_le hk
+  clear hk
+  induction m with
+  | zero => exact fun _ _ => Iff.rfl
+  | succ m ih => exact fun x d => (body_congr s as ih x d).trans (hc x d)
 
-/-- What a naive round on `X` needs at each arc that no theorem yet supplies: `∩`'s joint pair codes (`pairsOK`,
-    the open `CodesFit` of the step's operands), and `A\(X C)` denoting its `Rel(Set)` op (`rep_leftDiv`'s open
-    `CodesFit`, `⊤`-fit and razed-output premises, with `rep_comp`'s codes for `X C`). Per round: each names this
-    round's relations, and no theorem carries a `CodesFit` from a relation to the rows picked from it. -/
-def NaiveGap (s : Rel V D) (as : List (Revise V D)) (X : Rel V D) : Prop :=
-  ∀ pre a suf, as = pre ++ a :: suf → ∀ (Y L : Rel V D), Y = pre.foldl (naiveStep X) s →
-    L = leftDiv a.A (X ≫ a.C) a.UV.key a.UD.key → pairsOK(Y, L) ∧ ∀ x d, rep L x d ↔ Nv a (rep X) x d
+/-- **Two fixed iterates are one**: the later is the earlier by `naive_stable`. -/
+theorem naive_fixed_eq (s : Rel V D) (as : List (Revise V D)) {c j : Nat}
+    (hc : ∀ x d, naive s as (c + 1) x d ↔ naive s as c x d) (hj : ∀ x d, naive s as (j + 1) x d ↔ naive s as j x d) :
+    ∀ x d, naive s as j x d ↔ naive s as c x d := by
+  rcases Nat.le_total c j with h | h
+  · exact naive_stable s as hc j h
+  · exact fun x d => (naive_stable s as hj c h x d).symm
 
-/-- **A naive round meets its arcs** where `s` fits and the round's `NaiveGap` holds: `rep_inter` at each step, the
-    left side fitting by `foldl_inter_fits`. -/
-theorem naive_meets (s : Rel V D) (as : List (Revise V D)) (X : Rel V D) (hs : Fits s) (h : NaiveGap s as X) :
-    StepMeets (naiveStep X) s as fun a => Nv a (rep X) := fun pre a suf e x d => by
-  obtain ⟨hc, hL⟩ := h pre a suf e _ _ rfl rfl
-  have hY : Fits (pre.foldl (naiveStep X) s) := foldl_inter_fits _ pre s hs
-  show rep (pre.foldl (naiveStep X) s ∩ leftDiv a.A (X ≫ a.C) a.UV.key a.UD.key) x d ↔ _
-  rw [rep_inter _ _ hc hY.1 hY.2]
-  exact and_congr Iff.rfl (hL x d)
-
--- `𝟙_X`, the coreflexive on the pairs of `X`; the pairs of `X` not in `X′`, as
--- `acDelta` names them (fields applied, not projected: `X.key` would be one identifier, not the parameter `X`)
-set_option hygiene false in
-local notation "pairsU(" X ")" => idU (t := Obj.prod V D) (Rel.key X, Rel.val X)
-set_option hygiene false in
-local notation "gone(" X ", " X' ")" => antiJoin (pairsU(X)) (pairsU(X'))
-
-/-- What `Δ′` needs at a round from `X` to `X′` that no theorem yet supplies: the anti-join's joint value codes
-    (`codesOK`, `rep_antiJoin`'s `hc`) and `ran`'s one-part code (`oneOK`) — open `CodesFit`s of this round's
-    relations, so per round. -/
-def DeltaGap (X X' : Rel V D) : Prop :=
-  codesOK(avc(Obj.prod V D, pairsU(X), pairsU(X')), avp(Obj.prod V D, pairsU(X), pairsU(X'))) ∧ oneOK(V, (outl (gone(X, X'))).n, (outl (gone(X, X'))).val)
-
-/-- `rep 𝟙_X` is `𝟙` on the pairs of `X` (`idU_holds`). -/
-theorem rep_idU_pairs (X : Rel V D) (p q : V.El × D.El) : rep (pairsU(X)) p q ↔ p = q ∧ rep X p.1 p.2 := by
-  rw [rep_apply, idU_holds]
-  exact and_congr Iff.rfl ⟨fun ⟨i, e⟩ => by subst e; exact ⟨i, rfl, rfl⟩, fun ⟨i, e1, e2⟩ => ⟨i, Prod.ext e1 e2⟩⟩
-
-/-- **`Δ′ = ran(outl(antiJoin(𝟙_X, 𝟙_X′)))` is the variables with a pair of `X` not in `X′`**: `rep_ran_corefl`,
-    `outl_holds`, `rep_antiJoin`, `rep_idU_pairs`, the fits carried by `antiJoin_fits` and `outl_fits` from `X`'s. -/
-theorem rep_dPrime (X X' : Rel V D) (hX : Fits X) (h : DeltaGap X X') (w v : V.El) :
-    rep (ran (outl (gone(X, X')))) w v ↔
-      w = v ∧ ∃ e, rep X w e ∧ ¬ rep X' w e := by
-  have hk : Vals.PickFits (.prod V D) (pairsU(X)).key (List.range (pairsU(X)).n.toNat) := by
-    unfold Vals.PickFits; exact hX
-  have hv : Vals.PickFits (.prod V D) (pairsU(X)).val (List.range (pairsU(X)).n.toNat) := by
-    unfold Vals.PickFits; exact hX
-  obtain ⟨hJk, hJv, -⟩ := antiJoin_fits _ _ h.1 hk hv
-  obtain ⟨-, hOv, -⟩ := outl_fits _ hJk hJv
-  have hJ : ∀ a b, rep (gone(X, X')) a b ↔
-      ∃ y, rep (pairsU(X)) a y ∧ y = b ∧ ¬ ∃ x, rep (pairsU(X')) x y := fun a b => by
-    rw [rep_antiJoin _ _ h.1 hk hv]; exact Iff.rfl
-  rw [rep_ran_corefl _ h.2 hOv]
-  show w = v ∧ (∃ a, rep (outl (gone(X, X'))) a w) ↔ _
-  constructor
-  · rintro ⟨rfl, a, ha⟩
-    obtain ⟨z, hz⟩ := (outl_holds _ a w).1 ha
-    obtain ⟨y, hy, rfl, hn⟩ := (hJ a _).1 hz
-    obtain ⟨rfl, hX⟩ := (rep_idU_pairs X a _).1 hy
-    exact ⟨rfl, z, hX, fun h' => hn ⟨(w, z), (rep_idU_pairs X' _ _).2 ⟨rfl, h'⟩⟩⟩
-  · rintro ⟨rfl, e, hX, hn⟩
-    refine ⟨rfl, (w, e), (outl_holds _ _ w).2 ⟨e, (hJ _ _).2 ⟨(w, e), (rep_idU_pairs X _ _).2 ⟨rfl, hX⟩, rfl, ?_⟩⟩⟩
-    rintro ⟨x, hx⟩
-    obtain ⟨rfl, h'⟩ := (rep_idU_pairs X' _ _).1 hx
-    exact hn h'
-
-/-- The `j`-th delta state from `(X₀, U)`. -/
-abbrev dState (as : List (Revise V D)) (X₀ : Rel V D) (U : Rel V V) (j : Nat) : Rel V D × Rel V V :=
-  Nat.repeat (acDelta as) j (X₀, U)
-
-/-- The `j`-th naive state from `X₀`, each round `nub(acRound s as X)` as `fixOn` runs it. -/
-abbrev nState (s : Rel V D) (as : List (Revise V D)) (X₀ : Rel V D) (j : Nat) : Rel V D :=
-  Nat.repeat (fun X => (acRound s as X).nub) j X₀
-
-/-- **`k` delta rounds are `k` naive rounds**: from `(X₀, U)` with `AcInv`, the `k`-th delta state keeps `AcInv`
-    and denotes the `k`-th naive state, by induction on `k` with `acDelta_round`. Hypotheses: `acDelta_round`'s
-    at every delta state, `rep_acRound`'s at every naive state, and `rep_nub`'s there (`NubFit`). -/
-theorem acDelta_iterate (s : Rel V D) (as : List (Revise V D)) (X₀ : Rel V D) (U : Rel V V)
-    (h₀ : AcInv s as (rep X₀) (rep U))
-    (hNd : ∀ j, StepMeets (naiveStep (dState as X₀ U j).1) s as fun a => Nv a (rep (dState as X₀ U j).1))
-    (hD : ∀ j, StepMeets (deltaStep (dState as X₀ U j).1 (dState as X₀ U j).2) (dState as X₀ U j).1 as
-      fun a => Ld a (rep (dState as X₀ U j).1) (rep (dState as X₀ U j).2) (Alg.ran ((dState as X₀ U j).2 ≫ a.A)))
-    (hΔ' : ∀ j w v, rep (acDelta as (dState as X₀ U j)).2 w v ↔
-      w = v ∧ ∃ e, rep (dState as X₀ U j).1 w e ∧ ¬ rep (acDelta as (dState as X₀ U j)).1 w e)
-    (hNn : ∀ j, StepMeets (naiveStep (nState s as X₀ j)) s as fun a => Nv a (rep (nState s as X₀ j)))
-    (hF : ∀ j, NubFit (acRound s as (nState s as X₀ j))) :
-    ∀ k, AcInv s as (rep (dState as X₀ U k).1) (rep (dState as X₀ U k).2) ∧
-      rep (dState as X₀ U k).1 = rep (nState s as X₀ k) := by
-  intro k
-  induction k with
-  | zero => exact ⟨h₀, rfl⟩
-  | succ k ih =>
-    obtain ⟨hI, he⟩ := ih
-    obtain ⟨hr, hI'⟩ := acDelta_round s as _ _ hI (hNd k) (hD k) (hΔ' k)
-    refine ⟨hI', hr.trans ((Freyd.Alg.RelSet.hom_ext fun x d => ?_).trans
-      (rep_nub _ (one_ok _ (hF k).1.1) (one_ok _ (hF k).1.2) (hF k).2.1 (hF k).2.2).symm)⟩
-    -- `rep (acRound s as X)` is read off `rep X` alone
-    rw [rep_acRound s as _ (hNd k), rep_acRound s as _ (hNn k), he]
-
-/-! ## The stop: `iter` read as rounds, and the row count of a duplicate-free relation -/
-
-/-- **What `iter` returns**: on states `g j` with `f (g j) = g (j+1)`, `iter n done f (g k)` is `g j` for a round
-    `j` of `k … k+n` that is not `done` before `j`, and is `done` at `j` or is the last. -/
-theorem iter_on {α : Type} (done : α → Bool) (f : α → α) (g : Nat → α) (hg : ∀ j, f (g j) = g (j + 1))
-    (Q : α → Prop) : ∀ n k, (∀ j, k ≤ j → j ≤ k + n → (∀ i, k ≤ i → i < j → done (g i) = false) →
-      (j = k + n ∨ done (g j) = true) → Q (g j)) → Q (iter n done f (g k)) := by
-  intro n
-  induction n with
-  | zero =>
-    intro k h
-    unfold iter; rw [hylo]
-    split
-    · exact h k (Nat.le_refl _) (by omega) (fun i h1 h2 => absurd h2 (by omega)) (Or.inl rfl)
-    · rename_i hn; simp at hn
-  | succ n ih =>
-    intro k h
-    unfold iter; rw [hylo]
-    split
-    · rename_i hd
-      have hd' : done (g k) = true := by simpa using hd
-      exact h k (Nat.le_refl _) (by omega) (fun i h1 h2 => absurd h2 (by omega)) (Or.inr hd')
-    · rename_i hd
-      have hd' : done (g k) = false := by simpa using hd
-      show Q (iter n done f (f (g k)))
-      rw [hg k]
-      exact ih (k + 1) fun j h1 h2 hlt hst => h j (by omega) (by omega)
-        (fun i hi1 hi2 => if e : i = k then e ▸ hd' else hlt i (by omega) hi2) (hst.imp_left fun e => by omega)
+/-! ## Row counts -/
 
 /-- The rows of `R` are distinct pairs. -/
 def RowsInj {A B : Obj} (R : Rel A B) : Prop :=
   ∀ {t t' : Fin R.n.toNat}, R.key.row t = R.key.row t' → R.val.row t = R.val.row t' → t = t'
+
+/-- **`nubC`'s answer has distinct rows under its bit**: `nub_rows_inj` at the premises `rep_nubC` reads. -/
+theorem rowsInj_nubC {A B : Obj} (R : Rel A B) (hb : (nubC R).2 = true) : RowsInj (nubC R).1 := by
+  simp only [nubC, Bool.and_eq_true] at hb
+  obtain ⟨⟨⟨hK, hV⟩, hk⟩, hv⟩ := hb
+  rw [nubC_fst]
+  exact nub_rows_inj R (oneOK_of_codesC A R.key hK) (oneOK_of_codesC B R.val hV)
+    (pickFits_of_fitsN A R.key _ hk _ (by simp)) (pickFits_of_fitsN B R.val _ hv _ (by simp))
 
 /-- The pairs of `R`, one per row. -/
 def prs {A B : Obj} (R : Rel A B) : List (A.El × B.El) := (List.finRange R.n.toNat).map fun t => (R.key.row t, R.val.row t)
@@ -400,156 +353,149 @@ theorem n_eq_zero_iff {A B : Obj} (R : Rel A B) : R.n = 0 ↔ ∀ x y, ¬ rep R 
   · obtain ⟨i, -⟩ := hr; have := i.2; omega
   · show R.Holds _ _; unfold Rel.Holds; exact ⟨⟨0, hp⟩, rfl, rfl⟩
 
+/-- A weaker test counts fewer, and strictly fewer where it misses an element the stronger one takes. -/
+theorem countP_lt {β : Type} (p q : β → Bool) : ∀ l : List β, (∀ x ∈ l, p x = true → q x = true) →
+    (∃ x ∈ l, q x = true ∧ p x = false) → l.countP p < l.countP q
+  | [], _, ⟨_, h, _⟩ => by simp at h
+  | y :: l, hpq, ⟨x, hx, hq, hp⟩ => by
+    have hm : l.countP p ≤ l.countP q := List.countP_mono_left fun z hz => hpq z (List.mem_cons_of_mem _ hz)
+    have hy := hpq y List.mem_cons_self
+    simp only [List.countP_cons]
+    rcases List.mem_cons.1 hx with rfl | hx
+    · simp [hq, hp]; omega
+    · have := countP_lt p q l (fun z hz => hpq z (List.mem_cons_of_mem _ hz)) ⟨x, hx, hq, hp⟩
+      cases hpy : p y
+      · cases q y <;> simp <;> omega
+      · simp [hy hpy]; omega
+
+/-- **The naive iterates are fixed within `|s.nub|` rounds**: each earlier one drops a pair of `s.nub`'s rows
+    (`countP_lt`). -/
+theorem exists_fixed (s : Rel V D) (as : List (Revise V D)) (hsn : ∀ x d, rep s.nub x d ↔ rep s x d) :
+    ∃ c ≤ s.nub.n.toNat, ∀ x d, naive s as (c + 1) x d ↔ naive s as c x d := by
+  classical
+  let cnt : Nat → Nat := fun k => (prs s.nub).countP fun p => decide (naive s as k p.1 p.2)
+  have hdrop : ∀ k, ¬ (∀ x d, naive s as (k + 1) x d ↔ naive s as k x d) → cnt (k + 1) < cnt k := fun k h => by
+    obtain ⟨x, d, hx, hn⟩ : ∃ x d, naive s as k x d ∧ ¬ naive s as (k + 1) x d :=
+      Classical.byContradiction fun hc => h fun x d =>
+        ⟨naive_anti s as k x d, fun hk => Classical.byContradiction fun hn => hc ⟨x, d, hk, hn⟩⟩
+    exact countP_lt _ _ _ (fun p _ hp => by simp only [decide_eq_true_eq] at hp ⊢; exact naive_anti s as k p.1 p.2 hp)
+      ⟨(x, d), (mem_prs _ _).2 ((hsn x d).2 (naive_le s as k x d hx)), by simpa using hx, by simpa using hn⟩
+  have hdesc : ∀ m, (∀ i < m, ¬ ∀ x d, naive s as (i + 1) x d ↔ naive s as i x d) → cnt m + m ≤ cnt 0 := by
+    intro m
+    induction m with
+    | zero => intro _; exact Nat.le_refl _
+    | succ m ih => intro h; have := hdrop m (h m (by omega)); have := ih fun i hi => h i (by omega); omega
+  have h0 : cnt 0 ≤ s.nub.n.toNat := Nat.le_trans List.countP_le_length (by simp [prs])
+  refine Classical.byContradiction fun hc => ?_
+  have := hdesc (s.nub.n.toNat + 1) fun i hi hf => hc ⟨i, by omega, hf⟩
+  omega
+
 /-! ## The agreement -/
 
 /-- **`acFix` is `fixOn` on the naive round**: the delta rounds from `(s.nub, U)` and `fixOn n (acRound s as)` from
-    `s` end on one relation. Each delta round is a naive round (`acDelta_iterate`); `acFix` stops at the first
-    `Δ = 𝟘`, `fixOn` at the first round leaving the row count, and both are the first round `c` with
-    `acRound(Xc) ⊒ Xc` (`n_eq_zero_iff`, `count_lt` on the duplicate-free decreasing chain), which comes within
-    `|s.nub|` rounds because each earlier round drops a row. Hypotheses: `n` at least that bound; `s`'s columns fit
-    (`hs`); `U` coreflexive, holding every arc's predecessors, and `s` inside every arc's vacuous part
-    (`acInv_init`). Per round, the upstream gaps only, each naming this round's relations: `NaiveGap` at the delta
-    and the naive states (`hNd`, `hNn`); `hD`, the delta arc steps, whose operands after the first arc are `∪`'s
-    razes; `DeltaGap` (`hG`); a delta round's output fitting (`hXf`, the `PickFits` of `∪`'s raze); `Coded` of
-    each naive round (`hC`). The fits of `∩`, the anti-join, `outl` and `ran` are derived. -/
-theorem acFix_eq_fixOn (s : Rel V D) (as : List (Revise V D)) (U : Rel V V) (n : Nat)
-    (hn : s.nub.n.toNat + 1 ≤ n) (hs : NubFit s)
+    `s` end on one relation, the first fixed naive iterate (`exists_fixed`). Each delta round is a naive round
+    (`acDelta_round`); `acFix` stops at `Δ = 𝟘`, a fixed iterate by `AcInv`, or after `|s.nub| + 1` rounds; `fixOn`
+    stops at an unchanged row count, a fixed iterate by `count_lt` on `nubC`'s distinct rows, or after `n` rounds.
+    Capacity is the two runs' bits, `fixOnC`'s and `acFixC`'s. Hypotheses: `hat` (`rep_unionC`'s); `n` at least
+    `|s.nub| + 1`; `U` coreflexive, holding every arc's predecessors, and `s` inside every arc's vacuous part
+    (`acInv_init`). -/
+theorem acFix_eq_fixOn (hat : hatOK) (s : Rel V D) (as : List (Revise V D)) (U : Rel V V) (n : Nat)
+    (hn : s.nub.n.toNat + 1 ≤ n)
     (hU : ∀ w v, rep U w v → w = v) (hUA : ∀ a ∈ as, ∀ w x, rep a.A w x → rep U w w)
     (hsV : ∀ a ∈ as, ∀ x d, rep s x d → Vac a x d)
-    (hNd : ∀ j, NaiveGap s as (dState as s.nub U j).1)
-    (hD : ∀ j, StepMeets (deltaStep (dState as s.nub U j).1 (dState as s.nub U j).2) (dState as s.nub U j).1 as
-      fun a => Ld a (rep (dState as s.nub U j).1) (rep (dState as s.nub U j).2)
-        (Alg.ran ((dState as s.nub U j).2 ≫ a.A)))
-    (hG : ∀ j, DeltaGap (dState as s.nub U j).1 (acDelta as (dState as s.nub U j)).1)
-    (hXf : ∀ j, Fits (acDelta as (dState as s.nub U j)).1)
-    (hNn : ∀ j, NaiveGap s as (nState s as s.nub j))
-    (hC : ∀ j, Coded (acRound s as (nState s as s.nub j))) :
+    (hb : (fixOnC n (acRoundC s as) s).2 = true) (hd : (acFixC s as U).2 = true) :
     rep (acFix s as U).1 = rep (fixOn n (acRound s as) s).1 := by
   classical
-  have hF : ∀ j, NubFit (acRound s as (nState s as s.nub j)) := fun j =>
-    ⟨hC j, by unfold acRound; exact foldl_inter_fits _ as s hs.2⟩
-  have hX : ∀ j, Fits (dState as s.nub U j).1
-    | 0 => by show Fits s.nub; exact nub_pickFits s (one_ok _ hs.1.1) (one_ok _ hs.1.2) hs.2.1 hs.2.2
-    | j + 1 => by show Fits (acDelta as (dState as s.nub U j)).1; exact hXf j
-  have hΔ' : ∀ j w v, rep (acDelta as (dState as s.nub U j)).2 w v ↔
-      w = v ∧ ∃ e, rep (dState as s.nub U j).1 w e ∧ ¬ rep (acDelta as (dState as s.nub U j)).1 w e := fun j =>
-    rep_dPrime _ _ (hX j) (hG j)
-  have hNd := fun j => naive_meets s as _ hs.2 (hNd j)
-  have hNn := fun j => naive_meets s as _ hs.2 (hNn j)
-  have hsn : rep s.nub = rep s := rep_nub _ (one_ok _ hs.1.1) (one_ok _ hs.1.2) hs.2.1 hs.2.2
-  have hit := acDelta_iterate s as s.nub U (acInv_init s as s.nub U hsn hU hUA hsV) hNd hD hΔ' hNn hF
-  -- a naive round fixes `Y j` when it keeps all of it
-  let Fix := fun j => ∀ x d, rep (nState s as s.nub j) x d → rep (nState s as s.nub (j + 1)) x d
-  have hmem : ∀ j x d, rep (nState s as s.nub (j + 1)) x d ↔ rep s x d ∧ ∀ a ∈ as, Nv a (rep (nState s as s.nub j)) x d :=
-    fun j x d => by
-      rw [show nState s as s.nub (j + 1) = (acRound s as (nState s as s.nub j)).nub from rfl,
-        rep_nub _ (one_ok _ (hF j).1.1) (one_ok _ (hF j).1.2) (hF j).2.1 (hF j).2.2, rep_acRound s as _ (hNn j)]
-  have hsub : ∀ j x d, rep (nState s as s.nub (j + 1)) x d → rep (nState s as s.nub j) x d := fun j x d h => by
-    obtain ⟨hs', hNv⟩ := (hmem j x d).1 h
-    rw [← (hit j).2] at hNv ⊢
-    exact (hit j).1.2.2.2.1 x d hs' hNv
-  have hinj : ∀ j, RowsInj (nState s as s.nub j)
-    | 0 => nub_rows_inj s (one_ok _ hs.1.1) (one_ok _ hs.1.2) hs.2.1 hs.2.2
-    | j + 1 => nub_rows_inj (acRound s as (nState s as s.nub j)) (one_ok _ (hF j).1.1) (one_ok _ (hF j).1.2)
-        (hF j).2.1 (hF j).2.2
-  -- `fixOn`'s stop: equal row count is `Fix`
-  have hcnt : ∀ j, (nState s as s.nub (j + 1)).n.toNat = (nState s as s.nub j).n.toNat ↔ Fix j := fun j => by
-    obtain ⟨hle, hlt⟩ := count_lt _ _ (hinj (j + 1)) (hsub j)
-    refine ⟨fun he x d hx => Classical.byContradiction fun hn' => absurd he (Nat.ne_of_lt (hlt ⟨x, d, hx, hn'⟩)),
-      fun hf => Nat.le_antisymm hle (count_lt _ _ (hinj j) hf).1⟩
-  have hdec : ∀ j, ¬ Fix j → (nState s as s.nub (j + 1)).n.toNat < (nState s as s.nub j).n.toNat := fun j h =>
-    Nat.lt_of_le_of_ne (count_lt _ _ (hinj (j + 1)) (hsub j)).1 fun e => h ((hcnt j).1 e)
-  -- `acFix`'s stop: `Δ = 𝟘` gives `Fix`, and after the first round is `Fix`
-  have hfix : ∀ j, (dState as s.nub U j).2.n = 0 → Fix j := fun j hz x d hx => by
-    obtain ⟨-, hXs, hXv, -, hXo⟩ := (hit j).1
-    rw [← (hit j).2] at hx
-    refine (hmem j x d).2 ⟨hXs x d hx, fun a ha => ⟨fun w hA => ?_, hXv a ha x d hx⟩⟩
-    rw [← (hit j).2]
-    exact hXo a ha x d hx w (fun hw => (n_eq_zero_iff _).1 hz w w hw) hA
-  have hdl : ∀ j, (dState as s.nub U (j + 1)).2.n = 0 ↔ Fix j := fun j => by
-    have e1 : rep (acDelta as (dState as s.nub U j)).1 = rep (nState s as s.nub (j + 1)) := (hit (j + 1)).2
-    show (acDelta as (dState as s.nub U j)).2.n = 0 ↔ Fix j
-    rw [n_eq_zero_iff]
-    refine ⟨fun h x d hx => Classical.byContradiction fun hn' => h x x ((hΔ' j x x).2 ⟨rfl, d, ?_, ?_⟩),
-      fun h w v hwv => ?_⟩
-    · rw [(hit j).2]; exact hx
-    · rw [e1]; exact hn'
-    · obtain ⟨-, d, h1, h2⟩ := (hΔ' j w v).1 hwv
-      exact h2 (by rw [e1]; exact h w d (by rw [← (hit j).2]; exact h1))
-  -- the descent: rounds before the first `Fix` each drop a row
-  have hdesc : ∀ m, (∀ i < m, ¬ Fix i) → (nState s as s.nub m).n.toNat + m ≤ s.nub.n.toNat := fun m => by
-    induction m with
-    | zero => intro _; exact Nat.le_refl _
-    | succ m ih => intro h; have := hdec m (h m (by omega)); have := ih fun i hi => h i (by omega); omega
-  have hfirst : ∀ m, (∀ i < m, ¬ Fix i) ∨ ∃ c < m, Fix c ∧ ∀ i < c, ¬ Fix i := fun m => by
-    induction m with
-    | zero => exact Or.inl fun i hi => absurd hi (by omega)
-    | succ m ih =>
-      rcases ih with h | ⟨c, hc, hf, hlt⟩
-      · by_cases hm : Fix m
-        · exact Or.inr ⟨m, by omega, hm, h⟩
-        · exact Or.inl fun i hi => if e : i = m then e ▸ hm else h i (by omega)
-      · exact Or.inr ⟨c, by omega, hf, hlt⟩
-  obtain ⟨c, hc, hcF, hcl⟩ : ∃ c < s.nub.n.toNat + 1, Fix c ∧ ∀ i < c, ¬ Fix i := by
-    rcases hfirst (s.nub.n.toNat + 1) with h | h
-    · have := hdesc _ h; omega
-    · exact h
-  have hcmin : ∀ i, Fix i → c ≤ i := fun i hi => Nat.le_of_not_lt fun h => hcl i h hi
-  -- `acFix` ends at round `c + 1`, or at round `0` when `c = 0`
-  have hA : rep (acFix s as U).1 = rep (nState s as s.nub (c + 1)) := by
-    obtain ⟨j, -, hj, hlt, hst, he⟩ : ∃ j, 0 ≤ j ∧ j ≤ 0 + (s.nub.n.toNat + 1) ∧
-        (∀ i, 0 ≤ i → i < j → ((dState as s.nub U i).2.n == 0) = false) ∧
-        (j = 0 + (s.nub.n.toNat + 1) ∨ ((dState as s.nub U j).2.n == 0) = true) ∧
-        (acFix s as U).1 = (dState as s.nub U j).1 :=
-      iter_on (α := Rel V D × Rel V V × Nat) (fun (_, Δ, _) => Δ.n == 0)
-        (fun (X, Δ, k) => let (X', Δ') := acDelta as (X, Δ); (X', Δ', k + 1))
-        (fun j => ((dState as s.nub U j).1, (dState as s.nub U j).2, j)) (fun _ => rfl)
-        (fun r => ∃ j, 0 ≤ j ∧ j ≤ 0 + (s.nub.n.toNat + 1) ∧
-          (∀ i, 0 ≤ i → i < j → ((dState as s.nub U i).2.n == 0) = false) ∧
-          (j = 0 + (s.nub.n.toNat + 1) ∨ ((dState as s.nub U j).2.n == 0) = true) ∧ r.1 = (dState as s.nub U j).1)
-        (s.nub.n.toNat + 1) 0 fun j h0 h1 hlt hst => ⟨j, h0, h1, hlt, hst, rfl⟩
-    rw [he, (hit j).2]
-    simp only [beq_eq_false_iff_ne, ne_eq, beq_iff_eq] at hlt hst
-    cases j with
-    | zero =>
-      have hF0 := hfix 0 (hst.resolve_left (by omega))
-      have hc0 : c = 0 := Nat.le_zero.1 (hcmin 0 hF0)
-      subst hc0
-      exact Freyd.Alg.RelSet.hom_ext fun x d => ⟨hF0 x d, hsub 0 x d⟩
-    | succ j =>
-      have hnf : ∀ i < j, ¬ Fix i := fun i hi hf => hlt (i + 1) (by omega) (by omega) ((hdl i).2 hf)
-      have hjF : Fix j := by
-        rcases hst with e | e
-        · exact Classical.byContradiction fun h => by
-            have := hdesc (j + 1) fun i hi => if e' : i = j then e' ▸ h else hnf i (by omega); omega
-        · exact (hdl j).1 e
-      have : c = j := Nat.le_antisymm (hcmin j hjF) (Nat.le_of_not_lt fun h => hnf c h hcF)
-      rw [this]
-  -- `fixOn` ends at round `c + 1`
-  have hB : (fixOn n (acRound s as) s).1 = nState s as s.nub (c + 1) := by
-    let cnt : Nat → Nat := fun j => match j with | 0 => s.nub.n.toNat + 1 | i + 1 => (nState s as s.nub i).n.toNat
-    obtain ⟨j, -, hj, hlt, hst, he⟩ : ∃ j, 0 ≤ j ∧ j ≤ 0 + n ∧
-        (∀ i, 0 ≤ i → i < j → (cnt i == (nState s as s.nub i).n.toNat) = false) ∧
-        (j = 0 + n ∨ (cnt j == (nState s as s.nub j).n.toNat) = true) ∧
-        (fixOn n (acRound s as) s).1 = nState s as s.nub j :=
-      iter_on (α := Nat × Rel V D × Nat) (fun (p, x, _) => p == x.n.toNat) (fun (_, x, k) => (x.n.toNat, (acRound s as x).nub, k + 1))
-        (fun j => (cnt j, nState s as s.nub j, j)) (fun _ => rfl)
-        (fun r => ∃ j, 0 ≤ j ∧ j ≤ 0 + n ∧
-          (∀ i, 0 ≤ i → i < j → (cnt i == (nState s as s.nub i).n.toNat) = false) ∧
-          (j = 0 + n ∨ (cnt j == (nState s as s.nub j).n.toNat) = true) ∧ r.2.1 = nState s as s.nub j)
-        n 0 fun j h0 h1 hlt hst => ⟨j, h0, h1, hlt, hst, rfl⟩
-    rw [he]
-    simp only [beq_eq_false_iff_ne, ne_eq, beq_iff_eq] at hlt hst
-    have hnf : ∀ i, i + 1 < j → ¬ Fix i := fun i hi hf => hlt (i + 1) (by omega) hi ((hcnt i).2 hf).symm
-    cases j with
-    | zero => rcases hst with e | e <;> simp [cnt, Nat.repeat] at e <;> omega
-    | succ j =>
-      have hjF : Fix j := by
-        rcases hst with e | e
-        · exact Classical.byContradiction fun h => by
-            have := hdesc (j + 1) fun i hi => if e' : i = j then e' ▸ h else hnf i (by omega); omega
-        · exact (hcnt j).1 e.symm
-      rw [Nat.le_antisymm (hcmin j hjF) (Nat.le_of_not_lt fun h => hnf c (by omega) hcF)]
-  rw [hA, hB]
+  simp only [fixOnC, Bool.and_eq_true] at hb
+  obtain ⟨h0, hbit⟩ := hb
+  simp only [acFixC, Bool.and_eq_true] at hd
+  obtain ⟨-, hdbit⟩ := hd
+  have hs0 : ∀ x d, rep (nubC s).1 x d ↔ rep s x d := by rw [rep_nubC s h0]; exact fun _ _ => Iff.rfl
+  have hcnt : (nubC s).1.n.toNat = s.nub.n.toNat := by rw [nubC_fst]
+  obtain ⟨c, hc, hcF⟩ := exists_fixed s as (by rw [← nubC_fst]; exact hs0)
+  -- the naive run: `fixOnC`'s rounds, the state `(count before, X, round)`
+  let fr : Nat × Rel V D × Nat → Nat × Rel V D × Nat := fun st =>
+    (st.2.1.n.toNat, (nubC (acRoundC s as st.2.1).1).1, st.2.2 + 1)
+  let a₀ : Nat × Rel V D × Nat := ((nubC s).1.n.toNat + 1, (nubC s).1, 0)
+  have hB : ∀ x d, rep (fixOn n (acRound s as) s).1 x d ↔ naive s as c x d := by
+    have e : (fixOn n (acRound s as) s).1 = (iter n (fun st => st.1 == st.2.1.n.toNat) fr a₀).2.1 := by
+      rw [show fixOn n (acRound s as) s = (fixOnC n (acRoundC s as) s).1 from (fixOnC_fst n (acRoundC s as) s).symm]
+      show (iterC (α := Nat × Rel V D × Nat) n _ _ _).1.2.1 = _
+      rw [iterC_fst]
+    obtain ⟨J, hJ, he, hst, hlt⟩ := iter_stop (fun st : Nat × Rel V D × Nat => st.1 == st.2.1.n.toNat) fr n a₀
+    have hrun : ∀ i < J, (acRoundC s as (fr^[i] a₀).2.1).2 = true ∧
+        (nubC (acRoundC s as (fr^[i] a₀).2.1).1).2 = true := fun i hi =>
+      have h := iterC_run _ _ _ _ hbit i (by omega) fun i' hi' => hlt i' (by omega); Eq.mp (Bool.and_eq_true _ _) h
+    have hsucc : ∀ k, fr^[k + 1] a₀ = fr (fr^[k] a₀) := fun _ => rfl
+    have hY : ∀ k ≤ J, ∀ x d, rep (fr^[k] a₀).2.1 x d ↔ naive s as k x d := by
+      intro k
+      induction k with
+      | zero => intro _; exact hs0
+      | succ k ih =>
+        intro hk x d
+        rw [hsucc k]
+        show rep (nubC (acRoundC s as (fr^[k] a₀).2.1).1).1 x d ↔ body s as (naive s as k) x d
+        rw [rep_nubC _ (hrun k (by omega)).2]
+        exact ((rep_foldlC _ _ (rep_naiveStepC _) as s true (hrun k (by omega)).1).2 x d).trans
+          (body_congr s as (ih (by omega)) x d)
+    rw [e, he]
+    intro x d
+    refine (hY J (Nat.le_refl _) x d).trans ?_
+    rcases hst with hJn | hdone
+    · exact naive_stable s as hcF J (by omega) x d
+    · cases J with
+      | zero => simp [a₀] at hdone; have h : (nubC s).1.n.toNat + 1 = (nubC s).1.n.toNat := hdone; omega
+      | succ i =>
+        have hY1 := hY (i + 1) (Nat.le_refl _)
+        rw [hsucc i] at hdone hY1
+        have heq : (fr^[i] a₀).2.1.n.toNat = (fr (fr^[i] a₀)).2.1.n.toNat := by simpa [fr] using hdone
+        have hle : ∀ x d, rep (fr (fr^[i] a₀)).2.1 x d → rep (fr^[i] a₀).2.1 x d := fun x d h =>
+          (hY i (by omega) x d).2 (naive_anti s as i x d ((hY1 x d).1 h))
+        have hlt' := (count_lt (fr (fr^[i] a₀)).2.1 (fr^[i] a₀).2.1 (rowsInj_nubC _ (hrun i (by omega)).2) hle).2
+        have hfix : ∀ x d, naive s as (i + 1) x d ↔ naive s as i x d := fun x d =>
+          ⟨naive_anti s as i x d, fun h => Classical.byContradiction fun hn' => by
+            have := hlt' ⟨x, d, (hY i (by omega) x d).2 h, fun h' => hn' ((hY1 x d).1 h')⟩
+            omega⟩
+        exact (hfix x d).trans (naive_fixed_eq s as hcF hfix x d)
+  -- the delta run: `acFixC`'s rounds, the state `(X, Δ, round)`
+  let fd : Rel V D × Rel V V × Nat → Rel V D × Rel V V × Nat := fun st =>
+    ((acDeltaC as (st.1, st.2.1)).1.1, (acDeltaC as (st.1, st.2.1)).1.2, st.2.2 + 1)
+  let b₀ : Rel V D × Rel V V × Nat := ((nubC s).1, U, 0)
+  have hA : ∀ x d, rep (acFix s as U).1 x d ↔ naive s as c x d := by
+    have e : (acFix s as U).1 = (iter ((nubC s).1.n.toNat + 1) (fun st => st.2.1.n == 0) fd b₀).1 := by
+      show (iterC (α := Rel V D × Rel V V × Nat) _ _ _ _).1.1 = _
+      rw [iterC_fst]
+    obtain ⟨K, hK, he, hst, hlt⟩ :=
+      iter_stop (fun st : Rel V D × Rel V V × Nat => st.2.1.n == 0) fd ((nubC s).1.n.toNat + 1) b₀
+    have hrun : ∀ i < K, (acDeltaC as ((fd^[i] b₀).1, (fd^[i] b₀).2.1)).2 = true := fun i hi =>
+      have h := iterC_run _ _ _ _ hdbit i (by omega) fun i' hi' => hlt i' (by omega); h
+    have hZ : ∀ k ≤ K, AcInv s as (rep (fd^[k] b₀).1) (rep (fd^[k] b₀).2.1) ∧
+        ∀ x d, rep (fd^[k] b₀).1 x d ↔ naive s as k x d := by
+      intro k
+      induction k with
+      | zero => intro _; exact ⟨acInv_init s as _ U (rep_nubC s h0) hU hUA hsV, hs0⟩
+      | succ k ih =>
+        intro hk
+        obtain ⟨hI, hk'⟩ := ih (by omega)
+        obtain ⟨hr, hI'⟩ := acDelta_round hat s as _ _ hI (hrun k (by omega))
+        show AcInv s as (rep (fd (fd^[k] b₀)).1) (rep (fd (fd^[k] b₀)).2.1) ∧ ∀ x d, rep (fd (fd^[k] b₀)).1 x d ↔ _
+        exact ⟨hI', fun x d => (hr x d).trans (body_congr s as hk' x d)⟩
+    rw [e, he]
+    obtain ⟨hI, hK'⟩ := hZ K (Nat.le_refl _)
+    intro x d
+    refine (hK' x d).trans ?_
+    rcases hst with hKf | hdone
+    · exact naive_stable s as hcF K (by omega) x d
+    · -- `Δ = 𝟘`: every pair of `X` is supported, so `X` is fixed
+      have hz := (n_eq_zero_iff _).1 (by simpa using hdone)
+      obtain ⟨-, hXs, hXv, hXn, hXo⟩ := hI
+      have hfix : ∀ x d, naive s as (K + 1) x d ↔ naive s as K x d := fun x d => by
+        refine (body_congr s as (fun x d => (hK' x d).symm) x d).trans ((?_ : _ ↔ _).trans (hK' x d))
+        exact ⟨fun ⟨hs, hN⟩ => hXn x d hs hN, fun hx => ⟨hXs x d hx, fun a ha =>
+          ⟨fun w hA => hXo a ha x d hx w (hz w w) hA, hXv a ha x d hx⟩⟩⟩
+      exact naive_fixed_eq s as hcF hfix x d
+  exact hom_ext fun x d => (hA x d).trans (hB x d).symm
+
+#print axioms acFix_eq_fixOn
 
 end LeetQ.Rel.AC3
