@@ -30,6 +30,23 @@ def _root_.LeetQ.Rel.Vals.RazeFits : (A : Obj) → {n m : USize} → Vals A n �
       Vals.PickFits (.sum a b) x (List.range n.toNat) ∧ Vals.PickFits (.sum a b) y (List.range m.toNat) ∧
       Vals.RazeFits a x.held.2.2.2.2.1 y.held.2.2.2.2.1 ∧ Vals.RazeFits b x.held.2.2.2.2.2 y.held.2.2.2.2.2
 
+/-- **Two atom parts fit on their summed row count alone** at a type that has no dictionary (`Enc.WF` admits
+    `enum` only at `symbol`) and no ALP layout: the clause's other bounds are then about the counts themselves.
+    At `symbol` the dictionaries, at `.arr`/`.sum` the payloads, are not bounded by the row counts. -/
+theorem razeFits_atom_count {t : QAtomicType} {n m : USize} (x : Arr t n) (y : Arr t m)
+    (hN : n.toNat + m.toNat < USize.size) (hs : t ≠ .symbol) (ha : Column.alpEncodes t = false) :
+    Vals.RazeFits (.atom t) x y := by
+  have no : ∀ {k : USize} (z : Arr t k) d o i, Arr.enc z ≠ .enum d o i := fun z d o i he => by
+    have hw := z.wf; rw [he] at hw; cases t <;> simp_all [Enc.WF]
+  unfold Vals.RazeFits
+  refine ⟨?_, fun h => absurd h (by simp [ha])⟩
+  split
+  next d o i he => exact absurd he (no _ _ _ _)
+  next =>
+    split
+    next d o i he => exact absurd he (no _ _ _ _)
+    next => exact hN
+
 /-- A guid column's payload is dense bytes: `Enc.WF` admits no other at `guid`. -/
 theorem guid_bytes {n : USize} (x : Arr .guid n) : ∃ b, x.enc = .bytes b := by
   have hw := x.wf; revert hw

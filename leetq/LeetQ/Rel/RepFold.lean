@@ -53,7 +53,7 @@ scoped notation "roundAt(" V ")" =>
   Vals.PickFits .long (Rel.val (pend°)) (List.range pend.n.toNat) ∧
   ∀ Q : Rel .long V, Q = (antiJoin (pend°) (idU (Rel.key el)))° →
     ∃ hU : P.n.toNat + Q.n.toNat < USize.size,
-      Vals.RazeFits .long P.key Q.key ∧ Vals.RazeFits V P.val Q.val ∧
+      Vals.RazeFits V P.val Q.val ∧
       Obj.CodesFit V (#v[⟨(PQ(.long, V)).n, (PQ(.long, V)).val⟩] : Vector (Part V) 1) ∧
       Vals.PickFits .long (PQ(.long, V)).key (List.range (PQ(.long, V)).n.toNat) ∧
       Vals.PickFits V (PQ(.long, V)).val (List.range (PQ(.long, V)).n.toNat)
@@ -114,7 +114,7 @@ theorem round_rep {E V : Obj} (el : Rel .long E) (pend P S : Rel .long V)
     (hJv : Vals.PickFits .long (Rel.val (pend°)) (List.range pend.n.toNat))
     (Q : Rel .long V) (hQ : Q = (antiJoin (pend°) (idU (Rel.key el)))°)
     (hU : P.n.toNat + Q.n.toNat < USize.size)
-    (hFk : Vals.RazeFits .long P.key Q.key) (hFv : Vals.RazeFits V P.val Q.val)
+    (hFv : Vals.RazeFits V P.val Q.val)
     (hUV : V.CodesFit (#v[⟨(PQ(.long, V)).n, (PQ(.long, V)).val⟩] : Vector (Part V) 1))
     (hUk : Vals.PickFits .long (PQ(.long, V)).key (List.range (PQ(.long, V)).n.toNat))
     (hUv : Vals.PickFits V (PQ(.long, V)).val (List.range (PQ(.long, V)).n.toNat)) :
@@ -123,7 +123,7 @@ theorem round_rep {E V : Obj} (el : Rel .long E) (pend P S : Rel .long V)
   -- a one-part `.long` side fits outright (`codesFit_atom_one`)
   refine ⟨rep_nub S (one_ok _ (codesFit_atom_one _ (.inl (Option.some_ne_none _)))) (one_ok _ hSV) hSk hSv,
     fun r v => ?_⟩
-  rw [rep_union_full P Q hU hFk hFv (one_ok _ (codesFit_atom_one _ (.inl (Option.some_ne_none _))))
+  rw [rep_union_full P Q hU (razeFits_atom_count _ _ hU (by decide) rfl) hFv (one_ok _ (codesFit_atom_one _ (.inl (Option.some_ne_none _))))
     (one_ok _ hUV) hUk hUv]
   show rep P r v ∨ rep Q r v ↔ _
   subst hQ
@@ -279,8 +279,8 @@ theorem rounds_rep {E V : Obj} (pend₀ : Rel .long V) (step : Rel .long E → R
         (rep (f^[j] (pend₀, Alg.zero, 0)).1 r v ∧ ¬ ∃ e, rep (elK j) r e) := by
     intro j hk
     obtain ⟨hSV, hSk, hSv, hjf, hJk, hJv, hQ⟩ := hR j _ _ _ _ rfl rfl rfl rfl
-    obtain ⟨hU, hFk, hFv, hUV, hUk, hUv⟩ := hQ _ rfl
-    have h := round_rep (elK j) _ _ _ hSV hSk hSv hjf hJk hJv _ rfl hU hFk hFv hUV
+    obtain ⟨hU, hFv, hUV, hUk, hUv⟩ := hQ _ rfl
+    have h := round_rep (elK j) _ _ _ hSV hSk hSv hjf hJk hJv _ rfl hU hFv hUV
       hUk hUv
     have e : f^[j + 1] (pend₀, Alg.zero, 0) = rnd(f^[j] (pend₀, Alg.zero, 0)) := hf _
     rw [e, hk]

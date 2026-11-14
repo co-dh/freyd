@@ -175,8 +175,6 @@ theorem rep_leq {n : USize} (U : Vals (.atom .long) n) (h : QAtomicType.long ≠
     (hc : pairsOK(L, idU U)) (hk : Vals.PickFits (.atom .long) L.key (List.range L.n.toNat))
     (hv : Vals.PickFits (.atom .long) L.val (List.range L.n.toNat))
     (hNU : (Rel.n (lt U h)).toNat + (Rel.n (idU U)).toNat < USize.size)
-    (hFk : Vals.RazeFits (.atom .long) (Rel.key (lt U h)) (Rel.key (idU U)))
-    (hFv : Vals.RazeFits (.atom .long) (Rel.val (lt U h)) (Rel.val (idU U)))
     (V : Rel (.atom .long) (.atom .long)) (hV : V = Uc(lt U h, idU U, hNU))
     (huK : cOK(kcR(V), Rel.n V, Rel.key V)) (huV : cOK(vcR(V), Rel.n V, Rel.val V))
     (huk : Vals.PickFits (.atom .long) (Rel.key V) (List.range (Rel.n V).toNat))
@@ -184,7 +182,8 @@ theorem rep_leq {n : USize} (U : Vals (.atom .long) n) (h : QAtomicType.long ≠
     rep (leq U h) a b ↔ (∃ i, U.row i = a) ∧ (∃ j, U.row j = b) ∧ a ≤ b := by
   subst hV
   have e : leq U h = lt U h ∪ idU U := rfl
-  rw [e, rep_union_full (lt U h) (idU U) hNU hFk hFv huK huV huk huv, Freyd.Alg.RelSet.union_apply,
+  rw [e, rep_union_full (lt U h) (idU U) hNU (razeFits_atom_count _ _ hNU (by decide) rfl)
+    (razeFits_atom_count _ _ hNU (by decide) rfl) huK huV huk huv, Freyd.Alg.RelSet.union_apply,
     rep_lt U h hN h63 L hL hc hk hv, rep_apply, idU_holds, Int64.le_iff_lt_or_eq]
   constructor
   · rintro (⟨ha, hb, hlt⟩ | ⟨e, ha⟩)
