@@ -107,4 +107,77 @@ theorem rep_E {B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) (M : Rel
 
 #print axioms rep_E
 
+/-- **`rep (E R X)`, as lists**: `rep_E`, and the array `E R X` gives `xs` holds each of its values once
+    (`rep_lamOn_list` at `M`). Hypotheses: `rep_E`'s. -/
+theorem rep_E_list {B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) (M : Rel (.arr A) B)
+    -- `rep_lamOn` at `M`, `X`
+    (kc vc : Code) (hkc : kc = kcR(M)) (hvc : vc = vcR(M))
+    (hK : cOK(kc, Rel.n M, Rel.key M)) (hV : cOK(vc, Rel.n M, Rel.val M))
+    (hk : Vals.PickFits (.arr A) (Rel.key M) (ids (tuples.tupleIds kc #[vc]).2))
+    (hv : Vals.PickFits B (Rel.val M) (ids (tuples.tupleIds kc #[vc]).2))
+    (kt : Code) (hkt : kt = kcT(M))
+    (hF : ∀ {i j : Nat} (hi : i < (Rel.nub M).n.toNat) (hj : j < (Rel.nub M).n.toNat),
+      Column.idAt kt.b kt.w i = Column.idAt kt.b kt.w j ↔
+        Vals.row (Rel.nub M).key ⟨i, hi⟩ = Vals.row (Rel.nub M).key ⟨j, hj⟩)
+    (hw : kt.w = 1 ∨ kt.w = 2 ∨ kt.w = 4 ∨ kt.w = 8 ∨ kt.w = 16 ∨ kt.w = 32 ∨ kt.w = 64)
+    (hn : kt.n = (Rel.nub M).n)
+    (hs : kt.b.size = (kt.n.toNat * kt.w + 7) / 8)
+    (hW : ∀ (B : Obj) (x : Part B), (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 1 ∨
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 2 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 4 ∨
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 8 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 16 ∨
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 32 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 64) ∧
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).b.size =
+        (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n.toNat * ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w + 7) / 8 ∧
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n = x.1)
+    (h63 : (Rel.nub M).n.toNat < 2 ^ 63)
+    (p lo : ByteArray) (hpT : p = pT(M)) (hloT : lo = loT(M))
+    (hpk : Vals.PickFits (.arr A) (Rel.nub M).key (ids p))
+    (hpv : Vals.PickFits B (Rel.nub M).val (ids p))
+    (hlo : Vals.PickFits (.arr A) (Vals.pickPart (.arr A) (Rel.nub M).key p).2 (ids lo))
+    (hp : Vals.PickFits (.arr A) (Rel.key M) (ids kc.groupIds.2))
+    (pc : Vector Code 2) (hpc : pc = pairs #v[LeetQ.Rel.Alg.idU X, LeetQ.Rel.Alg.dom M])
+    (hc : codesOK(pc, pcs(LeetQ.Rel.Alg.idU X, LeetQ.Rel.Alg.dom M)))
+    (I : ByteArray) (hI : I = anti (pc[0]'Nat.zero_lt_two) (pc[1]'Nat.one_lt_two))
+    (hdk : Vals.PickFits (.arr A) X (ids I))
+    (hdv : Vals.PickFits (.arr A) X (ids I))
+    (D : Rel (.arr A) (.arr A)) (hD : D = lD(M, X))
+    (htN : (Rel.n D).toNat * USize.toNat 1 < USize.size)
+    (ht63 : (Rel.n D).toNat * USize.toNat 1 < 2 ^ 63)
+    (htA : Vals.PickFits (.arr A) (Rel.key D) ((List.range ((Rel.n D).toNat * USize.toNat 1)).map (· / USize.toNat 1)))
+    (htB : Vals.PickFits (.arr B) (LeetQ.Rel.Alg.nilVal B)
+      ((List.range ((Rel.n D).toNat * USize.toNat 1)).map (· % USize.toNat 1)))
+    (T N : Rel (.arr A) (.arr B)) (hT : T = lT(M))
+    (hN0 : N = LeetQ.Rel.Alg.top (Rel.key D) (LeetQ.Rel.Alg.nilVal B))
+    (hN : (Rel.n T).toNat + (Rel.n N).toNat < USize.size)
+    (hNk : ((pk(T, N)).toList.map fun c : Part (.arr A) => c.1.toNat).sum < USize.size)
+    (hNv : ((pv(T, N)).toList.map fun c : Part (.arr B) => c.1.toNat).sum < USize.size)
+    (hFk : Vals.RazeFits (.arr A) (Rel.key T) (Rel.key N))
+    (hFv : Vals.RazeFits (.arr B) (Rel.val T) (Rel.val N))
+    (L : Rel (.arr A) (.arr B)) (hL : L = Uc(T, N, hNk, hNv))
+    (ku vu : Code) (hku : ku = kcR(L)) (hvu : vu = vcR(L))
+    (huK : cOK(ku, Rel.n L, Rel.key L)) (huV : cOK(vu, Rel.n L, Rel.val L))
+    (huk : Vals.PickFits (.arr A) (Rel.key L) (ids (tuples.tupleIds ku #[vu]).2))
+    (huv : Vals.PickFits (.arr B) (Rel.val L) (ids (tuples.tupleIds ku #[vu]).2))
+    (hM : M = LeetQ.Rel.Alg.mem X ≫ R)
+    -- `rep_memComp` at `R`, `X`
+    (hmv : Vals.PickFits (.arr A) X (List.range n.toNat))
+    (hmk : Vals.PickFits (.arr A) X ((List.range n.toNat).flatMap fun r =>
+      if h : r < n.toNat then List.replicate (X.row ⟨r, h⟩).length r else []))
+    (hcc : codesOK(jc(mS(X), R), jcs(mS(X), R)))
+    (hcrn : (Rel.n R).toNat < 2 ^ 63) (hcM : jcount(mS(X), R) < 2 ^ 63) (hcMU : jcount(mS(X), R) < USize.size)
+    (hcA : Vals.PickFits (.arr A) (Rel.key mS(X)) ((jpairs(mS(X), R)).map Prod.fst))
+    (hcC : Vals.PickFits B (Rel.val R) ((jpairs(mS(X), R)).map Prod.snd)) :
+    (∀ xs Y, rep (LeetQ.Rel.Alg.E R X) xs Y →
+        (∃ i, Vals.row X i = xs) ∧ Y.Nodup ∧ ∀ y, y ∈ Y ↔ ∃ x ∈ xs, rep R x y) ∧
+      (∀ xs, (∃ Y, rep (LeetQ.Rel.Alg.E R X) xs Y) ↔ ∃ i, Vals.row X i = xs) := by
+  obtain ⟨h1, h2⟩ := rep_E R X M kc vc hkc hvc hK hV hk hv kt hkt hF hw hn hs hW h63 p lo hpT hloT hpk hpv hlo
+    hp pc hpc hc I hI hdk hdv D hD htN ht63 htA htB T N hT hN0 hN hNk hNv hFk hFv L hL ku vu hku hvu huK huV huk huv
+    hM hmv hmk hcc hcrn hcM hcMU hcA hcC
+  have hl := (rep_lamOn_list M X kc vc hkc hvc hK hV hk hv kt hkt hF hw hn hs hW h63 p lo hpT hloT hpk hpv hlo
+    hp pc hpc hc I hI hdk hdv D hD htN ht63 htA htB T N hT hN0 hN hNk hNv hFk hFv L hL ku vu hku hvu huK huV huk huv).1
+  have hE : LeetQ.Rel.Alg.E R X = LeetQ.Rel.Alg.lamOn M X := by rw [hM]; rfl
+  exact ⟨fun xs Y h => ⟨(h1 xs Y h).1, (hl xs Y (hE ▸ h)).1, (h1 xs Y h).2⟩, h2⟩
+
+#print axioms rep_E_list
+
 end LeetQ.Rel.Rep
