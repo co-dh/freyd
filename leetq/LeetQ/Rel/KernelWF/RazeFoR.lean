@@ -461,13 +461,13 @@ theorem rep_union_full (R S : Rel A B) (hN : R.n.toNat + S.n.toNat < USize.size)
     (hk : Vals.PickFits A (Rel.key (Uc(R, S, hNk, hNv))) (ids nubR(Uc(R, S, hNk, hNv))))
     (hv : Vals.PickFits B (Rel.val (Uc(R, S, hNk, hNv))) (ids nubR(Uc(R, S, hNk, hNv)))) :
     rep (R ∪ S) = rep R ∪ rep S :=
-  rep_union_fits hat_all R S hN hNk hNv hFk hFv hK hV hk hv
+  rep_union R S hN hNk hNv (raze_row_full A R.key S.key hFk hNk) (raze_row_full B R.val S.val hFv hNv) hK hV hk hv
 
 /-- **`rep (junc R S)`**, no hypothesis on the encoding. -/
 theorem rep_junc_full (R : Rel A C) (S : Rel B C) (hN : R.n.toNat + S.n.toNat < USize.size)
     (h63 : R.n.toNat + S.n.toNat ≤ 2 ^ 63) (hF : Vals.RazeFits C R.val S.val) :
     rep (LeetQ.Rel.Alg.junc R S) = Freyd.Alg.junc (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩) (rep R) (rep S) :=
-  rep_junc_fits hat_all R S hN h63 hF
+  rep_junc R S hN h63 (raze_row_full C R.val S.val hF)
 
 end LeetQ.Rel.Rep
 

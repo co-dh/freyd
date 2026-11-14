@@ -517,73 +517,9 @@ theorem hat_of_join : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr
       · exact absurd ⟨w, r, hW, hE, hr, hC⟩ hj
       · rfl
 
-/-- **Row read-back of `raze` at every side**, `raze_row` with `hat` narrowed to the encoded join `hJ`. -/
-theorem raze_row_all (A : Obj) {n m : USize} (x : Vals A n) (y : Vals A m) (hF : Vals.RazeFits A x y)
-    (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part A)).toList.map fun c : Part A => c.1.toNat).sum < USize.size)
-    (k : Nat) (hk : k < ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part A)).toList.map
-      fun c : Part A => c.1.toNat).sum.toUSize.toNat) :
-    Vals.row (A.raze #[⟨n, x⟩, ⟨m, y⟩] hN) ⟨k, hk⟩ =
-      if h : k < n.toNat then Vals.row x ⟨k, h⟩
-      else Vals.row y ⟨k - n.toNat, by have := raze2_cnt x y hN; omega⟩ :=
-  raze_row (hat_of_join hJ) A x y hF hN k hk
-
-end
-
-end LeetQ.Rel.KernelWF
-
-namespace LeetQ.Rel.Rep
-
-open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF Freyd Freyd.Alg Freyd.Alg.RelSet
-
-variable {A B C : Obj}
-
-open RazeN
-
-section
--- The read-back left open: two atom parts on the Frame-of-Reference join (`hat_of_join`).
-variable (hJ : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
-    (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
-      USize.size), Vals.RazeFits (.atom t) x y → ∀ w r, t.width = some w →
-    encodedParts t #[x.part, y.part] = some r → r.1 = false →
-    denseCheaper (if r.1 then 8 else 5) r.2.1 (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat))) = false →
-    (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
-include hJ
-
-/-- **`rep (R ∪ S) = rep R ∪ rep S`**, `rep_union_fits` with `hat` narrowed to the encoded join `hJ`. -/
-theorem rep_union_all (R S : Rel A B) (hN : R.n.toNat + S.n.toNat < USize.size)
-    (hNk : ((#[⟨R.n, R.key⟩, ⟨S.n, S.key⟩] : Array (Part A)).toList.map fun c : Part A => c.1.toNat).sum <
-      USize.size)
-    (hNv : ((#[⟨R.n, R.val⟩, ⟨S.n, S.val⟩] : Array (Part B)).toList.map fun c : Part B => c.1.toNat).sum <
-      USize.size)
-    (hFk : Vals.RazeFits A R.key S.key) (hFv : Vals.RazeFits B R.val S.val)
-    (hK : (∀ {i j : Nat} (hi : i < (Uc).n.toNat) (hj : j < (Uc).n.toNat),
-        Column.idAt (kcU).b (kcU).w i = Column.idAt (kcU).b (kcU).w j ↔
-          Vals.row (Uc).key ⟨i, hi⟩ = Vals.row (Uc).key ⟨j, hj⟩) ∧
-      laneOK((kcU).w) ∧
-        (kcU).n = (Uc).n ∧ (kcU).b.size = ((kcU).n.toNat * (kcU).w + 7) / 8 ∧
-        ((kcU).w < 8 → (kcU).card < USize.size ∧ ∀ i < (kcU).n.toNat, Column.idAt (kcU).b (kcU).w i < (kcU).card))
-    (hV : (∀ {i j : Nat} (hi : i < (Uc).n.toNat) (hj : j < (Uc).n.toNat),
-        Column.idAt (vcU).b (vcU).w i = Column.idAt (vcU).b (vcU).w j ↔
-          Vals.row (Uc).val ⟨i, hi⟩ = Vals.row (Uc).val ⟨j, hj⟩) ∧
-      laneOK((vcU).w) ∧
-        (vcU).n = (Uc).n ∧ (vcU).b.size = ((vcU).n.toNat * (vcU).w + 7) / 8 ∧
-        ((vcU).w < 8 → (vcU).card < USize.size ∧ ∀ i < (vcU).n.toNat, Column.idAt (vcU).b (vcU).w i < (vcU).card))
-    (hk : Vals.PickFits A (Uc).key (ids nubU)) (hv : Vals.PickFits B (Uc).val (ids nubU)) :
-    rep (R ∪ S) = rep R ∪ rep S :=
-  rep_union_fits (hat_of_join hJ) R S hN hNk hNv hFk hFv hK hV hk hv
-
-/-- `rep_junc_fits` with `hat` narrowed to the encoded join `hJ`. -/
-theorem rep_junc_all (R : Rel A C) (S : Rel B C) (hN : R.n.toNat + S.n.toNat < USize.size)
-    (h63 : R.n.toNat + S.n.toNat ≤ 2 ^ 63) (hF : Vals.RazeFits C R.val S.val) :
-    rep (LeetQ.Rel.Alg.junc R S) = Freyd.Alg.junc (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩) (rep R) (rep S) :=
-  rep_junc_fits (hat_of_join hJ) R S hN h63 hF
-
 end
 
 #print axioms razeTo2_all
 #print axioms razeTo2_join_alp
-#print axioms raze_row_all
-#print axioms rep_union_all
-#print axioms rep_junc_all
 
-end LeetQ.Rel.Rep
+end LeetQ.Rel.KernelWF

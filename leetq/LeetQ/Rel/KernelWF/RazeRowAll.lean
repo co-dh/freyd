@@ -2,8 +2,7 @@
   `Obj.raze` of two parts read back at every shape of side: `raze_row` composes the four constructor lemmas
   (`raze_row_atom`, `_prod`, `_arr`, `_sum`) along the side's shape, under `Vals.RazeFits`, the size bounds the
   composition needs. The atom read-back enters as `hat`, the one statement `razeTo2_fits` proves at the types
-  and encodings it covers; `rep_union_fits`, `rep_junc_fits` are `rep_union`, `rep_junc` with their read-back
-  hypotheses replaced by `Vals.RazeFits`.
+  and encodings it covers.
 -/
 import LeetQ.Rel.KernelWF.RazeRowRec
 
@@ -80,59 +79,7 @@ theorem raze_row : (A : Obj) → {n m : USize} → (x : Vals A n) → (y : Vals 
 
 end
 
-end LeetQ.Rel.KernelWF
-
-namespace LeetQ.Rel.Rep
-
-open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF Freyd Freyd.Alg Freyd.Alg.RelSet
-
-variable {A B C : Obj}
-
-open RazeN
-
-section
-variable (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
-    (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
-      USize.size), Vals.RazeFits (.atom t) x y →
-    (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
-include hat
-
-/-- **`rep (R ∪ S) = rep R ∪ rep S`** with `rep_union`'s read-backs `hA`, `hB` replaced by the size bounds
-    `Vals.RazeFits` of the keys and of the values (`raze_row`); `hat`: the atom read-back. -/
-theorem rep_union_fits (R S : Rel A B) (hN : R.n.toNat + S.n.toNat < USize.size)
-    (hNk : ((#[⟨R.n, R.key⟩, ⟨S.n, S.key⟩] : Array (Part A)).toList.map fun c : Part A => c.1.toNat).sum <
-      USize.size)
-    (hNv : ((#[⟨R.n, R.val⟩, ⟨S.n, S.val⟩] : Array (Part B)).toList.map fun c : Part B => c.1.toNat).sum <
-      USize.size)
-    (hFk : Vals.RazeFits A R.key S.key) (hFv : Vals.RazeFits B R.val S.val)
-    (hK : (∀ {i j : Nat} (hi : i < (Uc).n.toNat) (hj : j < (Uc).n.toNat),
-        Column.idAt (kcU).b (kcU).w i = Column.idAt (kcU).b (kcU).w j ↔
-          Vals.row (Uc).key ⟨i, hi⟩ = Vals.row (Uc).key ⟨j, hj⟩) ∧
-      laneOK((kcU).w) ∧
-        (kcU).n = (Uc).n ∧ (kcU).b.size = ((kcU).n.toNat * (kcU).w + 7) / 8 ∧
-        ((kcU).w < 8 → (kcU).card < USize.size ∧ ∀ i < (kcU).n.toNat, Column.idAt (kcU).b (kcU).w i < (kcU).card))
-    (hV : (∀ {i j : Nat} (hi : i < (Uc).n.toNat) (hj : j < (Uc).n.toNat),
-        Column.idAt (vcU).b (vcU).w i = Column.idAt (vcU).b (vcU).w j ↔
-          Vals.row (Uc).val ⟨i, hi⟩ = Vals.row (Uc).val ⟨j, hj⟩) ∧
-      laneOK((vcU).w) ∧
-        (vcU).n = (Uc).n ∧ (vcU).b.size = ((vcU).n.toNat * (vcU).w + 7) / 8 ∧
-        ((vcU).w < 8 → (vcU).card < USize.size ∧ ∀ i < (vcU).n.toNat, Column.idAt (vcU).b (vcU).w i < (vcU).card))
-    (hk : Vals.PickFits A (Uc).key (ids nubU)) (hv : Vals.PickFits B (Uc).val (ids nubU)) :
-    rep (R ∪ S) = rep R ∪ rep S :=
-  rep_union R S hN hNk hNv (raze_row hat A R.key S.key hFk hNk) (raze_row hat B R.val S.val hFv hNv) hK hV hk hv
-
-/-- `rep_junc` with its read-back `hC` replaced by the size bounds `Vals.RazeFits` of the values (`raze_row`);
-    `hat`: the atom read-back. -/
-theorem rep_junc_fits (R : Rel A C) (S : Rel B C) (hN : R.n.toNat + S.n.toNat < USize.size)
-    (h63 : R.n.toNat + S.n.toNat ≤ 2 ^ 63) (hF : Vals.RazeFits C R.val S.val) :
-    rep (LeetQ.Rel.Alg.junc R S) = Freyd.Alg.junc (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩) (rep R) (rep S) :=
-  rep_junc R S hN h63 (raze_row hat C R.val S.val hF)
-
-end
-
 #print axioms raze_row
 #print axioms razeTo2_fits
-#print axioms rep_union_fits
-#print axioms rep_junc_fits
 
-end LeetQ.Rel.Rep
+end LeetQ.Rel.KernelWF
