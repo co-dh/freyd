@@ -218,15 +218,13 @@ theorem arr_copies {b : Obj} {n : USize} (x : Vals (.arr b) n) (hp : x.1.toNat <
 
 /-- **An array part's conjunct of `Obj.codesC`'s bit**: the copies `expand` counts are the values `W` its rows
     hold (`arr_copies`), below `2^63` and a `USize`, and the part picks in range at all its rows. -/
-theorem codesC_arr_part {b : Obj} (e : Code) (c : Part (.arr b)) (W : Nat)
+theorem codesC_arr_part {b : Obj} (c : Part (.arr b)) (W : Nat)
     (hW : W = ((List.range c.1.toNat).map fun r =>
       if h : r < c.1.toNat then (Vals.row (A := .arr b) c.2 ⟨r, h⟩).length else 0).sum)
-    (hb : (match (expand c.1 (slicesOf c.2).2 (fun _ => ((default : Code), (none : Option Nat))) fun k i r _ _ =>
-      (e.gather (add k (gather 8 (slicesOf c.2).1 i) r), some k.toNat)).2 with
+    (hb : (match expand c.1 (slicesOf c.2).2 (fun _ => (none : Option Nat)) (fun k _ _ _ _ => some k.toNat) with
       | some k => decide (c.2.1.toNat < 2 ^ 63) && decide (k < 2 ^ 63) && Vals.fitsN b c.2.2.2.2 k
       | none => false) = true) :
-    (expand c.1 (slicesOf c.2).2 (fun _ => ((default : Code), (none : Option Nat))) fun k i r _ _ =>
-      (e.gather (add k (gather 8 (slicesOf c.2).1 i) r), some k.toNat)).2.getD 0 = W ∧
+    (expand c.1 (slicesOf c.2).2 (fun _ => (none : Option Nat)) fun k _ _ _ _ => some k.toNat).getD 0 = W ∧
     W < 2 ^ 63 ∧ W < USize.size ∧ Vals.PickFits (.arr b) c.2 (List.range c.1.toNat) := by
   obtain ⟨n, ⟨p, lo, hi, f⟩⟩ := c
   dsimp only at hW hb ⊢
@@ -293,11 +291,9 @@ theorem _root_.LeetQ.Rel.Obj.codesC_fits : (A : Obj) → {p : Nat} → (cs : Vec
   | .arr b, p, cs, hb => by
     simp only [Obj.codesC, Bool.and_eq_true, decide_eq_true_eq] at hb
     obtain ⟨⟨⟨⟨hec, hN⟩, h63⟩, hU⟩, hall⟩ := hb
-    generalize hgs : Vector.zipWith (fun e s => expand s.1 s.2.2 (fun _ => ((default : Code), (none : Option Nat)))
-      fun k i r _ _ => (e.gather (add k (gather 8 s.2.1 i) r), some k.toNat))
-        (Obj.codesC b (cs.map fun c => (⟨c.2.1, c.2.2.2.2⟩ : Part b))).1
-        (cs.map fun c => (c.1, slicesOf c.2)) = gs at h63 hU hall
-    have part : ∀ k (hk : k < p), (gs[k].2.getD 0) = ((List.range (cs[k]).1.toNat).map fun r =>
+    generalize hgs : cs.map (fun c => expand c.1 (slicesOf c.2).2 (fun _ => (none : Option Nat))
+      fun k _ _ _ _ => some k.toNat) = gs at h63 hU hall
+    have part : ∀ k (hk : k < p), (gs[k].getD 0) =((List.range (cs[k]).1.toNat).map fun r =>
           if h : r < (cs[k]).1.toNat then (Vals.row (A := .arr b) (cs[k]).2 ⟨r, h⟩).length else 0).sum ∧
         ((List.range (cs[k]).1.toNat).map fun r =>
           if h : r < (cs[k]).1.toNat then (Vals.row (A := .arr b) (cs[k]).2 ⟨r, h⟩).length else 0).sum < 2 ^ 63 ∧
@@ -309,10 +305,10 @@ theorem _root_.LeetQ.Rel.Obj.codesC_fits : (A : Obj) → {p : Nat} → (cs : Vec
       have h := Array.all_eq_true.1 hall k (by simpa using hk)
       subst hgs
       simp only [Vector.getElem_toArray, Vector.getElem_zipWith, Vector.getElem_map, id] at h ⊢
-      exact codesC_arr_part _ _ _ rfl h
+      exact codesC_arr_part _ _ rfl h
     have hRL : (cs.toList.map fun c => ((List.range c.1.toNat).map fun r =>
           if h : r < c.1.toNat then (Vals.row (A := .arr b) c.2 ⟨r, h⟩).length else 0).sum).sum =
-        (gs.toList.map fun g => g.2.getD 0).sum := by
+        (gs.toList.map fun g => g.getD 0).sum := by
       congr 1; apply List.ext_getElem (by simp); intro k h1 h2
       simp only [List.getElem_map, Vector.getElem_toList]
       exact ((part k (by simpa using h2)).1).symm

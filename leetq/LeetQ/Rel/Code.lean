@@ -642,28 +642,13 @@ def _root_.LeetQ.Rel.Vals.pick : (A : Obj) → {n : USize} → Vals A n → (i :
 def _root_.LeetQ.Rel.Vals.pickC : (A : Obj) → {n : USize} → Vals A n → (i : ByteArray) → (m : USize) →
     len i = m.toNat → Vals A m × Bool
   | .atom t, _, x, i, m, h => (Vals.pick (.atom t) x i m h, Vals.fitsN (.atom t) x m.toNat)
-  | .prod a b, _, x, i, m, h =>
-    let y := Vals.pickC a x.1 i m h; let z := Vals.pickC b x.2 i m h
-    ((y.1, z.1), y.2 && z.2)
-  | .arr b, _, x, i, m, h =>
-    let s := slices x.1 m (longsOf (pickArr .long ⟨_, x.2.1⟩ i m h)) (longsOf (pickArr .long ⟨_, x.2.2.1⟩ i m h))
-    let hi := sums m s.2
-    have hh : m.toNat ≤ len hi := by rw [len_sums, (len_slices ..).2, Nat.min_self]; exact Nat.le_refl _
-    expand m s.2
-      (fun _ => (⟨0, Arr.mk (Enc.blank .long m) (Enc.blank_WF .long m), Arr.mk (Enc.blank .long m) (Enc.blank_WF .long m),
-        Vals.empty b⟩, false)) fun k e r _ _ =>
-    (⟨k, valCol Ew.sub Ew.vv hi s.2, longsN m hi hh, Vals.pick b x.2.2.2 (add k (gather 8 s.1 e) r) k (len_val ..)⟩,
-      decide (x.1.toNat < 2 ^ 63) && decide (k.toNat < 2 ^ 63) && Vals.fitsN b x.2.2.2 k.toNat)
+  | .prod a b, _, x, i, m, h => (Vals.pick (.prod a b) x i m h, (Vals.pickC a x.1 i m h).2 && (Vals.pickC b x.2 i m h).2)
+  -- the copies counted again by `expand` itself, not read off the pick, whose miss also counts `0`
+  | .arr b, _, x, i, m, h => (Vals.pick (.arr b) x i m h,
+    expand m (slices x.1 m (longsOf (pickArr .long ⟨_, x.2.1⟩ i m h)) (longsOf (pickArr .long ⟨_, x.2.2.1⟩ i m h))).2
+      (fun _ => false) fun k _ _ _ _ =>
+    decide (x.1.toNat < 2 ^ 63) && decide (k.toNat < 2 ^ 63) && Vals.fitsN b x.2.2.2 k.toNat)
   | .sum a b, _, x, i, m, h => (Vals.pick (.sum a b) x i m h, Vals.fitsN (.sum a b) x m.toNat)
-
-theorem _root_.LeetQ.Rel.Vals.pickC_fst : (A : Obj) → {n : USize} → (x : Vals A n) → (i : ByteArray) →
-    (m : USize) → (h : len i = m.toNat) → (Vals.pickC A x i m h).1 = Vals.pick A x i m h
-  | .atom _, _, _, _, _, _ => rfl
-  | .prod a b, _, x, i, m, h => by
-    simp only [Vals.pickC, Vals.pick, Vals.pickC_fst a, Vals.pickC_fst b]
-  | .arr _, _, _, _, _, _ => by
-    simp only [Vals.pickC, Vals.pick, expand, need]; split <;> rfl
-  | .sum _ _, _, _, _, _, _ => rfl
 
 /-- A side's columns picked at the first `m` longs of `i`. -/
 def _root_.LeetQ.Rel.Vals.pickN (A : Obj) {n : USize} (x : Vals A n) (i : ByteArray) (m : USize) (h : m.toNat ≤ len i) :
@@ -746,67 +731,28 @@ def _root_.LeetQ.Rel.Obj.raze : (A : Obj) → (cs : Array (Part A)) →
 def _root_.LeetQ.Rel.Obj.razeC : (A : Obj) → (cs : Array (Part A)) →
     (cs.toList.map fun c : Part A => c.1.toNat).sum < USize.size →
     Vals A (cs.toList.map fun c : Part A => c.1.toNat).sum.toUSize × Bool
-  | .atom t, cs, hN => (razeTo t cs rfl hN,
+  | .atom t, cs, hN => (Obj.raze (.atom t) cs hN,
     decide ((cs.toList.map fun c : Part (.atom t) => match Arr.enc (t := t) (n := c.1) c.2 with
       | .enum _ o _ => o.size - 1 | _ => c.1.toNat).sum < USize.size) &&
     (!Column.alpEncodes t || decide ((cs.toList.map fun c : Part (.atom t) => c.1.toNat).sum < 2 ^ 32)))
-  | .prod a b, cs, hN =>
-    let x := Obj.razeC a (cs.map fun c => ⟨c.1, c.2.1⟩)
-      (by rw [sum_map_fst cs (fun c => (⟨c.1, c.2.1⟩ : Part a)) (fun _ => rfl)]; exact hN)
-    let y := Obj.razeC b (cs.map fun c => ⟨c.1, c.2.2⟩)
-      (by rw [sum_map_fst cs (fun c => (⟨c.1, c.2.2⟩ : Part b)) (fun _ => rfl)]; exact hN)
-    ((sum_map_fst cs (fun c => (⟨c.1, c.2.1⟩ : Part a)) (fun _ => rfl) ▸ x.1,
-      sum_map_fst cs (fun c => (⟨c.1, c.2.2⟩ : Part b)) (fun _ => rfl) ▸ y.1), x.2 && y.2)
-  | .arr b, cs, hN =>
-    let ms := cs.map (·.2.1.toNat)
-    let mv (k m : Nat) (c : (n : USize) × Arr .long n) : (n : USize) × Arr .long n :=
-      ⟨c.1, shiftArr c.2 m ((ms.extract 0 k).foldl (· + ·) 0)⟩
-    let lo (k : Nat) (c : Part (.arr b)) := mv k c.2.1.toNat ⟨c.1, c.2.2.1⟩
-    let hi (k : Nat) (c : Part (.arr b)) := mv k c.2.1.toNat ⟨c.1, c.2.2.2.1⟩
+  | .prod a b, cs, hN => (Obj.raze (.prod a b) cs hN,
+    (Obj.razeC a (cs.map fun c => ⟨c.1, c.2.1⟩)
+      (by rw [sum_map_fst cs (fun c => (⟨c.1, c.2.1⟩ : Part a)) (fun _ => rfl)]; exact hN)).2 &&
+    (Obj.razeC b (cs.map fun c => ⟨c.1, c.2.2⟩)
+      (by rw [sum_map_fst cs (fun c => (⟨c.1, c.2.2⟩ : Part b)) (fun _ => rfl)]; exact hN)).2)
+  -- `if`, not `need`: `Obj.raze` already reports a payload past a `USize`
+  | .arr b, cs, hN => (Obj.raze (.arr b) cs hN,
     let fs := cs.map fun c => (⟨c.2.1, c.2.2.2.2⟩ : Part b)
-    need ((fs.toList.map (·.1.toNat)).sum < USize.size)
-      (fun _ => s!"Obj.raze: {(fs.toList.map (·.1.toNat)).sum} values do not fit a USize")
-      (fun _ => (⟨0, Arr.mk (Enc.blank .long _) (Enc.blank_WF .long _), Arr.mk (Enc.blank .long _) (Enc.blank_WF .long _),
-        Vals.empty b⟩, false)) fun hf =>
-    let z := Obj.razeC b fs hf
-    (⟨_, razeTo .long (cs.mapIdx lo) (sum_mapIdx_fst cs lo fun _ _ => rfl) hN,
-      razeTo .long (cs.mapIdx hi) (sum_mapIdx_fst cs hi fun _ _ => rfl) hN, z.1⟩,
-      decide ((fs.toList.map (·.1.toNat)).sum < 2 ^ 63) && z.2)
-  | .sum a b, cs₀, hN =>
-    let held (c : Part (.sum a b)) : Part (.sum a b) := ⟨c.1, c.2.held⟩
-    let cs := cs₀.map held
-    have hc : (cs.toList.map (·.1.toNat)).sum = (cs₀.toList.map (·.1.toNat)).sum := sum_map_fst cs₀ held fun _ => rfl
-    let before (f : Part (.sum a b) → Nat) (k : Nat) : Nat := ((cs.map f).extract 0 k).foldl (· + ·) 0
-    let ix (k : Nat) (c : Part (.sum a b)) : (n : USize) × Arr .long n :=
-      let dl := before (·.2.1.toNat) k; let dr := before (·.2.2.1.toNat) k
-      ⟨c.1, place c.2 ((c.2.1.toNat : Int) - 1) ((c.2.2.1.toNat : Int) - c.2.1.toNat) dl ((dr : Int) - dl)⟩
-    let tg (c : Part (.sum a b)) : (n : USize) × Arr .boolean n := ⟨c.1, c.2.2.2.1⟩
+    if hf : (fs.toList.map (·.1.toNat)).sum < USize.size then
+      decide ((fs.toList.map (·.1.toNat)).sum < 2 ^ 63) && (Obj.razeC b fs hf).2 else false)
+  | .sum a b, cs₀, hN => (Obj.raze (.sum a b) cs₀ hN,
+    let cs := cs₀.map fun c => (⟨c.1, c.2.held⟩ : Part (.sum a b))
     let ls := cs.map fun c => (⟨c.2.1, c.2.2.2.2.2.1⟩ : Part a)
     let rs := cs.map fun c => (⟨c.2.2.1, c.2.2.2.2.2.2⟩ : Part b)
-    need ((ls.toList.map (·.1.toNat)).sum < USize.size ∧ (rs.toList.map (·.1.toNat)).sum < USize.size)
-      (fun _ => s!"Obj.raze: {(ls.toList.map (·.1.toNat)).sum} and {(rs.toList.map (·.1.toNat)).sum} values do not fit a USize")
-      (fun _ => (⟨0, 0, Arr.mk (Enc.blank .boolean _) (Enc.blank_WF .boolean _), Arr.mk (Enc.blank .long _) (Enc.blank_WF .long _),
-        Vals.empty a, Vals.empty b⟩, false)) fun hf =>
-    let za := Obj.razeC a ls hf.1
-    let zb := Obj.razeC b rs hf.2
-    (⟨_, _, razeTo .boolean (cs.map tg) ((sum_map_fst cs tg fun _ => rfl).trans hc) hN,
-      razeTo .long (cs.mapIdx ix) ((sum_mapIdx_fst cs ix fun _ _ => rfl).trans hc) hN, za.1, zb.1⟩,
+    if hf : (ls.toList.map (·.1.toNat)).sum < USize.size ∧ (rs.toList.map (·.1.toNat)).sum < USize.size then
       decide ((ls.toList.map (·.1.toNat)).sum < 2 ^ 63) && decide ((rs.toList.map (·.1.toNat)).sum < 2 ^ 63) &&
-        cs₀.all (fun c => Vals.fitsN (.sum a b) c.2 c.1.toNat) && za.2 && zb.2)
-
-theorem _root_.LeetQ.Rel.Obj.razeC_fst : (A : Obj) → (cs : Array (Part A)) →
-    (hN : (cs.toList.map fun c : Part A => c.1.toNat).sum < USize.size) → (Obj.razeC A cs hN).1 = Obj.raze A cs hN
-  | .atom _, _, _ => rfl
-  | .prod a b, cs, hN => by
-    simp only [Obj.razeC, Obj.raze, Obj.razeC_fst a, Obj.razeC_fst b]
-  | .arr b, cs, hN => by
-    simp only [Obj.razeC, Obj.raze, need]; split
-    · simp only [Obj.razeC_fst b]
-    · rfl
-  | .sum a b, cs, hN => by
-    simp only [Obj.razeC, Obj.raze, need]; split
-    · simp only [Obj.razeC_fst a, Obj.razeC_fst b]
-    · rfl
+        cs₀.all (fun c => Vals.fitsN (.sum a b) c.2 c.1.toNat) && (Obj.razeC a ls hf.1).2 && (Obj.razeC b rs hf.2).2
+    else false)
 
 /-- The rows of `R` at the index column `i`: `len i` pairs, where that count fits a `USize`. -/
 def _root_.LeetQ.Rel.Rel.rows {k v : Obj} (R : Rel k v) (i : ByteArray) : Rel k v :=
@@ -919,7 +865,7 @@ def _root_.LeetQ.Rel.Obj.codes : (A : Obj) → {p : Nat} → Vector (Part A) p �
     array's payload count and the copies `expand` counts per part below `2^63`, their sum too, the payload
     fitting those copies (`Vals.fitsN`); a sum's parts picking in range and its held side counts below `2^61`. -/
 def _root_.LeetQ.Rel.Obj.codesC : (A : Obj) → {p : Nat} → Vector (Part A) p → Vector Code p × Bool
-  | .atom t, p, cs => (Alg.codes t cs,
+  | .atom t, p, cs => (Obj.codes (.atom t) cs,
     decide ((cs.toList.map (·.1.toNat)).sum < USize.size) &&
     (decide (t = .boolean) ||
       (match orderKind t with
@@ -931,49 +877,23 @@ def _root_.LeetQ.Rel.Obj.codesC : (A : Obj) → {p : Nat} → Vector (Part A) p 
         | .enum _ o _ => o.size - 1 | _ => c.1.toNat).sum < USize.size)) ||
       decide (t = .guid) ||
       (decide (t = .general) && cs.toArray.all fun c => match c.2.enc with | .gen xs => xs.all cellFree | _ => true)))
-  | .prod a b, _, cs =>
-    let ca := Obj.codesC a (cs.map fun c => (⟨c.1, c.2.1⟩ : Part a))
-    let cb := Obj.codesC b (cs.map fun c => (⟨c.1, c.2.2⟩ : Part b))
-    (tuples ca.1 #[cb.1], decide ((cs.toList.map (·.1.toNat)).sum < USize.size) && ca.2 && cb.2)
-  | .arr b, _, cs =>
-    let ec := Obj.codesC b (cs.map fun c => (⟨c.2.1, c.2.2.2.2⟩ : Part b))
-    let sl := cs.map fun c => (c.1, slicesOf c.2)
-    let gs := Vector.zipWith (fun e s => expand s.1 s.2.2 (fun _ => ((default : Code), (none : Option Nat)))
-      fun k i r _ _ => (e.gather (add k (gather 8 s.2.1 i) r), some k.toNat)) ec.1 sl
-    let seq := Code.cat (gs.map (·.1)).toArray
-    let ns := cs.map (·.1)
-    let cnts := concatBytes (sl.map (·.2.2)).toArray
-    let cps := (gs.toList.map fun g => g.2.getD 0).sum
-    (longCount "codes" cnts fun t _ =>
-      (pack (ns.foldl (fun s n => s + n.toNat) 0) (sliceIds seq (concatBytes #[one 0, sums t cnts]))).cut ns,
-      ec.2 && decide ((cs.toList.map (·.1.toNat)).sum < USize.size) && decide (cps < 2 ^ 63) &&
-        decide (cps < USize.size) && (Vector.zipWith (fun c g => match g.2 with
-          | some k => decide (c.2.1.toNat < 2 ^ 63) && decide (k < 2 ^ 63) && Vals.fitsN b c.2.2.2.2 k
-          | none => false) cs gs).toArray.all id)
-  | .sum a b, _, cs₀ =>
+  | .prod a b, _, cs => (Obj.codes (.prod a b) cs, decide ((cs.toList.map (·.1.toNat)).sum < USize.size) &&
+    (Obj.codesC a (cs.map fun c => (⟨c.1, c.2.1⟩ : Part a))).2 && (Obj.codesC b (cs.map fun c => (⟨c.1, c.2.2⟩ : Part b))).2)
+  -- each part's copies counted by `expand` itself, as `Obj.codes` expands them
+  | .arr b, _, cs => (Obj.codes (.arr b) cs,
+    let gs := cs.map fun c => expand c.1 (slicesOf c.2).2 (fun _ => (none : Option Nat)) fun k _ _ _ _ => some k.toNat
+    let cps : Nat := (gs.toList.map fun g => g.getD 0).sum
+    (Obj.codesC b (cs.map fun c => (⟨c.2.1, c.2.2.2.2⟩ : Part b))).2 && decide ((cs.toList.map (·.1.toNat)).sum < USize.size) &&
+      decide (cps < 2 ^ 63) && decide (cps < USize.size) && (Vector.zipWith (fun c g => match g with
+        | some k => decide (c.2.1.toNat < 2 ^ 63) && decide (k < 2 ^ 63) && Vals.fitsN b c.2.2.2.2 k
+        | none => false) cs gs).toArray.all id)
+  | .sum a b, _, cs₀ => (Obj.codes (.sum a b) cs₀,
     let cs := cs₀.map fun c => (⟨c.1, c.2.held⟩ : Part (.sum a b))
-    let lc := Obj.codesC a (cs.map fun c => (⟨c.2.1, c.2.2.2.2.2.1⟩ : Part a))
-    let rc := Obj.codesC b (cs.map fun c => (⟨c.2.2.1, c.2.2.2.2.2.2⟩ : Part b))
-    let gl := Vector.zipWith (fun c k => k.gather (longsOf (place c.2 ((c.2.1.toNat : Int) - 1) 0 0 c.2.1.toNat))) cs lc.1
-    let gr := Vector.zipWith (fun c k => k.gather
-      (longsOf (place c.2 ((c.2.2.1.toNat : Int) - 1) 0 c.2.2.1.toNat (-(c.2.2.1.toNat : Int))))) cs rc.1
-    (tuples (cs.map fun c => (⟨1, c.1, 2, tagBits c.2.2.2.1⟩ : Code)) #[gl, gr],
-      decide ((cs₀.toList.map (·.1.toNat)).sum < USize.size) &&
-        cs₀.toArray.all (fun c => Vals.fitsN (.sum a b) c.2 c.1.toNat) &&
-        cs.toArray.all (fun c => decide (c.2.1.toNat < 2 ^ 61) && decide (c.2.2.1.toNat < 2 ^ 61)) && lc.2 && rc.2)
-
-theorem _root_.LeetQ.Rel.Obj.codesC_fst : (A : Obj) → {p : Nat} → (cs : Vector (Part A) p) →
-    (Obj.codesC A cs).1 = Obj.codes A cs
-  | .atom _, _, _ => rfl
-  | .prod a b, _, cs => by simp only [Obj.codesC, Obj.codes, Obj.codesC_fst a, Obj.codesC_fst b]
-  | .arr b, _, cs => by
-    have e : ∀ (e : Code) (s : USize × ByteArray × ByteArray), (expand s.1 s.2.2
-        (fun _ => ((default : Code), (none : Option Nat))) fun k i r _ _ =>
-          (e.gather (add k (gather 8 s.2.1 i) r), some k.toNat)).1 =
-        expand s.1 s.2.2 (fun _ => default) fun k i r _ _ => e.gather (add k (gather 8 s.2.1 i) r) := fun e s => by
-      simp only [expand, need]; split <;> rfl
-    simp only [Obj.codesC, Obj.codes, Obj.codesC_fst b, Vector.map_zipWith, e]
-  | .sum a b, _, cs => by simp only [Obj.codesC, Obj.codes, Obj.codesC_fst a, Obj.codesC_fst b]
+    decide ((cs₀.toList.map (·.1.toNat)).sum < USize.size) &&
+      cs₀.toArray.all (fun c => Vals.fitsN (.sum a b) c.2 c.1.toNat) &&
+      cs.toArray.all (fun c => decide (c.2.1.toNat < 2 ^ 61) && decide (c.2.2.1.toNat < 2 ^ 61)) &&
+      (Obj.codesC a (cs.map fun c => (⟨c.2.1, c.2.2.2.2.2.1⟩ : Part a))).2 &&
+      (Obj.codesC b (cs.map fun c => (⟨c.2.2.1, c.2.2.2.2.2.2⟩ : Part b))).2)
 
 /-- The permutation `p` refined stably by the values of `A` at its rows, ascending: `gradeColumn` of each
     atom (a symbol by its string, so the order is the value's, the same in every call), the last component
