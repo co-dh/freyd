@@ -242,13 +242,10 @@ theorem naive_meets (s : Rel V D) (as : List (Revise V D)) (X : Rel V D) (hs : F
   rw [rep_inter _ _ hc hY.1 hY.2]
   exact and_congr Iff.rfl (hL x d)
 
--- `𝟙_X`, the coreflexive on the pairs of `X`; the parts the anti-join codes; the pairs of `X` not in `X′`, as
+-- `𝟙_X`, the coreflexive on the pairs of `X`; the pairs of `X` not in `X′`, as
 -- `acDelta` names them (fields applied, not projected: `X.key` would be one identifier, not the parameter `X`)
 set_option hygiene false in
 local notation "pairsU(" X ")" => idU (t := Obj.prod V D) (Rel.key X, Rel.val X)
-set_option hygiene false in
-local notation "dvp(" X ", " X' ")" => (#v[⟨Rel.n (pairsU(X)), Rel.val (pairsU(X))⟩,
-  ⟨Rel.n (pairsU(X')), Rel.val (pairsU(X'))⟩] : Vector (Part (Obj.prod V D)) 2)
 set_option hygiene false in
 local notation "gone(" X ", " X' ")" => antiJoin (pairsU(X)) (pairsU(X'))
 
@@ -256,7 +253,7 @@ local notation "gone(" X ", " X' ")" => antiJoin (pairsU(X)) (pairsU(X'))
     (`codesOK`, `rep_antiJoin`'s `hc`) and `ran`'s one-part code (`oneOK`) — open `CodesFit`s of this round's
     relations, so per round. -/
 def DeltaGap (X X' : Rel V D) : Prop :=
-  codesOK(Obj.codes (.prod V D) dvp(X, X'), dvp(X, X')) ∧ oneOK(V, (outl (gone(X, X'))).n, (outl (gone(X, X'))).val)
+  codesOK(avc(Obj.prod V D, pairsU(X), pairsU(X')), avp(Obj.prod V D, pairsU(X), pairsU(X'))) ∧ oneOK(V, (outl (gone(X, X'))).n, (outl (gone(X, X'))).val)
 
 /-- `rep 𝟙_X` is `𝟙` on the pairs of `X` (`idU_holds`). -/
 theorem rep_idU_pairs (X : Rel V D) (p q : V.El × D.El) : rep (pairsU(X)) p q ↔ p = q ∧ rep X p.1 p.2 := by
