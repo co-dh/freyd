@@ -24,6 +24,7 @@ theorem rep_arrUnion {A : Obj} {n : USize} (X : Vals (.arr (.arr A)) n) (Rm : Re
     (hRm : Rm = mem X.2.2.2) (M : Rel (.arr (.arr A)) A)
     -- `rep_E` at `Rm`, `X`
     (kc vc : Code) (hkc : kc = kcR(M)) (hvc : vc = vcR(M))
+    -- `M = mem X ≫ Rm` is a join of computed relations: its codes and fits need `mem`'s output reads, kept
     (hK : cOK(kc, Rel.n M, Rel.key M)) (hV : cOK(vc, Rel.n M, Rel.val M))
     (hk : Vals.PickFits (.arr (.arr A)) (Rel.key M) (List.range (Rel.n M).toNat))
     (hv : Vals.PickFits A (Rel.val M) (List.range (Rel.n M).toNat))

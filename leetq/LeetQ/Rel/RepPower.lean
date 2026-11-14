@@ -195,10 +195,12 @@ open Pow
 theorem rep_setify {B : Obj} {n : USize} (X : Vals (.arr B) n)
     -- `rep_mem` at `X`
     (hmv : Vals.PickFits (.arr B) X (List.range n.toNat))
+    -- each row repeated once per element: a repeat count is a row's length, which no input count here bounds
     (hmk : Vals.PickFits (.arr B) X ((List.range n.toNat).flatMap fun r =>
       if h : r < n.toNat then List.replicate (X.row ⟨r, h⟩).length r else []))
     -- `rep_lamOn` at `mS(X)`, `X`
     (kc vc : Code) (hkc : kc = kcR(mS(X))) (hvc : vc = vcR(mS(X)))
+    -- `mS(X)` is computed (`X` picked once per element): its codes and fits need `mem`'s output reads, kept
     (hK : cOK(kc, Rel.n mS(X), Rel.key mS(X))) (hV : cOK(vc, Rel.n mS(X), Rel.val mS(X)))
     (hk : Vals.PickFits (.arr B) (Rel.key mS(X)) (List.range (Rel.n mS(X)).toNat))
     (hv : Vals.PickFits B (Rel.val mS(X)) (List.range (Rel.n mS(X)).toNat))
@@ -322,10 +324,12 @@ theorem rep_lamOn_list {B : Obj} {m : USize} (R : Rel A B) (U : Vals A m)
 theorem rep_setify_list {B : Obj} {n : USize} (X : Vals (.arr B) n)
     -- `rep_mem` at `X`
     (hmv : Vals.PickFits (.arr B) X (List.range n.toNat))
+    -- each row repeated once per element: a repeat count is a row's length, which no input count here bounds
     (hmk : Vals.PickFits (.arr B) X ((List.range n.toNat).flatMap fun r =>
       if h : r < n.toNat then List.replicate (X.row ⟨r, h⟩).length r else []))
     -- `rep_lamOn` at `mS(X)`, `X`
     (kc vc : Code) (hkc : kc = kcR(mS(X))) (hvc : vc = vcR(mS(X)))
+    -- `mS(X)` is computed (`X` picked once per element): its codes and fits need `mem`'s output reads, kept
     (hK : cOK(kc, Rel.n mS(X), Rel.key mS(X))) (hV : cOK(vc, Rel.n mS(X), Rel.val mS(X)))
     (hk : Vals.PickFits (.arr B) (Rel.key mS(X)) (List.range (Rel.n mS(X)).toNat))
     (hv : Vals.PickFits B (Rel.val mS(X)) (List.range (Rel.n mS(X)).toNat))

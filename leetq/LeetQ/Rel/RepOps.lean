@@ -712,6 +712,7 @@ theorem rep_pair (R : Rel A B) (S : Rel A C) (hc : codesOK(kc, kp(R, S))) (hrn :
     picked at the join's hits (`pickFits_pick`). Hypotheses: `rep_pair`'s. -/
 theorem pair_pickFits (R : Rel A B) (S : Rel A C) (hc : codesOK(kc, kp(R, S))) (hrn : S.n.toNat < 2 ^ 63)
     (hM : R.n.toNat * S.n.toNat < min (2 ^ 63) USize.size)
+    -- `rep_pair`'s fits, kept for its atom callers; an input side discharges them by `pickFits_join_fst`/`_snd`
     (hA : Vals.PickFits A R.key ((kpairs).map Prod.fst)) (hB : Vals.PickFits B R.val ((kpairs).map Prod.fst))
     (hC : Vals.PickFits C S.val ((kpairs).map Prod.snd)) :
     Vals.PickFits A (Rel.key (LeetQ.Rel.Alg.pair R S)) (List.range (Rel.n (LeetQ.Rel.Alg.pair R S)).toNat) ∧

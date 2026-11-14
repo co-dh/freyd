@@ -43,6 +43,7 @@ theorem rep_memComp {B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n)
 theorem rep_E {B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) (M : Rel (.arr A) B)
     -- `rep_lamOn` at `M`, `X`
     (kc vc : Code) (hkc : kc = kcR(M)) (hvc : vc = vcR(M))
+    -- `M = mem X ≫ R` is a join of the computed `mS(X)`: its codes and fits need `mem`'s output reads, kept
     (hK : cOK(kc, Rel.n M, Rel.key M)) (hV : cOK(vc, Rel.n M, Rel.val M))
     (hk : Vals.PickFits (.arr A) (Rel.key M) (List.range (Rel.n M).toNat))
     (hv : Vals.PickFits B (Rel.val M) (List.range (Rel.n M).toNat))
@@ -98,6 +99,7 @@ theorem rep_E {B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) (M : Rel
 theorem rep_E_list {B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) (M : Rel (.arr A) B)
     -- `rep_lamOn` at `M`, `X`
     (kc vc : Code) (hkc : kc = kcR(M)) (hvc : vc = vcR(M))
+    -- `M = mem X ≫ R` is a join of the computed `mS(X)`: its codes and fits need `mem`'s output reads, kept
     (hK : cOK(kc, Rel.n M, Rel.key M)) (hV : cOK(vc, Rel.n M, Rel.val M))
     (hk : Vals.PickFits (.arr A) (Rel.key M) (List.range (Rel.n M).toNat))
     (hv : Vals.PickFits B (Rel.val M) (List.range (Rel.n M).toNat))
