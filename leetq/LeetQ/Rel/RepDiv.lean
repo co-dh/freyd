@@ -6,6 +6,9 @@
 import LeetQ.Rel.RepOps
 import LeetQ.Rel.KernelWF.DivSpec
 import LeetQ.Rel.KernelWF.CountSpec
+import LeetQ.Rel.KernelWF.CodesAll
+import LeetQ.Rel.KernelWF.RazeFoR
+import LeetQ.Rel.RepOps2
 
 namespace LeetQ.Rel.Rep
 
@@ -282,6 +285,140 @@ theorem div_vac_holds (r : Rel A B) {mb mc : USize} (Ub : Vals B mb) (Uc : Vals 
     rintro ⟨j, hjn, hje⟩
     rw [hrn] at hjn
     exact hno ⟨r.key.row ⟨j, hjn⟩, ⟨j, hjn⟩, rfl, ((hj hjn hp).1 hje).trans e⟩
+
+-- the one-part code and `nub`'s first rows, `RepOps2`'s `c1`, `oneOK`, `nubI` (local notations, so restated here)
+set_option hygiene false in
+local notation "c1(" X ", " n ", " x ")" => (Obj.codes X (#v[⟨n, x⟩] : Vector (Part X) 1))[0]
+set_option hygiene false in
+local notation "oneOK(" X ", " n ", " x ")" => ((∀ {i j : Nat} (hi : i < USize.toNat n) (hj : j < USize.toNat n),
+    Column.idAt (c1(X, n, x)).b (c1(X, n, x)).w i = Column.idAt (c1(X, n, x)).b (c1(X, n, x)).w j ↔
+      Vals.row x ⟨i, hi⟩ = Vals.row x ⟨j, hj⟩) ∧
+  (let c := c1(X, n, x)
+   (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = n ∧
+    c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
+    (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)))
+set_option hygiene false in
+local notation "nubI(" X ", " Y ", " R ")" =>
+  (tuples.tupleIds (c1(X, Rel.n R, Rel.key R)) #[c1(Y, Rel.n R, Rel.val R)]).2
+
+/-- One part's code is faithful and well formed under `Obj.CodesFit` (`codes_faithful_wf` at the one part). -/
+theorem one_ok {X : Obj} {n : USize} (x : Vals X n) (h : X.CodesFit (#v[⟨n, x⟩] : Vector (Part X) 1)) :
+    oneOK(X, n, x) := by
+  obtain ⟨⟨hF, hW⟩, -⟩ := codes_faithful_wf X _ h
+  exact ⟨fun hi hj => hF (k := 0) (l := 0) (by decide) (by decide) hi hj, hW (k := 0) (by decide)⟩
+
+-- `leftDiv`'s vacuous side at its joint codes `ycs`
+set_option hygiene false in
+local notation "vacY" => Vals.pickPart B Ub (anti (ycs[2]'(by decide)) (ycs[1]'(by decide)))
+-- `∪`'s razed relation of `P` and `Q` (`rep_union_full`'s `Uc`)
+set_option hygiene false in
+local notation "PQ(" Y ", " Z ")" =>
+  (⟨_, Obj.raze Y #[⟨Rel.n P, Rel.key P⟩, ⟨Rel.n Q, Rel.key Q⟩] hNk,
+    Obj.raze Z #[⟨Rel.n P, Rel.val P⟩, ⟨Rel.n Q, Rel.val Q⟩] hNv⟩ : Rel Y Z)
+
+set_option maxHeartbeats 1600000 in
+/-- **`rep (R \ S)`**: `b` to `c` exactly when every `a` that `R` takes to `b` `S` takes to `c`, and either some
+    `a` is taken to `b`, or `b` and `c` are elements of the universes `Ub`, `Uc`. `leftDiv`'s intermediate values
+    are bound to variables by their defining equations (`hkc`, `hy`, `hycs`, `hzc`, `hI`, `hPe`, `hQe`).
+    Hypotheses: `Obj.CodesFit` of every coded part; the counts fit; `Vals.PickFits` where a part is picked. -/
+theorem rep_leftDiv {mb mc : USize} (R : Rel A B) (S : Rel A C) (Ub : Vals B mb) (Uc : Vals C mc)
+    (hRK : A.CodesFit (#v[⟨R.n, R.key⟩] : Vector (Part A) 1)) (hRV : B.CodesFit (#v[⟨R.n, R.val⟩] : Vector (Part B) 1))
+    (hRk : Vals.PickFits A R.key (ids nubI(A, B, R))) (hRv : Vals.PickFits B R.val (ids nubI(A, B, R)))
+    (hSK : A.CodesFit (#v[⟨S.n, S.key⟩] : Vector (Part A) 1)) (hSV : C.CodesFit (#v[⟨S.n, S.val⟩] : Vector (Part C) 1))
+    (hSk : Vals.PickFits A S.key (ids nubI(A, C, S))) (hSv : Vals.PickFits C S.val (ids nubI(A, C, S)))
+    (kc : Vector Code 2)
+    (hkc : kc = A.codes #v[⟨(Rel.nub R).n, (Rel.nub R).key⟩, ⟨(Rel.nub S).n, (Rel.nub S).key⟩])
+    (hfk : A.CodesFit #v[⟨(Rel.nub R).n, (Rel.nub R).key⟩, ⟨(Rel.nub S).n, (Rel.nub S).key⟩])
+    (hrn : (Rel.nub S).n.toNat < 2 ^ 63)
+    (hM : ((List.range (kc[0]'(by decide)).n.toNat).map fun i => ((List.range (kc[1]'(by decide)).n.toNat).filter
+      fun j => Column.idAt (kc[1]'(by decide)).b (kc[1]'(by decide)).w j ==
+        Column.idAt (kc[0]'(by decide)).b (kc[0]'(by decide)).w i).length).sum < 2 ^ 63)
+    (hMU : ((List.range (kc[0]'(by decide)).n.toNat).map fun i => ((List.range (kc[1]'(by decide)).n.toNat).filter
+      fun j => Column.idAt (kc[1]'(by decide)).b (kc[1]'(by decide)).w j ==
+        Column.idAt (kc[0]'(by decide)).b (kc[0]'(by decide)).w i).length).sum < USize.size)
+    (hB : Vals.PickFits B (Rel.nub R).val ((jp(kc[0]'(by decide), kc[1]'(by decide))).map Prod.fst))
+    (hC : Vals.PickFits C (Rel.nub S).val ((jp(kc[0]'(by decide), kc[1]'(by decide))).map Prod.snd))
+    (y : Rel B C) (hy : y = yJ(Rel.nub R, Rel.nub S, kc[0]'(by decide), kc[1]'(by decide)))
+    (ycs : Vector Code 3) (hycs : ycs = B.codes #v[⟨y.n, y.key⟩, ⟨(Rel.nub R).n, (Rel.nub R).val⟩, ⟨mb, Ub⟩])
+    (hfy : B.CodesFit #v[⟨y.n, y.key⟩, ⟨(Rel.nub R).n, (Rel.nub R).val⟩, ⟨mb, Ub⟩])
+    (zc : Vector Code 1) (hzc : zc = C.codes #v[⟨y.n, y.val⟩]) (hfz : C.CodesFit #v[⟨y.n, y.val⟩])
+    (I : ByteArray)
+    (hI : I = longCount "\\" (tuples.tupleIds (ycs[0]'(by decide)) #[zc[0]'(by decide)]).2 fun g _ =>
+      gather 8 (tuples.tupleIds (ycs[0]'(by decide)) #[zc[0]'(by decide)]).2
+        (whereEqV g (classSizes (ycs[0]'(by decide)).n (tuples.tupleIds (ycs[0]'(by decide)) #[zc[0]'(by decide)]))
+          (atCnt (cnt (ycs[1]'(by decide)))
+            ((ycs[0]'(by decide)).gather (tuples.tupleIds (ycs[0]'(by decide)) #[zc[0]'(by decide)]).2))))
+    (hk : Vals.PickFits B y.key (ids I)) (hv : Vals.PickFits C y.val (ids I))
+    (hP : Vals.PickFits B Ub (ids (anti (ycs[2]'(by decide)) (ycs[1]'(by decide)))))
+    (hN : (vacY).1.toNat * mc.toNat < USize.size) (h63 : (vacY).1.toNat * mc.toNat < 2 ^ 63)
+    (hA : Vals.PickFits B (vacY).2 ((List.range ((vacY).1.toNat * mc.toNat)).map (· / mc.toNat)))
+    (hBc : Vals.PickFits C Uc ((List.range ((vacY).1.toNat * mc.toNat)).map (· % mc.toNat)))
+    (P Q : Rel B C) (hPe : P = y.rows I) (hQe : Q = top (vacY).2 Uc)
+    (hU : P.n.toNat + Q.n.toNat < USize.size)
+    (hNk : ((#[⟨P.n, P.key⟩, ⟨Q.n, Q.key⟩] : Array (Part B)).toList.map fun c : Part B => c.1.toNat).sum <
+      USize.size)
+    (hNv : ((#[⟨P.n, P.val⟩, ⟨Q.n, Q.val⟩] : Array (Part C)).toList.map fun c : Part C => c.1.toNat).sum <
+      USize.size)
+    (hFk : Vals.RazeFits B P.key Q.key) (hFv : Vals.RazeFits C P.val Q.val)
+    (hUK : B.CodesFit (#v[⟨(PQ(B, C)).n, (PQ(B, C)).key⟩] : Vector (Part B) 1))
+    (hUV : C.CodesFit (#v[⟨(PQ(B, C)).n, (PQ(B, C)).val⟩] : Vector (Part C) 1))
+    (hUk : Vals.PickFits B (PQ(B, C)).key (ids nubI(B, C, PQ(B, C))))
+    (hUv : Vals.PickFits C (PQ(B, C)).val (ids nubI(B, C, PQ(B, C)))) (b : B.El) (c : C.El) :
+    rep (leftDiv R S Ub Uc) b c ↔
+      (∀ a, rep R a b → rep S a c) ∧ ((∃ a, rep R a b) ∨ ((∃ p, Ub.row p = b) ∧ ∃ j, Uc.row j = c)) := by
+  classical
+  have e : leftDiv R S Ub Uc = P ∪ Q := by subst hPe hQe hI hzc hycs hy hkc; rfl
+  rw [e, rep_union_full P Q hU hNk hNv hFk hFv (one_ok _ hUK) (one_ok _ hUV) hUk hUv]
+  show P.Holds b c ∨ Q.Holds b c ↔ _
+  subst hPe hQe
+  -- the joint codes, faithful and well formed
+  have hK' := codes_faithful_wf A _ hfk; rw [← hkc] at hK'
+  obtain ⟨⟨kF, kW⟩, -⟩ := hK'
+  have hY' := codes_faithful_wf B _ hfy; rw [← hycs] at hY'
+  obtain ⟨⟨yF, yW⟩, -⟩ := hY'
+  have hZ' := codes_faithful_wf C _ hfz; rw [← hzc] at hZ'
+  obtain ⟨⟨zF, zW⟩, -⟩ := hZ'
+  obtain ⟨hlw, hln, hls, -⟩ := kW (k := 0) (by decide)
+  obtain ⟨hrw, hkn, hrs, hrc⟩ := kW (k := 1) (by decide)
+  obtain ⟨y0w, y0n, y0s, y0c⟩ := yW (k := 0) (by decide)
+  obtain ⟨y1w, y1n, y1s, y1c⟩ := yW (k := 1) (by decide)
+  obtain ⟨y2w, y2n, y2s, -⟩ := yW (k := 2) (by decide)
+  obtain ⟨z0w, z0n, z0s, z0c⟩ := zW (k := 0) (by decide)
+  -- the counted part
+  have hy' := div_y_holds (Rel.nub R) (Rel.nub S) (kc[0]'(by decide)) (kc[1]'(by decide)) hln hkn hlw hls hrw hrs
+    hrc (by rw [hkn]; exact hrn) hM hMU hB hC
+  rw [← hy] at hy'
+  have hI' := leftDiv_keep (ycs[0]'(by decide)) (zc[0]'(by decide)) (ycs[1]'(by decide)) (z0n.trans y0n.symm)
+    ⟨y0w, y0s, fun h i hi => Nat.lt_of_lt_of_le ((y0c h).2 i hi) (Nat.le_max_left _ _)⟩
+    ⟨z0w, z0s, fun h i hi => Nat.lt_of_lt_of_le ((z0c h).2 i hi) (Nat.le_max_left _ _)⟩ y1w y1s y1c
+  rw [← hI] at hI'
+  have hdk := div_keep_holds (Rel.nub R) (Rel.nub S) y (kc[0]'(by decide)) (kc[1]'(by decide))
+    (ycs[0]'(by decide)) (zc[0]'(by decide)) (ycs[1]'(by decide)) I hy' hln hkn
+    (fun hi hj => eq_comm.trans (kF (k := 0) (l := 1) (by decide) (by decide) hi hj))
+    (fun j j' h1 h2 => nub_rows_inj S (one_ok _ hSK) (one_ok _ hSV) hSk hSv h1 h2) y0n
+    (fun hq hq' => yF (k := 0) (l := 0) (by decide) (by decide) hq hq')
+    (fun hq hq' => zF (k := 0) (l := 0) (by decide) (by decide) hq hq') y1n
+    (fun hj hq => yF (k := 1) (l := 0) (by decide) (by decide) hj hq) hI' hk hv b c
+  -- the vacuous part
+  have hdv := div_vac_holds (Rel.nub R) Ub Uc (ycs[2]'(by decide)) (ycs[1]'(by decide)) y2w y1w y2s y1s y2n y1n
+    (fun hj hp => yF (k := 1) (l := 2) (by decide) (by decide) hj hp) hP hN h63 hA hBc b c
+  refine (or_congr hdk hdv).trans ?_
+  have eR : ∀ a, (Rel.nub R).Holds a b ↔ rep R a b := fun a =>
+    Iff.of_eq (congrFun (congrFun (rep_nub R (one_ok _ hRK) (one_ok _ hRV) hRk hRv) a) b)
+  have eS : ∀ a, (Rel.nub S).Holds a c ↔ rep S a c := fun a =>
+    Iff.of_eq (congrFun (congrFun (rep_nub S (one_ok _ hSK) (one_ok _ hSV) hSk hSv) a) c)
+  simp only [eR, eS]
+  constructor
+  · rintro (⟨h, ha⟩ | ⟨⟨hb, hno⟩, hc⟩)
+    · exact ⟨h, Or.inl ha⟩
+    · exact ⟨fun a ha => absurd ⟨a, ha⟩ hno, Or.inr ⟨hb, hc⟩⟩
+  · rintro ⟨h, ha | ⟨hb, hc⟩⟩
+    · exact Or.inl ⟨h, ha⟩
+    · by_cases hx : ∃ a, rep R a b
+      · exact Or.inl ⟨h, hx⟩
+      · exact Or.inr ⟨⟨hb, hx⟩, hc⟩
+
+#print axioms rep_leftDiv
 
 #print axioms div_y_rows
 #print axioms div_y_holds
