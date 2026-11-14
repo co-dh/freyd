@@ -360,7 +360,7 @@ section FoldOn
 
 open QLean.Dep
 
-open FoldN
+open FoldN OpsN
 -- `rep_ran`'s hypotheses at `R`, its value codes `c` bound by their equation
 set_option hygiene false in
 local notation "ranOK(" R ")" =>

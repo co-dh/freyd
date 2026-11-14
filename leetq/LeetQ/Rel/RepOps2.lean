@@ -100,17 +100,30 @@ section Entire
 
 open QLean.Verify
 
--- the one-part code `distinctCorefl` groups, and `rep_dom`'s hypothesis on it
+namespace OpsN
+-- the one-part code `distinctCorefl` groups, and `rep_dom`'s hypothesis on it. The index proof is a term: a bare
+-- `[0]` postpones `get_elem_tactic` to the end of the header that uses it, where it runs against every hypothesis
 set_option hygiene false in
-local notation "c1(" X ", " n ", " x ")" => (Obj.codes X (#v[⟨n, x⟩] : Vector (Part X) 1))[0]'Nat.zero_lt_one
+scoped notation "c1(" X ", " n ", " x ")" => (Obj.codes X (#v[⟨n, x⟩] : Vector (Part X) 1))[0]'Nat.zero_lt_one
 set_option hygiene false in
-local notation "oneOK(" X ", " n ", " x ")" => ((∀ {i j : Nat} (hi : i < USize.toNat n) (hj : j < USize.toNat n),
+scoped notation "oneOK(" X ", " n ", " x ")" => ((∀ {i j : Nat} (hi : i < USize.toNat n) (hj : j < USize.toNat n),
     Column.idAt (c1(X, n, x)).b (c1(X, n, x)).w i = Column.idAt (c1(X, n, x)).b (c1(X, n, x)).w j ↔
       Vals.row x ⟨i, hi⟩ = Vals.row x ⟨j, hj⟩) ∧
   (let c := c1(X, n, x)
    (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = n ∧
     c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
     (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)))
+-- the rows `nub` keeps, named as `NubSpec` names them
+set_option hygiene false in
+scoped notation "nubI(" X ", " Y ", " R ")" =>
+  (tuples.tupleIds (c1(X, Rel.n R, Rel.key R)) #[c1(Y, Rel.n R, Rel.val R)]).2
+-- `∪`'s razed relation of `P` and `Q` (`rep_union_full`'s `Uc`); unhygienic: captures `P`, `Q`, `hNk`, `hNv`
+set_option hygiene false in
+scoped notation "PQ(" Y ", " Z ")" =>
+  (⟨_, Obj.raze Y #[⟨Rel.n P, Rel.key P⟩, ⟨Rel.n Q, Rel.key Q⟩] hNk,
+    Obj.raze Z #[⟨Rel.n P, Rel.val P⟩, ⟨Rel.n Q, Rel.val Q⟩] hNv⟩ : Rel Y Z)
+end OpsN
+open OpsN
 
 /-- `U? ⊑ dom S`, both coreflexives: every element `U` lists has an image under `S`. -/
 theorem corefl_le_dom {X Y : RelSet.{0}} (P : X.carrier → Prop) (S : X ⟶ Y) :
@@ -161,11 +174,6 @@ theorem rep_surjective_boolean (R : Rel A (.atom .boolean)) {m : USize} (U : Val
     convArr_holds R.key R.val _ _)
 
 /-! ## `simple`, `injective`, `isMap`: `R.nub`'s keys counted against its rows -/
-
--- the rows `nub` keeps, named as `NubSpec` names them
-set_option hygiene false in
-local notation "nubI(" X ", " Y ", " R ")" =>
-  (tuples.tupleIds (c1(X, Rel.n R, Rel.key R)) #[c1(Y, Rel.n R, Rel.val R)]).2
 
 /-- `g` takes each value at most once below `m` exactly when every position below `m` is a first one. -/
 theorem firsts_length_iff {α : Type} [DecidableEq α] (g : Nat → α) (m : Nat) :

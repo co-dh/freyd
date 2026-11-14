@@ -38,7 +38,7 @@ scoped notation "vacY(" B ", " Ub ", " ycs ")" =>
 
 end DivN
 
-open DivN
+open DivN OpsN
 
 /-- **`leftDiv`'s joined rows, read back**: one row per pair `(i, j)` of `join l r`, in its order, `x`'s row `i`
     beside `z`'s row `j`. Stated over any two codes, not `leftDiv`'s, so the statement holds no `Obj.codes`.
@@ -296,32 +296,11 @@ theorem div_vac_holds (r : Rel A B) {mb mc : USize} (Ub : Vals B mb) (Uc : Vals 
     rw [hrn] at hjn
     exact hno ⟨r.key.row ⟨j, hjn⟩, ⟨j, hjn⟩, rfl, ((hj hjn hp).1 hje).trans e⟩
 
--- the one-part code and `nub`'s first rows, `RepOps2`'s `c1`, `oneOK`, `nubI` (local notations, so restated here)
-set_option hygiene false in
-local notation "c1(" X ", " n ", " x ")" => (Obj.codes X (#v[⟨n, x⟩] : Vector (Part X) 1))[0]'Nat.zero_lt_one
-set_option hygiene false in
-local notation "oneOK(" X ", " n ", " x ")" => ((∀ {i j : Nat} (hi : i < USize.toNat n) (hj : j < USize.toNat n),
-    Column.idAt (c1(X, n, x)).b (c1(X, n, x)).w i = Column.idAt (c1(X, n, x)).b (c1(X, n, x)).w j ↔
-      Vals.row x ⟨i, hi⟩ = Vals.row x ⟨j, hj⟩) ∧
-  (let c := c1(X, n, x)
-   (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = n ∧
-    c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
-    (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)))
-set_option hygiene false in
-local notation "nubI(" X ", " Y ", " R ")" =>
-  (tuples.tupleIds (c1(X, Rel.n R, Rel.key R)) #[c1(Y, Rel.n R, Rel.val R)]).2
-
 /-- One part's code is faithful and well formed under `Obj.CodesFit` (`codes_faithful_wf` at the one part). -/
 theorem one_ok {X : Obj} {n : USize} (x : Vals X n) (h : X.CodesFit (#v[⟨n, x⟩] : Vector (Part X) 1)) :
     oneOK(X, n, x) := by
   obtain ⟨⟨hF, hW⟩, -⟩ := codes_faithful_wf X _ h
   exact ⟨fun hi hj => hF (k := 0) (l := 0) (by decide) (by decide) hi hj, hW (k := 0) (by decide)⟩
-
--- `∪`'s razed relation of `P` and `Q` (`rep_union_full`'s `Uc`)
-set_option hygiene false in
-local notation "PQ(" Y ", " Z ")" =>
-  (⟨_, Obj.raze Y #[⟨Rel.n P, Rel.key P⟩, ⟨Rel.n Q, Rel.key Q⟩] hNk,
-    Obj.raze Z #[⟨Rel.n P, Rel.val P⟩, ⟨Rel.n Q, Rel.val Q⟩] hNv⟩ : Rel Y Z)
 
 /-- **`rep (R \ S)`**: `b` to `c` exactly when every `a` that `R` takes to `b` `S` takes to `c`, and either some
     `a` is taken to `b`, or `b` and `c` are elements of the universes `Ub`, `Uc`. `leftDiv`'s intermediate values

@@ -15,11 +15,7 @@ section Mem
 
 variable {B : Obj}
 
--- dup of SliceSpec's local notations: a row's clamped window, `expand`'s index column and the copies' positions
-set_option hygiene false in
-local notation "sL(" x ", " r ", " h ")" => min (max (Int64.toInt (Arr.get x.2.1 ⟨r, h⟩)) 0).toNat x.1.toNat
-set_option hygiene false in
-local notation "sH(" x ", " r ", " h ")" => min (max (Int64.toInt (Arr.get x.2.2.1 ⟨r, h⟩)) 0).toNat x.1.toNat
+open Alg.SliceN
 
 /-- **`rep (mem X) xs x ↔ xs is a cell of X ∧ x ∈ xs`**: `∋` on the arrays `X`, read in `Rel(Set)` as membership
     of the cell's elements (`slicesOf_copies`: each copy `mem` makes is an element of a cell, each element a copy).

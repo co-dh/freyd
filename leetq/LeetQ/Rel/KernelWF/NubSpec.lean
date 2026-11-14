@@ -90,12 +90,15 @@ theorem rows_spec {k v : Obj} (R : Rel k v) (i : ByteArray) (hl : len i < USize.
 /-! ## `Rel.nub` -/
 
 -- the key's and the value's codes, one part each, and the first rows `nub` picks, named as `nub` names them
+namespace NubN
 set_option hygiene false in
-local notation "kc" => (Obj.codes _ (#v[⟨R.n, R.key⟩] : Vector (Part _) 1))[0]
+scoped notation "kc" => (Obj.codes _ (#v[⟨R.n, R.key⟩] : Vector (Part _) 1))[0]
 set_option hygiene false in
-local notation "vc" => (Obj.codes _ (#v[⟨R.n, R.val⟩] : Vector (Part _) 1))[0]
+scoped notation "vc" => (Obj.codes _ (#v[⟨R.n, R.val⟩] : Vector (Part _) 1))[0]
 set_option hygiene false in
-local notation "nubI" => (tuples.tupleIds kc #[vc]).2
+scoped notation "nubI" => (tuples.tupleIds kc #[vc]).2
+end NubN
+open NubN
 
 section Nub
 
@@ -169,13 +172,7 @@ end LeetQ.Rel.Alg
 namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg Freyd Freyd.Alg.RelSet
-
-set_option hygiene false in
-local notation "kc" => (Obj.codes _ (#v[⟨R.n, R.key⟩] : Vector (Part _) 1))[0]
-set_option hygiene false in
-local notation "vc" => (Obj.codes _ (#v[⟨R.n, R.val⟩] : Vector (Part _) 1))[0]
-set_option hygiene false in
-local notation "nubI" => (tuples.tupleIds kc #[vc]).2
+open Alg.NubN
 
 /-- **`rep (nub R) = rep R`**: `rep` reads a relation as the set of its pairs, so dropping repeated rows
     changes nothing. Hypotheses: `nub_row`'s. -/

@@ -12,11 +12,7 @@ namespace LeetQ.Rel.Alg
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel
 
--- row `r`'s slice of the array side `x`, its start and end clamped into `[0, x.1]`, as `Vals.row` reads it
-set_option hygiene false in
-local notation "sL(" x ", " r ", " h ")" => min (max (Int64.toInt (Arr.get x.2.1 ⟨r, h⟩)) 0).toNat x.1.toNat
-set_option hygiene false in
-local notation "sH(" x ", " r ", " h ")" => min (max (Int64.toInt (Arr.get x.2.2.1 ⟨r, h⟩)) 0).toNat x.1.toNat
+open SliceN
 
 /-- **`slicesOf` read back at row `i`**: its clamped start, and its clamped end less that start, the payload
     count below `2^63`. -/

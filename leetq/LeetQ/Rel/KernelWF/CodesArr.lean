@@ -12,11 +12,7 @@ namespace LeetQ.Rel.Alg
 
 open QLean QLean.Dep QLean.Kernel QLean.Verify LeetQ.Rel
 
--- row `r`'s clamped window of the array side `x`, as `Vals.row` reads it (`SliceSpec`'s)
-set_option hygiene false in
-local notation "sL(" x ", " r ", " h ")" => min (max (Int64.toInt (Arr.get x.2.1 ⟨r, h⟩)) 0).toNat x.1.toNat
-set_option hygiene false in
-local notation "sH(" x ", " r ", " h ")" => min (max (Int64.toInt (Arr.get x.2.2.1 ⟨r, h⟩)) 0).toNat x.1.toNat
+open SliceN
 -- the copies of row `t` (`slicesOf_copies`' right side), and the copies before row `r`
 set_option hygiene false in
 local notation "cG(" n ", " x ", " t ")" => if h : t < USize.toNat n then

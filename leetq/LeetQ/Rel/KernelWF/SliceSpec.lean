@@ -8,11 +8,15 @@ namespace LeetQ.Rel.Alg
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel
 
--- row `r`'s slice of the array side `x`, its start and end clamped into `[0, x.1]`, as `Vals.row` reads it
+namespace SliceN
+-- row `r`'s slice of the array side `x`, its start and end clamped into `[0, x.1]`, as `Vals.row` reads it; one
+-- home: `open SliceN` in every file that reads a slice back
 set_option hygiene false in
-local notation "sL(" x ", " r ", " h ")" => min (max (Int64.toInt (Arr.get x.2.1 ⟨r, h⟩)) 0).toNat x.1.toNat
+scoped notation "sL(" x ", " r ", " h ")" => min (max (Int64.toInt (Arr.get x.2.1 ⟨r, h⟩)) 0).toNat x.1.toNat
 set_option hygiene false in
-local notation "sH(" x ", " r ", " h ")" => min (max (Int64.toInt (Arr.get x.2.2.1 ⟨r, h⟩)) 0).toNat x.1.toNat
+scoped notation "sH(" x ", " r ", " h ")" => min (max (Int64.toInt (Arr.get x.2.2.1 ⟨r, h⟩)) 0).toNat x.1.toNat
+end SliceN
+open SliceN
 -- `expand`'s index column of `slicesOf x`'s counts, and each copy's payload position, as `mem` computes them
 set_option hygiene false in
 local notation "sE(" n ", " x ")" => expandBytes 8 0 (tilLongs n) (slicesOf x).2

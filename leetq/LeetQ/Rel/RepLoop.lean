@@ -12,7 +12,7 @@ namespace LeetQ.Rel.Rep
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
 open QLean.Dep
 
-open FoldN
+open FoldN OpsN
 
 /-- **The states of a left fold, in `Set`**: `st i r` holds the states `(c, ys)` key `r` reaches after `i`
     rounds, each round taking `(c, y :: ys)` to `(c', ys)` by `F i` (`hst`, for the rounds below `M`). A state
@@ -260,7 +260,7 @@ end Round
 
 /-! ## The primitives' hypotheses at one round -/
 
-/-! Each primitive's hypotheses as one bundle, over `FoldN`'s `mpairs`, `msum`, `nubI`: `open FoldN Prim` in every
+/-! Each primitive's hypotheses as one bundle, over `FoldN`'s `mpairs`, `msum` and `OpsN`'s `nubI`: `open FoldN OpsN Prim` in every
     file that reads back a composite of these primitives. -/
 namespace Prim
 

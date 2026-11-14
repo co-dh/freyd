@@ -9,7 +9,7 @@ namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
 
-open FoldN Prim
+open FoldN OpsN Prim
 
 -- the state of `thinLOn`'s step: an element and the thinned rest
 set_option hygiene false in
