@@ -44,6 +44,7 @@ theorem nest_rep {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 2
       ((f m (slicesOf X) xi xr h).2.get ⟨d, hd⟩).toInt = ((H (ix(d)) (rk(d)) : Nat) : Int))
     (hK : Vals.PickFits (.arr B) X
       ((List.range n.toNat).map fun q => (Column.bitsAt (tilLongs n) (q * 8) 8).toNat))
+    -- kept: the copies of a row read overlapping windows of one `.arr` payload, whose total can overflow `USize`
     (hV : ∀ h, Vals.PickFits (.arr B)
       (⟨X.1, (f m (slicesOf X) xi xr h).1, (f m (slicesOf X) xi xr h).2, X.2.2.2⟩ : Vals (.arr B) m)
       ((List.range m.toNat).map fun q => (Column.bitsAt (tilLongs m) (q * 8) 8).toNat))
@@ -169,6 +170,7 @@ theorem rep_inits {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 
     (xr : ByteArray) (hxr : xr = sub m (tilLongs m) (gather 8 (sub n (sums n c) c) xi))
     (hK : Vals.PickFits (.arr B) X
       ((List.range n.toNat).map fun q => (Column.bitsAt (tilLongs n) (q * 8) 8).toNat))
+    -- kept: the prefixes of a row overlap in one `.arr` payload, so their total can overflow `USize`
     (hV : ∀ h : len xi = m.toNat, Vals.PickFits (.arr B)
       (⟨X.1, longsN m (gather 8 (slicesOf X).1 xi) (Nat.le_of_eq ((gather_len _ _).trans h).symm),
         valCol Ew.add Ew.vv (gather 8 (slicesOf X).1 xi) xr, X.2.2.2⟩ : Vals (.arr B) m)
@@ -219,6 +221,7 @@ theorem rep_tails {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 
     (xr : ByteArray) (hxr : xr = sub m (tilLongs m) (gather 8 (sub n (sums n c) c) xi))
     (hK : Vals.PickFits (.arr B) X
       ((List.range n.toNat).map fun q => (Column.bitsAt (tilLongs n) (q * 8) 8).toNat))
+    -- kept: the suffixes of a row overlap in one `.arr` payload, so their total can overflow `USize`
     (hV : ∀ h : len xi = m.toNat, Vals.PickFits (.arr B)
       (⟨X.1, valCol Ew.add Ew.vv (gather 8 (slicesOf X).1 xi) xr,
         longsN m (gather 8 (add n (slicesOf X).1 (slicesOf X).2) xi) (Nat.le_of_eq ((gather_len _ _).trans h).symm),
@@ -283,6 +286,7 @@ theorem rep_uncat {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 
     (xr : ByteArray) (hxr : xr = sub m (tilLongs m) (gather 8 (sub n (sums n c) c) xi))
     (hK : Vals.PickFits (.arr B) X
       ((List.range n.toNat).map fun q => (Column.bitsAt (tilLongs n) (q * 8) 8).toNat))
+    -- kept (`hVi`, `hVt`): a row's prefixes and suffixes overlap in one `.arr` payload and can overflow `USize`
     (hVi : ∀ h : len xi = m.toNat, Vals.PickFits (.arr B)
       (⟨X.1, longsN m (gather 8 (slicesOf X).1 xi) (Nat.le_of_eq ((gather_len _ _).trans h).symm),
         valCol Ew.add Ew.vv (gather 8 (slicesOf X).1 xi) xr, X.2.2.2⟩ : Vals (.arr B) m)
@@ -302,7 +306,8 @@ theorem rep_uncat {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 
     (hkB : Vals.PickFits (.arr (.arr B)) (Rel.val (inits X)) ((mpairs(kc, inits X, tails X)).map Prod.fst))
     (hkC : Vals.PickFits (.arr (.arr B)) (Rel.val (tails X)) ((mpairs(kc, inits X, tails X)).map Prod.snd))
     (P : Rel (.arr B) (.prod (.arr (.arr B)) (.arr (.arr B)))) (hP : P = pair (inits X) (tails X))
-    (hpa : (Rel.val P).1.1.toNat < 2 ^ 63) (hpb : (Rel.val P).2.1.toNat < 2 ^ 63)
+    (hPa : Vals.PickFits (.arr (.arr B)) (Rel.val P).1 (List.range (Rel.n P).toNat))
+    (hPb : Vals.PickFits (.arr (.arr B)) (Rel.val P).2 (List.range (Rel.n P).toNat))
     (c' : ByteArray) (hc' : c' = Kernel.Ew.val Ew.lesser Ew.i64 Ew.vv nul (slicesOf (Rel.val P).1).2
       (slicesOf (Rel.val P).2).2 (Rel.n P))
     (hS' : ((List.range (Rel.n P).toNat).map fun r => (Column.bitsAt c' (r * 8) 8).toNat).sum < 2 ^ 63)
@@ -314,10 +319,6 @@ theorem rep_uncat {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 
     (jb : ByteArray) (hjb : jb = add m' (gather 8 (slicesOf (Rel.val P).2).1 xi') xr')
     (hKf : Vals.PickFits (.arr B) (Rel.key P)
       ((List.range (Rel.n P).toNat).map fun q => (Column.bitsAt (tilLongs (Rel.n P)) (q * 8) 8).toNat))
-    (hAf : Vals.PickFits (.arr B) (Rel.val P).1.2.2.2
-      ((List.range m'.toNat).map fun q => (Column.bitsAt ja (q * 8) 8).toNat))
-    (hBf : Vals.PickFits (.arr B) (Rel.val P).2.2.2.2
-      ((List.range m'.toNat).map fun q => (Column.bitsAt jb (q * 8) 8).toNat))
     (Z : Rel (.arr B) (.arr (.prod (.arr B) (.arr B)))) (hZ : Z = zip P)
     (jc : Vector Code 2)
     (hjc : jc = Obj.codes (.arr (.prod (.arr B) (.arr B)))
@@ -337,7 +338,7 @@ theorem rep_uncat {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 
   have hT := rep_tails X hp c hc hS hU xi hxi m hm xr hxr hK hVt
   subst hkc
   have h1 := rep_pair (inits X) (tails X) hkO hkn hkM hkA hkB hkC
-  have h2 := rep_zip P hpa hpb c' hc' hS' hU' xi' hxi' m' hm' xr' hxr' ja hja jb hjb hKf hAf hBf
+  have h2 := rep_zip P hPa hPb c' hc' hS' hU' xi' hxi' m' hm' xr' hxr' ja hja jb hjb hKf
   subst hjc
   have h3 := rep_comp Z (mem Z.val) hjO hjn hjM hjA hjC
   have h4 := rep_mem Z.val hv hk
