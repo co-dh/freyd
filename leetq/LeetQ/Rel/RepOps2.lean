@@ -84,7 +84,9 @@ theorem antiJoin_fits (R : Rel A B) (T : Rel B B) (hc : codesOK(avc(B, R, T), av
           (1 + 3 ^ sizeOf B) * Vals.reads B R.val (List.range R.n.toNat)) := by
   obtain ⟨-, hn0, -⟩ := hc.2 (k := 0) (by decide)
   replace hn0 : ((avc(B, R, T))[0]'Nat.zero_lt_two).n = R.n := hn0
-  exact rows_fits R _ (by rw [← hn0]; exact anti_sublist _ _) hk hv
+  have hs := anti_sublist ((avc(B, R, T))[0]'Nat.zero_lt_two) ((avc(B, R, T))[1]'Nat.one_lt_two)
+  rw [hn0] at hs
+  exact rows_fits R _ hs hk hv
 
 /-- **`outl T` is `T` with the value's left half**: it fits where `T` does, counts `T`'s rows, and its value reads at
     most `T`'s (`Vals.reads` of a product is the sum of its halves'). -/

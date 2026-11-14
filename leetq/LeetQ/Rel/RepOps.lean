@@ -237,8 +237,8 @@ theorem ran_fits (R : Rel A B) (hK : oneOK(B, R.n, R.val)) (hp : Vals.PickFits B
   rw [hn] at hsub
   have hl : len (c1(B, R.n, R.val)).groupIds.2 < USize.size := by
     rw [len_eq_ids]; exact Nat.lt_of_le_of_lt (by simpa using hsub.length_le) R.n.toNat_lt_size
-  have e : ran R = (idU R.val).rows (c1(B, R.n, R.val)).groupIds.2 := by
-    unfold ran distinctCorefl longCount Rel.rows need
+  have e : Alg.ran R = (idU R.val).rows (c1(B, R.n, R.val)).groupIds.2 := by
+    unfold Alg.ran distinctCorefl longCount Rel.rows need
     simp only [dif_pos hl]; rfl
   obtain ⟨fk, fv, hc, rk, -⟩ := rows_fits (idU R.val) _ hsub hp hp
   rw [e]; exact ⟨fk, fv, hc, rk⟩
