@@ -1,5 +1,6 @@
 import LeetQ.Rel.Lang.Eval
 import LeetQ.Rel.Programs.Blocks
+import LeetQ.Rel.Programs.SudokuAC
 
 /-! The Rel language on the blocks world of `doc/rel-lang-design.md` §g, the program `Programs.blocks`; its
     front-end errors; the parser's round trip on every operator of §b. The module builds in 4.1 s (lake, three
@@ -656,5 +657,66 @@ def is {B : Obj} (o : Out) (n : String) (R : Rel .long B) : Bool := ((get o n .l
 #guard errAt "obj X = {A,B,C}\nobj St = 𝒫(X×X)\nL(S : X ⟶ X) : X ⟶ X ≜ νZ : S ∩ Z\nf : St ⟶ X×X ≜ L(∋)\n" 3
   "νZ given a family is not liftable"
 #guard errAt "obj B = 0…1\nνx : B ⟶ B ≜ 𝟙(B)\n" 2 "the name 'νx' reads as a fixed point"
+
+/-! `ν` of an AC-3 body runs by delta rounds (`Alg.acFix`): its result against the naive rounds (`Alg.fixOn` on
+    `Alg.acRound`, called directly), and each path's work per round. -/
+
+/-- An AC-3 body read from `o`: the bound `s`, the arcs `(A, C)` by name, the universes `uv`, `ud`. -/
+def acOf (o : Out) (s uv ud : String) (arcs : List (String × String)) :
+    Option ((V : Obj) × (D : Obj) × Rel V D × Rel V V × List (Revise V D)) := do
+  let (_, ⟨V, D, sR⟩, _, _) ← o.vals.find? (·.1 == s)
+  let UV ← get o uv V V; let UD ← get o ud D D
+  let as ← arcs.mapM fun (a, c) => return (⟨← get o a V V, ← get o c D D, UV, UD⟩ : Revise V D)
+  pure ⟨V, D, sR, UV, as⟩
+
+/-- The language's `z`, the delta rounds and the naive rounds give one relation. -/
+def acAgree (o : Out) (z s uv ud : String) (arcs : List (String × String)) : Bool :=
+  match acOf o s uv ud arcs with
+  | some ⟨V, D, s, U, as⟩ =>
+    let d := (acFix s as U).1; let n := (fixOn (s.n.toNat + 1) (acRound s as) s).1
+    d == n && (get o z V D).any (· == d)
+  | none => false
+
+/-- One round's work: the cells divided over `Σₖ |ran(Δ Aₖ)|`, and the rows the divisions join `Σₖ |(Δ Aₖ)° (Δ X Cₖ)|`. -/
+def acWork {V D : Obj} (as : List (Revise V D)) (X : Rel V D) (Δ : Rel V V) : Nat × Nat :=
+  as.foldl (fun (c, j) a => let R := (Δ ≫ a.A).nub
+    (c + (ran R).n.toNat, j + (R° ≫ (Δ ≫ X ≫ a.C).nub).n.toNat)) (0, 0)
+
+/-- The delta rounds' work, until `Δ = 𝟘`. -/
+def deltaTrace {V D : Obj} (as : List (Revise V D)) : Nat → Rel V D → Rel V V → List (Nat × Nat × Nat)
+  | 0, _, _ => []
+  | f + 1, X, Δ => if Δ.n == 0 then [] else
+    let (X', Δ') := acDelta as (X, Δ); let w := acWork as X Δ
+    (w.1, w.2, X'.n.toNat) :: deltaTrace as f X' Δ'
+
+/-- The naive rounds' work, until a round leaves the row count. -/
+def naiveTrace {V D : Obj} (s : Rel V D) (as : List (Revise V D)) (U : Rel V V) :
+    Nat → Rel V D → List (Nat × Nat × Nat)
+  | 0, _ => []
+  | f + 1, X => let X' := (acRound s as X).nub; let w := acWork as X U
+    (w.1, w.2, X'.n.toNat) :: if X'.n == X.n then [] else naiveTrace s as U f X'
+
+/-- Both traces: per round (cells divided over, rows joined, rows of `X` after). -/
+def acTraces (o : Out) (s uv ud : String) (arcs : List (String × String)) :
+    List (Nat × Nat × Nat) × List (Nat × Nat × Nat) :=
+  match acOf o s uv ud arcs with
+  | some ⟨_, _, s, U, as⟩ => (deltaTrace as (s.n.toNat + 1) s.nub U, naiveTrace s as U (s.n.toNat + 1) s.nub)
+  | none => ([], [])
+
+def sudokuEx : Out := ok (runExt Programs.sudokuac "uV : Cell ⟶ Cell ≜ 𝟙(Cell)\nuD : D ⟶ D ≜ 𝟙(D)\nne : D ⟶ D ≜ ≠\n")
+
+def squareEx : Out := ok (runText ("obj V = {x,y}\nobj D = 0…9\nA : V ⟶ V ≜ {(x,y)}\nAc : V ⟶ V ≜ A°\n" ++
+  "sq : D ⟶ D ≜ {(0,0),(1,1),(2,4),(3,9)}\nsqc : D ⟶ D ≜ sq°\nuV : V ⟶ V ≜ 𝟙(V)\nuD : D ⟶ D ≜ 𝟙(D)\n" ++
+  "revise(A : α ⟶ α, C : β ⟶ β, X : α ⟶ β) : α ⟶ β ≜ A\\(X C)\ns : V ⟶ D ≜ ⊤(V,D)\n" ++
+  "z : V ⟶ D ≜ νZ : s ∩ revise(A,sq,Z) ∩ revise(A°,sq°,Z)\n"))
+
+#guard acAgree sudokuEx "s" "s₀" "uV" "uD" [("peer", "ne")]
+#guard acAgree squareEx "z" "s" "uV" "uD" [("A", "sq"), ("Ac", "sqc")]
+-- SudokuAC, both 11 rounds, 489 → 81 rows: the delta rounds join 39780 rows in all, the naive ones 148200
+#guard acTraces sudokuEx "s₀" "uV" "uD" [("peer", "ne")] ==
+  ([(81, 13980, 183), (81, 9100, 163), (81, 3140, 142), (80, 3640, 122), (80, 3120, 113), (68, 1520, 107),
+    (71, 1020, 103), (42, 680, 93), (65, 1660, 83), (73, 1600, 81), (34, 320, 81)],
+   [(81, 13980, 183), (81, 13900, 163), (81, 13800, 142), (81, 13660, 122), (81, 13540, 113), (81, 13440, 107),
+    (81, 13380, 103), (81, 13340, 93), (81, 13200, 83), (81, 13000, 81), (81, 12960, 81)])
 
 end LeetQ.Rel.Lang.Test

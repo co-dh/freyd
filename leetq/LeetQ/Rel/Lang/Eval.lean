@@ -50,6 +50,30 @@ abbrev EvM := StateM Memo
     meets no pair. -/
 def onKeys {A B : Obj} (f : Rel A A → Rel A B) (P : Rel A A) : Rel A B := if P.n == 0 then zero else f P
 
+/-- A closed sub-term's value as `hoist` leaves it: a value, a universe, or one under its identity. -/
+def closedVal? : {A B : Obj} → {d : Bool} → Tm A B d → Option (Rel A B)
+  | _, _, _, .val R => some R
+  | _, _, _, .uni U => some (idU U)
+  | _, _, _, .share _ R => closedVal? R
+  | _, _, _, _ => none
+
+/-- `X C`, `X` the variable `k`: `C`, its source the variable's target. -/
+def varComp? (k : Nat) : {A B : Obj} → {d : Bool} → Tm A B d → Option ((D : Obj) × Rel D B)
+  | _, _, _, .comp (B := D) (.var k') C => if k' == k then (closedVal? C).map (⟨D, ·⟩) else none
+  | _, _, _, .share _ R => varComp? k R
+  | _, _, _, _ => none
+
+/-- The arcs of a hoisted AC-3 body `S ∩ ⋂ₖ Aₖ\(X Cₖ)` over the variable `k`, its closed conjuncts skipped (they
+    are `S`); `none` for any other body. -/
+def acArcs (k : Nat) : {V D : Obj} → {d : Bool} → Tm V D d → Option (List (Revise V D))
+  | _, _, _, .share _ R => acArcs k R
+  | _, _, _, .val _ => some []
+  | _, _, _, .meet R S => return (← acArcs k R) ++ (← acArcs k S)
+  | V, D, _, .ldiv (A := V') R S UB UC => do
+    let A ← closedVal? R; let ⟨D', C⟩ ← varComp? k S; let UV ← closedVal? UB; let UD ← closedVal? UC
+    if h : V' = V ∧ D' = D then some [⟨h.1 ▸ A, h.2 ▸ C, UV, UD⟩] else none
+  | _, _, _, _ => none
+
 /-- `t` on the keys `D`: exact at every key of `D`; a closed term ignores `D`. In `RS`, `S` runs on `ran(R)`.
     A sub-term `.share k` whose identity occurs more than once (`cnt`) runs once per demand. -/
 def ev (cnt : Array Nat) (ρ : List (Nat × Val)) : {A B : Obj} → {d : Bool} → Tm A B d → Dem d A → EvM (Rel A B)
@@ -136,9 +160,12 @@ def ev (cnt : Array Nat) (ρ : List (Nat × Val)) : {A B : Obj} → {d : Bool} �
     | some R => pure R
     | none => pure (@panic (Rel A B) ⟨zero⟩ s!"internal: the fixed-point variable {k} is not bound here")
   -- each round one evaluation, as a fold step: what the body shares, it shares within the round
+  -- an AC-3 body runs by delta rounds (`acFix`), decided once before the rounds; any other body naively
   | A, B, _, .nu k S body, _ => do
     let s ← ev cnt ρ S ()
-    pure (fixOn (s.n.toNat + 1) (fun X => Id.run ((ev cnt ((k, ⟨A, B, X⟩) :: ρ) body ()).run' {})) s).1
+    match acArcs k body with
+    | some as@(a :: _) => pure (acFix s as a.UV).1
+    | _ => pure (fixOn (s.n.toNat + 1) (fun X => Id.run ((ev cnt ((k, ⟨A, B, X⟩) :: ρ) body ()).run' {})) s).1
   | A, B, _, .mu k UA UB body, _ => do
     let u ← ev cnt ρ UA (); let v ← ev cnt ρ UB ()
     pure (fixOn (u.n.toNat * v.n.toNat + 1) (fun X => Id.run ((ev cnt ((k, ⟨A, B, X⟩) :: ρ) body ()).run' {})) zero).1
