@@ -12,8 +12,7 @@ namespace LeetQ.Rel.Rep
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
 open QLean.Dep
 
-/-- `f^[j]`, `f` applied `j` times (core's `Nat.repeat`), as `RepFold`'s local notation. -/
-local notation:max f "^[" n "]" => Nat.repeat f n
+open FoldN
 
 /-- **The states of a left fold, in `Set`**: `st i r` holds the states `(c, ys)` key `r` reaches after `i`
     rounds, each round taking `(c, y :: ys)` to `(c', ys)` by `F i` (`hst`, for the rounds below `M`). A state
@@ -261,25 +260,13 @@ end Round
 
 /-! ## The primitives' hypotheses at one round -/
 
--- `RepFold`'s `mpairs`, `msum`, `c1`, `nubI` (local notations, so restated here): the row pairs `join` matches on
--- the codes `cs` of rows of `R` and of `S`, their count; the one-part code; `nub`'s kept rows
-set_option hygiene false in
-local notation "mpairs(" cs ", " R ", " S ")" => ((List.range (Rel.n R).toNat).flatMap fun i =>
-  ((List.range (Rel.n S).toNat).filter fun j => Column.idAt (cs[1]'Nat.one_lt_two).b (cs[1]'Nat.one_lt_two).w j ==
-    Column.idAt (cs[0]'Nat.zero_lt_two).b (cs[0]'Nat.zero_lt_two).w i).map (i, ·))
-set_option hygiene false in
-local notation "msum(" cs ", " R ", " S ")" => ((List.range (Rel.n R).toNat).map fun i =>
-  ((List.range (Rel.n S).toNat).filter fun j => Column.idAt (cs[1]'Nat.one_lt_two).b (cs[1]'Nat.one_lt_two).w j ==
-    Column.idAt (cs[0]'Nat.zero_lt_two).b (cs[0]'Nat.zero_lt_two).w i).length).sum
-set_option hygiene false in
-local notation "c1(" X ", " n ", " x ")" => (Obj.codes X (#v[⟨n, x⟩] : Vector (Part X) 1))[0]
-set_option hygiene false in
-local notation "nubI(" X ", " Y ", " R ")" =>
-  (tuples.tupleIds (c1(X, Rel.n R, Rel.key R)) #[c1(Y, Rel.n R, Rel.val R)]).2
+/-! Each primitive's hypotheses as one bundle, over `FoldN`'s `mpairs`, `msum`, `nubI`: `open FoldN Prim` in every
+    file that reads back a composite of these primitives. -/
+namespace Prim
 
 -- `rep_comp`'s hypotheses at `R ≫ S`, `B` the middle object, the codes `jc` bound by their equation
 set_option hygiene false in
-local notation "cmpOK(" B ", " R ", " S ")" =>
+scoped notation "cmpOK(" B ", " R ", " S ")" =>
   (Obj.CodesFit B (#v[⟨Rel.n R, Rel.val R⟩, ⟨Rel.n S, Rel.key S⟩] : Vector (Part B) 2) ∧
     ∀ jc : Vector Code 2, jc = Obj.codes B (#v[⟨Rel.n R, Rel.val R⟩, ⟨Rel.n S, Rel.key S⟩] : Vector (Part B) 2) →
       (Rel.n S).toNat < 2 ^ 63 ∧ msum(jc, R, S) < 2 ^ 63 ∧ msum(jc, R, S) < USize.size ∧
@@ -287,7 +274,7 @@ local notation "cmpOK(" B ", " R ", " S ")" =>
       Vals.PickFits _ (Rel.val S) ((mpairs(jc, R, S)).map Prod.snd))
 -- `rep_pair`'s hypotheses at `⟨R, S⟩`, `A` the keys' object, the codes `kc` bound by their equation
 set_option hygiene false in
-local notation "pairOK(" A ", " R ", " S ")" =>
+scoped notation "pairOK(" A ", " R ", " S ")" =>
   (Obj.CodesFit A (#v[⟨Rel.n R, Rel.key R⟩, ⟨Rel.n S, Rel.key S⟩] : Vector (Part A) 2) ∧
     ∀ kc : Vector Code 2, kc = Obj.codes A (#v[⟨Rel.n R, Rel.key R⟩, ⟨Rel.n S, Rel.key S⟩] : Vector (Part A) 2) →
       (Rel.n S).toNat < 2 ^ 63 ∧ msum(kc, R, S) < 2 ^ 63 ∧ msum(kc, R, S) < USize.size ∧
@@ -296,26 +283,26 @@ local notation "pairOK(" A ", " R ", " S ")" =>
       Vals.PickFits _ (Rel.val S) ((mpairs(kc, R, S)).map Prod.snd))
 -- `rep_ran`'s (`x` the values) or `rep_dom`'s (`x` the keys) hypotheses on the one-part code of `x`
 set_option hygiene false in
-local notation "oneFit(" B ", " n ", " x ")" =>
+scoped notation "oneFit(" B ", " n ", " x ")" =>
   (Obj.CodesFit B (#v[⟨n, x⟩] : Vector (Part B) 1) ∧
     ∀ dc : Code, dc = (Obj.codes B (#v[⟨n, x⟩] : Vector (Part B) 1))[0]'Nat.zero_lt_one →
       Vals.PickFits B x (ids dc.groupIds.2))
 -- `rep_nub`'s hypotheses at `T`
 set_option hygiene false in
-local notation "nubOK(" K ", " V ", " T ")" =>
+scoped notation "nubOK(" K ", " V ", " T ")" =>
   (Obj.CodesFit K (#v[⟨Rel.n T, Rel.key T⟩] : Vector (Part K) 1) ∧
     Obj.CodesFit V (#v[⟨Rel.n T, Rel.val T⟩] : Vector (Part V) 1) ∧
     Vals.PickFits K (Rel.key T) (ids nubI(K, V, T)) ∧ Vals.PickFits V (Rel.val T) (ids nubI(K, V, T)))
 -- `rep_antiJoin`'s hypotheses at `antiJoin R C`, its codes `ac` and kept rows `I` bound by their equations
 set_option hygiene false in
-local notation "ajOK(" B ", " R ", " C ")" =>
+scoped notation "ajOK(" B ", " R ", " C ")" =>
   (Obj.CodesFit B (#v[⟨Rel.n R, Rel.val R⟩, ⟨Rel.n C, Rel.val C⟩] : Vector (Part B) 2) ∧
     ∀ ac : Vector Code 2, ac = Obj.codes B (#v[⟨Rel.n R, Rel.val R⟩, ⟨Rel.n C, Rel.val C⟩] : Vector (Part B) 2) →
       ∀ I : ByteArray, I = anti (ac[0]'Nat.zero_lt_two) (ac[1]'Nat.one_lt_two) →
         Vals.PickFits _ (Rel.key R) (ids I) ∧ Vals.PickFits B (Rel.val R) (ids I))
 -- `rep_uncons`'s hypotheses at the arrays `Rel.val W`, its intermediates `ib`, `lb`, `Tv` bound by their equations
 set_option hygiene false in
-local notation "uncOK(" Y ", " W ")" =>
+scoped notation "uncOK(" Y ", " W ")" =>
   ((Rel.val W).1.toNat < 2 ^ 63 ∧
     ∀ ib : ByteArray, ib = whereBits (Rel.n W) (Ew.cmp Ew.gt Ew.i64 Ew.va (slicesOf (Rel.val W)).2 (one 0) (Rel.n W)) →
     ∀ lb : ByteArray, lb = gather 8 (slicesOf (Rel.val W)).1 ib →
@@ -326,6 +313,18 @@ local notation "uncOK(" Y ", " W ")" =>
         Vals.PickFits Y (Rel.val W).2.2.2 ((List.range (len ib)).map fun q => (Column.bitsAt lb (q * 8) 8).toNat) ∧
         Vals.PickFits (.arr Y) Tv
           ((List.range (len ib)).map fun q => (Column.bitsAt (tilLongs (len ib).toUSize) (q * 8) 8).toNat))
+-- `rep_diff`'s hypotheses at `R \ S`, `A`, `B` the key and value objects, its codes `pc` and kept rows `I` bound
+set_option hygiene false in
+scoped notation "diffOK(" A ", " B ", " R ", " S ")" =>
+  (∀ pc : Vector Code 2, pc = pairs #v[R, S] →
+    codesOK(pc, (#v[⟨Rel.n R, (Rel.key R, Rel.val R)⟩, ⟨Rel.n S, (Rel.key S, Rel.val S)⟩] :
+      Vector (Part (.prod A B)) 2)) ∧
+    ∀ I : ByteArray, I = anti (pc[0]'Nat.zero_lt_two) (pc[1]'Nat.one_lt_two) →
+      Vals.PickFits A (Rel.key R) (ids I) ∧ Vals.PickFits B (Rel.val R) (ids I))
+
+end Prim
+
+open Prim
 -- `rep_union_full`'s hypotheses at `out ∪ O`, the razed union `UO`
 set_option hygiene false in
 local notation "UO" =>
