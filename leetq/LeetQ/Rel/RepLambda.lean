@@ -48,7 +48,7 @@ theorem mem_arr_row {b : Obj} {n K : USize} (lo hi : Arr .long n) (f : Vals b K)
 
 -- `transpose`'s pieces, as it names them: the key codes, the values' order, the rows grouped, the run starts
 set_option hygiene false in
-local notation "kcT" => (Obj.codes A (#v[⟨(Rel.nub R).n, (Rel.nub R).key⟩] : Vector (Part A) 1))[0]
+local notation "kcT" => (Obj.codes A (#v[⟨(Rel.nub R).n, (Rel.nub R).key⟩] : Vector (Part A) 1))[0]'Nat.zero_lt_one
 set_option hygiene false in
 local notation "vpT" => Obj.sortBy B (Rel.nub R).val (tilLongs (Rel.nub R).n)
 set_option hygiene false in
@@ -69,11 +69,11 @@ theorem transpose_rows (R : Rel A B)
         Vals.row (Rel.nub R).key ⟨i, hi⟩ = Vals.row (Rel.nub R).key ⟨j, hj⟩)
     (hw : (kcT).w = 1 ∨ (kcT).w = 2 ∨ (kcT).w = 4 ∨ (kcT).w = 8 ∨ (kcT).w = 16 ∨ (kcT).w = 32 ∨ (kcT).w = 64)
     (hn : (kcT).n = (Rel.nub R).n) (hs : (kcT).b.size = ((kcT).n.toNat * (kcT).w + 7) / 8)
-    (hW : ∀ (B : Obj) (x : Part B), (((Obj.codes B #v[x])[0]).w = 1 ∨ ((Obj.codes B #v[x])[0]).w = 2 ∨
-      ((Obj.codes B #v[x])[0]).w = 4 ∨ ((Obj.codes B #v[x])[0]).w = 8 ∨ ((Obj.codes B #v[x])[0]).w = 16 ∨
-      ((Obj.codes B #v[x])[0]).w = 32 ∨ ((Obj.codes B #v[x])[0]).w = 64) ∧
-      ((Obj.codes B #v[x])[0]).b.size = (((Obj.codes B #v[x])[0]).n.toNat * ((Obj.codes B #v[x])[0]).w + 7) / 8 ∧
-      ((Obj.codes B #v[x])[0]).n = x.1)
+    (hW : ∀ (B : Obj) (x : Part B), (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 1 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 2 ∨
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 4 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 8 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 16 ∨
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 32 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 64) ∧
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).b.size = (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n.toNat * ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w + 7) / 8 ∧
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n = x.1)
     (h63 : (Rel.nub R).n.toNat < 2 ^ 63)
     (hpk : Vals.PickFits A (Rel.nub R).key (ids pT)) (hpv : Vals.PickFits B (Rel.nub R).val (ids pT))
     (hlo : Vals.PickFits A (Vals.pickPart A (Rel.nub R).key pT).2 (ids loT)) :
@@ -211,9 +211,9 @@ theorem transpose_rows (R : Rel A B)
 
 -- `rep_nub`'s codes of `R` and the rows `nub` keeps (`NubSpec`'s local notations, restated)
 set_option hygiene false in
-local notation "kcR" => (Obj.codes A (#v[⟨Rel.n R, Rel.key R⟩] : Vector (Part A) 1))[0]
+local notation "kcR" => (Obj.codes A (#v[⟨Rel.n R, Rel.key R⟩] : Vector (Part A) 1))[0]'Nat.zero_lt_one
 set_option hygiene false in
-local notation "vcR" => (Obj.codes B (#v[⟨Rel.n R, Rel.val R⟩] : Vector (Part B) 1))[0]
+local notation "vcR" => (Obj.codes B (#v[⟨Rel.n R, Rel.val R⟩] : Vector (Part B) 1))[0]'Nat.zero_lt_one
 set_option hygiene false in
 local notation "nubR" => (tuples.tupleIds kcR #[vcR]).2
 
@@ -239,11 +239,11 @@ theorem rep_transpose (R : Rel A B)
         Vals.row (Rel.nub R).key ⟨i, hi⟩ = Vals.row (Rel.nub R).key ⟨j, hj⟩)
     (hw : (kcT).w = 1 ∨ (kcT).w = 2 ∨ (kcT).w = 4 ∨ (kcT).w = 8 ∨ (kcT).w = 16 ∨ (kcT).w = 32 ∨ (kcT).w = 64)
     (hn : (kcT).n = (Rel.nub R).n) (hs : (kcT).b.size = ((kcT).n.toNat * (kcT).w + 7) / 8)
-    (hW : ∀ (B : Obj) (x : Part B), (((Obj.codes B #v[x])[0]).w = 1 ∨ ((Obj.codes B #v[x])[0]).w = 2 ∨
-      ((Obj.codes B #v[x])[0]).w = 4 ∨ ((Obj.codes B #v[x])[0]).w = 8 ∨ ((Obj.codes B #v[x])[0]).w = 16 ∨
-      ((Obj.codes B #v[x])[0]).w = 32 ∨ ((Obj.codes B #v[x])[0]).w = 64) ∧
-      ((Obj.codes B #v[x])[0]).b.size = (((Obj.codes B #v[x])[0]).n.toNat * ((Obj.codes B #v[x])[0]).w + 7) / 8 ∧
-      ((Obj.codes B #v[x])[0]).n = x.1)
+    (hW : ∀ (B : Obj) (x : Part B), (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 1 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 2 ∨
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 4 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 8 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 16 ∨
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 32 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 64) ∧
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).b.size = (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n.toNat * ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w + 7) / 8 ∧
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n = x.1)
     (h63 : (Rel.nub R).n.toNat < 2 ^ 63)
     (hpk : Vals.PickFits A (Rel.nub R).key (ids pT)) (hpv : Vals.PickFits B (Rel.nub R).val (ids pT))
     (hlo : Vals.PickFits A (Vals.pickPart A (Rel.nub R).key pT).2 (ids loT)) :

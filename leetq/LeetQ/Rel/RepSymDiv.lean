@@ -92,7 +92,6 @@ local notation "KS" => List.length (F(sk))
 set_option hygiene false in
 local notation "T(" j ")" => UInt64.toNat (Column.bitsAt s (j * 8) 8)
 
-set_option maxHeartbeats 800000 in
 /-- **`symDiv`'s set ids, read back**: over the key codes `rk`, `sk` and the joint value codes `v0`, `v1` of `R`
     and `S`, `symDiv`'s `ids` holds one long per key class of `rk`, then one per key class of `sk`; a class `i` of
     `rk` and a class `j` of `sk` get one id exactly when they hold one set of value codes. Stated over any codes,
@@ -378,7 +377,7 @@ theorem sym_pairs (rk sk v0 v1 : Code)
 theorem pickPart_row {n : USize} (x : Vals B n) (I : ByteArray) (hL : len I < USize.size)
     (hlt : ∀ t ∈ ids I, t < n.toNat) (hP : Vals.PickFits B x (ids I)) :
     (Vals.pickPart B x I).1.toNat = len I ∧ ∀ q (hq : q < (Vals.pickPart B x I).1.toNat),
-      ∃ (hq' : q < (ids I).length) (ht : (ids I)[q] < n.toNat),
+      ∃ (hq' : q < (ids I).length) (ht : (ids I)[q]'hq' < n.toNat),
         (Vals.pickPart B x I).2.row ⟨q, hq⟩ = x.row ⟨_, ht⟩ := by
   have hpd : Vals.pickPart B x I = ⟨(len I).toUSize, Vals.pick B x I _ (USize.toNat_ofNat_of_lt' hL).symm⟩ := by
     unfold Vals.pickPart need; rw [dif_pos hL]
@@ -394,7 +393,6 @@ theorem pickPart_row {n : USize} (x : Vals B n) (I : ByteArray) (hL : len I < US
   rw [pick_row B x I _ _ hfit ⟨q, hq⟩, dif_pos (by rw [← ids_getElem hq']; exact ht)]
   exact congrArg x.row (Fin.ext (ids_getElem hq').symm)
 
-set_option maxHeartbeats 1600000 in
 /-- **`symDiv`'s joined part, read back**: `hit`, the pairs of `join lc rc` (`sym_pairs`) read at the first rows
     of the key classes, holds `(x, y)` exactly when `R` takes `x` somewhere and `R`'s fibre at `x` is `S`'s at
     `y`. Hypotheses: `sym_pairs`'; `rk`, `sk` code `R.key`, `S.key` faithfully, `v0`, `v1` code `R.val`, `S.val`
@@ -641,7 +639,7 @@ theorem sym_vac_holds (R : Rel A C) (S : Rel B C) {ma mb : USize} (Ua : Vals A m
 
 -- the one-part code and `nub`'s first rows, and `∪`'s razed relation of `P` and `Q` (`RepDiv`'s, restated)
 set_option hygiene false in
-local notation "c1(" X ", " n ", " x ")" => (Obj.codes X (#v[⟨n, x⟩] : Vector (Part X) 1))[0]
+local notation "c1(" X ", " n ", " x ")" => (Obj.codes X (#v[⟨n, x⟩] : Vector (Part X) 1))[0]'Nat.zero_lt_one
 set_option hygiene false in
 local notation "nubI(" X ", " Y ", " R ")" =>
   (tuples.tupleIds (c1(X, Rel.n R, Rel.key R)) #[c1(Y, Rel.n R, Rel.val R)]).2
@@ -650,7 +648,6 @@ local notation "PQ(" Y ", " Z ")" =>
   (⟨_, Obj.raze Y #[⟨Rel.n P, Rel.key P⟩, ⟨Rel.n Q, Rel.key Q⟩] hNk,
     Obj.raze Z #[⟨Rel.n P, Rel.val P⟩, ⟨Rel.n Q, Rel.val Q⟩] hNv⟩ : Rel Y Z)
 
-set_option maxHeartbeats 1600000 in
 /-- **`rep (R /ₛ S)`**: `x` to `y` exactly when `R`'s fibre at `x` is `S`'s at `y`, and either `R` takes `x`
     somewhere, or `x` and `y` are elements of the universes `Ua`, `Ub`. `symDiv`'s intermediate values are bound
     to variables by their defining equations. Hypotheses: `Obj.CodesFit` of every coded part; the counts fit;
@@ -660,9 +657,9 @@ theorem rep_symDiv {ma mb : USize} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma) 
     (hfv : C.CodesFit #v[⟨R.n, R.val⟩, ⟨S.n, S.val⟩])
     (ac : Vector Code 2) (hac : ac = A.codes #v[⟨R.n, R.key⟩, ⟨ma, Ua⟩]) (hfa : A.CodesFit #v[⟨R.n, R.key⟩, ⟨ma, Ua⟩])
     (bc : Vector Code 2) (hbc : bc = B.codes #v[⟨S.n, S.key⟩, ⟨mb, Ub⟩]) (hfb : B.CodesFit #v[⟨S.n, S.key⟩, ⟨mb, Ub⟩])
-    (v0 v1 rk uac sk ubc : Code) (ev0 : v0 = vc[0]'(by decide)) (ev1 : v1 = vc[1]'(by decide))
-    (erk : rk = ac[0]'(by decide)) (euac : uac = ac[1]'(by decide))
-    (esk : sk = bc[0]'(by decide)) (eubc : ubc = bc[1]'(by decide))
+    (v0 v1 rk uac sk ubc : Code) (ev0 : v0 = vc[0]'Nat.zero_lt_two) (ev1 : v1 = vc[1]'Nat.one_lt_two)
+    (erk : rk = ac[0]'Nat.zero_lt_two) (euac : uac = ac[1]'Nat.one_lt_two)
+    (esk : sk = bc[0]'Nat.zero_lt_two) (eubc : ubc = bc[1]'Nat.one_lt_two)
     (hNU : R.n.toNat + S.n.toNat < USize.size) (hN63 : R.n.toNat + S.n.toNat + 1 < 2 ^ 63)
     (pr orr fr ps os fs : ByteArray) (epr : pr = (segments rk).1) (eorr : orr = (segments rk).2.1)
     (efr : fr = (segments rk).2.2) (eps : ps = (segments sk).1) (eos : os = (segments sk).2.1)
@@ -719,10 +716,10 @@ theorem rep_symDiv {ma mb : USize} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma) 
   obtain ⟨uaw, uan, uas, -⟩ := aW (k := 1) (by decide)
   obtain ⟨skw, skn, sks, skc⟩ := bW (k := 0) (by decide)
   obtain ⟨ubw, ubn, ubs, -⟩ := bW (k := 1) (by decide)
-  have v0n' : (vc[0]'(by decide)).n = R.n := v0n
-  have v1n' : (vc[1]'(by decide)).n = S.n := v1n
-  have rkn' : (ac[0]'(by decide)).n = R.n := rkn
-  have skn' : (bc[0]'(by decide)).n = S.n := skn
+  have v0n' : (vc[0]'Nat.zero_lt_two).n = R.n := v0n
+  have v1n' : (vc[1]'Nat.one_lt_two).n = S.n := v1n
+  have rkn' : (ac[0]'Nat.zero_lt_two).n = R.n := rkn
+  have skn' : (bc[0]'Nat.zero_lt_two).n = S.n := skn
   have hP := sym_hit_holds R S _ _ _ _ rkw rks rkc skw sks skc v0w v0s v0c v1s v1c
     (vL (k := 1) (l := 0) (by decide) (by decide)) (v0n'.trans rkn'.symm) (v1n'.trans skn'.symm)
     (by rw [rkn', skn']; exact hNU) (by rw [rkn', skn']; exact hN63) R.n.toNat (by rw [rkn'])
