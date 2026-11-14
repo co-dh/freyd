@@ -332,6 +332,174 @@ theorem groupLongs_read (A : ByteArray) (B : Code) (n : USize)
   rw [ids_idLongs, lane_toNat hW, hcap]
   exact List.map_congr_left fun t ht => hg t (List.mem_range.1 ht)
 
+/-- **`concatBytes #[a, one v]` read back**: `a`'s `m` longs, then `v`. -/
+theorem concat_one (a : ByteArray) (v : UInt64) {m : Nat} (ha : a.size = 8 * m) :
+    (concatBytes #[a, one v]).size = 8 * (m + 1) ∧
+      (∀ j < m, Column.bitsAt (concatBytes #[a, one v]) (j * 8) 8 = Column.bitsAt a (j * 8) 8) ∧
+      Column.bitsAt (concatBytes #[a, one v]) (m * 8) 8 = v := by
+  have h1 : (one v).size = 8 := by simp [one, Column.pushBits_size]
+  have e : concatBytes #[a, one v] = (ByteArray.empty ++ a) ++ one v := rfl
+  have hX : (ByteArray.empty ++ a).size = 8 * m := by rw [ByteArray.size_append]; simp [ha]
+  rw [e]
+  refine ⟨by rw [ByteArray.size_append, hX, h1]; omega, fun j hj => bitsAt_shift _ _ _ _ _ fun k hk => ?_, ?_⟩
+  · rw [ba_append_left _ _ _ (by rw [hX]; omega), ba_append_right' _ _ _ (by simp)]; simp
+  · refine (bitsAt_shift _ _ _ _ _ fun k hk => ?_).trans (bitsAt_one v)
+    rw [show m * 8 + k = (ByteArray.empty ++ a).size + k by rw [hX]; omega, ba_append_right, Nat.zero_add]
+
+-- the `j`-th representative's code along the sorted rows `L`, over the slice `j` of the first rows
+set_option hygiene false in
+local notation "SEQ(" φ ", " j ")" =>
+  (List.range (off (j + 1) - off j)).map (fun x => φ (L ((firstsOf K N).getD (off j + x) 0)))
+
+/-- **Sorted slices compare as sets**: rows `[O j, O (j+1))` form slice `j` (`G`), `L` lists the rows slice by
+    slice (`G (L t) = G t`), within a slice ascending in a key `κ` that agrees exactly where the codes `c` do.
+    The first rows `F` of the pairs `K t = (G t, c (L t))`, cut at `off j` (the pair number at `O j`), give each
+    slice its representatives' codes; two slices have equal representatives exactly when they hold one set of
+    codes. Hypotheses: the starts ascend to `N`; `G`, `L`, `κ` as `groupOf_spec`/`gradeBy_lex` give them. -/
+theorem slices_core {N m : Nat} {O G L c κ : Nat → Nat} {K : Nat → Nat × Nat} {off : Nat → Nat}
+    (hO : ∀ a b, a ≤ b → b ≤ m → O a ≤ O b) (hOm : O m = N)
+    (hG : ∀ i < N, G i < m ∧ O (G i) ≤ i ∧ i < O (G i + 1))
+    (hL : ∀ t < N, L t < N) (hLs : ∀ i < N, ∃ t < N, L t = i) (hGL : ∀ t < N, G (L t) = G t)
+    (hκ : ∀ i j, i < N → j < N → (κ i = κ j ↔ c i = c j))
+    (hsrt : ∀ t t', t < t' → t' < N → G t = G t' → κ (L t) ≤ κ (L t'))
+    (hK : ∀ t, K t = (G t, c (L t)))
+    (hoff : ∀ j, off j = if O j < N then Verify.groupOf K N (O j) else (firstsOf K N).length) :
+    (∀ j ≤ m, off j ≤ (firstsOf K N).length) ∧ (∀ a b, a ≤ b → b ≤ m → off a ≤ off b) ∧
+      off m = (firstsOf K N).length ∧ ∀ j < m, ∀ j' < m, (SEQ(c, j) = SEQ(c, j') ↔
+        ∀ x, (∃ i, O j ≤ i ∧ i < O (j + 1) ∧ c i = x) ↔ (∃ i, O j' ≤ i ∧ i < O (j' + 1) ∧ c i = x)) := by
+  have hON : ∀ j ≤ m, O j ≤ N := fun j hj => by have := hO j m hj (Nat.le_refl _); omega
+  -- a row is past start `j` exactly when its slice is at least `j`
+  have hb : ∀ i < N, ∀ j ≤ m, (O j ≤ i ↔ j ≤ G i) := fun i hi j hj => by
+    obtain ⟨h1, h2, h3⟩ := hG i hi
+    constructor
+    · intro h; apply Nat.not_lt.1; intro hlt
+      have := hO (G i + 1) j hlt hj; omega
+    · intro h; exact Nat.le_trans (hO j (G i) h (Nat.le_of_lt h1)) h2
+  have hin : ∀ i < N, ∀ j < m, (O j ≤ i ∧ i < O (j + 1) ↔ G i = j) := fun i hi j hj => by
+    have e1 := hb i hi j (Nat.le_of_lt hj); have e2 := hb i hi (j + 1) hj
+    constructor
+    · intro ⟨a, b⟩
+      have := e1.1 a
+      have : ¬ (j + 1 ≤ G i) := fun h => absurd (e2.2 h) (by omega)
+      omega
+    · intro h; refine ⟨e1.2 (by omega), Nat.lt_of_not_le fun h' => ?_⟩; have := e2.1 h'; omega
+  have hFpw : (firstsOf K N).Pairwise (· < ·) := by unfold firstsOf; exact (pairwise_range N).filter _
+  -- the first rows below start `j` are those numbered below `off j`
+  have hc : ∀ j ≤ m, ∀ r (hr : r < (firstsOf K N).length), ((firstsOf K N)[r] < O j ↔ r < off j) := by
+    intro j hj r hr
+    rw [hoff j]
+    split
+    · rename_i hlt
+      have hmem : O j ∈ firstsOf K N := by
+        unfold firstsOf
+        simp only [List.mem_filter, List.mem_range, List.all_eq_true, Bool.not_eq_true', decide_eq_false_iff_not]
+        refine ⟨hlt, fun q hq e => ?_⟩
+        rw [hK, hK] at e
+        have h1 : ¬ j ≤ G q := fun h => absurd ((hb q (by omega) j hj).2 h) (by omega)
+        have h2 := (hb (O j) hlt j hj).1 (Nat.le_refl _)
+        have := (Prod.mk.inj e).1; omega
+      exact firsts_lt_iff hmem hr
+    · rename_i hge
+      have := Verify.firsts_lt K N (List.getElem_mem hr)
+      have : O j = N := by have := hON j hj; omega
+      constructor <;> intro _ <;> omega
+  have hoffle : ∀ j ≤ m, off j ≤ (firstsOf K N).length := fun j hj => by
+    rw [hoff j]; split
+    · exact Nat.le_of_lt (Verify.groupOf_lt ‹_›)
+    · exact Nat.le_refl _
+  have hmono : ∀ a b, a ≤ b → b ≤ m → off a ≤ off b := fun a b hab hbm => by
+    refine Nat.not_lt.1 fun hlt => ?_
+    have hr : off b < (firstsOf K N).length := Nat.lt_of_lt_of_le hlt (hoffle a (by omega))
+    have h1 := (hc a (by omega) (off b) hr).2 hlt
+    have h2 := (hc b hbm (off b) hr).1 (Nat.lt_of_lt_of_le h1 (hO a b hab hbm))
+    exact Nat.lt_irrefl _ h2
+  have hoffm : off m = (firstsOf K N).length := by rw [hoff m, if_neg (by omega)]
+  -- the representatives numbered `[off j, off (j+1))` are the first rows in slice `j`
+  have hblk : ∀ j < m, ∀ r (hr : r < (firstsOf K N).length),
+      (off j ≤ r ∧ r < off (j + 1) ↔ G (firstsOf K N)[r] = j) := fun j hj r hr => by
+    have hFN := Verify.firsts_lt K N (List.getElem_mem hr)
+    rw [← hin _ hFN j hj]
+    have e1 := hc j (by omega) r hr; have e2 := hc (j + 1) hj r hr
+    constructor
+    · intro ⟨a, b⟩; exact ⟨Nat.not_lt.1 fun h => absurd (e1.1 h) (by omega), e2.2 b⟩
+    · intro ⟨a, b⟩; exact ⟨Nat.not_lt.1 fun h => absurd (e1.2 h) (by omega), e2.1 b⟩
+  have hgetD : ∀ r (hr : r < (firstsOf K N).length), (firstsOf K N).getD r 0 = (firstsOf K N)[r] := fun r hr => by
+    simp only [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hr, Option.getD_some]
+  have hLF : ∀ r < (firstsOf K N).length, L ((firstsOf K N).getD r 0) < N := fun r hr => by
+    rw [hgetD r hr]; exact hL _ (Verify.firsts_lt K N (List.getElem_mem hr))
+  -- a slice's representatives carry its codes, read through any `φ` that `c` determines
+  have hset : ∀ j < m, ∀ (φ : Nat → Nat), (∀ a b, a < N → b < N → c a = c b → φ a = φ b) → ∀ x,
+      ((∃ r, off j ≤ r ∧ r < off (j + 1) ∧ φ (L ((firstsOf K N).getD r 0)) = x) ↔
+        (∃ i, O j ≤ i ∧ i < O (j + 1) ∧ φ i = x)) := fun j hj φ hφ x => by
+    constructor
+    · rintro ⟨r, h1, h2, e⟩
+      have hr : r < (firstsOf K N).length := Nat.lt_of_lt_of_le h2 (hoffle _ hj)
+      have hFN := Verify.firsts_lt K N (List.getElem_mem hr)
+      rw [hgetD r hr] at e
+      have hg : G (L (firstsOf K N)[r]) = j := by rw [hGL _ hFN]; exact (hblk j hj r hr).1 ⟨h1, h2⟩
+      have hh := (hin _ (hL _ hFN) j hj).2 hg
+      exact ⟨_, hh.1, hh.2, e⟩
+    · rintro ⟨i, h1, h2, e⟩
+      have hiN : i < N := Nat.lt_of_lt_of_le h2 (hON _ hj)
+      obtain ⟨t, ht, rfl⟩ := hLs i hiN
+      have hg := (hin _ hiN j hj).1 ⟨h1, h2⟩
+      rw [hGL t ht] at hg
+      have hr := Verify.groupOf_lt (g := K) ht
+      have hkt := Verify.groupOf_get (g := K) ht
+      rw [hK, hK] at hkt
+      obtain ⟨e1, e2⟩ := Prod.mk.inj hkt
+      have hFN := Verify.firsts_lt K N (List.getElem_mem hr)
+      have hh := (hblk j hj _ hr).2 (e1.trans hg)
+      refine ⟨_, hh.1, hh.2, ?_⟩
+      rw [hgetD _ hr, ← e]; exact hφ _ _ (hL _ hFN) (hL _ ht) e2
+  have hmemseq : ∀ j < m, ∀ (φ : Nat → Nat) y, (y ∈ SEQ(φ, j) ↔
+      ∃ r, off j ≤ r ∧ r < off (j + 1) ∧ φ (L ((firstsOf K N).getD r 0)) = y) := fun j hj φ y => by
+    simp only [List.mem_map, List.mem_range]
+    constructor
+    · rintro ⟨x, hx, e⟩; exact ⟨off j + x, by omega, by omega, e⟩
+    · rintro ⟨r, h1, h2, e⟩; exact ⟨r - off j, by omega, by rw [Nat.add_sub_cancel' h1]; exact e⟩
+  -- within a slice the representatives' keys strictly rise
+  have hstrict : ∀ j < m, (SEQ(κ, j)).Pairwise (· < ·) := fun j hj => by
+    refine List.pairwise_map.2 ((pairwise_range _).imp_of_mem fun {a b} ha hb hab => ?_)
+    have ha := List.mem_range.1 ha; have hb := List.mem_range.1 hb
+    have hbF : off j + b < (firstsOf K N).length := by have := hoffle (j + 1) hj; omega
+    have haF : off j + a < (firstsOf K N).length := by omega
+    rw [hgetD _ haF, hgetD _ hbF]
+    have hFa := Verify.firsts_lt K N (List.getElem_mem haF)
+    have hFb := Verify.firsts_lt K N (List.getElem_mem hbF)
+    have hF : (firstsOf K N)[off j + a] < (firstsOf K N)[off j + b] :=
+      List.pairwise_iff_getElem.1 hFpw _ _ haF hbF (by omega)
+    have hga := (hblk j hj _ haF).1 ⟨by omega, by omega⟩
+    have hgb := (hblk j hj _ hbF).1 ⟨by omega, by omega⟩
+    have hle := hsrt _ _ hF hFb (hga.trans hgb.symm)
+    refine Nat.lt_of_le_of_ne hle fun e => ?_
+    have ec := (hκ _ _ (hL _ hFa) (hL _ hFb)).1 e
+    have := Verify.firsts_inj (g := K) haF hbF (by rw [hK, hK, ec, hga, hgb])
+    omega
+  have hφκ : ∀ a b, a < N → b < N → c a = c b → κ a = κ b := fun a b ha hb e => (hκ a b ha hb).2 e
+  refine ⟨hoffle, hmono, hoffm, fun j hj j' hj' => ⟨fun h x => ?_, fun h => ?_⟩⟩
+  · rw [← hset j hj c (fun _ _ _ _ e => e) x, ← hset j' hj' c (fun _ _ _ _ e => e) x, ← hmemseq j hj c x,
+      ← hmemseq j' hj' c x, h]
+  · have hk : SEQ(κ, j) = SEQ(κ, j') := eq_of_lt_mem (hstrict j hj) (hstrict j' hj') fun y => by
+      rw [hmemseq j hj κ y, hmemseq j' hj' κ y, hset j hj κ hφκ y, hset j' hj' κ hφκ y]
+      constructor
+      · rintro ⟨i, h1, h2, rfl⟩
+        obtain ⟨i', h1', h2', e⟩ := (h (c i)).1 ⟨i, h1, h2, rfl⟩
+        exact ⟨i', h1', h2', (hκ i' i (Nat.lt_of_lt_of_le h2' (hON _ hj')) (Nat.lt_of_lt_of_le h2 (hON _ hj))).2 e⟩
+      · rintro ⟨i, h1, h2, rfl⟩
+        obtain ⟨i', h1', h2', e⟩ := (h (c i)).2 ⟨i, h1, h2, rfl⟩
+        exact ⟨i', h1', h2', (hκ i' i (Nat.lt_of_lt_of_le h2' (hON _ hj)) (Nat.lt_of_lt_of_le h2 (hON _ hj'))).2 e⟩
+    have hl := congrArg List.length hk
+    simp only [List.length_map, List.length_range] at hl
+    apply List.ext_getElem (by simp only [List.length_map, List.length_range]; exact hl)
+    intro x h1 h2
+    have e := List.getElem_of_eq hk (by simpa using h1)
+    simp only [List.getElem_map, List.getElem_range] at e ⊢
+    simp only [List.length_map, List.length_range] at h1 h2
+    exact (hκ _ _ (hLF _ (by have := hoffle (j + 1) hj; omega)) (hLF _ (by have := hoffle (j' + 1) hj'; omega))).1 e
+
+#print axioms concat_one
+#print axioms slices_core
 #print axioms gradeBy_lex
 #print axioms groupOf_spec
 #print axioms groupLongs_read
