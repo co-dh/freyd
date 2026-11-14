@@ -1065,44 +1065,48 @@ theorem pickFits_pick_sum {a b : Obj} {n : USize} (x : Vals (.sum a b) n)
       have ht' := List.mem_filter.1 ht
       exact (hrank g ix hG t (hq t ht'.1) ht'.2).2
   subst hpd
-  simp only [Vals.pick, Vals.pickShared, need, htb]
+  have hU : ∀ k : Nat, k < USize.size → k.toUSize.toNat = k := fun k hk => USize.toNat_ofNat_of_lt' hk
+  subst htb
+  simp only [Vals.pick, Vals.pickShared, need]
   rw [dif_pos ⟨hilU, hirU⟩]
   simp only [Vals.PickFits]
-  rw [filterMap_ite (fun t => !Column.bitAt tb t) _ (fun t => ((List.range t).filter fun s => !Column.bitAt tb s).length)
+  -- `tb` is spelled out from here: generalizing it back over the unfolded pick times out
+  rw [filterMap_ite (fun t => !Column.bitAt (tagBits (pickArr .boolean ⟨n, tag⟩ i m h)) t) _
+      (fun t => ((List.range t).filter fun s => !Column.bitAt (tagBits (pickArr .boolean ⟨n, tag⟩ i m h)) s).length)
       qs ?wl,
-    filterMap_ite (Column.bitAt tb) _ (fun t => ((List.range t).filter (Column.bitAt tb)).length) qs ?wr]
+    filterMap_ite (Column.bitAt (tagBits (pickArr .boolean ⟨n, tag⟩ i m h))) _
+      (fun t => ((List.range t).filter (Column.bitAt (tagBits (pickArr .boolean ⟨n, tag⟩ i m h)))).length) qs ?wr]
   case wl =>
     intro t ht
     have ht := hq t ht
     dsimp only
     rw [dif_pos ht, hq0 t ht]
-    cases hb : Column.bitAt tb t
-    · have hidx := tau_pick_get tb _ _ m ⟨t, ht⟩
-        (by rw [hrr t ht]; have := List.length_filter_le (Column.bitAt tb) (List.range t); simp only [List.length_range] at this; omega)
-        (by rw [hrl t ht]; have := List.length_filter_le (fun s => !Column.bitAt tb s) (List.range t); simp only [List.length_range] at this; omega)
+    cases hb : Column.bitAt (tagBits (pickArr .boolean ⟨n, tag⟩ i m h)) t
+    · have hidx := tau_pick_get (tagBits (pickArr .boolean ⟨n, tag⟩ i m h)) _ _ m ⟨t, ht⟩
+        (by rw [hrr t ht]; have := List.length_filter_le (Column.bitAt (tagBits (pickArr .boolean ⟨n, tag⟩ i m h))) (List.range t); simp only [List.length_range] at this; omega)
+        (by rw [hrl t ht]; have := List.length_filter_le (fun s => !Column.bitAt (tagBits (pickArr .boolean ⟨n, tag⟩ i m h)) s) (List.range t); simp only [List.length_range] at this; omega)
       rw [hrr t ht, hrl t ht, hb] at hidx
       simp only [Bool.false_eq_true, ↓reduceIte] at hidx
-      have hlt := (hrank (fun s => !Column.bitAt tb s) _ hGL t ht (by simp [hb])).1
+      have hlt := (hrank _ _ hGL t ht (by simp [hb])).1
       rw [if_pos rfl]; simp only [Bool.not_false, ↓reduceIte, Option.some.injEq]
-      rw [hidx, USize.toNat_ofNat_of_lt' hilU]; omega
-    · simp
+      rw [hidx, hU _ hilU]; omega
+    · simp only [Bool.not_true, Bool.true_eq_false, Bool.false_eq_true, ↓reduceIte]
   case wr =>
     intro t ht
     have ht := hq t ht
     dsimp only
     rw [dif_pos ht, hq0 t ht]
-    cases hb : Column.bitAt tb t
-    · simp
-    · have hidx := tau_pick_get tb _ _ m ⟨t, ht⟩
-        (by rw [hrr t ht]; have := List.length_filter_le (Column.bitAt tb) (List.range t); simp only [List.length_range] at this; omega)
-        (by rw [hrl t ht]; have := List.length_filter_le (fun s => !Column.bitAt tb s) (List.range t); simp only [List.length_range] at this; omega)
+    cases hb : Column.bitAt (tagBits (pickArr .boolean ⟨n, tag⟩ i m h)) t
+    · simp only [Bool.not_true, Bool.true_eq_false, Bool.false_eq_true, ↓reduceIte]
+    · have hidx := tau_pick_get (tagBits (pickArr .boolean ⟨n, tag⟩ i m h)) _ _ m ⟨t, ht⟩
+        (by rw [hrr t ht]; have := List.length_filter_le (Column.bitAt (tagBits (pickArr .boolean ⟨n, tag⟩ i m h))) (List.range t); simp only [List.length_range] at this; omega)
+        (by rw [hrl t ht]; have := List.length_filter_le (fun s => !Column.bitAt (tagBits (pickArr .boolean ⟨n, tag⟩ i m h)) s) (List.range t); simp only [List.length_range] at this; omega)
       rw [hrr t ht, hrl t ht, hb] at hidx
       simp only [↓reduceIte] at hidx
-      have hlt := (hrank (Column.bitAt tb) _ hGR t ht hb).1
+      have hlt := (hrank _ _ hGR t ht hb).1
       simp only [↓reduceIte, Bool.true_eq_false, Option.some.injEq]
-      rw [hidx, USize.toNat_ofNat_of_lt' hirU]; omega
-  exact ⟨hqs, by rw [USize.toNat_ofNat_of_lt' hilU]; exact hlen63 _ _ hGL,
-    by rw [USize.toNat_ofNat_of_lt' hirU]; exact hlen63 _ _ hGR,
+      rw [hidx, hU _ hirU]; omega
+  exact ⟨hqs, by rw [hU _ hilU]; exact hlen63 _ _ hGL, by rw [hU _ hirU]; exact hlen63 _ _ hGR,
     hpart a xa _ _ hilU iha hGL hfa' hca', hpart b xb _ _ hirU ihb hGR hfb' hcb'⟩
 
 /-- **Picking twice is picking once at the composed rows**: `x` picked at `i` fits at rows `qs` of the pick
