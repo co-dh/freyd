@@ -254,6 +254,71 @@ theorem rep_mod {n : USize} (W : Vals (.prod (.atom .long) (.atom .long)) n) (a 
 theorem intStep_add (a b : Int64) : Ew.intStep Ew.add nul a b = if a = nul ∨ b = nul then nul else a + b := by
   simp only [Ew.intStep, show (Ew.add == Ew.add) = true by decide, if_true, Bool.or_eq_true, beq_iff_eq]
 
+/-! ## `succ` -/
+
+-- codes `cs` of two long columns `ps` faithful and well formed: `RepOps`' `codesOK`, rows read by `Arr.get`
+set_option hygiene false in
+local notation "codesOK(" cs ", " ps ")" => ((∀ {k l : Nat} (hk : k < 2) (hl : l < 2) {i j : Nat}
+    (hi : i < (ps[k]'hk).1.toNat) (hj : j < (ps[l]'hl).1.toNat),
+    Column.idAt (cs[k]'hk).b (cs[k]'hk).w i = Column.idAt (cs[l]'hl).b (cs[l]'hl).w j ↔
+      Arr.get (ps[k]'hk).2 ⟨i, hi⟩ = Arr.get (ps[l]'hl).2 ⟨j, hj⟩) ∧
+  ∀ {k : Nat} (hk : k < 2),
+    ((cs[k]'hk).w = 1 ∨ (cs[k]'hk).w = 2 ∨ (cs[k]'hk).w = 4 ∨ (cs[k]'hk).w = 8 ∨ (cs[k]'hk).w = 16 ∨
+      (cs[k]'hk).w = 32 ∨ (cs[k]'hk).w = 64) ∧
+    (cs[k]'hk).n = (ps[k]'hk).1 ∧ (cs[k]'hk).b.size = ((cs[k]'hk).n.toNat * (cs[k]'hk).w + 7) / 8)
+
+/-- `valCol` of `Ew.add` against the long `1`, element `i`: `Ew.intStep` of `+ 1`. -/
+theorem valCol_succ_get {n : USize} (U : Arr .long n) (i : Fin n.toNat) :
+    (valCol (n := n) Ew.add Ew.va (longsOf U) (one 1)).get i = Ew.intStep Ew.add nul (U.get i) 1 := by
+  rw [Arr.get_long_bytes _ rfl, val_va_get _ _ _ _ i.2, bitsAt_one, longsOf_get U i.2,
+    show (1 : UInt64) = (1 : Int64).toUInt64 from rfl, valStep_i64, Int64.toInt64_toUInt64]
+
+/-- **`rep (succ U)`**: `u` in `U` to `u + 1` (`Ew.intStep`, wrapping), where that is an element of `U` again — so
+    the top of `U` goes nowhere, and so does `Int64.maxValue`, whose wrapped successor is q's null unless `U` holds
+    the null. Hypotheses: the defining equations of the successor column `s` and the codes `cs`, and `cs` faithful
+    and well formed (`codesOK`). -/
+theorem rep_succ {n : USize} (U : Vals (.atom .long) n) (s : Arr .long n)
+    (hs : s = valCol Ew.add Ew.va (longsOf U) (one 1)) (cs : Vector Code 2)
+    (hcs : cs = codes .long #v[⟨n, s⟩, ⟨n, U⟩]) (hc : codesOK(cs, (#v[⟨n, s⟩, ⟨n, U⟩] : Vector ((m : USize) × Arr .long m) 2)))
+    (u w : Int64) :
+    rep (succ U) u w ↔ (∃ i, U.row i = u) ∧ w = Ew.intStep Ew.add nul u 1 ∧ ∃ j, U.row j = w := by
+  subst hs
+  refine (holds_where (V := .atom .long) "succ" n _ (fun r hr => Vals.pick _ U _ r hr)
+      (fun r hr => Vals.pick (.atom .long) (valCol (n := n) Ew.add Ew.va (longsOf U) (one 1)) _ r hr)
+      (fun t => if ht : t < n.toNat then U.get ⟨t, ht⟩ else default)
+      (fun t => if ht : t < n.toNat then (valCol (n := n) Ew.add Ew.va (longsOf U) (one 1)).get ⟨t, ht⟩
+        else default) ?_ ?_ u w).trans ?_
+  · intro r hr q hin
+    dsimp only
+    rw [dif_pos hin]; exact pick_row_atom _ _ _ _ q hin
+  · intro r hr q hin
+    dsimp only
+    rw [dif_pos hin]; exact pick_row_atom _ _ _ _ q hin
+  · rw [← hcs]
+    obtain ⟨hF, hW⟩ := hc
+    obtain ⟨hw0, hn0, hs0⟩ := hW (k := 0) (by decide)
+    obtain ⟨hw1, hn1, hs1⟩ := hW (k := 1) (by decide)
+    have hbit : ∀ t (ht : t < n.toNat), Column.bitAt ((cs[0]'Nat.zero_lt_two).member (cs[1]'Nat.one_lt_two)) t = true ↔
+        ∃ j : Fin n.toNat, U.get j = (valCol (n := n) Ew.add Ew.va (longsOf U) (one 1)).get ⟨t, ht⟩ := fun t ht => by
+      rw [member_bit _ _ hw0 hw1 hs0 hs1 (by rw [hn0]; exact ht)]
+      constructor
+      · rintro ⟨j, hj, he⟩
+        have hj' : j < n.toNat := by rw [hn1] at hj; exact hj
+        exact ⟨⟨j, hj'⟩, (hF (k := 1) (l := 0) (by decide) (by decide) hj' ht).1 he⟩
+      · rintro ⟨j, hj⟩
+        exact ⟨j.1, by rw [hn1]; exact j.2, (hF (k := 1) (l := 0) (by decide) (by decide) j.2 ht).2 hj⟩
+    constructor
+    · rintro ⟨t, ht, hb, hg, hh⟩
+      rw [dif_pos ht] at hg hh
+      obtain ⟨j, hj⟩ := (hbit t ht).1 hb
+      rw [valCol_succ_get] at hh hj
+      exact ⟨⟨_, hg⟩, by rw [← hh, hg], j, hj.trans hh⟩
+    · rintro ⟨⟨i, hi⟩, hw, j, hj⟩
+      refine ⟨i.1, i.2, (hbit i.1 i.2).2 ⟨j, ?_⟩, by rw [dif_pos i.2]; exact hi, ?_⟩
+      · rw [valCol_succ_get]; exact hj.trans (hw.trans (by rw [← hi]; rfl))
+      · rw [dif_pos i.2, valCol_succ_get]; exact (hw.trans (by rw [← hi]; rfl)).symm
+
+#print axioms rep_succ
 #print axioms holds_where
 #print axioms rep_arith
 #print axioms rep_plus
