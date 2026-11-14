@@ -1,6 +1,7 @@
 import Std.Data.HashMap
 import LeetQ.Rel.AC3
 import LeetQ.Rel.Lang.Elab
+import LeetQ.Rel.Lang.Bits
 import LeetQ.Rel.Lang.Parse
 import LeetQ.Rel.Programs.Prelude
 
@@ -75,6 +76,20 @@ def acArcs (k : Nat) : {V D : Obj} → {d : Bool} → Tm V D d → Option (List 
     if h : V' = V ∧ D' = D then some [⟨h.1 ▸ A, h.2 ▸ C, UV, UD⟩] else none
   | _, _, _, _ => none
 
+/-- The fixed-point variable `k` in the round being run: `build` puts a variable only inside the fixed point
+    binding it, so a missing one is its bug. -/
+def varVal (ρ : List (Nat × Val)) (k : Nat) (A B : Obj) : Rel A B :=
+  match (ρ.lookup k).bind (Val.at? A B) with
+  | some R => R
+  | none => @panic (Rel A B) ⟨zero⟩ s!"internal: the fixed-point variable {k} is not bound here"
+
+/-- The demand of `S` in `R S`: `ran(R)` where `S` takes one, `R`'s plan as its table. -/
+def demOf {A B : Obj} : (e : Bool) → Bits.TP A B → Dem e B
+  | false, _ => ()
+  | true, r => ran (Bits.run r)
+
+mutual
+
 /-- `t` on the keys `D`: exact at every key of `D`; a closed term ignores `D`. In `RS`, `S` runs on `ran(R)`.
     A sub-term `.share k` whose identity occurs more than once (`cnt`) runs once per demand. -/
 def ev (cnt : Array Nat) (ρ : List (Nat × Val)) : {A B : Obj} → {d : Bool} → Tm A B d → Dem d A → EvM (Rel A B)
@@ -88,16 +103,27 @@ def ev (cnt : Array Nat) (ρ : List (Nat × Val)) : {A B : Obj} → {d : Bool} �
   | _, _, _, .outr, D => pure (outr D)
   | _, _, _, .inl, D => pure (inl D.val)
   | _, _, _, .inr, D => pure (inr D.val)
+  -- a closed `≫`/`∩`/`−`/`\` runs as bit matrices where its plan's objects are small (`Bits.run`), the
+  -- inner nodes never tables; the choice is by size, so any closed term of these takes it
+  | _, _, _, .comp (d := false) (e := e) R S, _ => do
+    let r ← Bits.orLeaf (evB cnt ρ R ()) (ev cnt ρ R ())
+    let D := demOf e r
+    return Bits.run (.comp r (← Bits.orLeaf (evB cnt ρ S D) (ev cnt ρ S D)))
   | _, _, _, .comp (e := e) R S, D => do
     let r ← ev cnt ρ R D; if r.n == 0 then pure zero else return r ≫ (← ev cnt ρ S (Dem.of e (ran r)))
   | _, _, _, .conv R, _ => return (← ev cnt ρ R ())°
+  | _, _, _, .meet (d := false) (e := false) R S, _ => return Bits.run (.meet
+      (← Bits.orLeaf (evB cnt ρ R ()) (ev cnt ρ R ())) (← Bits.orLeaf (evB cnt ρ S ()) (ev cnt ρ S ())))
+  | _, _, _, .diff (d := false) (e := false) R S, _ => return Bits.run (.diff
+      (← Bits.orLeaf (evB cnt ρ R ()) (ev cnt ρ R ())) (← Bits.orLeaf (evB cnt ρ S ()) (ev cnt ρ S ())))
   | _, _, _, .meet (d := d) (e := e) R S, D => return (← ev cnt ρ R (Dem.l d e D)) ∩ (← ev cnt ρ S (Dem.r d e D))
   | _, _, _, .join (d := d) (e := e) R S, D => return (← ev cnt ρ R (Dem.l d e D)) ∪ (← ev cnt ρ S (Dem.r d e D))
   | _, _, _, .diff (d := d) (e := e) R S, D => return (← ev cnt ρ R (Dem.l d e D)) \ (← ev cnt ρ S (Dem.r d e D))
   | _, _, _, .dom R, D => return dom (← ev cnt ρ R D)
   | _, _, _, .ran R, _ => return ran (← ev cnt ρ R ())
-  | _, _, _, .ldiv R S UB UC, _ =>
-    return leftDiv (← ev cnt ρ R ()) (← ev cnt ρ S ()) (← ev cnt ρ UB ()).val (← ev cnt ρ UC ()).val
+  | _, _, _, .ldiv R S UB UC, _ => return Bits.run (.ldiv
+      (← Bits.orLeaf (evB cnt ρ R ()) (ev cnt ρ R ())) (← Bits.orLeaf (evB cnt ρ S ()) (ev cnt ρ S ()))
+      (← ev cnt ρ UB ()) (← ev cnt ρ UC ()))
   | _, _, _, .rdiv R S UA UB, _ =>
     return rightDiv (← ev cnt ρ R ()) (← ev cnt ρ S ()) (← ev cnt ρ UA ()).val (← ev cnt ρ UB ()).val
   | _, _, _, .pair (d := d) (e := e) R S, D => return pair (← ev cnt ρ R (Dem.l d e D)) (← ev cnt ρ S (Dem.r d e D))
@@ -156,10 +182,7 @@ def ev (cnt : Array Nat) (ρ : List (Nat × Val)) : {A B : Obj} → {d : Bool} �
     let r ← ev cnt ρ R (Dem.of d (ran (outl D)))
     let U := ran r
     pure (D ≫ ((pair r° (outl U))° ≫ outr U))
-  -- `build` puts a variable only inside the fixed point binding it, so a missing one is its bug
-  | A, B, _, .var k, _ => match (ρ.lookup k).bind (Val.at? A B) with
-    | some R => pure R
-    | none => pure (@panic (Rel A B) ⟨zero⟩ s!"internal: the fixed-point variable {k} is not bound here")
+  | A, B, _, .var k, _ => pure (varVal ρ k A B)
   -- each round one evaluation, as a fold step: what the body shares, it shares within the round
   -- an AC-3 body runs by delta rounds (`acFix`), decided once before the rounds; any other body naively
   | A, B, _, .nu k S body, _ => do
@@ -182,6 +205,37 @@ def ev (cnt : Array Nat) (ρ : List (Nat × Val)) : {A B : Obj} → {d : Bool} �
       let V ← ev cnt ρ R D
       modify fun m => m.insert k ((m.getD k #[]).push ⟨A, D, ⟨A, B, V⟩⟩)
       pure V
+
+/-- `t` on the keys `D` as a bit-matrix plan (`Bits.TP`): a node with a bit rule kept, its parts on the demands
+    `ev` gives them, a child without one evaluated as its table on its demand; `none` at any other node, which its
+    parent then evaluates as a table. -/
+def evB (cnt : Array Nat) (ρ : List (Nat × Val)) :
+    {A B : Obj} → {d : Bool} → Tm A B d → Dem d A → EvM (Option (Bits.TP A B))
+  | _, _, _, .val R, _ => pure (some (.leaf R))
+  | _, _, _, .uni U, _ => pure (some (.leaf (idU U)))
+  | A, B, _, .var k, _ => pure (some (.leaf (varVal ρ k A B)))
+  | _, _, _, .share _ R, D => evB cnt ρ R D
+  | _, _, _, .own R, D => evB cnt ρ R D
+  | _, _, _, .comp (e := e) R S, D => do
+    let r ← Bits.orLeaf (evB cnt ρ R D) (ev cnt ρ R D)
+    let D' := demOf e r
+    return some (.comp r (← Bits.orLeaf (evB cnt ρ S D') (ev cnt ρ S D')))
+  | _, _, _, .conv R, _ => return some (.conv (← Bits.orLeaf (evB cnt ρ R ()) (ev cnt ρ R ())))
+  | _, _, _, .meet (d := d) (e := e) R S, D => return some (.meet
+      (← Bits.orLeaf (evB cnt ρ R (Dem.l d e D)) (ev cnt ρ R (Dem.l d e D)))
+      (← Bits.orLeaf (evB cnt ρ S (Dem.r d e D)) (ev cnt ρ S (Dem.r d e D))))
+  | _, _, _, .join (d := d) (e := e) R S, D => return some (.join
+      (← Bits.orLeaf (evB cnt ρ R (Dem.l d e D)) (ev cnt ρ R (Dem.l d e D)))
+      (← Bits.orLeaf (evB cnt ρ S (Dem.r d e D)) (ev cnt ρ S (Dem.r d e D))))
+  | _, _, _, .diff (d := d) (e := e) R S, D => return some (.diff
+      (← Bits.orLeaf (evB cnt ρ R (Dem.l d e D)) (ev cnt ρ R (Dem.l d e D)))
+      (← Bits.orLeaf (evB cnt ρ S (Dem.r d e D)) (ev cnt ρ S (Dem.r d e D))))
+  | _, _, _, .ldiv R S UB UC, _ => return some (.ldiv
+      (← Bits.orLeaf (evB cnt ρ R ()) (ev cnt ρ R ())) (← Bits.orLeaf (evB cnt ρ S ()) (ev cnt ρ S ()))
+      (← ev cnt ρ UB ()) (← ev cnt ρ UC ()))
+  | _, _, _, _, _ => pure none
+
+end
 
 /-! ### Sharing: every sub-term an identity, structurally -/
 
