@@ -52,11 +52,8 @@ theorem rep_E {B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) (M : Rel
     (h63 : (Rel.nub M).n.toNat < 2 ^ 63)
     (pc : Vector Code 2) (hpc : pc = pairs #v[LeetQ.Rel.Alg.idU X, LeetQ.Rel.Alg.dom M])
     (hc : codesOK(pc, pcs(LeetQ.Rel.Alg.idU X, LeetQ.Rel.Alg.dom M)))    (D : Rel (.arr A) (.arr A)) (hD : D = lD(M, X))
-    (htN : (Rel.n D).toNat * USize.toNat 1 < USize.size)
+    -- `D`'s count is bounded only by `X`'s, a `USize`; `top`'s `cross` needs it below `2^63`
     (ht63 : (Rel.n D).toNat * USize.toNat 1 < 2 ^ 63)
-    (htA : Vals.PickFits (.arr A) (Rel.key D) ((List.range ((Rel.n D).toNat * USize.toNat 1)).map (· / USize.toNat 1)))
-    (htB : Vals.PickFits (.arr B) (LeetQ.Rel.Alg.nilVal B)
-      ((List.range ((Rel.n D).toNat * USize.toNat 1)).map (· % USize.toNat 1)))
     (T N : Rel (.arr A) (.arr B)) (hT : T = lT(M))
     (hN0 : N = LeetQ.Rel.Alg.top (Rel.key D) (LeetQ.Rel.Alg.nilVal B))
     (hN : (Rel.n T).toNat + (Rel.n N).toNat < USize.size)
@@ -82,7 +79,7 @@ theorem rep_E {B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) (M : Rel
     rw [hM]; exact rep_memComp R X hmv hmk hcc hcrn hcM hcA hcC xs y
   rw [show LeetQ.Rel.Alg.E R X = LeetQ.Rel.Alg.lamOn M X by rw [hM]; rfl]
   obtain ⟨h1, h2⟩ := rep_lamOn M X kc vc hkc hvc hK hV hk hv kt hkt hF hw hn hs hW h63
-    pc hpc hc hmv D hD htN ht63 htA htB T N hT hN0 hN hFk hFv L hL ku vu hku hvu huK huV huk huv
+    pc hpc hc hmv D hD ht63 T N hT hN0 hN hFk hFv L hL ku vu hku hvu huK huV huk huv
   have h2' : ∀ xs, (∃ Y, rep (LeetQ.Rel.Alg.lamOn M X) xs Y) ↔ ∃ i, Vals.row X i = xs := fun xs =>
     (h2 xs).trans ⟨fun h => h.elim (fun ⟨_, hb⟩ => ((hm _ _).1 hb).1) id, Or.inr⟩
   exact ⟨fun xs Y h => ⟨(h2' xs).1 ⟨Y, h⟩, fun y => (h1 xs Y h y).trans
@@ -109,11 +106,8 @@ theorem rep_E_list {B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) (M 
     (h63 : (Rel.nub M).n.toNat < 2 ^ 63)
     (pc : Vector Code 2) (hpc : pc = pairs #v[LeetQ.Rel.Alg.idU X, LeetQ.Rel.Alg.dom M])
     (hc : codesOK(pc, pcs(LeetQ.Rel.Alg.idU X, LeetQ.Rel.Alg.dom M)))    (D : Rel (.arr A) (.arr A)) (hD : D = lD(M, X))
-    (htN : (Rel.n D).toNat * USize.toNat 1 < USize.size)
+    -- `D`'s count is bounded only by `X`'s, a `USize`; `top`'s `cross` needs it below `2^63`
     (ht63 : (Rel.n D).toNat * USize.toNat 1 < 2 ^ 63)
-    (htA : Vals.PickFits (.arr A) (Rel.key D) ((List.range ((Rel.n D).toNat * USize.toNat 1)).map (· / USize.toNat 1)))
-    (htB : Vals.PickFits (.arr B) (LeetQ.Rel.Alg.nilVal B)
-      ((List.range ((Rel.n D).toNat * USize.toNat 1)).map (· % USize.toNat 1)))
     (T N : Rel (.arr A) (.arr B)) (hT : T = lT(M))
     (hN0 : N = LeetQ.Rel.Alg.top (Rel.key D) (LeetQ.Rel.Alg.nilVal B))
     (hN : (Rel.n T).toNat + (Rel.n N).toNat < USize.size)
@@ -137,10 +131,10 @@ theorem rep_E_list {B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) (M 
         (∃ i, Vals.row X i = xs) ∧ Y.Nodup ∧ ∀ y, y ∈ Y ↔ ∃ x ∈ xs, rep R x y) ∧
       (∀ xs, (∃ Y, rep (LeetQ.Rel.Alg.E R X) xs Y) ↔ ∃ i, Vals.row X i = xs) := by
   obtain ⟨h1, h2⟩ := rep_E R X M kc vc hkc hvc hK hV hk hv kt hkt hF hw hn hs hW h63
-    pc hpc hc D hD htN ht63 htA htB T N hT hN0 hN hFk hFv L hL ku vu hku hvu huK huV huk huv
+    pc hpc hc D hD ht63 T N hT hN0 hN hFk hFv L hL ku vu hku hvu huK huV huk huv
     hM hmv hmk hcc hcrn hcM hcA hcC
   have hl := (rep_lamOn_list M X kc vc hkc hvc hK hV hk hv kt hkt hF hw hn hs hW h63
-    pc hpc hc hmv D hD htN ht63 htA htB T N hT hN0 hN hFk hFv L hL ku vu hku hvu huK huV huk huv).1
+    pc hpc hc hmv D hD ht63 T N hT hN0 hN hFk hFv L hL ku vu hku hvu huK huV huk huv).1
   have hE : LeetQ.Rel.Alg.E R X = LeetQ.Rel.Alg.lamOn M X := by rw [hM]; rfl
   exact ⟨fun xs Y h => ⟨(h1 xs Y h).1, (hl xs Y (hE ▸ h)).1, (h1 xs Y h).2⟩, h2⟩
 

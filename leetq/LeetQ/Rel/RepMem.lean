@@ -100,7 +100,16 @@ theorem rep_num {A B : Obj} (R : Rel A B) (k : USize) (hk : k.toNat + R.n.toNat 
   · rintro ⟨i, rfl, rfl⟩
     exact ⟨i, hkey i, hval i⟩
 
+/-- **The empty array fits at any rows**: its payload count is `0`, so every window clamps to nothing. -/
+theorem pickFits_nilVal (B : Obj) (ps : List Nat) : Vals.PickFits (.arr B) (nilVal B) ps := by
+  have hw : ∀ (w : Nat → List Nat), (∀ k, w k = []) → ps.flatMap w = [] := fun w h =>
+    List.flatMap_eq_nil_iff.2 fun k _ => h k
+  simp only [nilVal, Vals.PickFits]
+  rw [hw _ fun k => by split <;> simp]
+  exact ⟨by simp, by decide, USize.size_pos, pickFits_empty B⟩
+
 #print axioms rep_mem
 #print axioms rep_num
+#print axioms pickFits_nilVal
 
 end LeetQ.Rel.Rep

@@ -582,14 +582,6 @@ theorem foldRows_rep {E V : Obj} (X : Rel .long (.arr E)) (pend₀ : Rel .long V
   foldRows_rep_keep X pend₀ Sr xs hel hlen step elK hE f hf hR False fun i hi r v =>
     (hS i hi r v).trans (or_iff_left fun h : False ∧ _ => h.1).symm
 
-/-- **The empty array fits at any rows**: its payload count is `0`, so every window clamps to nothing. -/
-theorem pickFits_nilVal (B : Obj) (ps : List Nat) : Vals.PickFits (.arr B) (nilVal B) ps := by
-  have hw : ∀ (w : Nat → List Nat), (∀ k, w k = []) → ps.flatMap w = [] := fun w h =>
-    List.flatMap_eq_nil_iff.2 fun k _ => h k
-  simp only [nilVal, Vals.PickFits]
-  rw [hw _ fun k => by split <;> simp]
-  exact ⟨by simp, by decide, USize.size_pos, pickFits_empty B⟩
-
 /-- **`num R k` fits at all its rows where `R`'s values do**: its values pick `R`'s at `til`, each row once
     (`pickFits_pick`, `tilLongs_get`). -/
 theorem num_pickFits {A B : Obj} (R : Rel A B) (k : USize) (hv : Vals.PickFits B R.val (List.range R.n.toNat)) :

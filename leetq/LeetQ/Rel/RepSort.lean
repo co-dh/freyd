@@ -356,8 +356,6 @@ open QLean.Dep
 set_option hygiene false in
 local notation "subOK" =>
   (T = num (idU X) 0 ∧ n.toNat < 2 ^ 63 ∧ Vals.PickFits (.arr B) X (List.range n.toNat) ∧
-    (Rel.val T).1.toNat < 2 ^ 63 ∧
-    Vals.PickFits (.arr B) (Rel.val T) (List.range (Rel.n T).toNat) ∧
     pend₀ = top (A := .long) (Rel.key T) (nilVal B) ∧
     (Rel.n T).toNat * (1 : USize).toNat < USize.size ∧ (Rel.n T).toNat * (1 : USize).toNat < 2 ^ 63 ∧
     step = (fun el pend => cons (pair el pend) ∪ pend) ∧ (∀ k, elK k = elR(T, k)) ∧ (∀ st, f st = rnd(st)) ∧
@@ -424,12 +422,12 @@ theorem rep_thinL_sublist {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B)
     (G : Rel (.arr B) (.arr B)) (hG : G = H ≫ St°) (hth : thinOK) :
     ∀ xs ys, rep (thinL Q X) xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Sublist xs ∧
       ∃ s t, rep St xs s ∧ rep St ys t ∧ (∀ c ∈ t, c ∈ s) ∧ ∀ a ∈ s, ∃ y ∈ t, rep Q y a := by
-  obtain ⟨hT, hn, hv, hp, hTv, hpend, hN, h63, hstep, hE, hf, hR, hC, hF, hjc, hjO, hjn, hjM, hjA,
+  obtain ⟨hT, hn, hv, hpend, hN, h63, hstep, hE, hf, hR, hC, hF, hjc, hjO, hjn, hjM, hjA,
     hjC⟩ := hsub
   obtain ⟨hSv, hSk, hcQ, hcH, hcG, hdR, hdL, hiT, hiG⟩ := hth
   intro xs ys
   rw [rep_thinL_sets Q X U hU Wy hWy St hSt mS hmS QS hQS Rd hRd Ld hLd Tt hTt H hH G hG hSv hSk hcQ hcH hcG hdR hdL
-    hiT hiG xs ys, hU, rep_subseq X T hT hn hv hp hTv pend₀ hpend hN h63 step hstep elK hE f hf hR hC F hF jc
+    hiT hiG xs ys, hU, rep_subseq X T hT hn hv pend₀ hpend hN h63 step hstep elK hE f hf hR hC F hF jc
     hjc hjO hjn hjM hjA hjC, and_assoc]
 
 section
@@ -457,9 +455,7 @@ local notation "setOK" =>
     codesOK(pc, (#v[⟨Rel.n (idU (Rel.val Wy)), (Rel.key (idU (Rel.val Wy)), Rel.val (idU (Rel.val Wy)))⟩,
       ⟨Rel.n (dom Ms), (Rel.key (dom Ms), Rel.val (dom Ms))⟩] : Vector (Part (.prod (.arr B) (.arr B))) 2)) ∧
     ∀ D : Rel (.arr B) (.arr B), D = lD(Ms, Rel.val Wy) →
-    (Rel.n D).toNat * USize.toNat 1 < USize.size ∧ (Rel.n D).toNat * USize.toNat 1 < 2 ^ 63 ∧
-    Vals.PickFits (.arr B) (Rel.key D) ((List.range ((Rel.n D).toNat * USize.toNat 1)).map (· / USize.toNat 1)) ∧
-    Vals.PickFits (.arr B) (nilVal B) ((List.range ((Rel.n D).toNat * USize.toNat 1)).map (· % USize.toNat 1)) ∧
+    (Rel.n D).toNat * USize.toNat 1 < 2 ^ 63 ∧
     ∀ T N : Rel (.arr B) (.arr B), T = lT(Ms) → N = top (Rel.key D) (nilVal B) →
     ∃ hN : (Rel.n T).toNat + (Rel.n N).toNat < USize.size,
     Vals.RazeFits (.arr B) (Rel.key T) (Rel.key N) ∧ Vals.RazeFits (.arr B) (Rel.val T) (Rel.val N) ∧
@@ -492,10 +488,10 @@ theorem rep_thinL {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n)
     ∀ xs ys, rep (thinL Q X) xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Sublist xs ∧ ∀ a ∈ xs, ∃ y ∈ ys, rep Q y a := by
   have eL := rep_thinL_sublist Q X T pend₀ step elK f F jc hsub U hU Wy hWy St hSt mS hmS QS hQS Rd hRd Ld hLd Tt
     hTt H hH G hG hth
-  obtain ⟨hT, hn, hv, hp, hTv, hpend, hN, h63, hstep, hE, hf, hR, hC, hF, hjc, hjO, hjn, hjM, hjA,
+  obtain ⟨hT, hn, hv, hpend, hN, h63, hstep, hE, hf, hR, hC, hF, hjc, hjO, hjn, hjM, hjA,
     hjC⟩ := hsub
   have eU : ∀ xs ys, rep U xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Sublist xs := by
-    rw [hU]; exact rep_subseq X T hT hn hv hp hTv pend₀ hpend hN h63 step hstep elK hE f hf hR hC F hF jc
+    rw [hU]; exact rep_subseq X T hT hn hv pend₀ hpend hN h63 step hstep elK hE f hf hR hC F hF jc
       hjc hjO hjn hjM hjA hjC
   have eW : ∀ a b, rep Wy a b ↔ a = b ∧ ∃ x, rep U x a := fun a b => by
     rw [hWy, rep_ran_corefl U (one_ok _ hWf.1) hWf.2]; exact Iff.rfl
@@ -504,11 +500,11 @@ theorem rep_thinL {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n)
   obtain ⟨hK, hV, hk, hv', k2⟩ := k1 _ _ rfl rfl
   obtain ⟨hF', hw, hn', hs, hW, h63', k4⟩ := k2 _ rfl
   obtain ⟨hc, k6⟩ := k4 _ rfl
-  obtain ⟨htN, ht63, htA, htB, k7⟩ := k6 _ rfl
+  obtain ⟨ht63, k7⟩ := k6 _ rfl
   obtain ⟨hN', hFk, hFv, k8⟩ := k7 _ _ rfl rfl
   obtain ⟨huK, huV, huk, huv⟩ := k8 _ rfl _ _ rfl rfl
   have hS := rep_setify_list (Rel.val Wy) hmv hmk _ _ rfl rfl hK hV hk hv' _ rfl hF' hw hn' hs hW h63'
-    _ rfl hc _ rfl htN ht63 htA htB _ _ rfl rfl hN' hFk hFv _ rfl _ _ rfl rfl
+    _ rfl hc _ rfl ht63 _ _ rfl rfl hN' hFk hFv _ rfl _ _ rfl rfl
     huK huV huk huv
   rw [← hSt] at hS
   intro xs ys
