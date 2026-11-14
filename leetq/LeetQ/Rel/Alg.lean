@@ -306,8 +306,14 @@ def sumVals {A B : Obj} {n m : USize} (X : Vals A n) (Y : Vals B m) (hN : n.toNa
 /-- `inl : A ⟶ A + B` on the universe `X`: each `x` to `inl x`, the sum side's left payload `X` itself. -/
 def inl {A B : Obj} {n : USize} (X : Vals A n) : Rel A (.sum A B) := ⟨n, X, ⟨n, 0, tags #[(n, false)] n, tilCol n, X, Vals.empty B⟩⟩
 
+/-- `inl` and whether it ran within capacity: `rep_inl`'s count bound decided; it calls no capacity helper. -/
+def inlC {A B : Obj} {n : USize} (X : Vals A n) : Rel A (.sum A B) × Bool := (inl X, decide (n.toNat ≤ 2 ^ 63))
+
 /-- `inr : B ⟶ A + B` on the universe `Y`: each `y` to `inr y`. -/
 def inr {A B : Obj} {n : USize} (Y : Vals B n) : Rel B (.sum A B) := ⟨n, Y, ⟨0, n, tags #[(n, true)] n, tilCol n, Vals.empty A, Y⟩⟩
+
+/-- `inr` and whether it ran within capacity: `rep_inr`'s count bound decided. -/
+def inrC {A B : Obj} {n : USize} (Y : Vals B n) : Rel B (.sum A B) × Bool := (inr Y, decide (n.toNat ≤ 2 ^ 63))
 
 /-- `[R, S] : A + B ⟶ C`: `inl x` to what `R` relates `x` to, `inr y` to what `S` relates `y` to. The keys are
     the two key payloads as they are (`sumVals`), the values razed (`Obj.raze`), `R.n + S.n` rows, which fit a
@@ -318,6 +324,20 @@ def junc {A B C : Obj} (R : Rel A C) (S : Rel B C) : Rel (.sum A B) C :=
   ⟨R.n + S.n, sumVals R.key S.key hN,
     toUSize_eq (by rw [toNat_add_fits hN]) ▸ C.raze #[⟨_, R.val⟩, ⟨_, S.val⟩] (by simpa using hN)⟩
 
+/-- `[R, S]` and whether it ran within capacity: `need`'s guard, `rep_junc`'s `2^63` bound decided, `&&` the bit
+    of the values' raze (`razeC`). -/
+def juncC {A B C : Obj} (R : Rel A C) (S : Rel B C) : Rel (.sum A B) C × Bool :=
+  need (R.n.toNat + S.n.toNat < USize.size) (fun _ => s!"[R,S]: {R.n} + {S.n} rows do not fit a USize")
+    (fun _ => (zero, false)) fun hN =>
+  let v := C.razeC #[⟨_, R.val⟩, ⟨_, S.val⟩] (by simpa using hN)
+  (⟨R.n + S.n, sumVals R.key S.key hN, toUSize_eq (by rw [toNat_add_fits hN]) ▸ v.1⟩,
+    decide (R.n.toNat + S.n.toNat ≤ 2 ^ 63) && v.2)
+
+theorem juncC_fst {A B C : Obj} (R : Rel A C) (S : Rel B C) : (juncC R S).1 = junc R S := by
+  unfold juncC junc need; split
+  · cases C <;> rfl
+  · rfl
+
 /-- `R + S ≜ [R inl, S inr] : A + B ⟶ C + D`, built directly: the key and the value sides share one tag and one
     position column over the payloads of `R` and of `S` as they are, where the composites would join each
     relation with an injection and raze the values (the guard below holds it equal to that term). -/
@@ -326,6 +346,10 @@ def sum {A B C D : Obj} (R : Rel A C) (S : Rel B D) : Rel (.sum A B) (.sum C D) 
     (fun _ => zero) fun hN =>
   let k := sumVals R.key S.key hN
   ⟨R.n + S.n, k, ⟨R.n, S.n, k.2.2.1, k.2.2.2.1, R.val, S.val⟩⟩
+
+/-- `R + S` and whether it ran within capacity: `rep_sum`'s two count bounds decided; it calls no capacity helper. -/
+def sumC {A B C D : Obj} (R : Rel A C) (S : Rel B D) : Rel (.sum A B) (.sum C D) × Bool :=
+  (sum R S, decide (R.n.toNat + S.n.toNat < USize.size) && decide (R.n.toNat + S.n.toNat ≤ 2 ^ 63))
 
 /-- An unfold then a fold: Lean's loop, rounds of `step` until `done`, each round kernels. It ends because
     each round not `done` lowers the measure `μ`: well-founded recursion, no fuel. -/
@@ -492,9 +516,37 @@ def lt {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (_h : t ≠ .general
       ⟨k, Vals.pick _ U (gather 8 c.1 i) k ((gather_len _ _).trans hk), Vals.pick _ U (gather 8 c.2 i) k ((gather_len _ _).trans hk)⟩
   L \ idU U
 
+/-- `<` and whether it ran within capacity: `rep_lt`'s two count bounds decided, `&&` the bit of the diff's pair
+    codes (`codesC` of the product side) and `L`'s two sides fitting at all its rows (`fitsN`), as `interC`. The
+    picks of `U` stay plain: an atom's rows read back with no fit (`pick_row_atom`). -/
+def ltC {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (_h : t ≠ .general := by decide) :
+    Rel (.atom t) (.atom t) × Bool :=
+  let r := longsOf (Ops.rank (t := t) U _h)
+  let c := cross n n
+  let L : Rel (.atom t) (.atom t) := longCount "<" c.1 fun nn _ =>
+    let i := whereBits nn (Ew.cmp Ew.lt Ew.i64 Ew.vv (gather 8 r c.1) (gather 8 r c.2) nn)
+    longCount "<" i fun k hk =>
+      ⟨k, Vals.pick _ U (gather 8 c.1 i) k ((gather_len _ _).trans hk), Vals.pick _ U (gather 8 c.2 i) k ((gather_len _ _).trans hk)⟩
+  let d := (Obj.prod (.atom t) (.atom t)).codesC #v[⟨L.n, (L.key, L.val)⟩, ⟨n, (U, U)⟩]
+  (L.rows (anti d.1[0] d.1[1]), d.2 && Vals.fitsN _ L.key L.n.toNat && Vals.fitsN _ L.val L.n.toNat &&
+    decide (n.toNat * n.toNat < USize.size) && decide (n.toNat * n.toNat < 2 ^ 63))
+
+theorem ltC_fst {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (h : t ≠ .general) : (ltC U h).1 = lt U h := by
+  have e : ∀ {α β : Type} (f : α → β) (a b : α), #v[a, b].map f = #v[f a, f b] := fun _ _ _ => by simp
+  -- the twin's codes are `Obj.codes` of the pair parts `pairs` maps the two relations to
+  unfold ltC lt; dsimp only; show _ = diff _ _; unfold diff pairs; simp only [Obj.codesC, Obj.codes, e, idU]
+
 /-- `≤` on the elements of `U` (`leRel`, AOP/A7_2_RelSet.lean:160): `lt U ∪ 𝟙`. -/
 def leq {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (h : t ≠ .general := by decide) : Rel (.atom t) (.atom t) :=
   lt U h ∪ idU U
+
+/-- `≤` and whether it ran within capacity: `ltC`'s bit `&&` `unionC`'s. -/
+def leqC {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (h : t ≠ .general := by decide) :
+    Rel (.atom t) (.atom t) × Bool :=
+  let l := ltC U h; let u := unionC l.1 (idU U); (u.1, l.2 && u.2)
+
+theorem leqC_fst {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (h : t ≠ .general) : (leqC U h).1 = leq U h := by
+  show (unionC (ltC U h).1 (idU U)).1 = _; rw [unionC_fst, ltC_fst]; rfl
 
 /-- `succ : long ⟶ long` on `U` (`succ`, AOP/A5_6_ListCombinators.lean:343): each `u` to `u + 1` where `u + 1`
     is in `U`, so the range stays in `U` and the top of `U` goes to nothing. `Ew.val` add, then the rows whose
@@ -504,6 +556,15 @@ def succ {n : USize} (U : Vals (.atom .long) n) : Rel (.atom .long) (.atom .long
   let c := codes .long #v[⟨_, s⟩, ⟨_, U⟩]
   let k := whereBits n (c[0].member c[1])
   longCount "succ" k fun r hr => ⟨r, Vals.pick _ U k r hr, Vals.pick (.atom .long) s k r hr⟩
+
+/-- `succ` and whether it ran within capacity: the bit of its codes (`codesC`); the picks of atoms stay plain. -/
+def succC {n : USize} (U : Vals (.atom .long) n) : Rel (.atom .long) (.atom .long) × Bool :=
+  let s : Arr .long n := valCol Ew.add Ew.va (longsOf U) (one 1)
+  let c := (Obj.atom .long).codesC #v[⟨_, s⟩, ⟨_, U⟩]
+  let k := whereBits n (c.1[0].member c.1[1])
+  (longCount "succ" k fun r hr => ⟨r, Vals.pick _ U k r hr, Vals.pick (.atom .long) s k r hr⟩, c.2)
+
+theorem succC_fst {n : USize} (U : Vals (.atom .long) n) : (succC U).1 = succ U := rfl
 
 /-- The integral value verb `op` (`Ew.add`, `sub`, `mul`, `idiv`, `imod`) as a relation `long × long ⟶ long` on
     the pairs `W`: each `(u, v)` to `u op v` where that is a `long` other than q's null, and to nothing elsewhere.
@@ -724,6 +785,13 @@ def bagify {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) :
   longCount "bagify" p fun q hq =>
   ⟨n, Vals.compact (.arr B) X,
     ⟨q, valCol Ew.sub Ew.vv hi s.2, longsN n hi (sums_le (len_slices ..).2), Vals.pick B cells p q hq⟩⟩
+
+/-- `bagify` and whether it ran within capacity: `rep_bagify`'s four count bounds decided — the payload, the rows,
+    and the windows' summed counts; the picks' fits follow from those counts, so no helper twin is called. -/
+def bagifyC {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) × Bool :=
+  let pc := ((List.range n.toNat).map fun u => (Column.bitsAt (slicesOf X).2 (u * 8) 8).toNat).sum
+  (bagify X, decide (X.1.toNat < 2 ^ 63) && decide (n.toNat < 2 ^ 63) && decide (pc < 2 ^ 63) &&
+    decide (pc < USize.size))
 
 /-- `ordered(Q)`, the coreflexive on the arrays `X` that are `Q`-ordered, each element `Q`-below every later
     one (`orderedP`, AOP/A5_6_ListCombinators.lean:162): the arrays with no non-empty suffix `y :: ys` and `z`
