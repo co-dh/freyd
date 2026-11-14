@@ -68,7 +68,7 @@ theorem rep_leqC {n : USize} (U : Vals (.atom .long) n) (h : QAtomicType.long �
     (hb : (leqC U h).2 = true) (a b : Int64) :
     rep (leqC U h).1 a b ↔ (∃ i, U.row i = a) ∧ (∃ j, U.row j = b) ∧ a ≤ b := by
   rw [leqC_fst]
-  change (ltC U h).2 && (unionC (ltC U h).1 (idU U)).2 = true at hb
+  change ((ltC U h).2 && (unionC (ltC U h).1 (idU U)).2) = true at hb
   rw [ltC_fst] at hb
   simp only [Bool.and_eq_true] at hb
   obtain ⟨hl, hu⟩ := hb
@@ -102,7 +102,7 @@ theorem rep_succC {n : USize} (U : Vals (.atom .long) n) (hb : (succC U).2 = tru
   have hc := (codes_faithful_wf (.atom .long) #v[⟨n, valCol Ew.add Ew.va (longsOf U) (one 1)⟩, ⟨n, U⟩]
     (Obj.codesC_fits (.atom .long) _ hb)).1
   exact rep_succ U _ rfl _ rfl
-    ⟨fun hk hl hi hj => hc.1 hk hl hi hj, fun hk => ⟨(hc.2 hk).1, (hc.2 hk).2.1, (hc.2 hk).2.2.1⟩⟩ u w
+    ⟨@fun _ _ hk hl _ _ hi hj => hc.1 hk hl hi hj, fun hk => ⟨(hc.2 hk).1, (hc.2 hk).2.1, (hc.2 hk).2.2.1⟩⟩ u w
 
 /-- **`rep (bagify X)` under `bagifyC`'s bit**: the bit is `rep_bagify`'s `hp`, `hn`, `hS`, `hU`. -/
 theorem rep_bagifyC {n : USize} (X : Vals (.arr (.atom .long)) n) (hb : (bagifyC X).2 = true) :
