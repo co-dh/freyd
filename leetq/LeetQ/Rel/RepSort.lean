@@ -256,8 +256,6 @@ theorem rep_sortSet {B : Obj} {n : USize} (Q : Rel B B) (Y : Vals (.arr B) n)
   · rintro ⟨hs, hx, hp⟩
     exact ⟨ys, by rw [rep_conv]; exact hs, (eO ys ys).2 ⟨hx, rfl, hp⟩⟩
 
-section ThinL
-
 open DivN
 
 -- `rep_inter`'s hypotheses at `L ∩ R` (`K` the keys' object, `V` the values'), its codes `pc` and hits `I` bound
@@ -359,7 +357,141 @@ theorem rep_thinL_sets {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n)
     obtain ⟨j, -, hj⟩ := id ht
     exact ⟨t, (eH _ _).2 ⟨s, hs, (eT s t ⟨i, hi⟩ ⟨j, hj⟩).2 hst⟩, ht⟩
 
-end ThinL
+-- `rep_thinL_sets`'s hypotheses at its pieces, as one bundle: stated here, where `Pow`'s `/` is not open
+set_option hygiene false in
+local notation "thinOK" =>
+  (Vals.PickFits (.arr B) (Rel.val St) (List.range (Rel.n St).toNat) ∧
+    Vals.PickFits (.arr B) (Rel.val St) ((List.range (Rel.n St).toNat).flatMap fun r =>
+      if h : r < (Rel.n St).toNat then List.replicate ((Rel.val St).row ⟨r, h⟩).length r else []) ∧
+    cmpOK(B, Q°, mS°) ∧ cmpOK(.arr B, St, Tt) ∧ cmpOK(.arr B, H, St°) ∧
+    divOK(B, .arr B, .arr B, mS°, mS°, Rel.n St, Rel.val St, Rel.n St, Rel.val St) ∧
+    divOK(B, .arr B, .arr B, mS°, QS, Rel.n St, Rel.val St, Rel.n St, Rel.val St) ∧
+    interOK(.arr B, .arr B, Rd, Ld) ∧ interOK(.arr B, .arr B, G, U))
+
+open QLean.Dep
+
+-- `FoldN`'s `nubI` with its index proofs as terms: its `[0]` runs `get_elem_tactic` against the whole header,
+-- which in a header this size runs past the heartbeats
+set_option hygiene false in
+local notation "nubT(" X ", " Y ", " R ")" =>
+  (tuples.tupleIds ((Obj.codes X (#v[⟨Rel.n R, Rel.key R⟩] : Vector (Part X) 1))[0]'Nat.zero_lt_one)
+    #[(Obj.codes Y (#v[⟨Rel.n R, Rel.val R⟩] : Vector (Part Y) 1))[0]'Nat.zero_lt_one]).2
+
+-- `rep_subseq`'s hypotheses at `X`, as one bundle (`roundAt` inlined with `nubT`)
+set_option hygiene false in
+local notation "subOK" =>
+  (T = num (idU X) 0 ∧ n.toNat < 2 ^ 63 ∧ Vals.PickFits (.arr B) X (List.range n.toNat) ∧
+    (Rel.val T).1.toNat < 2 ^ 63 ∧
+    (∀ k, k ≤ (Rel.val T).1.toNat → ∀ a : ByteArray, a = whereBits (Rel.n T)
+        (Ew.cmp Ew.gt Ew.i64 Ew.va (slicesOf (Rel.val T)).2 (one k.toUInt64) (Rel.n T)) →
+      ∀ pos : ByteArray, pos = Kernel.Ew.val Ew.sub Ew.i64 Ew.va nul
+        (gather 8 (add (Rel.n T) (slicesOf (Rel.val T)).1 (slicesOf (Rel.val T)).2) a)
+        (one (k + 1).toUInt64) (len a).toUSize →
+      Vals.PickFits .long (Rel.key T) ((List.range (len a)).map fun q => (Column.bitsAt a (q * 8) 8).toNat) ∧
+      Vals.PickFits B (Rel.val T).2.2.2 ((List.range (len a)).map fun q => (Column.bitsAt pos (q * 8) 8).toNat)) ∧
+    pend₀ = top (A := .long) (Rel.key T) (nilVal B) ∧
+    (Rel.n T).toNat * (1 : USize).toNat < USize.size ∧ (Rel.n T).toNat * (1 : USize).toNat < 2 ^ 63 ∧
+    Vals.PickFits .long (Rel.key T)
+      ((List.range ((Rel.n T).toNat * (1 : USize).toNat)).map (· / (1 : USize).toNat)) ∧
+    Vals.PickFits (.arr B) (nilVal B)
+      ((List.range ((Rel.n T).toNat * (1 : USize).toNat)).map (· % (1 : USize).toNat)) ∧
+    step = (fun el pend => cons (pair el pend) ∪ pend) ∧ (∀ k, elK k = elR(T, k)) ∧ (∀ st, f st = rnd(st)) ∧
+    (∀ i (el : Rel .long B) (pend P S : Rel .long (.arr B)), el = elK i →
+      pend = (f^[i] (pend₀, Alg.zero, 0)).1 → P = (f^[i] (pend₀, Alg.zero, 0)).2.1 → S = step el pend →
+      Obj.CodesFit .long (#v[⟨S.n, S.key⟩] : Vector (Part .long) 1) ∧
+      Obj.CodesFit (.arr B) (#v[⟨S.n, S.val⟩] : Vector (Part (.arr B)) 1) ∧
+      Vals.PickFits .long S.key (ids nubT(.long, (.arr B), S)) ∧
+      Vals.PickFits (.arr B) S.val (ids nubT(.long, (.arr B), S)) ∧
+      Obj.CodesFit .long jparts ∧
+      (∀ jc : Vector Code 2, jc = Obj.codes .long jparts → ∀ I : ByteArray,
+        I = anti (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two) →
+        Vals.PickFits (.arr B) (Rel.key (pend°)) (ids I) ∧ Vals.PickFits .long (Rel.val (pend°)) (ids I)) ∧
+      ∀ Q : Rel .long (.arr B), Q = (antiJoin (pend°) (idU (Rel.key el)))° →
+        P.n.toNat + Q.n.toNat < USize.size ∧
+        ∃ (hNk : ((#[⟨P.n, P.key⟩, ⟨Q.n, Q.key⟩] : Array (Part .long)).toList.map
+            fun c : Part .long => c.1.toNat).sum < USize.size)
+          (hNv : ((#[⟨P.n, P.val⟩, ⟨Q.n, Q.val⟩] : Array (Part (.arr B))).toList.map
+            fun c : Part (.arr B) => c.1.toNat).sum < USize.size),
+          Vals.RazeFits .long P.key Q.key ∧ Vals.RazeFits (.arr B) P.val Q.val ∧
+          Obj.CodesFit .long (#v[⟨(PQ(.long, (.arr B))).n, (PQ(.long, (.arr B))).key⟩] : Vector (Part .long) 1) ∧
+          Obj.CodesFit (.arr B)
+            (#v[⟨(PQ(.long, (.arr B))).n, (PQ(.long, (.arr B))).val⟩] : Vector (Part (.arr B)) 1) ∧
+          Vals.PickFits .long (PQ(.long, (.arr B))).key (ids nubT(.long, (.arr B), PQ(.long, (.arr B)))) ∧
+          Vals.PickFits (.arr B) (PQ(.long, (.arr B))).val (ids nubT(.long, (.arr B), PQ(.long, (.arr B))))) ∧
+    (∀ i, i ≤ (Rel.val T).1.toNat → ∀ (el : Rel .long B) (pend : Rel .long (.arr B)), el = elK i →
+      pend = (f^[i] (pend₀, Alg.zero, 0)).1 →
+      ∀ kc : Vector Code 2, kc = Obj.codes .long kp2(el, pend) →
+      codesOK(kc, kp2(el, pend)) ∧ (Rel.n pend).toNat < 2 ^ 63 ∧ msum(kc, el, pend) < 2 ^ 63 ∧
+      msum(kc, el, pend) < USize.size ∧
+      Vals.PickFits .long (Rel.key el) ((mpairs(kc, el, pend)).map Prod.fst) ∧
+      Vals.PickFits B (Rel.val el) ((mpairs(kc, el, pend)).map Prod.fst) ∧
+      Vals.PickFits (.arr B) (Rel.val pend) ((mpairs(kc, el, pend)).map Prod.snd) ∧
+      ∀ W : Rel .long (.prod B (.arr B)), W = pair el pend →
+      (Rel.val W).2.1.toNat < 2 ^ 63 ∧
+      ∀ s : ByteArray × ByteArray, s = slicesOf (Rel.val W).2 →
+      ((List.range (Rel.n W).toNat).map fun r => (Column.bitsAt s.2 (r * 8) 8).toNat).sum + (Rel.n W).toNat <
+        2 ^ 63 ∧
+      ((List.range (Rel.n W).toNat).map fun r => (Column.bitsAt s.2 (r * 8) 8).toNat).sum + (Rel.n W).toNat <
+        USize.size ∧
+      ∀ xi : ByteArray, xi = expandBytes 8 0 (tilLongs (Rel.n W)) s.2 →
+      ∀ m : USize, m = (len xi).toUSize →
+      ∀ xr : ByteArray, xr = sub m (tilLongs m) (gather 8 (sub (Rel.n W) (sums (Rel.n W) s.2) s.2) xi) →
+      ∀ j : ByteArray, j = add m (gather 8 s.1 xi) xr →
+      ∀ tl : Vals B m, tl = Vals.pick B (Rel.val W).2.2.2.2 (add m (gather 8 s.1 xi) xr) m
+        (len_val Ew.add Ew.vv (gather 8 s.1 xi) xr m) →
+      ∀ c1 : ByteArray, c1 = addc (Rel.n W) s.2 1 → ∀ hi : ByteArray, hi = sums (Rel.n W) c1 →
+      ∀ lo : ByteArray, lo = sub (Rel.n W) hi c1 →
+      ∀ dst : ByteArray, dst = addc m (add m (gather 8 lo xi) xr) 1 →
+      ∀ g : ByteArray, g = (Code.ofLongs (concatBytes #[dst, lo])).grade →
+      Vals.PickFits .long (Rel.key W)
+        ((List.range (Rel.n W).toNat).map fun q => (Column.bitsAt (tilLongs (Rel.n W)) (q * 8) 8).toNat) ∧
+      Vals.PickFits B (Rel.val W).2.2.2.2 ((List.range m.toNat).map fun q => (Column.bitsAt j (q * 8) 8).toNat) ∧
+      Vals.RazeFits B tl (Rel.val W).1 ∧
+      (∀ hN, Vals.PickFits B (Obj.raze B #[⟨m, tl⟩, ⟨Rel.n W, (Rel.val W).1⟩] hN)
+        ((List.range (len g)).map fun q => (Column.bitsAt g (q * 8) 8).toNat)) ∧
+      ∀ P : Rel .long (.arr B), P = cons W → ∀ Q : Rel .long (.arr B), Q = pend →
+      P.n.toNat + Q.n.toNat < USize.size ∧
+      ∃ (hNk : ((#[⟨P.n, P.key⟩, ⟨Q.n, Q.key⟩] : Array (Part .long)).toList.map
+          fun c : Part .long => c.1.toNat).sum < USize.size)
+        (hNv : ((#[⟨P.n, P.val⟩, ⟨Q.n, Q.val⟩] : Array (Part (.arr B))).toList.map
+          fun c : Part (.arr B) => c.1.toNat).sum < USize.size),
+        Vals.RazeFits .long P.key Q.key ∧ Vals.RazeFits (.arr B) P.val Q.val ∧
+        Obj.CodesFit .long (#v[⟨(PQ(.long, (.arr B))).n, (PQ(.long, (.arr B))).key⟩] : Vector (Part .long) 1) ∧
+        Obj.CodesFit (.arr B)
+          (#v[⟨(PQ(.long, (.arr B))).n, (PQ(.long, (.arr B))).val⟩] : Vector (Part (.arr B)) 1) ∧
+        Vals.PickFits .long (PQ(.long, (.arr B))).key (ids nubT(.long, (.arr B), PQ(.long, (.arr B)))) ∧
+        Vals.PickFits (.arr B) (PQ(.long, (.arr B))).val (ids nubT(.long, (.arr B), PQ(.long, (.arr B))))) ∧
+    F = foldRows T pend₀ step ∧ jc = Obj.codes .long ck2(T°, F) ∧ codesOK(jc, ck2(T°, F)) ∧
+    (Rel.n F).toNat < 2 ^ 63 ∧ msum(jc, T°, F) < 2 ^ 63 ∧ msum(jc, T°, F) < USize.size ∧
+    Vals.PickFits (.arr B) (Rel.key (T°)) ((mpairs(jc, T°, F)).map Prod.fst) ∧
+    Vals.PickFits (.arr B) (Rel.val F) ((mpairs(jc, T°, F)).map Prod.snd))
+
+/-- **`thinL(Q)`, `subseq` read back**: an array `xs` of `X` goes to `ys` exactly when `ys` is a sublist of `xs`
+    and the `setify` images `s` of `xs` and `t` of `ys` satisfy the thin condition. `rep_thinL_sets` with
+    `rep_subseq`. The elementwise form (`s`, `t` replaced by `xs`, `ys` through `rep_setify_list`) does not fit:
+    `rep_setify_list`'s hypotheses added to this header run it past the default heartbeats. -/
+theorem rep_thinL_sublist {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n)
+    -- `rep_subseq` at `X`
+    (T : Rel .long (.arr B)) (pend₀ : Rel .long (.arr B))
+    (step : Rel .long B → Rel .long (.arr B) → Rel .long (.arr B)) (elK : Nat → Rel .long B)
+    (f : Rel .long (.arr B) × Rel .long (.arr B) × Nat → Rel .long (.arr B) × Rel .long (.arr B) × Nat)
+    (F : Rel .long (.arr B)) (jc : Vector Code 2) (hsub : subOK)
+    (U : Rel (.arr B) (.arr B)) (hU : U = subseq X) (Wy : Rel (.arr B) (.arr B)) (hWy : Wy = ran U)
+    (St : Rel (.arr B) (.arr B)) (hSt : St = setify (Rel.val Wy))
+    (mS : Rel (.arr B) B) (hmS : mS = mem (Rel.val St)) (QS : Rel B (.arr B)) (hQS : QS = Q° ≫ mS°)
+    (Rd : Rel (.arr B) (.arr B)) (hRd : Rd = rightDiv mS mS (Rel.val St) (Rel.val St))
+    (Ld : Rel (.arr B) (.arr B)) (hLd : Ld = leftDiv (mS°) QS (Rel.val St) (Rel.val St))
+    (Tt : Rel (.arr B) (.arr B)) (hTt : Tt = Rd ∩ Ld) (H : Rel (.arr B) (.arr B)) (hH : H = St ≫ Tt)
+    (G : Rel (.arr B) (.arr B)) (hG : G = H ≫ St°) (hth : thinOK) :
+    ∀ xs ys, rep (thinL Q X) xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Sublist xs ∧
+      ∃ s t, rep St xs s ∧ rep St ys t ∧ (∀ c ∈ t, c ∈ s) ∧ ∀ a ∈ s, ∃ y ∈ t, rep Q y a := by
+  obtain ⟨hT, hn, hv, hp, hel, hpend, hN, h63, hA, hB, hstep, hE, hf, hR, hC, hF, hjc, hjO, hjn, hjM, hjU, hjA,
+    hjC⟩ := hsub
+  obtain ⟨hSv, hSk, hcQ, hcH, hcG, hdR, hdL, hiT, hiG⟩ := hth
+  intro xs ys
+  rw [rep_thinL_sets Q X U hU Wy hWy St hSt mS hmS QS hQS Rd hRd Ld hLd Tt hTt H hH G hG hSv hSk hcQ hcH hcG hdR hdL
+    hiT hiG xs ys, hU, rep_subseq X T hT hn hv hp hel pend₀ hpend hN h63 hA hB step hstep elK hE f hf hR hC F hF jc
+    hjc hjO hjn hjM hjU hjA hjC, and_assoc]
 
 end LeetQ.Rel.Rep
 
@@ -368,3 +500,4 @@ end LeetQ.Rel.Rep
 #print axioms LeetQ.Rel.Rep.rep_ordered
 #print axioms LeetQ.Rel.Rep.rep_sortSet
 #print axioms LeetQ.Rel.Rep.rep_thinL_sets
+#print axioms LeetQ.Rel.Rep.rep_thinL_sublist
