@@ -167,6 +167,41 @@ theorem pickFits_prod {a b : Obj} {n : USize} (x : Vals (.prod a b) n) {ps : Lis
   unfold Vals.PickFits
   exact ⟨h1, h2⟩
 
+/-- `flatMap` keeps a sublist a sublist (core has `Sublist.filterMap`, no `flatMap` form). -/
+theorem sublist_flatMap {α β : Type} (f : α → List β) {l₁ l₂ : List α} (h : l₁.Sublist l₂) :
+    (l₁.flatMap f).Sublist (l₂.flatMap f) := by
+  induction h with
+  | slnil => exact List.Sublist.refl _
+  | cons a _ ih => rw [List.flatMap_cons]; exact ih.trans (List.sublist_append_right _ _)
+  | cons₂ a _ ih => rw [List.flatMap_cons, List.flatMap_cons]; exact ih.append_left _
+
+/-- **A fit at rows `ps` is a fit at every sublist of them**: each clause bounds or recurses at the windows or
+    side positions of the picked rows, which shrink to a sublist (`flatMap`, `filterMap`), and a miss among
+    fewer rows is a miss among more. With `ids` of a kernel's picks a sublist of `List.range n`, a fit of the
+    input at all its rows is a fit at the picks. -/
+theorem pickFits_sublist {A : Obj} {n : USize} {x : Vals A n} {ps ps' : List Nat} (h : ps'.Sublist ps) :
+    Vals.PickFits A x ps → Vals.PickFits A x ps' := by
+  induction A generalizing n ps ps' with
+  | atom t =>
+    unfold Vals.PickFits
+    exact fun hf ⟨k, hk, hle⟩ => hf ⟨k, h.subset hk, hle⟩
+  | prod a b iha ihb =>
+    unfold Vals.PickFits
+    exact fun ⟨h1, h2⟩ => ⟨iha h h1, ihb h h2⟩
+  | arr b ih =>
+    obtain ⟨p, lo, hi, f⟩ := x
+    unfold Vals.PickFits
+    dsimp only
+    intro ⟨h1, h2, h3, h4⟩
+    refine ⟨h1, Nat.lt_of_le_of_lt ?_ h2, Nat.lt_of_le_of_lt ?_ h3, ih (sublist_flatMap _ h) h4⟩ <;>
+      exact (sublist_flatMap _ h).length_le
+  | sum a b iha ihb =>
+    obtain ⟨l, r, tag, idx, x, y⟩ := x
+    unfold Vals.PickFits
+    dsimp only
+    intro ⟨h1, h2, h3, h4, h5⟩
+    exact ⟨Nat.lt_of_le_of_lt h.length_le h1, h2, h3, iha (h.filterMap _) h4, ihb (h.filterMap _) h5⟩
+
 /-- **`Vals.pick` read back at an atom**: `pickArr_get`. -/
 theorem pick_row_atom {t : QAtomicType} {n : USize} (x : Vals (.atom t) n)
     (i : ByteArray) (m : USize) (h : len i = m.toNat) (q : Fin m.toNat)

@@ -163,11 +163,13 @@ theorem rep_distinctCorefl (t : Obj) {n : USize} (x : Vals t n)
       laneOK((dc).w) ∧ (dc).n = n ∧
         (dc).b.size = ((dc).n.toNat * (dc).w + 7) / 8 ∧
         ((dc).w < 8 → (dc).card < USize.size ∧ ∀ i < (dc).n.toNat, Column.idAt (dc).b (dc).w i < (dc).card))
-    (hp : Vals.PickFits t x (ids (dc).groupIds.2)) :
+    (hp : Vals.PickFits t x (List.range n.toNat)) :
     rep (distinctCorefl t x) = corefl (A := (⟨t.El⟩ : RelSet.{0})) fun a => ∃ i, x.row i = a := by
   obtain ⟨hF, hw, hn, hs, hcard⟩ := hK
   obtain ⟨hlt, -, hex⟩ := groupIds_classes (dc) hw hs hcard
-  rw [hn] at hlt hex
+  have hsub := groupIds_sublist (dc) hw hs hcard
+  rw [hn] at hlt hex hsub
+  replace hp := pickFits_sublist hsub hp
   have hle : (ids (dc).groupIds.2).length ≤ n.toNat := by
     rw [groupIds_firsts (dc) hw hs hcard, hn]
     exact Nat.le_trans (List.length_filter_le _ _) (Nat.le_of_eq (List.length_range ..))
@@ -197,7 +199,7 @@ theorem dom_corefl {X Y : RelSet.{0}} (S : X ⟶ Y) : 𝟙 X ∩ S ≫ S° = cor
 /-- **`rep (dom R) = 𝟙 ∩ rep R (rep R)°`**, the allegory's `dom` (§2.122): `dom R` is `distinctCorefl` of the
     keys, whose elements are the `a` with a pair (`dom_corefl`). Hypotheses: `rep_distinctCorefl`'s at `R.key`. -/
 theorem rep_dom (R : Rel A B) (hK : oneOK(A, R.n, R.key))
-    (hp : Vals.PickFits A R.key (ids (c1(A, R.n, R.key)).groupIds.2)) :
+    (hp : Vals.PickFits A R.key (List.range R.n.toNat)) :
     rep (dom R) = 𝟙 _ ∩ rep R ≫ (rep R)° := by
   rw [dom_corefl, show dom R = distinctCorefl A R.key from rfl, rep_distinctCorefl A R.key hK hp]
   exact congrArg corefl (funext fun a => propext ⟨fun ⟨i, h⟩ => ⟨_, i, h, rfl⟩, fun ⟨_, i, h, _⟩ => ⟨i, h⟩⟩)
@@ -205,19 +207,19 @@ theorem rep_dom (R : Rel A B) (hK : oneOK(A, R.n, R.key))
 /-- **`rep (ran R) = 𝟙 ∩ (rep R)° (rep R)°°`**, the allegory's `ran S ≜ dom S°`: `ran R` is `dom R°`, so
     `rep_dom` at `R°` read through `rep_conv`. Hypotheses: `rep_dom`'s at `R°`, whose keys are `R.val`. -/
 theorem rep_ran (R : Rel A B) (hK : oneOK(B, R.n, R.val))
-    (hp : Vals.PickFits B R.val (ids (c1(B, R.n, R.val)).groupIds.2)) :
+    (hp : Vals.PickFits B R.val (List.range R.n.toNat)) :
     rep (ran R) = 𝟙 _ ∩ (rep R)° ≫ (rep R)°° := by
   rw [← rep_conv]; exact rep_dom (R°) hK hp
 
 /-- `rep_dom` read pointwise, `{(a, a) ∣ ∃ b, rep R(a, b)}` (`dom_corefl`). -/
 theorem rep_dom_corefl (R : Rel A B) (hK : oneOK(A, R.n, R.key))
-    (hp : Vals.PickFits A R.key (ids (c1(A, R.n, R.key)).groupIds.2)) :
+    (hp : Vals.PickFits A R.key (List.range R.n.toNat)) :
     rep (dom R) = corefl (A := (⟨A.El⟩ : RelSet.{0})) fun a => ∃ b, rep R a b :=
   (rep_dom R hK hp).trans (dom_corefl _)
 
 /-- `rep_ran` read pointwise, `{(b, b) ∣ ∃ a, rep R(a, b)}` (`dom_corefl`). -/
 theorem rep_ran_corefl (R : Rel A B) (hK : oneOK(B, R.n, R.val))
-    (hp : Vals.PickFits B R.val (ids (c1(B, R.n, R.val)).groupIds.2)) :
+    (hp : Vals.PickFits B R.val (List.range R.n.toNat)) :
     rep (ran R) = corefl (A := (⟨B.El⟩ : RelSet.{0})) fun b => ∃ a, rep R a b :=
   (rep_ran R hK hp).trans (dom_corefl _)
 
@@ -442,7 +444,8 @@ theorem pairs_member (R S : Rel A B) (hc : pairsOK(R, S)) {i : Nat} (hi : i < R.
 /-- `R.rows I`, `I` the ascending rows of `R` a bit `f` keeps, holds `R`'s pairs at those rows — what `∩`
     (`member`) and `−` (`anti`) read back to, by `rows_spec`. Hypotheses: `R`'s columns pick back at the rows. -/
 theorem rows_keep (R : Rel A B) (I : ByteArray) (f : Nat → Bool) (hI : ids I = (List.range R.n.toNat).filter f)
-    (hk : Vals.PickFits A R.key (ids I)) (hv : Vals.PickFits B R.val (ids I)) (a : A.El) (b : B.El) :
+    (hk : Vals.PickFits A R.key (List.range R.n.toNat)) (hv : Vals.PickFits B R.val (List.range R.n.toNat))
+    (a : A.El) (b : B.El) :
     (R.rows I).Holds a b ↔ ∃ i : Fin R.n.toNat, R.key.row i = a ∧ R.val.row i = b ∧ f i.1 = true := by
   have hmemI : ∀ i, i ∈ ids I ↔ i < R.n.toNat ∧ f i = true := fun i => by
     rw [hI, List.mem_filter, List.mem_range]
@@ -450,7 +453,8 @@ theorem rows_keep (R : Rel A B) (I : ByteArray) (f : Nat → Bool) (hI : ids I =
     rw [len_eq_ids, hI]
     exact Nat.lt_of_le_of_lt (Nat.le_trans (List.length_filter_le _ _) (Nat.le_of_eq (List.length_range ..)))
       R.n.toNat_lt_size
-  obtain ⟨hn, hrow⟩ := rows_spec R _ hlen hk hv
+  have hsub : (ids I).Sublist (List.range R.n.toNat) := hI ▸ List.filter_sublist
+  obtain ⟨hn, hrow⟩ := rows_spec R _ hlen (pickFits_sublist hsub hk) (pickFits_sublist hsub hv)
   have hids : ∀ q (hq : q < (ids I).length), (ids I)[q] = (Column.bitsAt I (q * 8) 8).toNat :=
     fun q hq => by simp [ids]
   constructor
@@ -477,8 +481,8 @@ theorem rows_keep (R : Rel A B) (I : ByteArray) (f : Nat → Bool) (hI : ids I =
 /-- **`rep (R ∩ S) = rep R ∩ rep S`**: `∩` keeps the rows of `R` whose pair `S` holds (`pairs_member`,
     `whereBits_ids`), read back by `rows_keep`. Hypotheses: the joint pair codes faithful and well formed (`hc`),
     and `R`'s two columns picking back at the kept rows. -/
-theorem rep_inter (R S : Rel A B) (hc : pairsOK(R, S)) (hk : Vals.PickFits A R.key (ids (hits)))
-    (hv : Vals.PickFits B R.val (ids (hits))) : rep (R ∩ S) = rep R ∩ rep S :=
+theorem rep_inter (R S : Rel A B) (hc : pairsOK(R, S)) (hk : Vals.PickFits A R.key (List.range R.n.toNat))
+    (hv : Vals.PickFits B R.val (List.range R.n.toNat)) : rep (R ∩ S) = rep R ∩ rep S :=
   hom_ext fun a b => by
     show (R.rows (hits)).Holds a b ↔ R.Holds a b ∧ S.Holds a b
     rw [rows_keep R _ _ (whereBits_ids R.n _).1 hk hv]
@@ -492,8 +496,8 @@ theorem rep_inter (R S : Rel A B) (hc : pairsOK(R, S)) (hk : Vals.PickFits A R.k
 /-- **`rep (R − S) = rep R − rep S`**, pointwise (`Rel(Set)` names no difference): `−` keeps the rows of `R` whose
     pair `S` does not hold (`anti_ids`, `pairs_member`), read back by `rows_keep` as `∩`. Hypotheses: `rep_inter`'s,
     at the rows `anti` keeps. -/
-theorem rep_diff (R S : Rel A B) (hc : pairsOK(R, S)) (hk : Vals.PickFits A R.key (ids (misses(R, S))))
-    (hv : Vals.PickFits B R.val (ids (misses(R, S)))) (a : A.El) (b : B.El) :
+theorem rep_diff (R S : Rel A B) (hc : pairsOK(R, S)) (hk : Vals.PickFits A R.key (List.range R.n.toNat))
+    (hv : Vals.PickFits B R.val (List.range R.n.toNat)) (a : A.El) (b : B.El) :
     rep (R \ S) a b ↔ rep R a b ∧ ¬ rep S a b := by
   obtain ⟨hw0, hn0, hs0, -⟩ := hc.2 (k := 0) (by decide)
   obtain ⟨hw1, -, hs1, -⟩ := hc.2 (k := 1) (by decide)

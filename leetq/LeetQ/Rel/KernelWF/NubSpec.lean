@@ -142,8 +142,8 @@ theorem nub_mem {p : Nat} : p ∈ ids nubI ↔ ∃ hp : p < R.n.toNat, ∀ q (hq
 
 include hK hV in
 /-- **`nub`'s rows, in order**: as many as the first occurrences, row `t` `R`'s row at the `t`-th of them;
-    each side under `Vals.PickFits` at those rows (outright at atoms and products: `pickFits_atom`). -/
-theorem nub_row (hk : Vals.PickFits k R.key (ids nubI)) (hv : Vals.PickFits v R.val (ids nubI)) :
+    each side under `Vals.PickFits` at all its rows, so at the picks, a sublist of them (`pickFits_sublist`). -/
+theorem nub_row (hk : Vals.PickFits k R.key (List.range R.n.toNat)) (hv : Vals.PickFits v R.val (List.range R.n.toNat)) :
     R.nub.n.toNat = (ids nubI).length ∧ ∀ t (ht : t < R.nub.n.toNat), ∃ (hI : t < (ids nubI).length)
       (hp : (ids nubI)[t]'hI < R.n.toNat), R.nub.key.row ⟨t, ht⟩ = R.key.row ⟨_, hp⟩ ∧
         R.nub.val.row ⟨t, ht⟩ = R.val.row ⟨_, hp⟩ := by
@@ -151,7 +151,8 @@ theorem nub_row (hk : Vals.PickFits k R.key (ids nubI)) (hv : Vals.PickFits v R.
   have hlen : (ids nubI).length ≤ R.n.toNat := by
     rw [nub_ids R hK hV]; simpa [firstsOf] using List.length_filter_le _ (List.range R.n.toNat)
   have hl : len nubI < USize.size := by rw [len_eq_ids]; exact Nat.lt_of_le_of_lt hlen R.n.toNat_lt_size
-  obtain ⟨hn, hrow⟩ := rows_spec R _ hl hk hv
+  have hsub : (ids nubI).Sublist (List.range R.n.toNat) := by rw [nub_ids R hK hV]; exact List.filter_sublist
+  obtain ⟨hn, hrow⟩ := rows_spec R _ hl (pickFits_sublist hsub hk) (pickFits_sublist hsub hv)
   rw [len_eq_ids] at hn
   rw [hnub]
   refine ⟨hn, fun t ht => ?_⟩
@@ -188,7 +189,7 @@ theorem rep_nub {k v : Obj} (R : Rel k v)
       laneOK((vc).w) ∧ (vc).n = R.n ∧
         (vc).b.size = ((vc).n.toNat * (vc).w + 7) / 8 ∧
         ((vc).w < 8 → (vc).card < USize.size ∧ ∀ i < (vc).n.toNat, Column.idAt (vc).b (vc).w i < (vc).card))
-    (hk : Vals.PickFits k R.key (ids nubI)) (hv : Vals.PickFits v R.val (ids nubI)) :
+    (hk : Vals.PickFits k R.key (List.range R.n.toNat)) (hv : Vals.PickFits v R.val (List.range R.n.toNat)) :
     rep R.nub = rep R := by
   obtain ⟨hn, hrow⟩ := nub_row R hK hV hk hv
   refine hom_ext fun a c => ?_

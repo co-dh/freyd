@@ -115,6 +115,14 @@ theorem whereBits_ids (n : USize) (b : ByteArray) :
   simp only [ids, List.getElem_map, List.getElem_range]
   exact hg j h2
 
+/-- **`whereBits n b` picks a sublist of the rows below `n`**: ascending, no repeats (`whereBits_ids`). -/
+theorem whereBits_sublist (n : USize) (b : ByteArray) : (ids (whereBits n b)).Sublist (List.range n.toNat) := by
+  rw [(whereBits_ids n b).1]; exact List.filter_sublist
+
+/-- **`anti x y` picks a sublist of `x`'s rows**: it is a `whereBits` over `x.n` (`whereBits_sublist`). -/
+theorem anti_sublist (x y : Code) : (ids (anti x y)).Sublist (List.range x.n.toNat) :=
+  whereBits_sublist _ _
+
 /-- `Ew.notBits` flips each of the first `m` bits. -/
 theorem notBits_bitAt (m : USize) (b : ByteArray) {i : Nat} (hi : i < m.toNat) :
     Column.bitAt (Ew.notBits m b) i = !Column.bitAt b i := by
@@ -215,6 +223,15 @@ theorem groupIds_classes (c : Code)
       ∀ i < c.n.toNat, ∃ f ∈ ids c.groupIds.2, Column.idAt c.b c.w f = Column.idAt c.b c.w i := by
   rw [groupIds_firsts c hw hs hcard]
   exact ⟨fun f hf => Verify.firsts_lt _ _ hf, Verify.nodup_firsts _ _, fun i hi => Verify.exists_first hi⟩
+
+/-- **`Code.groupIds` picks a sublist of the code's rows**: the first row of each code, ascending
+    (`groupIds_firsts`). -/
+theorem groupIds_sublist (c : Code)
+    (hw : laneOK(c.w))
+    (hs : c.b.size = (c.n.toNat * c.w + 7) / 8)
+    (hcard : c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) :
+    (ids c.groupIds.2).Sublist (List.range c.n.toNat) := by
+  rw [groupIds_firsts c hw hs hcard]; exact List.filter_sublist
 
 /-- info: 'LeetQ.Rel.Alg.member_bit' depends on axioms: [propext, Quot.sound] -/
 #guard_msgs in #print axioms member_bit
