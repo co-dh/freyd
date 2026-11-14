@@ -188,150 +188,120 @@ theorem razeColumn_alp {t : QAtomicType} {w : Nat} (hw : t.width = some w) (ht :
     simp only [↓reduceIte, hX] at hv
     cases hv; exact ⟨hc, rfl⟩
 
-/-- **Two parts' `razeTo` list on the ALP join** (`encodedParts`' flag `true`, the join not the dearer): the
-    join's elements are the parts' `alpBits` one part after another (`Verify.elemsW_concatALP`), and each part's
-    are its elements (`alp_part`). -/
-theorem razeTo2_join_alp {t : QAtomicType} {n m : USize} (x : Arr t n) (y : Arr t m)
-    (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
-      USize.size)
-    (hF : Vals.RazeFits (.atom t) x y) {w : Nat} {r} (hw : t.width = some w)
-    (hE : encodedParts t #[x.part, y.part] = some r) (hr : r.1 = true)
-    (hC : denseCheaper (if r.1 then 8 else 5) r.2.1 (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat))) = false) :
-    (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList := by
-  obtain ⟨alp, N, ns, ms, ps, as⟩ := r
-  dsimp only at hr; subst hr
-  have hC' : denseCheaper 8 N 8 (straddles (ns.map (·.toNat))) = false := hC
+/-- **`razeTo` of two or more parts read off its join's bits**: when the vector `razeColumn` answers reads
+    element `i` off `F i`, part `k`'s element `i` off `fs k i`, and `F`'s low `8w` bits list `fs`' part after
+    part, the razed column lists its parts' elements one part after another — `atomOfBits` reads only the low
+    `8w` bits (`atomOfBits_mod`). -/
+theorem razeTo_of_bits {t : QAtomicType} {w : Nat} (hw : t.width = some w) (hb : t ≠ .boolean) (hg8 : t ≠ .guid)
+    (cs : Array ((k : USize) × Arr t k)) {S : Nat} (hs : (cs.toList.map (·.1.toNat)).sum = S)
+    (hS : S < USize.size) (h2 : 2 ≤ cs.size) (F : Nat → UInt64) (cnt : Nat → Nat) (fs : Nat → Nat → UInt64)
+    (hJ : ∀ c E a, razeColumn t (cs.map (·.2.part)) = some (.vector t c E a) → ∀ i < S,
+      Enc.get t c E i = some (Column.atomOfBits t (F i) (QAtomicType.ne_general_of_width hw)))
+    (hP : ∀ k (hk : k < cs.size), cnt k = cs[k].1.toNat ∧ ∀ i < cs[k].1.toNat,
+      Enc.get t cs[k].1 cs[k].2.enc i = some (Column.atomOfBits t (fs k i) (QAtomicType.ne_general_of_width hw)))
+    (hL : (List.range S).map (fun i => (F i).toNat % 2 ^ (8 * w)) =
+      ((List.range cs.size).map fun k => (List.range (cnt k)).map fun i => (fs k i).toNat % 2 ^ (8 * w)).flatten) :
+    (razeTo t cs hs hS).toList = cs.toList.flatMap (·.2.toList) := by
+  have hg : t ≠ .general := QAtomicType.ne_general_of_width hw
+  let Gn : Nat → Carrier t := fun v =>
+    ((some (Column.atomOfBits t (UInt64.ofNat v) hg)).bind fun a => Carrier.of? t (.atom a)).getD default
+  have hG : ∀ u : UInt64, ((some (Column.atomOfBits t u hg)).bind fun a => Carrier.of? t (.atom a)).getD default =
+      Gn (u.toNat % 2 ^ (8 * w)) := fun u => by simp only [Gn, Verify.atomOfBits_mod hw hb hg8]
+  have hR : cs.toList.map (·.2.toList) = (List.range cs.size).map fun k =>
+      ((List.range (cnt k)).map fun i => (fs k i).toNat % 2 ^ (8 * w)).map Gn := by
+    apply List.ext_getElem (by simp)
+    intro j h1 _
+    have hj : j < cs.size := by simpa using h1
+    obtain ⟨hc, hp⟩ := hP j hj
+    simp only [List.getElem_map, Array.getElem_toList, List.getElem_range, List.map_map, hc]
+    rw [toList_get _ hg]
+    apply List.map_congr_left; intro i hi
+    simp only [Function.comp_apply]
+    rw [hp i (List.mem_range.1 hi), hG]
+  refine razeTo_toList_of hg cs hs hS h2 ?_
+  intro c E a hv _
+  have e : (List.range S).map (fun k => ((Enc.get t c E k).bind fun a => Carrier.of? t (.atom a)).getD default) =
+      ((List.range S).map fun i => (F i).toNat % 2 ^ (8 * w)).map Gn := by
+    rw [List.map_map]; apply List.map_congr_left; intro i hi
+    simp only [Function.comp_apply]; rw [hJ c E a hv i (List.mem_range.1 hi), hG]
+  rw [e, hL, List.map_flatten, List.map_map, List.flatMap_def, hR]
+  rfl
+
+/-- **`razeTo` on the ALP join, at any number of parts** (`encodedParts`' flag `true`, the join not the
+    dearer): the join's elements are the parts' `alpBits` one part after another (`Verify.elemsW_concatALP`),
+    and each part's are its elements (`alp_part`). `hA`: the joined count is below `2 ^ 32`, where `concatALP`
+    stores its exception offsets. -/
+theorem razeTo_join_alp {t : QAtomicType} {w : Nat} (hw : t.width = some w) (cs : Array ((k : USize) × Arr t k))
+    {S : Nat} (hs : (cs.toList.map (·.1.toNat)).sum = S) (hS : S < USize.size) (h2 : 2 ≤ cs.size)
+    {N : Nat} {ns : Array USize} {ms ps as : Array ByteArray}
+    (hE : encodedParts t (cs.map (·.2.part)) = some (true, N, ns, ms, ps, as))
+    (hC : denseCheaper 8 N 8 (straddles (ns.map (·.toNat))) = false) (hA : S < 2 ^ 32) :
+    (razeTo t cs hs hS).toList = cs.toList.flatMap (·.2.toList) := by
   obtain ⟨hal, hns, hNv, hms, hps, has, -⟩ := encodedParts_spec hE
   have ht : Column.alpEncodes t = true := hal.symm
-  have hg : t ≠ .general := QAtomicType.ne_general_of_width hw
   have hb : t ≠ .boolean := by rintro rfl; simp [Column.alpEncodes] at ht
   have hg8 : t ≠ .guid := by rintro rfl; simp [Column.alpEncodes] at ht
   obtain ⟨h48, h0⟩ := alp_width ht hw
   have hw48 : w = 4 ∨ w = 8 := by revert h48; split <;> omega
   have hw8 : w ≤ 8 := by omega
-  have hnm := hF.2 ht
-  have hns' : ns = #[n, m] := by rw [hns]; simp [Arr.part]
-  subst hns'
-  have hNv' : N = n.toNat + m.toNat := by rw [hNv]; simp
-  have hNlt : N < USize.size := by rw [hNv']; simpa using hN
-  have hNU : N.toUSize.toNat = N := USize.toNat_ofNat_of_lt' hNlt
-  obtain ⟨hk0, hp0, ha0, he0⟩ := encodedParts_alp ht hE 0 (by simp)
-  obtain ⟨hk1, hp1, ha1, he1⟩ := encodedParts_alp ht hE 1 (by simp)
-  have he0' : x.enc = .alp ms[0] ps[0] as[0] ∨ Enc.alpOf t n x.enc = some (.alp ms[0] ps[0] as[0]) := he0
-  have he1' : y.enc = .alp ms[1] ps[1] as[1] ∨ Enc.alpOf t m y.enc = some (.alp ms[1] ps[1] as[1]) := he1
-  obtain ⟨hf0, hx0⟩ := alp_part ht hw x.wf (by omega) he0'
-  obtain ⟨hf1, hx1⟩ := alp_part ht hw y.wf (by omega) he1'
-  have hb0 : (Column.bitsAt (countBytes #[n, m]) 0 8).toNat = n.toNat := by
-    have h := countBytes_get #[n, m] 0 (by simp); simp only [Nat.mul_zero] at h; rw [h]
-    exact USize.toNat_toUInt64 n
-  have hb1 : (Column.bitsAt (countBytes #[n, m]) 8 8).toNat = m.toNat := by
-    have h := countBytes_get #[n, m] 1 (by simp); simp only [Nat.mul_one] at h; rw [h]
-    exact USize.toNat_toUInt64 m
-  have hr2 : List.range 2 = [0, 1] := rfl
+  have hnsz : ns.size = cs.size := by rw [hns]; simp
+  have hnk : ∀ k (hk : k < cs.size), ns[k]'(by omega) = cs[k].1 := fun k hk => by simp [hns, Arr.part]
+  have hb8 : ∀ k (hk : k < cs.size), (Column.bitsAt (countBytes ns) (8 * k) 8).toNat = cs[k].1.toNat :=
+    fun k hk => by rw [countBytes_get ns k (by omega), hnk k hk]; exact USize.toNat_toUInt64 _
+  have hcl : (List.range cs.size).map (fun k => (Column.bitsAt (countBytes ns) (8 * k) 8).toNat) =
+      cs.toList.map (·.1.toNat) := List.ext_getElem (by simp) fun j h1 _ => by
+    simp only [List.getElem_map, List.getElem_range, Array.getElem_toList]; exact hb8 j (by simpa using h1)
+  have hle : ∀ (l : List Nat) a, a ∈ l → a ≤ l.sum := by
+    intro l; induction l with
+    | nil => intro a h; cases h
+    | cons b l ih =>
+      intro a h; rcases List.mem_cons.1 h with rfl | h
+      · simp
+      · have := ih a h; simp; omega
+  have hcnt : ∀ k (hk : k < cs.size), cs[k].1.toNat < 2 ^ 32 := fun k hk =>
+    Nat.lt_of_le_of_lt (hs ▸ hle _ _ (List.mem_map.2 ⟨cs[k], by simp, rfl⟩)) hA
+  have hNS : N = S := by rw [hNv, ← hs]; congr 1; rw [hns]; simp [Arr.part]
+  have hNlt : N < USize.size := hNS ▸ hS
+  have hNU : N.toUSize.toNat = S := by rw [USize.toNat_ofNat_of_lt' hNlt, hNS]
   have hb4 := toUSize_beq4 hw8
   have hU : (if (w == 4) = true then (4 : USize) else 8) = w.toUSize := by
     rcases hw48 with rfl | rfl <;> rfl
-  have hA := Verify.elemsW_concatALP w.toUSize (countBytes #[n, m]) ms ps as 2
-    (by rw [countBytes_size, hms, hps, has]; simp)
+  have hR := Verify.elemsW_concatALP w.toUSize (countBytes ns) ms ps as cs.size
+    (by rw [countBytes_size, hms, hps, has, hnsz]; simp)
     (fun k hk => by
-      rw [hb4]
-      rcases (by omega : k = 0 ∨ k = 1) with rfl | rfl
-      · rw [getElem!_pos as 0 ha0]; exact hf0
-      · rw [getElem!_pos as 1 ha1]; exact hf1)
-    (fun k hk => by
-      rcases (by omega : k = 0 ∨ k = 1) with rfl | rfl
-      · rw [Nat.mul_zero, hb0]; exact Nat.lt_of_lt_of_le (by omega) USize.le_size
-      · rw [Nat.mul_one, hb1]; exact Nat.lt_of_lt_of_le (by omega) USize.le_size)
-    (by
-      rw [hr2]
-      simp only [List.map_cons, List.map_nil, Nat.mul_zero, Nat.mul_one, hb0, hb1, List.sum_cons, List.sum_nil]
-      omega)
-  rcases hX : concatALP w.toUSize (countBytes #[n, m]) ms ps as with ⟨M, P, A⟩
-  simp only [hX, hb4, h48, hU, hr2, List.map_cons, List.map_nil, Nat.mul_zero, Nat.mul_one, hb0, hb1,
-    List.sum_cons, List.sum_nil, Nat.add_zero, List.flatten_cons, List.flatten_nil, List.append_nil,
-    getElem!_pos ms 0 hk0, getElem!_pos ms 1 hk1, getElem!_pos ps 0 hp0, getElem!_pos ps 1 hp1,
-    getElem!_pos as 0 ha0, getElem!_pos as 1 ha1, ← hNv'] at hA
+      obtain ⟨_, _, ha', he⟩ := encodedParts_alp ht hE k (by simpa using hk)
+      rw [hb4, getElem!_pos as k ha']
+      exact (alp_part ht hw cs[k].2.wf (hcnt k hk) (by simpa [Arr.part] using he)).1)
+    (fun k hk => by rw [hb8 k hk]; exact USize.toNat_lt_size _)
+    (by rw [hcl, hs]; exact hA)
+  rcases hX : concatALP w.toUSize (countBytes ns) ms ps as with ⟨M, P, A⟩
+  simp only [hX, hb4, h48, hU] at hR
+  rw [hcl, hs] at hR
   have hesz : w.toUSize.toNat = Column.alpEsz A := by
-    rw [toUSize_toNat_le8 hw8]; unfold Column.alpEsz; rw [hA.1]; exact h48.symm
-  have h2 := Verify.elemsW_alpDecode_alpBits M P A N.toUSize w.toUSize hesz
-  rw [toUSize_toNat_le8 hw8, hNU] at h2
-  have hL := h2.symm.trans hA.2
+    rw [toUSize_toNat_le8 hw8]; unfold Column.alpEsz; rw [hR.1]; exact h48.symm
+  have hD := Verify.elemsW_alpDecode_alpBits M P A S.toUSize w.toUSize hesz
+  rw [toUSize_toNat_le8 hw8, USize.toNat_ofNat_of_lt' hS] at hD
+  have hL := hD.symm.trans hR.2
   have hwfA : Enc.WF t N.toUSize (.alp M P A) :=
-    concatALP_wf hX ht hw hms hps has (by rw [hNU, hNv']; simp)
-  have hl : ∀ {k : USize} (e : Enc) (f : Nat → UInt64), (∀ i < k.toNat, Enc.get t k e i =
-      some (Column.atomOfBits t (f i) (QAtomicType.ne_general_of_width hw))) →
-      (List.range k.toNat).map (fun i => ((Enc.get t k e i).bind fun a => Carrier.of? t (.atom a)).getD default) =
-        ((List.range k.toNat).map f).map fun b =>
-          ((some (Column.atomOfBits t b (QAtomicType.ne_general_of_width hw))).bind
-            fun a => Carrier.of? t (.atom a)).getD default := by
-    intro k e f h; rw [List.map_map]; apply List.map_congr_left; intro i hi; rw [h i (List.mem_range.1 hi)]; rfl
-  refine razeTo_toList_of hg _ rfl hN (by simp) ?_
-  intro c E a hv hc
-  rw [show ((#[⟨n, x⟩, ⟨m, y⟩] : Array ((k : USize) × Arr t k)).map (·.2.part)) = #[x.part, y.part] by simp] at hv
-  obtain ⟨-, hv⟩ := razeColumn_alp hw ht hE hC' hX hv
-  simp only [QValue.vector.injEq] at hv
-  obtain ⟨-, rfl, rfl, rfl⟩ := hv
-  rw [← hc, hl _ (Column.alpBits M P A (Column.blockStarts M)) (fun i hi => by
-      rw [get_answer hw hb hwfA (by intro _ h; cases h) hi, get_alp_eq hw hb hg8 _ _ _ hi, alpBits_starts]),
-    hNU, hL, toList_get x hg, toList_get y hg, hl _ _ hx0, hl _ _ hx1, List.map_append]
+    concatALP_wf hX ht hw hms hps has (by rw [USize.toNat_ofNat_of_lt' hNlt]; exact hNv)
+  refine razeTo_of_bits hw hb hg8 cs hs hS h2 (Column.alpBits M P A (Column.blockStarts M))
+    (fun k => (Column.bitsAt (countBytes ns) (8 * k) 8).toNat)
+    (fun k => Column.alpBits ms[k]! ps[k]! as[k]! (Column.blockStarts ms[k]!)) ?_ ?_ ?_
+  · intro c E a hv i hi
+    obtain ⟨-, hv⟩ := razeColumn_alp hw ht hE hC hX hv
+    simp only [QValue.vector.injEq] at hv
+    obtain ⟨-, rfl, rfl, rfl⟩ := hv
+    have hi' : i < N.toUSize.toNat := by rw [hNU]; exact hi
+    rw [get_answer hw hb hwfA (by intro _ h; cases h) hi', get_alp_eq hw hb hg8 _ _ _ hi', alpBits_starts]
+  · intro k hk
+    obtain ⟨hk', hp', ha', he⟩ := encodedParts_alp ht hE k (by simpa using hk)
+    refine ⟨hb8 k hk, ?_⟩
+    dsimp only
+    rw [getElem!_pos ms k hk', getElem!_pos ps k hp', getElem!_pos as k ha']
+    exact (alp_part ht hw cs[k].2.wf (hcnt k hk) (by simpa [Arr.part] using he)).2
+  · simpa only [List.map_map, List.map_flatten, Function.comp_def] using
+      congrArg (List.map fun v : UInt64 => v.toNat % 2 ^ (8 * w)) hL
 
-/-- **Two parts' `razeTo` list at every type and encoding but the Frame-of-Reference join**: `razeTo2_fits` at
-    `boolean`, `general`, `symbol`, `guid`, `razeTo2_join_alp` on the ALP join, `razeTo2_dense` wherever
-    `razeColumn` answers dense. `hD`, on the encoding only: where `encodedParts` joins Frame of Reference
-    (flag `false`), the join is the dearer (`denseCheaper`), so `razeColumn` answers dense. -/
-theorem razeTo2_all {t : QAtomicType} {n m : USize} (x : Arr t n) (y : Arr t m)
-    (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
-      USize.size)
-    (hF : Vals.RazeFits (.atom t) x y)
-    (hD : ∀ w r, t.width = some w → encodedParts t #[x.part, y.part] = some r → r.1 = false →
-      denseCheaper (if r.1 then 8 else 5) r.2.1 (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat))) = true) :
-    (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList := by
-  by_cases hs : t = .boolean ∨ t = .general ∨ t = .symbol ∨ t = .guid
-  · exact razeTo2_fits x y hN hF (by
-      rcases hs with h | h | h | h
-      · exact .inl h
-      · exact .inr (.inl h)
-      · exact .inr (.inr (.inl h))
-      · exact .inr (.inr (.inr (.inl h))))
-  · obtain ⟨w, hw⟩ : ∃ w, t.width = some w := by cases t <;> simp_all [QAtomicType.width]
-    have hb : t ≠ .boolean := fun h => hs (.inl h)
-    cases hE : encodedParts t #[x.part, y.part] with
-    | none => exact razeTo2_dense hw hb x y hN fun r hr => by rw [hE] at hr; cases hr
-    | some r =>
-      cases hC : denseCheaper (if r.1 then 8 else 5) r.2.1 (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat)))
-      · cases hr : r.1
-        · exact absurd (hC.symm.trans (hD w r hw hE hr)) (by decide)
-        · exact razeTo2_join_alp x y hN hF hw hE hr hC
-      · exact razeTo2_dense hw hb x y hN fun r' hr' => by
-          rw [hE, Option.some.injEq] at hr'; subst hr'; exact hC
-
-section
--- The read-back left open: two atom parts on the Frame-of-Reference join (`encodedParts` flag `false`), concatFoR.
-variable (hJ : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
-    (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
-      USize.size), Vals.RazeFits (.atom t) x y → ∀ w r, t.width = some w →
-    encodedParts t #[x.part, y.part] = some r → r.1 = false →
-    denseCheaper (if r.1 then 8 else 5) r.2.1 (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat))) = false →
-    (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
-include hJ
-
-/-- `raze_row`'s `hat` from `razeTo2_all` and the encoded join `hJ`. -/
-theorem hat_of_join : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
-    (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
-      USize.size), Vals.RazeFits (.atom t) x y →
-    (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList := by
-  intro t n m x y hN hF
-  by_cases hj : ∃ w r, t.width = some w ∧ encodedParts t #[x.part, y.part] = some r ∧ r.1 = false ∧
-      denseCheaper (if r.1 then 8 else 5) r.2.1 (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat))) = false
-  · obtain ⟨w, r, hW, hE, hr, hC⟩ := hj; exact hJ t x y hN hF w r hW hE hr hC
-  · exact razeTo2_all x y hN hF fun w r hW hE hr => by
-      cases hC : denseCheaper (if r.1 then 8 else 5) r.2.1 (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat)))
-      · exact absurd ⟨w, r, hW, hE, hr, hC⟩ hj
-      · rfl
-
-end
-
-#print axioms razeTo2_all
-#print axioms razeTo2_join_alp
+#print axioms razeTo_join_alp
 
 end LeetQ.Rel.KernelWF
