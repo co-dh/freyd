@@ -666,8 +666,11 @@ def nilVal (B : Obj) : Vals (.arr B) 1 := ⟨0, col [0], col [0], Vals.empty B�
 
 /-- `F(R)`, the list functor on the arrays of `X`: `xs` to every `ys` of its length with `xs[i] R ys[i]` at
     each `i` — `⦇[], (R × 𝟙) ≫ cons⦈`, each round pairing every image of the element with every array so far. -/
-def map {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) : Rel (.arr A) (.arr B) :=
-  foldBy X (nilVal B) fun el pend => cons (pair (el ≫ R) pend)
+def mapC {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) : Rel (.arr A) (.arr B) × Bool :=
+  foldByC X (nilVal B) fun el pend =>
+    let q := compC el R; let p := pairC q.1 pend; let c := consC p.1
+    (c.1, q.2 && p.2 && c.2)
+def map {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) : Rel (.arr A) (.arr B) := (mapC R X).1
 
 /-! ## Order on numbers, the power side, and the note's list functions -/
 

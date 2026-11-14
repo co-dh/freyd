@@ -8,6 +8,7 @@ import LeetQ.Rel.CRelRel
 import LeetQ.Rel.RepFold
 import LeetQ.Rel.RepArith
 import LeetQ.Rel.CRelArith
+import LeetQ.Rel.CRelList
 
 namespace LeetQ.Rel
 
@@ -270,8 +271,35 @@ theorem rep_lengthC {E : Obj} {n : USize} (X : Vals (.arr E) n)
     obtain rfl := hcor _ _ ha
     exact ⟨a.2, ⟨a, ha, rfl⟩, hy⟩
 
+/-- **`map` under `mapC`'s bit**: `rep_foldByC` at the step `consC (pairC (compC el R) pend)`, each round's three
+    bits read it back (`rep_consC`, `rep_pairC`, `rep_compC`), then `map_chain`. What stays: `hat`. -/
+theorem rep_mapC {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n)
+    (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
+      (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
+        USize.size), Vals.RazeFits (.atom t) x y →
+      (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
+    (hb : (mapC R X).2 = true) :
+    ∀ (xs : List A.El) ys, rep (mapC R X).1 xs ys ↔ (∃ i, X.row i = xs) ∧ ys.length = xs.length ∧
+      ∀ t (ht : t < xs.length) (ht' : t < ys.length), rep R (xs[t]'ht) (ys[t]'ht') := by
+  intro xs ys; unfold mapC at hb ⊢
+  refine (rep_foldByC (nilVal B) X _ hat hb _ rfl _ rfl _ (fun _ _ => rfl)
+    (fun _ eu v => ∃ b, rep R eu.1 b ∧ v = b :: eu.2) _ (fun _ => rfl) _ (fun _ => rfl) False
+    (fun i _ _ hbi r v => ?_) xs ys).trans ?_
+  · simp only [Bool.and_eq_true] at hbi
+    obtain ⟨⟨hq, hp⟩, hc⟩ := hbi
+    simp only [false_and, or_false]
+    refine (rep_consC _ hc r v).trans ?_
+    rw [rep_pairC _ _ hp, rep_compC _ _ hq]
+    constructor
+    · rintro ⟨b, bs, ⟨⟨e, he, hR⟩, hu⟩, rfl⟩; exact ⟨e, bs, he, hu, b, hR, rfl⟩
+    · rintro ⟨e, u, he, hu, b, hR, rfl⟩; exact ⟨b, u, ⟨⟨e, he, hR⟩, hu⟩, rfl⟩
+  -- `nilVal B`'s one row is `[]`
+  exact and_congr Iff.rfl ((exists_congr fun zs => exists_congr fun _ => and_congr
+    ⟨fun ⟨_, h⟩ => h.symm, fun h => ⟨⟨0, by simp⟩, h.symm⟩⟩ Iff.rfl).trans (map_chain (rep R) xs ys))
+
 #print axioms rep_foldOnC
 #print axioms rep_foldC
+#print axioms rep_mapC
 #print axioms Arr.rep_sumC
 #print axioms rep_lengthC
 
@@ -407,8 +435,25 @@ theorem rep_length {E : Obj} {n : USize} (X : Vals (.arr E) n)
     ∀ (xs : List E.El) (w : Int64), rep (length X).rel xs w ↔ (∃ i, X.row i = xs) ∧ w = Int64.ofNat xs.length :=
   rep_lengthC X hat hb
 
+/-- `map` as a `CRel`, ok where `R` is and `mapC` ran within capacity. -/
+def map {A B : Obj} {n : USize} (R : CRel A B) (X : Vals (.arr A) n) : CRel (.arr A) (.arr B) :=
+  let r := mapC R.rel X
+  ⟨r.1, R.ok && r.2⟩
+
+/-- **`CRel.map` read back under its bit**: `rep_mapC`. -/
+theorem rep_map {A B : Obj} {n : USize} (R : CRel A B) (X : Vals (.arr A) n)
+    (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
+      (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
+        USize.size), Vals.RazeFits (.atom t) x y →
+      (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
+    (hb : (map R X).ok = true) :
+    ∀ (xs : List A.El) ys, rep (map R X).rel xs ys ↔ (∃ i, X.row i = xs) ∧ ys.length = xs.length ∧
+      ∀ t (ht : t < xs.length) (ht' : t < ys.length), rep R.rel (xs[t]'ht) (ys[t]'ht') :=
+  rep_mapC R.rel X hat (by simp only [map, Bool.and_eq_true] at hb; exact hb.2)
+
 #print axioms Arr.rep_sum
 #print axioms rep_length
+#print axioms rep_map
 
 end CRel
 
