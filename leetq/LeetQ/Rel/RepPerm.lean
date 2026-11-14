@@ -457,6 +457,145 @@ theorem rep_perm {B : Obj} {n : USize} (X : Vals (.arr B) n)
 
 end PermFold
 
+/-! ## `suffix` -/
+
+-- every primitive's hypotheses at one round of `suffix`, at its union so far `S` and last arrays `F`: `rep_ran`'s
+-- at `F`, `rep_tail`'s at `Dr = ran F`, `rep_comp`'s at `F ≫ tail`, `rep_union_full`'s at `P = S`, `Q = F ≫ tail`
+set_option hygiene false in
+local notation "sufOK" =>
+  (∀ Dr : Rel (.arr B) (.arr B), Dr = ran F →
+    oneFit(.arr B, Rel.n F, Rel.val F) ∧ uncOK(B, Dr) ∧ cmpOK(.arr B, F, tail (Rel.val Dr)) ∧
+    ∀ P : Rel (.arr B) (.arr B), P = S → ∀ Q : Rel (.arr B) (.arr B), Q = F ≫ tail (Rel.val Dr) →
+    P.n.toNat + Q.n.toNat < USize.size ∧
+    ∃ (hNk : ((#[⟨P.n, P.key⟩, ⟨Q.n, Q.key⟩] : Array (Part (.arr B))).toList.map
+        fun c : Part (.arr B) => c.1.toNat).sum < USize.size)
+      (hNv : ((#[⟨P.n, P.val⟩, ⟨Q.n, Q.val⟩] : Array (Part (.arr B))).toList.map
+        fun c : Part (.arr B) => c.1.toNat).sum < USize.size),
+      Vals.RazeFits (.arr B) P.key Q.key ∧ Vals.RazeFits (.arr B) P.val Q.val ∧
+      Obj.CodesFit (.arr B) (#v[⟨(PQ(.arr B, .arr B)).n, (PQ(.arr B, .arr B)).key⟩] : Vector (Part (.arr B)) 1) ∧
+      Obj.CodesFit (.arr B) (#v[⟨(PQ(.arr B, .arr B)).n, (PQ(.arr B, .arr B)).val⟩] : Vector (Part (.arr B)) 1) ∧
+      Vals.PickFits (.arr B) (PQ(.arr B, .arr B)).key (ids nubI(.arr B, .arr B, PQ(.arr B, .arr B))) ∧
+      Vals.PickFits (.arr B) (PQ(.arr B, .arr B)).val (ids nubI(.arr B, .arr B, PQ(.arr B, .arr B))))
+
+/-- **One round of `suffix`, read back**: `F ≫ tail` takes an array to the tail of each array `F` gives it, and the
+    union adds those to `S`. Hypotheses: `sufOK`. -/
+theorem suffix_round {B : Obj} (S F : Rel (.arr B) (.arr B)) (h : sufOK) :
+    (∀ xs ys, rep (F ≫ tail (ran F).val) xs ys ↔ ∃ c, rep F xs (c :: ys)) ∧
+    ∀ xs ys, rep (S ∪ F ≫ tail (ran F).val) xs ys ↔ rep S xs ys ∨ ∃ c, rep F xs (c :: ys) := by
+  obtain ⟨⟨hDf, hDp⟩, ⟨t63, ht⟩, ⟨hcf, hc⟩, hU⟩ := h _ rfl
+  obtain ⟨tK, tH, tT⟩ := ht _ rfl _ rfl _ rfl
+  have eT := rep_tail (Rel.val (ran F)) t63 _ rfl _ rfl _ rfl tK tH tT
+  obtain ⟨c1, c2, c3, c4, c5⟩ := hc _ rfl
+  have eC := rep_comp _ _ (codes_faithful_wf _ _ hcf).1 c1 c2 c3 c4 c5
+  have eD := rep_ran F (one_ok _ hDf) (hDp _ rfl)
+  have e1 : ∀ xs ys, rep (F ≫ tail (ran F).val) xs ys ↔ ∃ c, rep F xs (c :: ys) := by
+    intro xs ys
+    rw [eC, Freyd.Alg.RelSet.comp_apply]
+    constructor
+    · rintro ⟨a, ha, ht⟩
+      obtain ⟨-, c, rfl⟩ := (eT a ys).1 ht
+      exact ⟨c, ha⟩
+    · rintro ⟨c, hc⟩
+      have hr : rep (ran F) (c :: ys) (c :: ys) := by rw [eD]; exact ⟨rfl, xs, hc⟩
+      obtain ⟨j, -, hj⟩ := hr
+      exact ⟨c :: ys, hc, (eT _ _).2 ⟨⟨j, hj⟩, c, rfl⟩⟩
+  obtain ⟨hN, hNk, hNv, hFk, hFv, hUK, hUV, hUk, hUv⟩ := hU _ rfl _ rfl
+  refine ⟨e1, fun xs ys => ?_⟩
+  rw [rep_union_full S _ hN hNk hNv hFk hFv (one_ok _ hUK) (one_ok _ hUV) hUk hUv]
+  show rep S xs ys ∨ rep _ xs ys ↔ _
+  exact or_congr Iff.rfl (e1 xs ys)
+
+/-- **`suffix`, read back**: an array `xs` of `X` goes to exactly its suffixes. Round `i` holds in `F` the arrays
+    `drop i xs` (for `i ≤ |xs|`) and in `S` every `drop t xs`, `t ≤ i`; the fuel `X.1 + 1` passes every array's
+    length (`arr_row_length`), and a stop at an empty `F` means every array is shorter. The round `g` is bound by
+    its defining equation (`hg`); `hR` is `sufOK` at every round up to the payload count. -/
+theorem rep_suffix {B : Obj} {n : USize} (X : Vals (.arr B) n)
+    (g : Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B) → Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B))
+    (hg : ∀ S F, g (S, F) = (S ∪ F ≫ tail (ran F).val, F ≫ tail (ran F).val))
+    (hR : ∀ i, i ≤ X.1.toNat → ∀ S F, S = (g^[i] (idU X, idU X)).1 → F = (g^[i] (idU X, idU X)).2 → sufOK) :
+    ∀ xs ys, rep (suffix X) xs ys ↔ (∃ j, X.row j = xs) ∧ ys <:+ xs := by
+  have hd : ∀ (i : Nat) (xs : List B.El) ys, (∃ c, c :: ys = xs.drop i) ↔ i < xs.length ∧ ys = xs.drop (i + 1) := by
+    intro i xs ys
+    constructor
+    · rintro ⟨c, h⟩
+      refine ⟨?_, (congrArg List.tail h).trans (by rw [List.tail_drop])⟩
+      have := congrArg List.length h
+      simp at this
+      omega
+    · rintro ⟨hi, rfl⟩
+      exact ⟨xs[i], (List.drop_eq_getElem_cons hi).symm⟩
+  -- after `i` rounds: `F` is `drop i`, `S` every `drop t`, `t ≤ i`
+  have inv : ∀ i, i ≤ X.1.toNat + 1 →
+      (∀ xs ys, rep (g^[i] (idU X, idU X)).2 xs ys ↔ (∃ j, X.row j = xs) ∧ i ≤ xs.length ∧ ys = xs.drop i) ∧
+      (∀ xs ys, rep (g^[i] (idU X, idU X)).1 xs ys ↔
+        (∃ j, X.row j = xs) ∧ ∃ t ≤ i, t ≤ xs.length ∧ ys = xs.drop t) := by
+    intro i
+    induction i with
+    | zero =>
+      intro _
+      have e : ∀ xs ys, rep (idU X) xs ys ↔ (∃ j, X.row j = xs) ∧ 0 ≤ xs.length ∧ ys = xs.drop 0 :=
+        fun xs ys => (idU_holds X xs ys).trans
+          ⟨fun ⟨h, hj⟩ => ⟨hj, Nat.zero_le _, h.symm⟩, fun ⟨hj, _, h⟩ => ⟨h.symm, hj⟩⟩
+      refine ⟨e, fun xs ys => (e xs ys).trans (and_congr Iff.rfl
+        ⟨fun h => ⟨0, Nat.le_refl _, h⟩, fun ⟨t, ht, _, h⟩ => ?_⟩)⟩
+      obtain rfl : t = 0 := by omega
+      exact ⟨Nat.zero_le _, h⟩
+    | succ i ih =>
+      intro hi
+      obtain ⟨hF, hS⟩ := ih (by omega)
+      have hr := suffix_round _ _ (hR i (by omega) _ _ rfl rfl)
+      have e : g^[i + 1] (idU X, idU X) = _ := hg (g^[i] (idU X, idU X)).1 (g^[i] (idU X, idU X)).2
+      have hF' : ∀ xs ys, (∃ c, rep (g^[i] (idU X, idU X)).2 xs (c :: ys)) ↔
+          (∃ j, X.row j = xs) ∧ i + 1 ≤ xs.length ∧ ys = xs.drop (i + 1) := by
+        intro xs ys
+        constructor
+        · rintro ⟨c, h⟩
+          obtain ⟨hj, -, h⟩ := (hF _ _).1 h
+          obtain ⟨hl, e⟩ := (hd i xs ys).1 ⟨c, h⟩
+          exact ⟨hj, hl, e⟩
+        · rintro ⟨hj, hl, e⟩
+          obtain ⟨c, hc⟩ := (hd i xs ys).2 ⟨hl, e⟩
+          exact ⟨c, (hF _ _).2 ⟨hj, by omega, hc⟩⟩
+      rw [e]
+      refine ⟨fun xs ys => (hr.1 xs ys).trans (hF' xs ys), fun xs ys => (hr.2 xs ys).trans
+        ((or_congr (hS xs ys) (hF' xs ys)).trans ?_)⟩
+      constructor
+      · rintro (⟨hj, t, ht, hl, e⟩ | ⟨hj, hl, e⟩)
+        · exact ⟨hj, t, by omega, hl, e⟩
+        · exact ⟨hj, i + 1, Nat.le_refl _, hl, e⟩
+      · rintro ⟨hj, t, ht, hl, e⟩
+        rcases Nat.lt_or_ge t (i + 1) with h | h
+        · exact Or.inl ⟨hj, t, by omega, hl, e⟩
+        · obtain rfl : t = i + 1 := by omega
+          exact Or.inr ⟨hj, hl, e⟩
+  obtain ⟨j, hj, he, hs⟩ := iter_stop (fun s : Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B) => s.2.n == 0) g
+    (X.1.toNat + 1) (idU X, idU X)
+  have hl : suffix X = (g^[j] (idU X, idU X)).1 := by
+    rw [← he]
+    refine congrArg (fun g' : Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B) →
+        Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B) =>
+      (iter (X.1.toNat + 1) (fun s => s.2.n == 0) g' (idU X, idU X)).1) (funext fun st => ?_)
+    obtain ⟨S, F⟩ := st
+    rw [hg S F]
+  have hstop : X.1.toNat + 1 ≤ j ∨ ∀ xs ys, ¬ rep (g^[j] (idU X, idU X)).2 xs ys := by
+    rcases hs with hs | hs
+    · exact Or.inl (by omega)
+    · refine Or.inr fun xs ys h => ?_
+      obtain ⟨i, -⟩ := h
+      have h0 : (g^[j] (idU X, idU X)).2.n = 0 := beq_iff_eq.1 hs
+      have h1 : (g^[j] (idU X, idU X)).2.n.toNat = 0 := by rw [h0]; rfl
+      exact Nat.not_lt_zero _ (Nat.lt_of_lt_of_eq i.2 h1)
+  obtain ⟨hFj, hSj⟩ := inv j hj
+  intro xs ys
+  rw [hl]
+  refine (hSj xs ys).trans (and_congr_right fun ⟨r, hr⟩ => ⟨fun ⟨t, _, _, e⟩ => by
+    rw [e]; exact List.drop_suffix .., fun h => ⟨xs.length - ys.length, ?_, by omega, List.suffix_iff_eq_drop.1 h⟩⟩)
+  have hx : xs.length ≤ X.1.toNat := by rw [← hr]; exact arr_row_length X r
+  rcases hstop with h' | h'
+  · omega
+  · have : xs.length < j := Nat.lt_of_not_le fun hc => h' xs _ ((hFj xs _).2 ⟨⟨r, hr⟩, hc, rfl⟩)
+    omega
+
 end LeetQ.Rel.Rep
 
 #print axioms LeetQ.Rel.Rep.rep_cons_ok
@@ -467,3 +606,5 @@ end LeetQ.Rel.Rep
 #print axioms LeetQ.Rel.Rep.perm_step_rep
 #print axioms LeetQ.Rel.Rep.perm_chain
 #print axioms LeetQ.Rel.Rep.rep_perm
+#print axioms LeetQ.Rel.Rep.suffix_round
+#print axioms LeetQ.Rel.Rep.rep_suffix
