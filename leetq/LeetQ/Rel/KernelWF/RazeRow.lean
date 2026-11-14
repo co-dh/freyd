@@ -195,33 +195,4 @@ theorem rep_union (R S : Rel A B) (hN : R.n.toNat + S.n.toNat < USize.size)
 
 #print axioms rep_union
 
-/-- `rep_union` at boolean sides: the razed sides read back by `razeTo2_boolean`, the razed relation's codes are
-    its bits (`codes_boolean_faithful`/`_wf`), and `nub` picks its rows only (`nub_mem`, `pickFits_atom`). -/
-theorem rep_union_boolean (R S : Rel (.atom .boolean) (.atom .boolean)) (hN : R.n.toNat + S.n.toNat < USize.size) :
-    rep (R ∪ S) = rep R ∪ rep S := by
-  have hNk : ((#[⟨R.n, R.key⟩, ⟨S.n, S.key⟩] : Array (Part (.atom .boolean))).toList.map
-      fun c : Part (.atom .boolean) => c.1.toNat).sum < USize.size := by simpa using hN
-  have hNv : ((#[⟨R.n, R.val⟩, ⟨S.n, S.val⟩] : Array (Part (.atom .boolean))).toList.map
-      fun c : Part (.atom .boolean) => c.1.toNat).sum < USize.size := by simpa using hN
-  refine rep_union R S hN hNk hNv (raze_row_atom R.key S.key hNk (razeTo2_boolean _ _ hNk))
-    (raze_row_atom R.val S.val hNv (razeTo2_boolean _ _ hNv)) ?hK ?hV
-    (pickFits_atom _ fun _ hp => ((nub_mem _ ?hK ?hV).1 hp).1) (pickFits_atom _ fun _ hp => ((nub_mem _ ?hK ?hV).1 hp).1)
-  case hK => exact ⟨fun hi hj => codes_boolean_faithful _ (k := 0) (l := 0) (by decide) (by decide) hi hj,
-    by have h := codes_boolean_wf (#v[⟨_, (Obj.atom .boolean).raze #[⟨R.n, R.key⟩, ⟨S.n, S.key⟩] hNk⟩] :
-           Vector (Part _) 1) (k := 0) (by decide)
-       exact ⟨Or.inl h.2.1, h.1, h.2.2.1, h.2.2.2⟩⟩
-  case hV => exact ⟨fun hi hj => codes_boolean_faithful _ (k := 0) (l := 0) (by decide) (by decide) hi hj,
-    by have h := codes_boolean_wf (#v[⟨_, (Obj.atom .boolean).raze #[⟨R.n, R.val⟩, ⟨S.n, S.val⟩] hNv⟩] :
-           Vector (Part _) 1) (k := 0) (by decide)
-       exact ⟨Or.inl h.2.1, h.1, h.2.2.1, h.2.2.2⟩⟩
-
-/-- `rep_junc` at a boolean value side: the razed values read back by `razeTo2_boolean`. -/
-theorem rep_junc_boolean (R : Rel A (.atom .boolean)) (S : Rel B (.atom .boolean))
-    (hN : R.n.toNat + S.n.toNat < USize.size) (h63 : R.n.toNat + S.n.toNat ≤ 2 ^ 63) :
-    rep (LeetQ.Rel.Alg.junc R S) = Freyd.Alg.junc (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩) (rep R) (rep S) :=
-  rep_junc R S hN h63 fun hN' => raze_row_atom R.val S.val hN' (razeTo2_boolean _ _ hN')
-
-#print axioms rep_union_boolean
-#print axioms rep_junc_boolean
-
 end LeetQ.Rel.Rep
