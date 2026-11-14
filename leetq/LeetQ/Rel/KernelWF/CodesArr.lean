@@ -390,6 +390,7 @@ theorem codes_arr_faithful_wf {b : Obj} {p : Nat} (cs : Vector (Part (.arr b)) p
   have hT : len cnts = (cs.toList.map (·.1.toNat)).sum := by
     rw [← hcn, len, KernelWF.concatBytes_size, hL]
     have := sum_take_mul8 (fun c : Part (.arr b) => c.1.toNat) cs.toList cs.toList.length
+    rw [List.take_of_length_le (Nat.le_refl _)] at this
     rw [this]; omega
   have hcr : ∀ k (hk : k < p), ∀ r < (cs[k]'hk).1.toNat,
       (Column.bitsAt cnts ((((cs.toList.map (·.1.toNat)).take k).sum + r) * 8) 8).toNat = cw k r := by
@@ -431,10 +432,12 @@ theorem codes_arr_faithful_wf {b : Obj} {p : Nat} (cs : Vector (Part (.arr b)) p
   have ht : (len cnts).toUSize.toNat = len cnts := USize.toNat_ofNat_of_lt' hTU
   simp only [sliceIds_eq]
   generalize hseq : Code.cat cx.toArray = seq at catA hcat
-  generalize ho : concatBytes #[one 0, sums (len cnts).toUSize cnts] = o
+  -- `simp only`, not `generalize`: abstracting the offsets in the goal is not type correct
+  obtain ⟨o, ho⟩ : ∃ o, concatBytes #[one 0, sums (len cnts).toUSize cnts] = o := ⟨_, rfl⟩
+  simp only [ho]
   have hS63 : ((List.range (len cnts).toUSize.toNat).map fun i => (Column.bitsAt cnts (i * 8) 8).toNat).sum < 2 ^ 63 := by
     rw [ht, hTot, hMs]; exact hC
-  have hO := offsets_get (len cnts).toUSize cnts (by rw [ht]) hS63
+  have hO := offsets_get (len cnts).toUSize cnts (by rw [ht]; exact Nat.le_refl _) hS63
   rw [ho, ht] at hO
   rw [ht] at hS63
   have hoI : ∀ g ≤ len cnts, (Column.bitsAt o (8 * g) 8).toInt64.toInt =
@@ -451,20 +454,21 @@ theorem codes_arr_faithful_wf {b : Obj} {p : Nat} (cs : Vector (Part (.arr b)) p
     (And.intro (show (Column.bitsAt o (8 * (o.size / 8 - 1)) 8).toInt64.toInt ≤
       (Column.idsCap seq.b seq.w.toUSize.toNat (Column.bitsAt o (8 * (o.size / 8 - 1)) 8).toInt64.toInt.toNat : Int) by
         rw [hlast', hoN _ (Nat.le_refl _), hoI _ (Nat.le_refl _), hsw, hTot, ← catA.2.1,
-          Column.idsCap_of_size catA.1.2.1])
+          Column.idsCap_of_size catA.1.2.1]; exact Int.le_refl _)
     (show ∀ j, j < o.size / 8 - 1 →
       (Column.bitsAt o (8 * j) 8).toInt64.toInt ≤ (Column.bitsAt o (8 * (j + 1)) 8).toInt64.toInt by
         intro j hj; rw [hlast'] at hj; rw [hoI j (by omega), hoI (j + 1) (by omega), sum_range_succ']; omega))))
   obtain ⟨g1, g2, g3, g4, g5⟩ := hguard
   have hg : o.size / 8 - 1 ≤ 2 ^ 64 := by rw [hlast']; have := USize.size_le; omega
-  have hidsz := rankSlices_size _ _ _ g1 g2 g3 g4 g5
+  have hidsz := KernelWF.rankSlices_size _ _ _ g1 g2 g3 g4 g5
   rw [hlast'] at hidsz
   have hNv : (cs.map (·.1)).foldl (fun s n => s + n.toNat) 0 = len cnts := by
     rw [hT]; unfold Vector.foldl; rw [← Array.foldl_toList, foldl_toNat_sum, Nat.zero_add]
     simp [Vector.toArray_map, List.map_map]; rfl
   simp only [hNv]
-  generalize hid : Order.rankSlices seq.w.toUSize seq.b o = ids at hidsz
-  have hidl : len ids = len cnts := by simp only [len]; omega
+  obtain ⟨ids, hid⟩ : ∃ ids, Order.rankSlices seq.w.toUSize seq.b o = ids := ⟨_, rfl⟩
+  simp only [hid] at hidsz ⊢
+  have hidl : len ids = len cnts := by simp only [len] at hlast' hidsz ⊢; omega
   have hR := fun {j j'} (hj : j < len cnts) (hj' : j' < len cnts) =>
     hid ▸ rankSlices_get seq.w.toUSize seq.b o g1 g2 g3 g4 g5 hg (by rw [hlast']; exact hj) (by rw [hlast']; exact hj')
   have hP := pack_get (len cnts) ids (by rw [hidl]; exact hTU) (by rw [hidsz, hidl])
@@ -491,8 +495,8 @@ theorem codes_arr_faithful_wf {b : Obj} {p : Nat} (cs : Vector (Part (.arr b)) p
       hoN _ (by omega), hoN _ (by omega), hoN _ (by omega), hoN _ (by omega),
       Nat.add_assoc, Nat.add_assoc, hB k (by simpa using hk) i (by simp; omega),
       hB k (by simpa using hk) (i + 1) (by simp; omega), hB l (by simpa using hl) j (by simp; omega),
-      hB l (by simpa using hl) (j + 1) (by simp; omega), sum_range_succ', sum_range_succ', Nat.add_sub_cancel_left,
-      Nat.add_sub_cancel_left, array_map_range_iff, arr_row, arr_row, list_map_range_iff]
+      hB l (by simpa using hl) (j + 1) (by simp; omega), sum_range_succ', sum_range_succ', Nat.add_sub_add_left,
+      Nat.add_sub_add_left, Nat.add_sub_cancel_left, Nat.add_sub_cancel_left, array_map_range_iff, arr_row, arr_row, list_map_range_iff]
     have hlk : cw k i = sH((cs[k]'hk).2, i, hi) - sL((cs[k]'hk).2, i, hi) := by
       rw [hcw k hk, dif_pos hi, List.length_map, List.length_range]
     have hll : cw l j = sH((cs[l]'hl).2, j, hj) - sL((cs[l]'hl).2, j, hj) := by
@@ -526,8 +530,7 @@ theorem codes_arr_faithful_wf {b : Obj} {p : Nat} (cs : Vector (Part (.arr b)) p
     rw [ek, el, hfe hk hl (by rw [hpe' k hk]; exact hmk) (by rw [hpe' l hl]; exact hml),
       row_part_congr (hpe' k hk) _ hmk, row_part_congr (hpe' l hl) _ hml]
   · obtain ⟨hwk, hnk, hck, -⟩ := cut_get _ (cs.map (·.1)) hPw hs hk
-    have hzk := cut_size _ (cs.map (·.1)) hPw hs (by rw [hP.2.1, hP.2.2.2.1]) hk
-    dsimp only
+    have hzk := cut_size _ (cs.map (·.1)) hPw hs (by rw [hP.2.2.2.1, hP.2.1]) hk
     rw [hzk, hwk, hnk]
     refine ⟨hPw, by rw [Vector.getElem_map], rfl, fun h8 => absurd h8 (by rcases hP.1 with h | h | h | h <;> omega)⟩
   · rw [(cut_get _ (cs.map (·.1)) hPw hs hk).1, (cut_get _ (cs.map (·.1)) hPw hs hl).1]
