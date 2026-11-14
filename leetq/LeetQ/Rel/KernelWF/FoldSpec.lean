@@ -76,6 +76,49 @@ theorem subConst_get {g : ByteArray} {m : USize} {v q : Nat} (hq : q < m.toNat)
   rw [val_va_get _ _ _ _ hq, LeetQ.Rel.bitsAt_one, (valStep_add_sub hg (by rw [ev]; omega)).2 (by rw [ev]; exact hv), ev]
   exact UInt64.toNat_ofNat_of_lt' (Nat.lt_of_le_of_lt (Nat.sub_le _ _) (Nat.lt_trans hg (by decide)))
 
+/-- **Round `k` of `foldRows` picks inside its input**: the rows longer than `k` (`a`, a sublist of the rows, so
+    every key fits) and their element `k` from the end (`pos`, one place inside each picked row's window), so
+    the fit of the array side at all its rows is a fit at both picks. -/
+theorem pickFits_round {B : Obj} {m : USize} (K : Vals .long m) (V : Vals (.arr B) m)
+    (hV : Vals.PickFits (.arr B) V (List.range m.toNat)) {k : Nat} (hk : k ≤ V.1.toNat) (a : ByteArray)
+    (ha : a = whereBits m (Ew.cmp Ew.gt Ew.i64 Ew.va (slicesOf V).2 (one k.toUInt64) m)) (pos : ByteArray)
+    (hpos : pos = Kernel.Ew.val Ew.sub Ew.i64 Ew.va nul (gather 8 (add m (slicesOf V).1 (slicesOf V).2) a)
+      (one (k + 1).toUInt64) (len a).toUSize) :
+    Vals.PickFits .long K ((List.range (len a)).map fun q => (Column.bitsAt a (q * 8) 8).toNat) ∧
+    Vals.PickFits B V.2.2.2 ((List.range (len a)).map fun q => (Column.bitsAt pos (q * 8) 8).toNat) := by
+  have hp := (pickFits_payload V hV).1
+  have hsub : (ids a).Sublist (List.range m.toNat) := by rw [ha]; exact whereBits_sublist m _
+  refine ⟨pickFits_atom K fun r hr => List.mem_range.1 (hsub.subset hr),
+    pickFits_sublist ?_ (pickFits_payload V (pickFits_sublist hsub hV)).2⟩
+  have hA := whereGt_ids m (slicesOf V).2 (k := k) (by omega) fun j hj => by
+    have := (slicesOf_row V hp hj).1; omega
+  rw [← ha] at hA
+  have hlen : len a < USize.size := by
+    have := hsub.length_le; rw [List.length_range, ← len_eq_ids] at this
+    exact Nat.lt_of_le_of_lt this m.toNat_lt_size
+  have hm : ((len a).toUSize).toNat = len a := USize.toNat_ofNat_of_lt' hlen
+  rw [List.map_eq_flatMap]
+  refine flatMap_sublist_map_flatMap (fun q => (Column.bitsAt a (q * 8) 8).toNat) _ _ fun q hq => ?_
+  have hq' := List.mem_range.1 hq
+  have hin : (Column.bitsAt a (q * 8) 8).toNat ∈ ids a := by
+    have hq'' : q < (ids a).length := by rw [← len_eq_ids]; exact hq'
+    rw [← ids_getElem hq'']; exact List.getElem_mem hq''
+  rw [hA, List.mem_filter, List.mem_range, decide_eq_true_iff] at hin
+  obtain ⟨hj, hc⟩ := hin
+  have hS := slicesOf_get V hp hj
+  have hLC := (slicesOf_row V hp hj).1
+  have hadd : (Column.bitsAt (add m (slicesOf V).1 (slicesOf V).2) ((Column.bitsAt a (q * 8) 8).toNat * 8) 8).toNat =
+      (Column.bitsAt (slicesOf V).1 ((Column.bitsAt a (q * 8) 8).toNat * 8) 8).toNat +
+        (Column.bitsAt (slicesOf V).2 ((Column.bitsAt a (q * 8) 8).toNat * 8) 8).toNat :=
+    add_get hj (by omega)
+  have hg := gather8_get (src := add m (slicesOf V).1 (slicesOf V).2) hq' (by unfold add; rw [len_val]; exact hj)
+  have hpq := subConst_get (g := gather 8 (add m (slicesOf V).1 (slicesOf V).2) a) (m := (len a).toUSize)
+    (v := k + 1) (q := q) (by rw [hm]; exact hq') (by rw [hg, hadd]; omega) (by rw [hg, hadd]; omega)
+  rw [← hpos, hg, hadd] at hpq
+  dsimp only
+  rw [dif_pos hj, List.singleton_sublist, List.mem_range'_1]
+  omega
+
 end LeetQ.Rel.Alg
 
 #print axioms LeetQ.Rel.Alg.slicesOf_get

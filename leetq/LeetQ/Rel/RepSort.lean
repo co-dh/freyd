@@ -357,19 +357,9 @@ set_option hygiene false in
 local notation "subOK" =>
   (T = num (idU X) 0 ∧ n.toNat < 2 ^ 63 ∧ Vals.PickFits (.arr B) X (List.range n.toNat) ∧
     (Rel.val T).1.toNat < 2 ^ 63 ∧
-    (∀ k, k ≤ (Rel.val T).1.toNat → ∀ a : ByteArray, a = whereBits (Rel.n T)
-        (Ew.cmp Ew.gt Ew.i64 Ew.va (slicesOf (Rel.val T)).2 (one k.toUInt64) (Rel.n T)) →
-      ∀ pos : ByteArray, pos = Kernel.Ew.val Ew.sub Ew.i64 Ew.va nul
-        (gather 8 (add (Rel.n T) (slicesOf (Rel.val T)).1 (slicesOf (Rel.val T)).2) a)
-        (one (k + 1).toUInt64) (len a).toUSize →
-      Vals.PickFits .long (Rel.key T) ((List.range (len a)).map fun q => (Column.bitsAt a (q * 8) 8).toNat) ∧
-      Vals.PickFits B (Rel.val T).2.2.2 ((List.range (len a)).map fun q => (Column.bitsAt pos (q * 8) 8).toNat)) ∧
+    Vals.PickFits (.arr B) (Rel.val T) (List.range (Rel.n T).toNat) ∧
     pend₀ = top (A := .long) (Rel.key T) (nilVal B) ∧
     (Rel.n T).toNat * (1 : USize).toNat < USize.size ∧ (Rel.n T).toNat * (1 : USize).toNat < 2 ^ 63 ∧
-    Vals.PickFits .long (Rel.key T)
-      ((List.range ((Rel.n T).toNat * (1 : USize).toNat)).map (· / (1 : USize).toNat)) ∧
-    Vals.PickFits (.arr B) (nilVal B)
-      ((List.range ((Rel.n T).toNat * (1 : USize).toNat)).map (· % (1 : USize).toNat)) ∧
     step = (fun el pend => cons (pair el pend) ∪ pend) ∧ (∀ k, elK k = elR(T, k)) ∧ (∀ st, f st = rnd(st)) ∧
     (∀ i (el : Rel .long B) (pend P S : Rel .long (.arr B)), el = elK i →
       pend = (f^[i] (pend₀, Alg.zero, 0)).1 → P = (f^[i] (pend₀, Alg.zero, 0)).2.1 → S = step el pend →
@@ -435,12 +425,12 @@ theorem rep_thinL_sublist {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B)
     (G : Rel (.arr B) (.arr B)) (hG : G = H ≫ St°) (hth : thinOK) :
     ∀ xs ys, rep (thinL Q X) xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Sublist xs ∧
       ∃ s t, rep St xs s ∧ rep St ys t ∧ (∀ c ∈ t, c ∈ s) ∧ ∀ a ∈ s, ∃ y ∈ t, rep Q y a := by
-  obtain ⟨hT, hn, hv, hp, hel, hpend, hN, h63, hA, hB, hstep, hE, hf, hR, hC, hF, hjc, hjO, hjn, hjM, hjA,
+  obtain ⟨hT, hn, hv, hp, hTv, hpend, hN, h63, hstep, hE, hf, hR, hC, hF, hjc, hjO, hjn, hjM, hjA,
     hjC⟩ := hsub
   obtain ⟨hSv, hSk, hcQ, hcH, hcG, hdR, hdL, hiT, hiG⟩ := hth
   intro xs ys
   rw [rep_thinL_sets Q X U hU Wy hWy St hSt mS hmS QS hQS Rd hRd Ld hLd Tt hTt H hH G hG hSv hSk hcQ hcH hcG hdR hdL
-    hiT hiG xs ys, hU, rep_subseq X T hT hn hv hp hel pend₀ hpend hN h63 hA hB step hstep elK hE f hf hR hC F hF jc
+    hiT hiG xs ys, hU, rep_subseq X T hT hn hv hp hTv pend₀ hpend hN h63 (pickFits_nilVal B _) step hstep elK hE f hf hR hC F hF jc
     hjc hjO hjn hjM hjA hjC, and_assoc]
 
 section
@@ -506,10 +496,10 @@ theorem rep_thinL {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n)
     ∀ xs ys, rep (thinL Q X) xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Sublist xs ∧ ∀ a ∈ xs, ∃ y ∈ ys, rep Q y a := by
   have eL := rep_thinL_sublist Q X T pend₀ step elK f F jc hsub U hU Wy hWy St hSt mS hmS QS hQS Rd hRd Ld hLd Tt
     hTt H hH G hG hth
-  obtain ⟨hT, hn, hv, hp, hel, hpend, hN, h63, hA, hB, hstep, hE, hf, hR, hC, hF, hjc, hjO, hjn, hjM, hjA,
+  obtain ⟨hT, hn, hv, hp, hTv, hpend, hN, h63, hstep, hE, hf, hR, hC, hF, hjc, hjO, hjn, hjM, hjA,
     hjC⟩ := hsub
   have eU : ∀ xs ys, rep U xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Sublist xs := by
-    rw [hU]; exact rep_subseq X T hT hn hv hp hel pend₀ hpend hN h63 hA hB step hstep elK hE f hf hR hC F hF jc
+    rw [hU]; exact rep_subseq X T hT hn hv hp hTv pend₀ hpend hN h63 (pickFits_nilVal B _) step hstep elK hE f hf hR hC F hF jc
       hjc hjO hjn hjM hjA hjC
   have eW : ∀ a b, rep Wy a b ↔ a = b ∧ ∃ x, rep U x a := fun a b => by
     rw [hWy, rep_ran_corefl U (one_ok _ hWf.1) hWf.2]; exact Iff.rfl

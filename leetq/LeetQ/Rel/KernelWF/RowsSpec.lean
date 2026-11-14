@@ -230,6 +230,24 @@ theorem pickFits_perm {A : Obj} {n : USize} {x : Vals A n} {ps ps' : List Nat} (
     intro ⟨h1, h2, h3, h4, h5⟩
     exact ⟨h.length_eq ▸ h1, h2, h3, iha (h.filterMap _) h4, ihb (h.filterMap _) h5⟩
 
+/-- **An atom side fits at each row repeated `m` times** (`· / m`, the rows `⊤` keys): all below the count. -/
+theorem pickFits_div {t : QAtomicType} {n : USize} (x : Vals (.atom t) n) (m : Nat) :
+    Vals.PickFits (.atom t) x ((List.range (n.toNat * m)).map (· / m)) :=
+  pickFits_atom x fun r hr => by
+    obtain ⟨q, hq, rfl⟩ := List.mem_map.1 hr
+    exact Nat.div_lt_of_lt_mul (by rw [Nat.mul_comm]; exact List.mem_range.1 hq)
+
+/-- **The empty side fits at no rows**: every count it holds is `0`. -/
+theorem pickFits_empty : (A : Obj) → Vals.PickFits A (Vals.empty A) []
+  | .atom _ => by unfold Vals.PickFits; rintro ⟨k, hk, -⟩; cases hk
+  | .prod a b => by unfold Vals.PickFits; exact ⟨pickFits_empty a, pickFits_empty b⟩
+  | .arr b => by
+    simp only [Vals.empty, Vals.PickFits, List.flatMap_nil, List.length_nil]
+    exact ⟨by simp, by decide, USize.size_pos, pickFits_empty b⟩
+  | .sum a b => by
+    simp only [Vals.empty, Vals.PickFits, List.filterMap_nil, List.length_nil]
+    exact ⟨by decide, by simp, by simp, pickFits_empty a, pickFits_empty b⟩
+
 /-- **Each piece `g a` a sublist of `f (p a)` makes the pieces' concatenation a sublist of `f`'s at the
     `p`-images**: one element (or a sub-window) taken from each picked row's window, in row order. -/
 theorem flatMap_sublist_map_flatMap {α β γ : Type} (p : α → γ) (g : α → List β) (f : γ → List β)
