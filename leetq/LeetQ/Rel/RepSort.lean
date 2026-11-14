@@ -67,7 +67,7 @@ theorem rep_orderedOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) →
       ∀ y zs, (y :: zs) <:+ xs → ∀ z ∈ zs, ∃ w, rep (q E) w (y, z) := by
   obtain ⟨⟨hSf, hSp⟩, ⟨h63, hUn⟩, ⟨hcf, hc'⟩, ⟨hTf, hTp⟩, ⟨hOf, hOp⟩, hVv, hVk, ⟨hmf, hm'⟩, ⟨hpf, hp'⟩,
     ⟨hyf, hyp⟩, ⟨hbf, hb'⟩, ⟨hdf, hdp⟩, ⟨hCf, hC'⟩, ⟨hDf, hDp⟩, ⟨hAf, hA'⟩⟩ := h
-  obtain ⟨u1, u2, u3⟩ := hUn _ rfl _ rfl _ rfl
+  have u1 := hUn _ rfl _ rfl _ rfl
   obtain ⟨c1, c2, c3, c4⟩ := hc' _ rfl
   obtain ⟨m1, m2, m3, m4⟩ := hm' _ rfl
   obtain ⟨p1, p2, p3, p4, p5⟩ := hp' _ rfl
@@ -78,7 +78,7 @@ theorem rep_orderedOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) →
     rw [hSu]; exact rep_suffix X g hg hR
   have eW : ∀ a a', rep Wu a a' ↔ a = a' ∧ ∃ k, rep Su k a := fun a a' => by
     rw [hWu, rep_ran_corefl Su (one_ok _ hSf) (hSp)]; exact Iff.rfl
-  have eU := rep_uncons (Rel.val Wu) h63 _ rfl _ rfl _ rfl u1 u2 u3
+  have eU := rep_uncons (Rel.val Wu) h63 _ rfl _ rfl _ rfl u1
   -- `T`: an array to the head and tail of each of its non-empty suffixes
   have eT : ∀ xs (p : (Obj.prod B (.arr B)).El), rep T xs p ↔ rep Su xs (p.1 :: p.2) := fun xs p => by
     rw [hT, rep_comp _ _ (codes_faithful_wf _ _ hcf).1 c1 c2 c3 c4, Freyd.Alg.RelSet.comp_apply]
@@ -370,7 +370,6 @@ local notation "subOK" =>
       Vals.PickFits B (Rel.val el) ((mpairs(kc, el, pend)).map Prod.fst) ∧
       Vals.PickFits (.arr B) (Rel.val pend) ((mpairs(kc, el, pend)).map Prod.snd) ∧
       ∀ W : Rel .long (.prod B (.arr B)), W = pair el pend →
-      (Rel.val W).2.1.toNat < 2 ^ 63 ∧
       ∀ s : ByteArray × ByteArray, s = slicesOf (Rel.val W).2 →
       ((List.range (Rel.n W).toNat).map fun r => (Column.bitsAt s.2 (r * 8) 8).toNat).sum + (Rel.n W).toNat <
         2 ^ 63 ∧
@@ -386,7 +385,6 @@ local notation "subOK" =>
       ∀ lo : ByteArray, lo = sub (Rel.n W) hi c1 →
       ∀ dst : ByteArray, dst = addc m (add m (gather 8 lo xi) xr) 1 →
       ∀ g : ByteArray, g = (Code.ofLongs (concatBytes #[dst, lo])).grade →
-      Vals.PickFits B (Rel.val W).2.2.2.2 ((List.range m.toNat).map fun q => (Column.bitsAt j (q * 8) 8).toNat) ∧
       Vals.RazeFits B tl (Rel.val W).1 ∧
       (∀ hN, Vals.PickFits B (Obj.raze B #[⟨m, tl⟩, ⟨Rel.n W, (Rel.val W).1⟩] hN)
         ((List.range (len g)).map fun q => (Column.bitsAt g (q * 8) 8).toNat)) ∧

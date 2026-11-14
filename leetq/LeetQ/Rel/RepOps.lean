@@ -662,6 +662,45 @@ theorem rep_pair (R : Rel A B) (S : Rel A C) (hc : codesOK(kc, kp(R, S))) (hrn :
     · exact k2.trans ((congrArg R.val.row (Fin.ext h1)).trans hib)
     · exact (rs ⟨q, hq'⟩ (by rw [h2]; exact j.2)).trans ((congrArg S.val.row (Fin.ext h2)).trans hjc)
 
+/-- **`pair`'s columns fit at all its rows** where the inputs fit at the matched rows: each is an input column
+    picked at the join's hits (`pickFits_pick`). Hypotheses: `rep_pair`'s. -/
+theorem pair_pickFits (R : Rel A B) (S : Rel A C) (hc : codesOK(kc, kp(R, S))) (hrn : S.n.toNat < 2 ^ 63)
+    (hM : R.n.toNat * S.n.toNat < min (2 ^ 63) USize.size)
+    (hA : Vals.PickFits A R.key ((kpairs).map Prod.fst)) (hB : Vals.PickFits B R.val ((kpairs).map Prod.fst))
+    (hC : Vals.PickFits C S.val ((kpairs).map Prod.snd)) :
+    Vals.PickFits A (Rel.key (LeetQ.Rel.Alg.pair R S)) (List.range (Rel.n (LeetQ.Rel.Alg.pair R S)).toNat) ∧
+    Vals.PickFits B (Rel.val (LeetQ.Rel.Alg.pair R S)).1 (List.range (Rel.n (LeetQ.Rel.Alg.pair R S)).toNat) ∧
+    Vals.PickFits C (Rel.val (LeetQ.Rel.Alg.pair R S)).2 (List.range (Rel.n (LeetQ.Rel.Alg.pair R S)).toNat) := by
+  obtain ⟨hF, hW⟩ := hc
+  obtain ⟨hlw, hln, hls, -⟩ := hW (k := 0) (by decide)
+  obtain ⟨hrw, hrn', hrs, hrc⟩ := hW (k := 1) (by decide)
+  replace hln : (kc[0]'Nat.zero_lt_two).n = R.n := hln
+  replace hrn' : (kc[1]'Nat.one_lt_two).n = S.n := hrn'
+  obtain ⟨hlt, hZ⟩ := join_rows _ _ hlw hls hrw hrs hrc (by rw [hrn']; exact hrn) (by rw [hln, hrn']; exact hM)
+  have H : ∀ (m : USize) (hmJ : len (join (kc[0]'Nat.zero_lt_two) (kc[1]'Nat.one_lt_two)).2 = m.toNat),
+      Vals.PickFits A (Vals.pickN A R.key (join (kc[0]'Nat.zero_lt_two) (kc[1]'Nat.one_lt_two)).1 m
+        (hmJ ▸ join_len (kc[0]'Nat.zero_lt_two) (kc[1]'Nat.one_lt_two))) (List.range m.toNat) ∧
+      Vals.PickFits B (Vals.pickN B R.val (join (kc[0]'Nat.zero_lt_two) (kc[1]'Nat.one_lt_two)).1 m
+        (hmJ ▸ join_len (kc[0]'Nat.zero_lt_two) (kc[1]'Nat.one_lt_two))) (List.range m.toNat) ∧
+      Vals.PickFits C (Vals.pick C S.val (join (kc[0]'Nat.zero_lt_two) (kc[1]'Nat.one_lt_two)).2 m hmJ)
+        (List.range m.toNat) := by
+    intro m hmJ
+    have e := hZ m hmJ
+    rw [hln, hrn'] at e
+    have hl : ((List.range m.toNat).map fun q =>
+        (Column.bitsAt (fit m.toNat (join (kc[0]'Nat.zero_lt_two) (kc[1]'Nat.one_lt_two)).1) (q * 8) 8).toNat) =
+          (kpairs).map Prod.fst := by rw [e, List.map_map]; rfl
+    have hr : ((List.range m.toNat).map fun q =>
+        (Column.bitsAt (join (kc[0]'Nat.zero_lt_two) (kc[1]'Nat.one_lt_two)).2 (q * 8) 8).toNat) =
+          (kpairs).map Prod.snd := by rw [e, List.map_map]; rfl
+    have hq : ∀ q ∈ List.range m.toNat, q < m.toNat := fun q hq => List.mem_range.1 hq
+    unfold Vals.pickN
+    exact ⟨pickFits_pick A R.key _ m _ _ hq (hl ▸ hA) (hl ▸ hA), pickFits_pick B R.val _ m _ _ hq (hl ▸ hB) (hl ▸ hB),
+      pickFits_pick C S.val _ m hmJ _ hq (hr ▸ hC) (hr ▸ hC)⟩
+  unfold LeetQ.Rel.Alg.pair longCount need
+  rw [dif_pos hlt]
+  exact H _ _
+
 end Pairs
 
 #print axioms rep_pair

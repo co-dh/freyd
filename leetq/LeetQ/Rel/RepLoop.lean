@@ -305,10 +305,7 @@ scoped notation "uncOK(" Y ", " W ")" =>
     ∀ Tv : Vals (.arr Y) (len ib).toUSize, Tv = ⟨(Rel.val W).1, valCol Ew.add Ew.va lb (one 1),
         valCol Ew.add Ew.vv lb (gather 8 (slicesOf (Rel.val W)).2 ib), (Rel.val W).2.2.2⟩ →
       Vals.PickFits (.arr Y) (Rel.val W)
-          ((List.range (len ib)).map fun q => (Column.bitsAt ib (q * 8) 8).toNat) ∧
-        Vals.PickFits Y (Rel.val W).2.2.2 ((List.range (len ib)).map fun q => (Column.bitsAt lb (q * 8) 8).toNat) ∧
-        Vals.PickFits (.arr Y) Tv
-          ((List.range (len ib)).map fun q => (Column.bitsAt (tilLongs (len ib).toUSize) (q * 8) 8).toNat))
+          ((List.range (len ib)).map fun q => (Column.bitsAt ib (q * 8) 8).toNat))
 -- `rep_diff`'s hypotheses at `R \ S`, `A`, `B` the key and value objects, its codes `pc` bound
 set_option hygiene false in
 scoped notation "diffOK(" A ", " B ", " R ", " S ")" =>
@@ -364,7 +361,7 @@ theorem loop_round_rep {K X Y : Obj} (out : Rel K X)
   obtain ⟨⟨hDf, hDp⟩, ⟨hWf, hWp⟩, ⟨h63, hUn⟩, ⟨huf, hu'⟩, ⟨hpf, hp'⟩, ⟨hQf, hQ'⟩, ⟨hRf, hR'⟩, ⟨hTf, hT'⟩,
     ⟨hNK, hNV, hNk', hNv'⟩, ⟨hdf, hdp⟩, ⟨hAf, hA'⟩, ⟨hOf, hO'⟩, hUN, hFk, hFv, hUK, hUV, hUk, hUv⟩ := h
   subst hW hdu
-  obtain ⟨hKf, hHf, hTf'⟩ := hUn _ rfl _ rfl _ rfl
+  have hKf := hUn _ rfl _ rfl _ rfl
   obtain ⟨u1, u2, u3, u4⟩ := hu' _ rfl
   obtain ⟨p1, p2, p3, p4, p5⟩ := hp' _ rfl
   obtain ⟨q1, q2, q3, q4⟩ := hQ' _ rfl
@@ -374,7 +371,7 @@ theorem loop_round_rep {K X Y : Obj} (out : Rel K X)
   obtain ⟨a1, a2⟩ := hA'
   refine loop_round_set out St D u p G Q R T A O (by rw [hD]; exact rep_ran_corefl St (one_ok _ hDf) (hDp))
     (rep_ran_corefl (outr D) (one_ok _ hWf) (hWp))
-    (rep_uncons (Rel.val (ran (outr D))) h63 _ rfl _ rfl _ rfl hKf hHf hTf')
+    (rep_uncons (Rel.val (ran (outr D))) h63 _ rfl _ rfl _ rfl hKf)
     (by rw [hu]; exact rep_comp _ _ (codes_faithful_wf _ _ huf).1 u1 u2 u3 u4)
     (by rw [hp]; exact rep_pair _ _ (codes_faithful_wf _ _ hpf).1 p1 p2 p3 p4 p5)
     (by rw [hQ]; exact rep_comp _ _ (codes_faithful_wf _ _ hQf).1 q1 q2 q3 q4)

@@ -306,8 +306,6 @@ theorem rep_uncat {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 
     (hkB : Vals.PickFits (.arr (.arr B)) (Rel.val (inits X)) ((mpairs(kc, inits X, tails X)).map Prod.fst))
     (hkC : Vals.PickFits (.arr (.arr B)) (Rel.val (tails X)) ((mpairs(kc, inits X, tails X)).map Prod.snd))
     (P : Rel (.arr B) (.prod (.arr (.arr B)) (.arr (.arr B)))) (hP : P = pair (inits X) (tails X))
-    (hPa : Vals.PickFits (.arr (.arr B)) (Rel.val P).1 (List.range (Rel.n P).toNat))
-    (hPb : Vals.PickFits (.arr (.arr B)) (Rel.val P).2 (List.range (Rel.n P).toNat))
     (c' : ByteArray) (hc' : c' = Kernel.Ew.val Ew.lesser Ew.i64 Ew.vv nul (slicesOf (Rel.val P).1).2
       (slicesOf (Rel.val P).2).2 (Rel.n P))
     (hS' : ((List.range (Rel.n P).toNat).map fun r => (Column.bitsAt c' (r * 8) 8).toNat).sum < 2 ^ 63)
@@ -317,8 +315,6 @@ theorem rep_uncat {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 
     (xr' : ByteArray) (hxr' : xr' = sub m' (tilLongs m') (gather 8 (sub (Rel.n P) (sums (Rel.n P) c') c') xi'))
     (ja : ByteArray) (hja : ja = add m' (gather 8 (slicesOf (Rel.val P).1).1 xi') xr')
     (jb : ByteArray) (hjb : jb = add m' (gather 8 (slicesOf (Rel.val P).2).1 xi') xr')
-    (hKf : Vals.PickFits (.arr B) (Rel.key P)
-      ((List.range (Rel.n P).toNat).map fun q => (Column.bitsAt (tilLongs (Rel.n P)) (q * 8) 8).toNat))
     (Z : Rel (.arr B) (.arr (.prod (.arr B) (.arr B)))) (hZ : Z = zip P)
     (jc : Vector Code 2)
     (hjc : jc = Obj.codes (.arr (.prod (.arr B) (.arr B)))
@@ -338,6 +334,9 @@ theorem rep_uncat {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 
   have hT := rep_tails X hp c hc hS hU xi hxi m hm xr hxr hK hVt
   subst hkc
   have h1 := rep_pair (inits X) (tails X) hkO hkn hkM hkA hkB hkC
+  -- `P`'s key and sides are the inputs picked at the join's hits (`pair_pickFits`)
+  obtain ⟨hKf, hPa, hPb⟩ := hP ▸ pair_pickFits (inits X) (tails X) hkO hkn hkM hkA hkB hkC
+  rw [← tilLongs_range] at hKf
   have h2 := rep_zip P hPa hPb c' hc' hS' hU' xi' hxi' m' hm' xr' hxr' ja hja jb hjb hKf
   subst hjc
   have h3 := rep_comp Z (mem Z.val) hjO hjn hjM hjA hjC

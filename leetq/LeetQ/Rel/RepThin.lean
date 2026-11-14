@@ -317,7 +317,7 @@ theorem thin_body_rep {B : Obj} (le : B.El → B.El → Bool) (D : Rel SP SP) (D
     ⟨q2f, q2c⟩, ⟨swf, swp⟩, ⟨q3f, q3c⟩, ⟨dnf, dnp⟩, ⟨duf, dup⟩, d1, d2, d3, ⟨oN, oFk, oFv, oK, oV, ok, ov⟩,
     cs1, ⟨uaf, uac⟩, ⟨uuf, uuc⟩, ⟨ruf, rup⟩, ⟨utf, utc⟩, ⟨puf, pup⟩, cs2, ⟨dyf, dyc⟩,
     ⟨bN, bFk, bFv, bK, bV, bk, bv⟩, ⟨yN, yFk, yFv, yK, yV, yk, yv⟩⟩ := h
-  obtain ⟨uk, uh, ut'⟩ := uU _ rfl _ rfl _ rfl
+  have uk := uU _ rfl _ rfl _ rfl
   obtain ⟨u1, u2, u3, u4⟩ := uc _ rfl
   obtain ⟨ab1, ab2, ab3, ab4, ab5⟩ := abp _ rfl
   obtain ⟨g1, g2, g3, g4⟩ := q1c _ rfl
@@ -336,7 +336,7 @@ theorem thin_body_rep {B : Obj} (le : B.El → B.El → Bool) (D : Rel SP SP) (D
   obtain ⟨p1, p2, p3, p4, p5⟩ := pup _ rfl
   obtain ⟨y1, y2, y3, y4⟩ := dyc _ rfl
   refine thin_body_set le D Dm hD ta hta ty hty tu
-    (rep_uncons (Rel.val ty) u63 _ rfl _ rfl _ rfl uk uh ut')
+    (rep_uncons (Rel.val ty) u63 _ rfl _ rfl _ rfl uk)
     (by rw [htu]; exact rep_comp _ _ (codes_faithful_wf _ _ uf).1 u1 u2 u3 u4)
     tab (by rw [htab]; exact rep_pair _ _ (codes_faithful_wf _ _ abf).1 ab1 ab2 ab3 ab4 ab5)
     rab (by rw [hrab]; exact rep_ran_corefl tab (one_ok _ rabf) (rabp)) G1 ht1
