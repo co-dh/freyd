@@ -269,6 +269,104 @@ theorem thin_body_set {B : Obj} (le : B.El → B.El → Bool) (D : Rel SP SP) (D
 
 end Body
 
+open ListN
+
+-- every primitive's hypotheses at the body's values, named as `thin_body_set` names them
+set_option hygiene false in
+local notation "thinOK" =>
+  (uncOK(B, ty) ∧ cmpOK(.arr B, ty, uncons (Rel.val ty)) ∧ pairOK(SP, ta, outl tu) ∧
+    oneFit(.prod B B, Rel.n tab, Rel.val tab) ∧ cmpOK(.prod B B, tab, G1) ∧ oneFit(SP, Rel.n tq1, Rel.key tq1) ∧
+    pairOK(.prod B B, outr rab, outl rab) ∧ oneFit(.prod B B, Rel.n ss, Rel.val ss) ∧ cmpOK(.prod B B, ss, G2) ∧
+    oneFit(.prod B B, Rel.n tq2, Rel.key tq2) ∧ cmpOK(.prod B B, tab, sw) ∧ oneFit(SP, Rel.n tq3, Rel.key tq3) ∧
+    oneFit(SP, Rel.n tu, Rel.key tu) ∧ diffOK(SP, SP, D, du) ∧ diffOK(SP, SP, du, tup) ∧ diffOK(SP, SP, l2, tdn) ∧
+    uniOK(SP, SP, l1, l3) ∧ consOK(SP, B, lone) ∧ cmpOK(SP, tup, ta) ∧ cmpOK(SP, tup, tu) ∧
+    oneFit(.prod B (.arr B), Rel.n tu, Rel.val tu) ∧ cmpOK(.prod B (.arr B), uu, outr ru) ∧ pairOK(SP, ua, ut) ∧
+    consOK(SP, B, pu) ∧ cmpOK(SP, tdn, ty) ∧ uniOK(SP, .arr B, c1, c2) ∧ uniOK(SP, .arr B, b1, dy))
+
+section Discharge
+
+open Freyd Freyd.Alg Freyd.Alg.RelSet
+
+/-- **`thinLOn`'s body on a coreflexive `D`, read back**: `thin_body_set` with each primitive's read-back
+    discharged by its lemma. The body's values are bound by their equations as `thinLOn` binds them (`sw` is
+    `swapIn`'s body at `rab`); `h` is every primitive's hypotheses at them (`thinOK`). -/
+theorem thin_body_rep {B : Obj} (le : B.El → B.El → Bool) (D : Rel SP SP) (Dm : (SP).El → Prop)
+    (hD : rep D = corefl (A := (⟨(SP).El⟩ : RelSet.{0})) Dm)
+    (ta : Rel SP B) (hta : ta = outl D) (ty : Rel SP (.arr B)) (hty : ty = outr D)
+    (tu : Rel SP (.prod B (.arr B))) (htu : tu = ty ≫ uncons (Rel.val ty))
+    (tab : Rel SP (.prod B B)) (htab : tab = pair ta (outl tu))
+    (rab : Rel (.prod B B) (.prod B B)) (hrab : rab = ran tab)
+    (G1 : Rel (.prod B B) (.prod B B)) (ht1 : ∀ a b, rep rab (a, b) (a, b) → ((∃ c, rep G1 (a, b) c) ↔ le a b = true))
+    (tq1 : Rel SP (.prod B B)) (htq1 : tq1 = tab ≫ G1) (tup : Rel SP SP) (htup : tup = dom tq1)
+    (ss : Rel (.prod B B) (.prod B B)) (hss : ss = pair (outr rab) (outl rab))
+    (rs : Rel (.prod B B) (.prod B B)) (hrs : rs = ran ss)
+    (G2 : Rel (.prod B B) (.prod B B)) (ht2 : ∀ a b, rep rs (b, a) (b, a) → ((∃ c, rep G2 (b, a) c) ↔ le b a = true))
+    (tq2 : Rel (.prod B B) (.prod B B)) (htq2 : tq2 = ss ≫ G2) (sw : Rel (.prod B B) (.prod B B)) (hsw : sw = dom tq2)
+    (tq3 : Rel SP (.prod B B)) (htq3 : tq3 = tab ≫ sw) (tdn : Rel SP SP) (htdn : tdn = dom tq3)
+    (du : Rel SP SP) (hdu : du = dom tu) (l1 : Rel SP SP) (hl1 : l1 = D \ du)
+    (l2 : Rel SP SP) (hl2 : l2 = du \ tup) (l3 : Rel SP SP) (hl3 : l3 = l2 \ tdn)
+    (lone : Rel SP SP) (hlone : lone = l1 ∪ l3) (c1 : Rel SP (.arr B)) (hc1 : c1 = cons lone)
+    (ua : Rel SP B) (hua : ua = tup ≫ ta) (uu : Rel SP (.prod B (.arr B))) (huu : uu = tup ≫ tu)
+    (ru : Rel (.prod B (.arr B)) (.prod B (.arr B))) (hru : ru = ran tu)
+    (ut : Rel SP (.arr B)) (hut : ut = uu ≫ outr ru) (pu : Rel SP (.prod B (.arr B))) (hpu : pu = pair ua ut)
+    (c2 : Rel SP (.arr B)) (hc2 : c2 = cons pu) (dy : Rel SP (.arr B)) (hdy : dy = tdn ≫ ty)
+    (b1 : Rel SP (.arr B)) (hb1 : b1 = c1 ∪ c2) (body : Rel SP (.arr B)) (hbody : body = b1 ∪ dy) (h : thinOK) :
+    ∀ a (y v : List B.El), rep body (a, y) v ↔ Dm (a, y) ∧ ((y = [] ∧ v = [a]) ∨ ∃ b bs, y = b :: bs ∧
+      ((le a b = true ∧ v = a :: bs) ∨ (le b a = true ∧ v = y) ∨ (le a b = false ∧ le b a = false ∧ v = a :: y))) := by
+  obtain ⟨⟨u63, uU⟩, ⟨uf, uc⟩, ⟨abf, abp⟩, ⟨rabf, rabp⟩, ⟨q1f, q1c⟩, ⟨upf, upp⟩, ⟨ssf, ssp⟩, ⟨rsf, rsp⟩,
+    ⟨q2f, q2c⟩, ⟨swf, swp⟩, ⟨q3f, q3c⟩, ⟨dnf, dnp⟩, ⟨duf, dup⟩, d1, d2, d3, ⟨oN, oNk, oNv, oFk, oFv, oK, oV, ok, ov⟩,
+    cs1, ⟨uaf, uac⟩, ⟨uuf, uuc⟩, ⟨ruf, rup⟩, ⟨utf, utc⟩, ⟨puf, pup⟩, cs2, ⟨dyf, dyc⟩,
+    ⟨bN, bNk, bNv, bFk, bFv, bK, bV, bk, bv⟩, ⟨yN, yNk, yNv, yFk, yFv, yK, yV, yk, yv⟩⟩ := h
+  obtain ⟨uk, uh, ut'⟩ := uU _ rfl _ rfl _ rfl
+  obtain ⟨u1, u2, u3, u4, u5⟩ := uc _ rfl
+  obtain ⟨ab1, ab2, ab3, ab4, ab5, ab6⟩ := abp _ rfl
+  obtain ⟨g1, g2, g3, g4, g5⟩ := q1c _ rfl
+  obtain ⟨s1, s2, s3, s4, s5, s6⟩ := ssp _ rfl
+  obtain ⟨h1, h2, h3, h4, h5⟩ := q2c _ rfl
+  obtain ⟨k1, k2, k3, k4, k5⟩ := q3c _ rfl
+  obtain ⟨d11, d12⟩ := d1 _ rfl
+  obtain ⟨d13, d14⟩ := d12 _ rfl
+  obtain ⟨d21, d22⟩ := d2 _ rfl
+  obtain ⟨d23, d24⟩ := d22 _ rfl
+  obtain ⟨d31, d32⟩ := d3 _ rfl
+  obtain ⟨d33, d34⟩ := d32 _ rfl
+  obtain ⟨a1, a2, a3, a4, a5⟩ := uac _ rfl
+  obtain ⟨w1, w2, w3, w4, w5⟩ := uuc _ rfl
+  obtain ⟨t1, t2, t3, t4, t5⟩ := utc _ rfl
+  obtain ⟨p1, p2, p3, p4, p5, p6⟩ := pup _ rfl
+  obtain ⟨y1, y2, y3, y4, y5⟩ := dyc _ rfl
+  refine thin_body_set le D Dm hD ta hta ty hty tu
+    (rep_uncons (Rel.val ty) u63 _ rfl _ rfl _ rfl uk uh ut')
+    (by rw [htu]; exact rep_comp _ _ (codes_faithful_wf _ _ uf).1 u1 u2 u3 u4 u5)
+    tab (by rw [htab]; exact rep_pair _ _ (codes_faithful_wf _ _ abf).1 ab1 ab2 ab3 ab4 ab5 ab6)
+    rab (by rw [hrab]; exact rep_ran tab (one_ok _ rabf) (rabp _ rfl)) G1 ht1
+    tq1 (by rw [htq1]; exact rep_comp _ _ (codes_faithful_wf _ _ q1f).1 g1 g2 g3 g4 g5)
+    tup (by rw [htup]; exact rep_dom tq1 (one_ok _ upf) (upp _ rfl))
+    ss (by rw [hss]; exact rep_pair _ _ (codes_faithful_wf _ _ ssf).1 s1 s2 s3 s4 s5 s6)
+    rs (by rw [hrs]; exact rep_ran ss (one_ok _ rsf) (rsp _ rfl)) G2 ht2
+    tq2 (by rw [htq2]; exact rep_comp _ _ (codes_faithful_wf _ _ q2f).1 h1 h2 h3 h4 h5)
+    sw (by rw [hsw]; exact rep_dom tq2 (one_ok _ swf) (swp _ rfl))
+    tq3 (by rw [htq3]; exact rep_comp _ _ (codes_faithful_wf _ _ q3f).1 k1 k2 k3 k4 k5)
+    tdn (by rw [htdn]; exact rep_dom tq3 (one_ok _ dnf) (dnp _ rfl))
+    du (by rw [hdu]; exact rep_dom tu (one_ok _ duf) (dup _ rfl))
+    l1 (fun s s' => by rw [hl1]; exact rep_diff D du d11 d13 d14 s s')
+    l2 (fun s s' => by rw [hl2]; exact rep_diff du tup d21 d23 d24 s s')
+    l3 (fun s s' => by rw [hl3]; exact rep_diff l2 tdn d31 d33 d34 s s')
+    lone (by rw [hlone]; exact rep_union_full l1 l3 oN oNk oNv oFk oFv (one_ok _ oK) (one_ok _ oV) ok ov)
+    c1 (by rw [hc1]; exact rep_cons_ok lone cs1)
+    ua (by rw [hua]; exact rep_comp _ _ (codes_faithful_wf _ _ uaf).1 a1 a2 a3 a4 a5)
+    uu (by rw [huu]; exact rep_comp _ _ (codes_faithful_wf _ _ uuf).1 w1 w2 w3 w4 w5)
+    ru (by rw [hru]; exact rep_ran tu (one_ok _ ruf) (rup _ rfl))
+    ut (by rw [hut]; exact rep_comp _ _ (codes_faithful_wf _ _ utf).1 t1 t2 t3 t4 t5)
+    pu (by rw [hpu]; exact rep_pair _ _ (codes_faithful_wf _ _ puf).1 p1 p2 p3 p4 p5 p6)
+    c2 (by rw [hc2]; exact rep_cons_ok pu cs2)
+    dy (by rw [hdy]; exact rep_comp _ _ (codes_faithful_wf _ _ dyf).1 y1 y2 y3 y4 y5)
+    b1 (by rw [hb1]; exact rep_union_full c1 c2 bN bNk bNv bFk bFv (one_ok _ bK) (one_ok _ bV) bk bv)
+    body (by rw [hbody]; exact rep_union_full b1 dy yN yNk yNv yFk yFv (one_ok _ yK) (one_ok _ yV) yk yv)
+
+end Discharge
+
 end LeetQ.Rel.Rep
 
 #print axioms LeetQ.Rel.Rep.thin_body_set
+#print axioms LeetQ.Rel.Rep.thin_body_rep

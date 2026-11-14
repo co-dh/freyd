@@ -11,9 +11,12 @@ open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
 
 open FoldN Prim
 
+/-! `cons`'s, `cat`'s and `snoc`'s bundles, one home: `open ListN` in every file that reads back a composite of
+    them (`snocOK` also needs `Pow`, `FoldN` and `Prim` open). -/
+namespace ListN
 -- `rep_cons`'s hypotheses at `P`, its pieces bound by their equations
 set_option hygiene false in
-local notation "consOK(" K ", " B ", " P ")" =>
+scoped notation "consOK(" K ", " B ", " P ")" =>
   ((Rel.val P).2.1.toNat < 2 ^ 63 ∧
     ∀ s : ByteArray × ByteArray, s = slicesOf (Rel.val P).2 →
     ((List.range (Rel.n P).toNat).map fun r => (Column.bitsAt s.2 (r * 8) 8).toNat).sum + (Rel.n P).toNat <
@@ -36,10 +39,6 @@ local notation "consOK(" K ", " B ", " P ")" =>
     Vals.RazeFits B tl (Rel.val P).1 ∧
     ∀ hN, Vals.PickFits B (Obj.raze B #[⟨m, tl⟩, ⟨Rel.n P, (Rel.val P).1⟩] hN)
       ((List.range (len g)).map fun q => (Column.bitsAt g (q * 8) 8).toNat))
-
-/-! `cat`'s and `snoc`'s bundles, one home: `open ListN` in every file that reads back a composite of them
-    (`snocOK` also needs `Pow`, `FoldN` and `Prim` open). -/
-namespace ListN
 -- `rep_cat`'s hypotheses at `P`, its pieces bound by their equations
 set_option hygiene false in
 scoped notation "catOK(" K ", " B ", " P ")" =>
