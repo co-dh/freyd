@@ -175,7 +175,8 @@ theorem rep_cons {K B : Obj} (P : Rel K (.prod B (.arr B))) (hp : (Rel.val P).2.
     (m : USize) (hm : m = (len xi).toUSize)
     (xr : ByteArray) (hxr : xr = sub m (tilLongs m) (gather 8 (sub (Rel.n P) (sums (Rel.n P) s.2) s.2) xi))
     (j : ByteArray) (hj : j = add m (gather 8 s.1 xi) xr)
-    (hjl : len j = m.toNat) (tl : Vals B m) (htl : tl = Vals.pick B (Rel.val P).2.2.2.2 j m hjl)
+    (tl : Vals B m) (htl : tl = Vals.pick B (Rel.val P).2.2.2.2 (add m (gather 8 s.1 xi) xr) m
+      (len_val Ew.add Ew.vv (gather 8 s.1 xi) xr m))
     (c1 : ByteArray) (hc1 : c1 = addc (Rel.n P) s.2 1) (hi : ByteArray) (hhi : hi = sums (Rel.n P) c1)
     (lo : ByteArray) (hlo : lo = sub (Rel.n P) hi c1)
     (dst : ByteArray) (hdst : dst = addc m (add m (gather 8 lo xi) xr) 1)
@@ -187,6 +188,9 @@ theorem rep_cons {K B : Obj} (P : Rel K (.prod B (.arr B))) (hp : (Rel.val P).2.
     (hFf : ∀ hN, Vals.PickFits B (Obj.raze B #[⟨m, tl⟩, ⟨Rel.n P, (Rel.val P).1⟩] hN)
       ((List.range (len g)).map fun q => (Column.bitsAt g (q * 8) 8).toNat)) :
     ∀ k ys, rep (cons P) k ys ↔ ∃ b bs, rep P k (b, bs) ∧ ys = b :: bs := by
+  -- the tails' rows `j` are `m` longs: `tl` picks at `j` itself
+  have hjl : len j = m.toNat := by rw [hj]; exact len_val ..
+  replace htl : tl = Vals.pick B (Rel.val P).2.2.2.2 j m hjl := by subst hj; exact htl
   subst hs
   have hs1 : len (slicesOf (Rel.val P).2).1 = nN := (len_slices _ _ _ _).1
   have hs2 : len (slicesOf (Rel.val P).2).2 = nN := (len_slices _ _ _ _).2
@@ -524,7 +528,8 @@ theorem map_step_rep {E B : Obj} (el : Rel .long E) (R : Rel E B) (pend : Rel .l
     (m : USize) (hm : m = (len xi).toUSize)
     (xr : ByteArray) (hxr : xr = sub m (tilLongs m) (gather 8 (sub (Rel.n P) (sums (Rel.n P) s.2) s.2) xi))
     (j : ByteArray) (hj : j = add m (gather 8 s.1 xi) xr)
-    (hjl : len j = m.toNat) (tl : Vals B m) (htl : tl = Vals.pick B (Rel.val P).2.2.2.2 j m hjl)
+    (tl : Vals B m) (htl : tl = Vals.pick B (Rel.val P).2.2.2.2 (add m (gather 8 s.1 xi) xr) m
+      (len_val Ew.add Ew.vv (gather 8 s.1 xi) xr m))
     (c1 : ByteArray) (hc1 : c1 = addc (Rel.n P) s.2 1) (hi : ByteArray) (hhi : hi = sums (Rel.n P) c1)
     (lo : ByteArray) (hlo : lo = sub (Rel.n P) hi c1)
     (dst : ByteArray) (hdst : dst = addc m (add m (gather 8 lo xi) xr) 1)
@@ -542,7 +547,7 @@ theorem map_step_rep {E B : Obj} (el : Rel .long E) (R : Rel E B) (pend : Rel .l
   have h1 := rep_pair (el ≫ R) pend hkO hkn hkM hkU hkA hkB hkC
   subst hP
   intro r v
-  rw [rep_cons (pair (el ≫ R) pend) hp s hs hS hU xi hxi m hm xr hxr j hj hjl tl htl c1 hc1 hi hhi lo hlo
+  rw [rep_cons (pair (el ≫ R) pend) hp s hs hS hU xi hxi m hm xr hxr j hj tl htl c1 hc1 hi hhi lo hlo
     dst hdst g hg hKf hTf hRf hFf, h1]
   constructor
   · rintro ⟨b, bs, hb, rfl⟩
@@ -613,7 +618,8 @@ theorem rep_map {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n)
       ∀ m : USize, m = (len xi).toUSize →
       ∀ xr : ByteArray, xr = sub m (tilLongs m) (gather 8 (sub (Rel.n P) (sums (Rel.n P) s.2) s.2) xi) →
       ∀ j : ByteArray, j = add m (gather 8 s.1 xi) xr →
-      ∃ hjl : len j = m.toNat, ∀ tl : Vals B m, tl = Vals.pick B (Rel.val P).2.2.2.2 j m hjl →
+      ∀ tl : Vals B m, tl = Vals.pick B (Rel.val P).2.2.2.2 (add m (gather 8 s.1 xi) xr) m
+        (len_val Ew.add Ew.vv (gather 8 s.1 xi) xr m) →
       ∀ c1 : ByteArray, c1 = addc (Rel.n P) s.2 1 → ∀ hi : ByteArray, hi = sums (Rel.n P) c1 →
       ∀ lo : ByteArray, lo = sub (Rel.n P) hi c1 →
       ∀ dst : ByteArray, dst = addc m (add m (gather 8 lo xi) xr) 1 →
@@ -642,10 +648,9 @@ theorem rep_map {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n)
     obtain ⟨hkO, hkn, hkM, hkU, hkA, hkB, hkC, hP⟩ := hQ _ rfl _ rfl
     obtain ⟨hp, hs⟩ := hP _ rfl
     obtain ⟨hS, hU, hx⟩ := hs _ rfl
-    obtain ⟨hjl, ht⟩ := hx _ rfl _ rfl _ rfl _ rfl
-    obtain ⟨hKf, hTf, hRf, hFf⟩ := ht _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
+    obtain ⟨hKf, hTf, hRf, hFf⟩ := hx _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
     exact map_step_rep _ R _ _ rfl hjO hjn hjM hjU hjA hjC _ rfl _ rfl hkO hkn hkM hkU hkA hkB hkC _ rfl hp _ rfl
-      hS hU _ rfl _ rfl _ rfl _ rfl hjl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl hKf hTf hRf hFf r v
+      hS hU _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl hKf hTf hRf hFf r v
   refine (rep_foldBy (nilVal B) X T hT hn hv hp hel pend₀ hpend hN h63 hA hB
     (fun el pend => cons (pair (el ≫ R) pend)) (fun _ eu v => ∃ b, rep R eu.1 b ∧ v = b :: eu.2) elK hE f hf hR hS
     F hF jc hjc hjO hjn hjM hjU hjA hjC xs ys).trans ?_
