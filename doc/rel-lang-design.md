@@ -256,7 +256,7 @@ they lift, run on demand and converse as their bodies do. The `LeetQ` library `n
 | `∈`          | `∈ : α ⟶ [α] ≜ ∋°`                                             | membership, the converse of `∋`             |
 | `≥`          | `≥ : α ⟶ α ≜ ≤°`                                               | the named converse of `≤`                   |
 | `>`          | `> : α ⟶ α ≜ <°`                                               | the named converse of `<`                   |
-| `≠`          | `≠ : α ⟶ α ≜ < ∪ >`                                            | inequality, without a complement            |
+| `≠`          | `≠ : α ⟶ α ≜ ∼𝟙`                                               | inequality, the complement of `𝟙`           |
 | `R ⇒ S`      | `_⇒_(R : α ⟶ β, S : α ⟶ β) : α ⟶ β ≜ ∼R ∪ S`                   | implication                                 |
 | `R ⊕ S`      | `_⊕_(R : α ⟶ β, S : γ ⟶ δ) : α+γ ⟶ β+δ ≜ [R inl, S inr]`       | the sum of relations                        |
 | `R + S`      | `_+_(R : α ⟶ β, S : α ⟶ β) : α ⟶ β ≜ ⟨R,S⟩plus`                | the sum of two values                       |

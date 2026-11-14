@@ -8,7 +8,7 @@ rel_program prelude where
     ∈ : α ⟶ [α] ≜ ∋°                              -- membership, the converse of ∋
     ≥ : α ⟶ α ≜ ≤°                                -- the named converse of ≤
     > : α ⟶ α ≜ <°                                -- the named converse of <
-    ≠ : α ⟶ α ≜ < ∪ >                             -- inequality, without a complement
+    ≠ : α ⟶ α ≜ ∼𝟙                                -- inequality: the complement of equality, 𝟙
     _⇒_(R : α ⟶ β, S : α ⟶ β) : α ⟶ β ≜ ∼R ∪ S                  -- implication
     _⊕_(R : α ⟶ β, S : γ ⟶ δ) : α+γ ⟶ β+δ ≜ [R inl, S inr]      -- the sum of relations, A+B ⟶ C+D
     _+_(R : α ⟶ β, S : α ⟶ β) : α ⟶ β ≜ ⟨R,S⟩plus               -- the sum of two values
