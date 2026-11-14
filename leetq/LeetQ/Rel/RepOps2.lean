@@ -57,6 +57,9 @@ theorem rep_antiJoin (R : Rel A B) (T : Rel B B) (hc : codesOK(avc(B, R, T), avp
     have hI := (anti_ids _ _ hw0 hw1 hs0 hs1).1
     replace hn0 : ((avc(B, R, T))[0]'Nat.zero_lt_two).n = R.n := hn0
     rw [hn0] at hI
+    -- the codes twin's `.1` read as the codes while an argument of `anti`
+    show (R.rows (anti ((B.codesC avp(B, R, T)).1[0]) ((B.codesC avp(B, R, T)).1[1]))).Holds a b ↔ _
+    rw [Obj.codesC_fst]
     show (R.rows (amiss(B, R, T))).Holds a b ↔ ∃ y, R.Holds a y ∧ y = b ∧ ¬ ∃ x, T.Holds x y
     rw [rows_keep R _ _ hI hk hv]
     have hnot : ∀ x : Bool, (!x) = true ↔ ¬ x = true := by decide
@@ -86,6 +89,7 @@ theorem antiJoin_fits (R : Rel A B) (T : Rel B B) (hc : codesOK(avc(B, R, T), av
   replace hn0 : ((avc(B, R, T))[0]'Nat.zero_lt_two).n = R.n := hn0
   have hs := anti_sublist ((avc(B, R, T))[0]'Nat.zero_lt_two) ((avc(B, R, T))[1]'Nat.one_lt_two)
   rw [hn0] at hs
+  rw [show antiJoin R T = R.rows (amiss(B, R, T)) by unfold antiJoin antiJoinC; simp only [Obj.codesC_fst]]
   exact rows_fits R _ hs hk hv
 
 /-- **`outl T` is `T` with the value's left half**: it fits where `T` does, counts `T`'s rows, and its value reads at

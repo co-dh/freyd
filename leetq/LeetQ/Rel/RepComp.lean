@@ -149,10 +149,10 @@ theorem rep_comp (R : Rel A B) (S : Rel B C)
   have hP := mem_joinPairs (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)
   rw [hln, hrn'] at hP
   refine hom_ext fun a c => ?_
-  show (longCount "≫" (join (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)).2 fun m h =>
-      (⟨m, Vals.pickN A R.key (join (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)).1 m (h ▸ join_len (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)),
-        Vals.pick C S.val (join (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)).2 m h⟩ : Rel A C)).Holds a c ↔ ∃ b, R.Holds a b ∧ S.Holds b c
-  unfold longCount need
+  -- the codes twin's `.1` read as `jc` while an argument of `compJoinC`, then the picks' twins
+  show ((compJoinC R S ((B.codesC jcs).1[0]) ((B.codesC jcs).1[1])).1).Holds a c ↔ ∃ b, R.Holds a b ∧ S.Holds b c
+  rw [Obj.codesC_fst]; unfold compJoinC longCount; rw [need_fst]; simp only [pickC_fst]
+  unfold need
   rw [dif_pos hlt]
   -- the relation at whatever count `m` the join's length enters as
   suffices H : ∀ (m : USize) (hmJ : len (join (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)).2 = m.toNat),
@@ -247,7 +247,9 @@ theorem comp_fits (R : Rel A B) (S : Rel B C)
       by omega⟩
   rw [show R ≫ S = longCount "≫" (join (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)).2 (fun m h =>
       (⟨m, Vals.pickN A R.key (join (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)).1 m (h ▸ join_len (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)),
-        Vals.pick C S.val (join (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)).2 m h⟩ : Rel A C)) from rfl]
+        Vals.pick C S.val (join (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)).2 m h⟩ : Rel A C)) by
+    show (compJoinC R S ((B.codesC jcs).1[0]) ((B.codesC jcs).1[1])).1 = _
+    rw [Obj.codesC_fst]; unfold compJoinC longCount; rw [need_fst]; simp only [pickC_fst]; rfl]
   unfold longCount need
   rw [dif_pos hlt]
   dsimp only

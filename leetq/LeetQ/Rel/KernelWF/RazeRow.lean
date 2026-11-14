@@ -153,8 +153,9 @@ open RazeN
 /-- `∪` within the fits bound: the `nub` of the razed relation. -/
 theorem union_eq_nub (R S : Rel A B) (hN : R.n.toNat + S.n.toNat < USize.size) :
     R ∪ S = (Uc).nub := by
-  show need _ _ _ _ = _
-  unfold need; rw [dif_pos hN]
+  show (unionC R S).1 = _
+  unfold unionC; rw [need_fst]; simp only [razeC_fst, Obj.codesC_fst]
+  unfold need; rw [dif_pos hN]; rfl
 
 /-- **`rep (R ∪ S) = rep R ∪ rep S`**: `∪` razes the keys and the values, read back by `hA`, `hB`, so the razed
     relation holds the pairs of `R` and of `S` (`holds_two`), and its `nub` holds the same (`rep_nub`, whose code

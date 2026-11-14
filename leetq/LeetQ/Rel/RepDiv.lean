@@ -384,7 +384,7 @@ theorem rep_leftDiv {mb mc : USize} (R : Rel A B) (S : Rel A C) (Ub : Vals B mb)
     subst hPe hQe hI hzc hycs hy hkc
     -- the arguments first: `divTailC` unfolded before them would put them under its dependent binder
     simp only [leftDiv, leftDivC, nubC_fst, Obj.codesC_fst, divJoinC_fst]
-    simp only [divTailC, topC, unionC_fst, keyPart, valPart]; rfl
+    simp only [divTailC, topC, keyPart, valPart]; rfl
   rw [e, rep_union_full P Q hU hFk hFv (one_ok _ hUK) (one_ok _ hUV) hUk hUv]
   show P.Holds b c ∨ Q.Holds b c ↔ _
   subst hPe hQe

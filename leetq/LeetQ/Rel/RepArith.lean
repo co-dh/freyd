@@ -294,7 +294,9 @@ theorem rep_succ {n : USize} (U : Vals (.atom .long) n) (s : Arr .long n)
   · intro r hr q hin
     dsimp only
     rw [dif_pos hin]; exact pick_row_atom _ _ _ _ q hin
-  · rw [← hcs]
+  · -- the codes twin's `.1` at an atom is the codes `cs` names
+    rw [show ((Obj.atom .long).codesC #v[⟨n, valCol Ew.add Ew.va (longsOf U) (one 1)⟩, ⟨n, U⟩]).1 = cs by
+      rw [hcs]; rfl]
     obtain ⟨hF, hW⟩ := hc
     obtain ⟨hw0, hn0, hs0⟩ := hW (k := 0) (by decide)
     obtain ⟨hw1, hn1, hs1⟩ := hW (k := 1) (by decide)

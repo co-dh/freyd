@@ -341,7 +341,7 @@ theorem rep_uncat {B : Obj} {n : USize} (X : Vals (.arr B) n)
   have h4 := rep_mem Z.val hv hk
   subst hZ hP
   rw [show uncat X = zip (pair (inits X) (tails X)) ≫ mem (zip (pair (inits X) (tails X))).val by
-    unfold uncat uncatC; dsimp only; rw [compC_fst, memC_fst, pairC_fst]; rfl]
+    unfold uncat uncatC; dsimp only; rfl]
   rw [h3]
   constructor
   · rintro ⟨ps, hz, hm⟩

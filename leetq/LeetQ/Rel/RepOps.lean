@@ -126,9 +126,8 @@ theorem distinct_holds (t : Obj) {n : USize} (x : Vals t n) (I : ByteArray) (g :
     (hlen : len I < USize.size) (hlt : ∀ f ∈ ids I, f < n.toNat) (hex : ∀ i < n.toNat, ∃ f ∈ ids I, g f = g i)
     (hF : ∀ {i j : Nat} (hi : i < n.toNat) (hj : j < n.toNat), g i = g j → x.row ⟨i, hi⟩ = x.row ⟨j, hj⟩)
     (hp : Vals.PickFits t x (ids I)) (a b : t.El) :
-    (longCount "distinct" I fun m h => let d := Vals.pick t x I m h; (⟨m, d, d⟩ : Rel t t)).Holds a b ↔
-      a = b ∧ ∃ i, x.row i = a := by
-  unfold longCount need
+    ((idU x).rows I).Holds a b ↔ a = b ∧ ∃ i, x.row i = a := by
+  unfold Rel.rows need
   rw [dif_pos hlen]
   suffices H : ∀ (m : USize) (hm : len I = m.toNat),
       (⟨m, Vals.pick t x I m hm, Vals.pick t x I m hm⟩ : Rel t t).Holds a b ↔ a = b ∧ ∃ i, x.row i = a from H _ _
@@ -165,6 +164,8 @@ theorem rep_distinctCorefl (t : Obj) {n : USize} (x : Vals t n)
         ((dc).w < 8 → (dc).card < USize.size ∧ ∀ i < (dc).n.toNat, Column.idAt (dc).b (dc).w i < (dc).card))
     (hp : Vals.PickFits t x (List.range n.toNat)) :
     rep (distinctCorefl t x) = corefl (A := (⟨t.El⟩ : RelSet.{0})) fun a => ∃ i, x.row i = a := by
+  rw [show distinctCorefl t x = (idU x).rows (dc).groupIds.2 by
+    unfold distinctCorefl distinctCoreflC; simp only [Obj.codesC_fst]]
   obtain ⟨hF, hw, hn, hs, hcard⟩ := hK
   obtain ⟨hlt, -, hex⟩ := groupIds_classes (dc) hw hs hcard
   have hsub := groupIds_sublist (dc) hw hs hcard
@@ -238,8 +239,7 @@ theorem ran_fits (R : Rel A B) (hK : oneOK(B, R.n, R.val)) (hp : Vals.PickFits B
   have hl : len (c1(B, R.n, R.val)).groupIds.2 < USize.size := by
     rw [len_eq_ids]; exact Nat.lt_of_le_of_lt (by simpa using hsub.length_le) R.n.toNat_lt_size
   have e : Alg.ran R = (idU R.val).rows (c1(B, R.n, R.val)).groupIds.2 := by
-    unfold Alg.ran distinctCorefl longCount Rel.rows need
-    simp only [dif_pos hl]; rfl
+    unfold Alg.ran distinctCorefl distinctCoreflC; simp only [Obj.codesC_fst]
   obtain ⟨fk, fv, hc, rk, -⟩ := rows_fits (idU R.val) _ hsub hp hp
   rw [e]; exact ⟨fk, fv, hc, rk⟩
 
@@ -674,14 +674,11 @@ theorem rep_pair (R : Rel A B) (S : Rel A C) (hc : codesOK(kc, kp(R, S))) (hrn :
   have hP := mem_joinPairs (kc[0]'Nat.zero_lt_two) (kc[1]'Nat.one_lt_two)
   rw [hln, hrn'] at hP
   refine hom_ext fun a p => ?_
-  show (longCount "⟨R,S⟩" (join (kc[0]'Nat.zero_lt_two) (kc[1]'Nat.one_lt_two)).2 fun m hm =>
-      (⟨m, Vals.pickN A R.key (join (kc[0]'Nat.zero_lt_two) (kc[1]'Nat.one_lt_two)).1 m
-          (hm ▸ join_len (kc[0]'Nat.zero_lt_two) (kc[1]'Nat.one_lt_two)),
-        (Vals.pickN B R.val (join (kc[0]'Nat.zero_lt_two) (kc[1]'Nat.one_lt_two)).1 m
-          (hm ▸ join_len (kc[0]'Nat.zero_lt_two) (kc[1]'Nat.one_lt_two)),
-         Vals.pick C S.val (join (kc[0]'Nat.zero_lt_two) (kc[1]'Nat.one_lt_two)).2 m hm)⟩ :
-        Rel A (.prod B C))).Holds a p ↔ R.Holds a p.1 ∧ S.Holds a p.2
-  unfold longCount need
+  -- the codes twin's `.1` read as `kc` while an argument of `pairJoinC`, then the picks' twins
+  show ((pairJoinC R S ((A.codesC kp(R, S)).1[0]) ((A.codesC kp(R, S)).1[1])).1).Holds a p ↔
+    R.Holds a p.1 ∧ S.Holds a p.2
+  rw [Obj.codesC_fst]; unfold pairJoinC longCount; rw [need_fst]; simp only [pickC_fst]
+  unfold need
   rw [dif_pos hlt]
   suffices H : ∀ (m : USize) (hmJ : len (join (kc[0]'Nat.zero_lt_two) (kc[1]'Nat.one_lt_two)).2 = m.toNat),
       (⟨m, Vals.pickN A R.key (join (kc[0]'Nat.zero_lt_two) (kc[1]'Nat.one_lt_two)).1 m
@@ -782,8 +779,11 @@ theorem pair_pickFits (R : Rel A B) (S : Rel A C) (hc : codesOK(kc, kp(R, S))) (
     unfold Vals.pickN
     exact ⟨pickFits_pick A R.key _ m _ _ hq (hl ▸ hA) (hl ▸ hA), pickFits_pick B R.val _ m _ _ hq (hl ▸ hB) (hl ▸ hB),
       pickFits_pick C S.val _ m hmJ _ hq (hr ▸ hC) (hr ▸ hC)⟩
-  unfold LeetQ.Rel.Alg.pair longCount need
+  unfold LeetQ.Rel.Alg.pair pairC; dsimp only
+  rw [Obj.codesC_fst]; unfold pairJoinC longCount; rw [need_fst]
+  unfold need
   rw [dif_pos hlt]
+  simp only [pickC_fst]
   exact H _ _
 
 end Pairs
@@ -864,7 +864,8 @@ theorem rep_junc (R : Rel A C) (S : Rel B C) (hN : R.n.toNat + S.n.toNat < USize
       USize.size := raze2_lt hN
   have e : LeetQ.Rel.Alg.junc R S = ⟨R.n + S.n, sumVals R.key S.key hN,
       toUSize_eq (by rw [toNat_add_fits hN]) ▸ C.raze #[⟨_, R.val⟩, ⟨_, S.val⟩] hN'⟩ := by
-    unfold LeetQ.Rel.Alg.junc need; rw [dif_pos hN]
+    unfold LeetQ.Rel.Alg.junc juncC; rw [need_fst]; simp only [razeC_fst]
+    unfold need; rw [dif_pos hN]
   rw [e]
   refine hom_ext fun s c => ?_
   have hval : ∀ k : Fin (R.n + S.n).toNat, Vals.row (toUSize_eq (by rw [toNat_add_fits hN]) ▸

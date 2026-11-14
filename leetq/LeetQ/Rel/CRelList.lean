@@ -249,52 +249,6 @@ theorem rep_tailsC {B : Obj} {n : USize} (X : Vals (.arr B) n) (hb : (tailsC X).
   obtain ⟨hS, hU, hK, hV⟩ := nestC_bits X _ hb
   exact rep_tails X _ rfl hS hU _ rfl _ rfl _ rfl hK hV
 
-/-- **`memC`'s bit is `rep_mem`'s premises**: the `fitsN` bit its `hv`, and with it `expand`'s guard
-    (`slicesOf_copies`); the keys' pick bit, at the copies `expand` makes, its `hk` (`pickC_fits`, `copies_rows`). -/
-theorem memC_ok {B : Obj} {n : USize} (X : Vals (.arr B) n) (hb : (memC X).2 = true) :
-    Vals.PickFits (.arr B) X (List.range n.toNat) ∧
-    Vals.PickFits (.arr B) X ((List.range n.toNat).flatMap fun r =>
-      if h : r < n.toNat then List.replicate (X.row ⟨r, h⟩).length r else []) := by
-  simp only [memC, Bool.and_eq_true] at hb
-  obtain ⟨hk, hv⟩ := hb
-  have hv' : Vals.PickFits (.arr B) X (List.range n.toNat) := pickFits_of_fitsN (.arr B) X _ hv _ (by simp)
-  refine ⟨hv', ?_⟩
-  unfold expand need at hk
-  dsimp only at hk
-  rw [dif_pos (slicesOf_copies X hv').1] at hk
-  rw [← copies_rows X hv']
-  exact Vals.pickC_fits (.arr B) X _ _ _ hk
-
-/-- **`pairC`'s bit is `rep_pair`'s premises** (`pairOK`), as `compC_ok`: the keys' codes fitting, the decided
-    bounds, and the three picks' bits read at the join's rows (`join_rows`, `pickC_fits`). -/
-theorem pairC_ok {A B C : Obj} (R : Rel A B) (S : Rel A C) (hb : (pairC R S).2 = true) : pairOK(A, R, S) := by
-  simp only [pairC, Bool.and_eq_true, decide_eq_true_eq] at hb
-  obtain ⟨⟨⟨hcb, hrn⟩, hM⟩, hp⟩ := hb
-  have hcf := Obj.codesC_fits A _ hcb
-  refine ⟨hcf, ?_⟩
-  rintro kc rfl
-  have hc := (codes_faithful_wf A _ hcf).1
-  obtain ⟨hlw, hln, hls, -⟩ := hc.2 (k := 0) (by decide)
-  obtain ⟨hrw, hrn', hrs, hrc⟩ := hc.2 (k := 1) (by decide)
-  replace hln : ((A.codes (#v[⟨R.n, R.key⟩, ⟨S.n, S.key⟩] : Vector (Part A) 2))[0]'Nat.zero_lt_two).n = R.n := hln
-  replace hrn' : ((A.codes (#v[⟨R.n, R.key⟩, ⟨S.n, S.key⟩] : Vector (Part A) 2))[1]'Nat.one_lt_two).n = S.n := hrn'
-  have hcf' := Obj.codesC_fst A (#v[⟨R.n, R.key⟩, ⟨S.n, S.key⟩] : Vector (Part A) 2)
-  rw [← hcf'] at hlw hls hrw hrs hrc hln hrn'
-  obtain ⟨-, hZ⟩ := join_rows _ _ hlw hls hrw hrs hrc (by rw [hrn']; exact hrn) (by rw [hln, hrn']; exact hM)
-  unfold longCount need at hp
-  split at hp
-  · rename_i hlt
-    simp only [Bool.and_eq_true] at hp
-    have e := hZ _ (USize.toNat_ofNat_of_lt' hlt).symm
-    have hfA := Vals.pickC_fits A R.key _ _ _ hp.1.1
-    have hfB := Vals.pickC_fits B R.val _ _ _ hp.1.2
-    have hfC := Vals.pickC_fits C S.val _ _ _ hp.2
-    rw [hln, hrn'] at e
-    rw [hcf'] at e hfA hfB hfC
-    exact ⟨hrn, hM, by rw [e, List.map_map]; exact hfA, by rw [e, List.map_map]; exact hfB,
-      by rw [e, List.map_map]; exact hfC⟩
-  · exact absurd hp Bool.false_ne_true
-
 /-- `compC_ok` in `cmpOK`'s form, the codes bound by their equation. -/
 theorem compC_cmpOK {A B C : Obj} (R : Rel A B) (S : Rel B C) (hb : (compC R S).2 = true) : cmpOK(B, R, S) := by
   obtain ⟨hcf, h⟩ := compC_ok R S hb
@@ -310,10 +264,8 @@ theorem rep_uncatC {B : Obj} {n : USize} (X : Vals (.arr B) n) (hb : (uncatC X).
   obtain ⟨-, -, -, hVt⟩ := nestC_bits X _ ht
   obtain ⟨hkf, hk1⟩ := pairC_ok _ _ hp
   obtain ⟨hkn, hkM, hkA, hkB, hkC⟩ := hk1 _ rfl
-  rw [pairC_fst] at hz hv hc
   obtain ⟨-, -, hS', hU', -⟩ := zipC_ok _ hz
   obtain ⟨hmv, hmk⟩ := memC_ok _ hv
-  rw [memC_fst] at hc
   obtain ⟨hjf, hjn, hjM, hjA, hjC⟩ := compC_ok _ _ hc
   exact rep_uncat X _ rfl hS hU _ rfl _ rfl _ rfl hK hVi hVt _ rfl (codes_faithful_wf _ _ hkf).1 hkn hkM hkA hkB
     hkC _ rfl _ rfl hS' hU' _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl (codes_faithful_wf _ _ hjf).1 hjn hjM hjA hjC
@@ -326,7 +278,7 @@ theorem rep_snocC {K B : Obj} (P : Rel K (.prod (.arr B) B)) (hb : (snocC P).2 =
     ∀ k ys, rep (snocC P).1 k ys ↔ ∃ bs b, rep P k (bs, b) ∧ ys = bs ++ [b] := by
   simp only [snocC, Bool.and_eq_true] at hb
   obtain ⟨⟨⟨⟨⟨hD, ht⟩, hT⟩, hQ⟩, hM⟩, hr⟩ := hb
-  have eD : (ranC P).1 = ran P := distinctCoreflC_fst _ _
+  have eD : (ranC P).1 = ran P := rfl
   rw [eD] at ht hT hQ hM hr
   simp only [ranC, distinctCoreflC, Bool.and_eq_true] at hD
   obtain ⟨hK1, -, hk1, -, hWk, hW, h63⟩ := transposeC_ok _ ht
@@ -335,13 +287,10 @@ theorem rep_snocC {K B : Obj} (P : Rel K (.prod (.arr B) B)) (hb : (snocC P).2 =
   rintro D rfl X rfl
   refine ⟨⟨hK1, hk1, hWk, hW, h63⟩, compC_cmpOK _ _ hT, ?_⟩
   rintro T rfl
-  rw [compC_fst] at hQ
   refine ⟨pairC_ok _ _ hQ, ?_⟩
   rintro Q rfl
-  rw [compC_fst, pairC_fst] at hM
   refine ⟨compC_cmpOK _ _ hM, ?_⟩
   rintro M rfl
-  rw [compC_fst, pairC_fst, compC_fst] at hr
   exact catC_ok _ hr
 
 #print axioms rep_consC

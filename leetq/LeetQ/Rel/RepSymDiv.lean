@@ -712,7 +712,7 @@ theorem rep_symDiv {ma mb : USize} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma) 
   have e : symDiv R S Ua Ub = P ∪ Q := by
     subst hPe hQe hrf hsf hlc hrc hsid hss epr eorr efr eps eos efs ev0 ev1 erk euac esk eubc hvc hac hbc
     simp only [symDiv, symDivC, Obj.codesC_fst]
-    simp only [symDivTailC, topC, symHitC_fst, unionC_fst, keyPart, valPart, symDivIds]; rfl
+    simp only [symDivTailC, topC, symHitC_fst, keyPart, valPart, symDivIds]; rfl
   rw [e, rep_union_full P Q hU hFk hFv (one_ok _ hUK) (one_ok _ hUV) hUk hUv]
   show P.Holds x y ∨ Q.Holds x y ↔
     (∀ c, R.Holds x c ↔ S.Holds y c) ∧ ((∃ c, R.Holds x c) ∨ ((∃ p, Ua.row p = x) ∧ ∃ j, Ub.row j = y))
