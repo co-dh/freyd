@@ -275,33 +275,61 @@ def rightDivC {ma mb : USize} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma) (Ub :
 def rightDiv {ma mb : USize} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma) (Ub : Vals B mb) : Rel A B :=
   (rightDivC R S Ua Ub).1
 
-/-- `R /ₛ S` (`R : a ⟶ c`, `S : b ⟶ c`), equal fibres: the fibres of `R` and of `S` as `segments`
+/-! `R /ₛ S` (`R : a ⟶ c`, `S : b ⟶ c`), equal fibres: the fibres of `R` and of `S` as `segments`
     of one value code space, their `setIds` in one call, `join` on the ids → `(x, y)`, the keys read as
     `comp` reads them (`join_len`); the vacuous term `⊤` on `anti(Ua, dom R)` and `anti(Ub, dom S)`, the
     empty fibres, met by `∪`. -/
-def symDiv {ma mb : USize} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma) (Ub : Vals B mb) : Rel A B :=
-  let vc := C.codes #v[⟨_, R.val⟩, ⟨_, S.val⟩]
-  let ac := A.codes #v[⟨_, R.key⟩, ⟨_, Ua⟩]; let rk := ac[0]; let uac := ac[1]
-  let bc := B.codes #v[⟨_, S.key⟩, ⟨_, Ub⟩]; let sk := bc[0]; let ubc := bc[1]
-  let (pr, orr, fr) := segments rk; let (ps, os, fs) := segments sk
+/-- `/ₛ`'s fibre ids over the value codes `v0`, `v1` and the segments `pr`, `orr` of `R`, `ps`, `os` of `S` (`nR`
+    `R`'s count): `setIds` of both fibre families in one call. A def on plain values: its `longCount` binds a proof
+    about `os`, under which a twin's `.1` is rewritten by neither `simp` nor `rw`. -/
+def symDivIds (v0 v1 : Code) (pr orr ps os : ByteArray) (nR : Nat) : ByteArray :=
   -- each `segments` offsets end at its code count, so `S`'s starts shifted by `|R|` follow `R`'s
   let ss := os.extract 0 (os.size - 8)
-  let ids := longCount "/ₛ" ss fun c _ =>
-    setIds (Code.cat #[vc[0].gather pr, vc[1].gather ps]) (concatBytes #[orr.extract 0 (orr.size - 8), addc c ss R.n.toNat])
-  let lc := Code.ofLongs (ids.extract 0 (8 * len fr)); let rc := Code.ofLongs (ids.extract (8 * len fr) ids.size)
+  longCount "/ₛ" ss fun c _ =>
+    setIds (Code.cat #[v0.gather pr, v1.gather ps]) (concatBytes #[orr.extract 0 (orr.size - 8), addc c ss nR])
+
+/-- `/ₛ`'s joined rows over the class codes `lc`, `rc`: `join`, the left index column read at the right's count
+    (`fit`, `join_len`), `rf`'s rows beside `sf`'s, as `divJoinC`; the bit is the two picks' (`pickC`). -/
+def symHitC (rf : Part A) (sf : Part B) (lc rc : Code) : Rel A B × Bool :=
   let ij := join lc rc
-  let rf := Vals.pickPart A R.key fr; let sf := Vals.pickPart B S.key fs
-  let hit : Rel A B := longCount "/ₛ" ij.2 fun m h =>
-    ⟨m, Vals.pickN A rf.2 ij.1 m (h ▸ join_len lc rc), Vals.pick B sf.2 ij.2 m h⟩
-  union hit (top (Vals.pickPart A Ua (anti uac rk)).2 (Vals.pickPart B Ub (anti ubc sk)).2)
+  longCount "/ₛ" ij.2 fun m h =>
+    let x := Vals.pickC A rf.2 (fit m.toNat ij.1) m (fit_len (h ▸ join_len lc rc))
+    let z := Vals.pickC B sf.2 ij.2 m h
+    ((⟨m, x.1, z.1⟩ : Rel A B), x.2 && z.2)
+
+/-- `/ₛ`'s rows from the joined rows `hit` on: `∪` the vacuous `⊤` on `anti(Ua, dom R)` and `anti(Ub, dom S)` (`uac`,
+    `rk` the codes of `Ua`, `R.key`; `ubc`, `sk` of `Ub`, `S.key`); the bit is `⊤`'s and `∪`'s. A def on the codes as
+    arguments, as `divTailC`: the picked parts' counts are types of `⊤`'s arguments. -/
+def symDivTailC {ma mb : USize} (Ua : Vals A ma) (Ub : Vals B mb) (rk uac sk ubc : Code) (hit : Rel A B) :
+    Rel A B × Bool :=
+  let q := topC (Vals.pickPart A Ua (anti uac rk)).2 (Vals.pickPart B Ub (anti ubc sk)).2
+  let u := unionC hit q.1
+  (u.1, q.2 && u.2)
+
+/-- `/ₛ` and whether it ran within capacity: the codes' bits (`codesC`), `rep_symDiv`'s count bounds decided, the
+    keys and universes fitting at all their rows (`fitsN`), the join picks' bit (`symHitC`), `⊤`'s and `∪`'s. -/
+def symDivC {ma mb : USize} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma) (Ub : Vals B mb) : Rel A B × Bool :=
+  let vc := C.codesC #v[valPart R, valPart S]
+  let ac := A.codesC #v[keyPart R, ⟨_, Ua⟩]; let bc := B.codesC #v[keyPart S, ⟨_, Ub⟩]
+  let sr := segments ac.1[0]; let sq := segments bc.1[0]
+  let ids := symDivIds vc.1[0] vc.1[1] sr.1 sr.2.1 sq.1 sq.2.1 R.n.toNat
+  let lc := Code.ofLongs (ids.extract 0 (8 * len sr.2.2)); let rc := Code.ofLongs (ids.extract (8 * len sr.2.2) ids.size)
+  let h := symHitC (Vals.pickPart A R.key sr.2.2) (Vals.pickPart B S.key sq.2.2) lc rc
+  let u := symDivTailC Ua Ub ac.1[0] ac.1[1] bc.1[0] bc.1[1] h.1
+  (u.1, vc.2 && ac.2 && bc.2 && decide (R.n.toNat + S.n.toNat < USize.size) &&
+    decide (R.n.toNat + S.n.toNat + 1 < 2 ^ 63) && Vals.fitsN A R.key R.n.toNat && Vals.fitsN B S.key S.n.toNat &&
+    decide (R.n.toNat * S.n.toNat < min (2 ^ 63) USize.size) && h.2 && Vals.fitsN A Ua ma.toNat &&
+    Vals.fitsN B Ub mb.toNat && decide (ma.toNat * mb.toNat < min (2 ^ 63) USize.size) && u.2)
+
+/-- `R /ₛ S`: `symDivC`'s relation. -/
+def symDiv {ma mb : USize} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma) (Ub : Vals B mb) : Rel A B :=
+  (symDivC R S Ua Ub).1
 
 /-- `Λ(R) : A ⟶ arr B`: one row per distinct key of `R`, its cell the ARRAY of the key's values, each once,
     in ascending value order (`sortBy`), so two keys with one set of values have one array — across two
     relations too, where `sortBy` orders by value. `Rel.nub`, the values sorted, then the keys' codes
     graded stably: each key one run, whose start and end (`runStarts`) are its row's `lo`, `hi`. -/
-def transpose (R : Rel A B) : Rel A (.arr B) :=
-  let d := R.nub
-  let kc := (A.codes #v[⟨_, d.key⟩])[0]
+def transposeRuns (d : Rel A B) (kc : Code) : Rel A (.arr B) :=
   let vp := B.sortBy d.val (tilLongs d.n)
   let p := gather 8 vp (kc.gather vp).grade
   let o := (kc.gather p).runStarts
@@ -311,14 +339,20 @@ def transpose (R : Rel A B) : Rel A (.arr B) :=
   longCount "Λ" lo fun m hm => ⟨m, Vals.pick A dk.2 lo m hm,
     ⟨dv.1, toUSize_eq hm ▸ longCol lo, toUSize_eq (h.trans hm) ▸ longCol (o.extract 8 o.size), dv.2⟩⟩
 
-/-- `Λ(R)` and whether it ran within capacity: the bits of `nub`'s two codes and of the nub sides' codes
-    (`codesC`; the keys' `transpose` groups by, the values' `sortBy` orders by), `&&` `R` fitting at all its rows
-    (`fitsN`), `rep_transpose`'s count decided. `transpose` itself runs, the codes again for their bits: a body
-    with the twins in place equals `transpose` only through a defeq check that times out evaluating the kernels. -/
+/-- `Λ(R)` and whether it ran within capacity: `transposeRuns` on `nubC`'s relation and its key codes (`codesC`),
+    the bit `nubC`'s `&&` those codes' `&&` the nub values' codes' (`sortBy` codes them itself, so they are coded
+    here for the bit only) `&&` `rep_transpose`'s count decided. -/
 def transposeC (R : Rel A B) : Rel A (.arr B) × Bool :=
-  (transpose R, (A.codesC #v[⟨_, R.key⟩]).2 && (B.codesC #v[⟨_, R.val⟩]).2 && Vals.fitsN A R.key R.n.toNat &&
-    Vals.fitsN B R.val R.n.toNat && (A.codesC #v[⟨_, R.nub.key⟩]).2 && (B.codesC #v[⟨_, R.nub.val⟩]).2 &&
-    decide (R.n.toNat < 2 ^ 63))
+  let d := nubC R
+  let kc := A.codesC #v[keyPart d.1]
+  (transposeRuns d.1 kc.1[0], d.2 && kc.2 && (B.codesC #v[valPart d.1]).2 && decide (R.n.toNat < 2 ^ 63))
+
+/-- `Λ(R)`: `transposeC`'s relation. -/
+def transpose (R : Rel A B) : Rel A (.arr B) := (transposeC R).1
+
+/-- `Λ(R)` is `transposeRuns` on `R.nub` and its key codes: `nubC`'s and the codes twin's `.1` read as their ops. -/
+theorem transpose_eq (R : Rel A B) : transpose R = transposeRuns R.nub (A.codes #v[⟨_, R.nub.key⟩])[0] := by
+  simp only [transpose, transposeC, nubC_fst, Obj.codesC_fst]; rfl
 
 /-- `∋ : arr B ⟶ B` on the arrays `X`: each array to each of its elements, one row per element (an array
     holding a value twice relates to it twice). `expand` of the clamped slice counts, each copy's rank

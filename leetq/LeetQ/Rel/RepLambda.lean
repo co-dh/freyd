@@ -268,7 +268,7 @@ theorem transpose_row_list (R : Rel A B)
       (congrArg _ (Fin.ext (by dsimp only; rw [hlo_at j hj])))
   -- `transpose R` itself: its `longCount` run at the run starts
   subst hO
-  unfold Alg.transpose; dsimp only
+  rw [transpose_eq]; unfold transposeRuns; dsimp only
   rw [longCount_eq _ _ _ hloU]
   dsimp only
   refine ⟨fun q => ?_, fun i => ?_⟩
