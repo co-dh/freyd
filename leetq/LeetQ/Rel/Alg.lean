@@ -25,6 +25,17 @@ private def inter (R S : Rel A B) : Rel A B :=
   let c := pairs #v[R, S]
   R.rows (whereBits R.n (c[0].member c[1]))
 
+/-- `∩` and whether it ran within capacity: the pair codes' bit (`codesC` of the product side, which `pairs` is)
+    `&&` `R`'s two sides fitting at all its rows (`fitsN`), the picks `rows` makes being among them. -/
+def interC (R S : Rel A B) : Rel A B × Bool :=
+  let c := (Obj.prod A B).codesC #v[⟨R.n, (R.key, R.val)⟩, ⟨S.n, (S.key, S.val)⟩]
+  (R.rows (whereBits R.n (c.1[0].member c.1[1])),
+    c.2 && Vals.fitsN A R.key R.n.toNat && Vals.fitsN B R.val R.n.toNat)
+
+theorem interC_fst (R S : Rel A B) : (interC R S).1 = inter R S := by
+  have e : ∀ {α β : Type} (f : α → β) (a b : α), #v[a, b].map f = #v[f a, f b] := fun _ _ _ => by simp
+  unfold interC inter pairs; dsimp only; rewrite [Obj.codesC_fst]; simp only [Obj.codes, e]
+
 /-- `𝟘`: no pair. -/
 def zero : Rel A B := ⟨0, Vals.empty A, Vals.empty B⟩
 
@@ -37,6 +48,23 @@ private def union (R S : Rel A B) : Rel A B :=
   need (R.n.toNat + S.n.toNat < USize.size) (fun _ => s!"∪: {R.n} + {S.n} rows do not fit a USize")
     (fun _ => zero) fun h =>
   Rel.nub ⟨_, A.raze #[⟨_, R.key⟩, ⟨_, S.key⟩] (by simpa using h), B.raze #[⟨_, R.val⟩, ⟨_, S.val⟩] (by simpa using h)⟩
+
+/-- `∪` and whether it ran within capacity: the summed count's bound (`need`'s guard) and the bits of the two
+    razes and of `nub`'s two codes (`razeC`, `codesC`), `&&` the razed sides fitting at all their rows (`fitsN`). -/
+def unionC (R S : Rel A B) : Rel A B × Bool :=
+  need (R.n.toNat + S.n.toNat < USize.size) (fun _ => s!"∪: {R.n} + {S.n} rows do not fit a USize")
+    (fun _ => (zero, false)) fun h =>
+  let k := A.razeC #[⟨_, R.key⟩, ⟨_, S.key⟩] (by simpa using h)
+  let v := B.razeC #[⟨_, R.val⟩, ⟨_, S.val⟩] (by simpa using h)
+  let U : Rel A B := ⟨_, k.1, v.1⟩
+  let kc := A.codesC #v[⟨_, U.key⟩]; let vc := B.codesC #v[⟨_, U.val⟩]
+  (U.rows (tuples.tupleIds kc.1[0] #[vc.1[0]]).2,
+    k.2 && v.2 && kc.2 && vc.2 && Vals.fitsN A U.key U.n.toNat && Vals.fitsN B U.val U.n.toNat)
+
+theorem unionC_fst (R S : Rel A B) : (unionC R S).1 = union R S := by
+  unfold unionC union need; split
+  · simp only [Obj.razeC_fst, Obj.codesC_fst, Rel.nub]
+  · rfl
 
 /-- `⊤` on the universes `Ua`, `Ub`: `cross`, its two index columns of one length (`cross_len`). -/
 def top {ma mb : USize} (Ua : Vals A ma) (Ub : Vals B mb) : Rel A B :=
@@ -68,6 +96,33 @@ private def comp (R : Rel A B) (S : Rel B C) : Rel A C :=
   let ij := join c[0] c[1]
   longCount "≫" ij.2 fun m h =>
     ⟨m, Vals.pickN A R.key ij.1 m (h ▸ join_len c[0] c[1]), Vals.pick C S.val ij.2 m h⟩
+
+/-- `≫` and whether it ran within capacity: `rep_comp`'s count bounds decided, `&&` the bits of the codes and of
+    the two picks it calls (`codesC`, `pickC`). -/
+def compC (R : Rel A B) (S : Rel B C) : Rel A C × Bool :=
+  let c := B.codesC #v[⟨_, R.val⟩, ⟨_, S.key⟩]
+  let ij := join c.1[0] c.1[1]
+  let r := longCount "≫" ij.2 fun m h =>
+    let k := Vals.pickC A R.key (fit m.toNat ij.1) m (fit_len (h ▸ join_len c.1[0] c.1[1]))
+    let v := Vals.pickC C S.val ij.2 m h
+    ((⟨m, k.1, v.1⟩ : Rel A C), k.2 && v.2)
+  (r.1, c.2 && decide (S.n.toNat < 2 ^ 63) && decide (R.n.toNat * S.n.toNat < min (2 ^ 63) USize.size) && r.2)
+
+-- the old op kept beside its twin: its read-back proofs `show` its body, which `(compC ..).1` is not by `rfl`
+theorem compC_fst (R : Rel A B) (S : Rel B C) : (compC R S).1 = comp R S := by
+  -- at any codes `c`, then `codesC_fst` under `congrArg`: a `rw` of the codes in the goal times out evaluating `join`
+  have key : ∀ c : Vector Code 2, (longCount "≫" (join c[0] c[1]).2 fun m h =>
+      let k := Vals.pickC A R.key (fit m.toNat (join c[0] c[1]).1) m (fit_len (h ▸ join_len c[0] c[1]))
+      let v := Vals.pickC C S.val (join c[0] c[1]).2 m h
+      ((⟨m, k.1, v.1⟩ : Rel A C), k.2 && v.2)).1 =
+    longCount "≫" (join c[0] c[1]).2 fun m h =>
+      ⟨m, Vals.pickN A R.key (join c[0] c[1]).1 m (h ▸ join_len c[0] c[1]), Vals.pick C S.val (join c[0] c[1]).2 m h⟩ := by
+    intro c; unfold longCount need; split
+    · simp only [Vals.pickC_fst, Vals.pickN]
+    · rfl
+  exact (key _).trans (congrArg (fun c : Vector Code 2 => longCount "≫" (join c[0] c[1]).2 fun m h =>
+    (⟨m, Vals.pickN A R.key (join c[0] c[1]).1 m (h ▸ join_len c[0] c[1]), Vals.pick C S.val (join c[0] c[1]).2 m h⟩ :
+      Rel A C)) (Obj.codesC_fst B _))
 
 /-- The coreflexive on the distinct elements of `x`: the first row of each code. -/
 def distinctCorefl (t : Obj) {n : USize} (x : Vals t n) : Rel t t :=
