@@ -741,21 +741,39 @@ theorem pick_row : (A : Obj) → {n : USize} → (x : Vals A n) → (i : ByteArr
 
 /-! ## Picking twice is picking once at the composed rows -/
 
-/-- **A picked array side fits** at rows `qs` of the pick, from the side's fit at the rows `i` names and at
-    `i[qs]`: row `q`'s new window is its old one, copied, so the payload picked twice is picked once. -/
-theorem pickFits_pick_arr {b : Obj} {n : USize} (x : Vals (.arr b) n)
-    (ih : ∀ (i : ByteArray) (m : USize) (h : len i = m.toNat) (qs : List Nat), (∀ q ∈ qs, q < m.toNat) →
-      Vals.PickFits b x.2.2.2 ((List.range m.toNat).map fun q => (Column.bitsAt i (q * 8) 8).toNat) →
-      Vals.PickFits b x.2.2.2 (qs.map fun q => (Column.bitsAt i (q * 8) 8).toNat) →
-      Vals.PickFits b (Vals.pick b x.2.2.2 i m h) qs)
-    (i : ByteArray) (m : USize) (h : len i = m.toNat) (qs : List Nat) (hq : ∀ q ∈ qs, q < m.toNat)
-    (hf : Vals.PickFits (.arr b) x ((List.range m.toNat).map fun q => (Column.bitsAt i (q * 8) 8).toNat))
-    (hc : Vals.PickFits (.arr b) x (qs.map fun q => (Column.bitsAt i (q * 8) 8).toNat)) :
-    Vals.PickFits (.arr b) (Vals.pick (.arr b) x i m h) qs := by
-  obtain ⟨p, lo, hi, f⟩ := x
-  simp only [Vals.PickFits] at hf hc
-  obtain ⟨hp, hl63, hlU, hfb⟩ := hf
-  obtain ⟨-, hc63, hcU, hcb⟩ := hc
+/-- **The shape of a picked array side**: the payload `f` picked at an index `i'` of `k` rows, which reads back
+    as the windows of all rows `i` names, laid end to end; at any rows `qs` of the pick, the new windows lie
+    below `k` and `i'` reads them back as the windows of `i[qs]` — row `q`'s new window is its old one, copied. -/
+theorem pick_arr_shape {b : Obj} {n : USize} (p : USize) (lo hi : Arr .long n) (f : Vals b p)
+    (i : ByteArray) (m : USize) (h : len i = m.toNat) (hp : p.toNat < 2 ^ 63)
+    (hl63 : (((List.range m.toNat).map fun q => (Column.bitsAt i (q * 8) 8).toNat).flatMap fun k =>
+      if h : k < n.toNat then List.range' (min (max (lo.get ⟨k, h⟩).toInt 0).toNat p.toNat)
+        (min (max (hi.get ⟨k, h⟩).toInt 0).toNat p.toNat - min (max (lo.get ⟨k, h⟩).toInt 0).toNat p.toNat)
+      else []).length < 2 ^ 63)
+    (hlU : (((List.range m.toNat).map fun q => (Column.bitsAt i (q * 8) 8).toNat).flatMap fun k =>
+      if h : k < n.toNat then List.range' (min (max (lo.get ⟨k, h⟩).toInt 0).toNat p.toNat)
+        (min (max (hi.get ⟨k, h⟩).toInt 0).toNat p.toNat - min (max (lo.get ⟨k, h⟩).toInt 0).toNat p.toNat)
+      else []).length < USize.size) :
+    ∃ (k : USize) (lo' hi' : Arr .long m) (i' : ByteArray) (h' : len i' = k.toNat),
+      Vals.pick (.arr b) ⟨p, lo, hi, f⟩ i m h = ⟨k, lo', hi', Vals.pick b f i' k h'⟩ ∧
+      (List.range k.toNat).map (fun z => (Column.bitsAt i' (z * 8) 8).toNat) =
+        (((List.range m.toNat).map fun q => (Column.bitsAt i (q * 8) 8).toNat).flatMap fun k =>
+          if h : k < n.toNat then List.range' (min (max (lo.get ⟨k, h⟩).toInt 0).toNat p.toNat)
+            (min (max (hi.get ⟨k, h⟩).toInt 0).toNat p.toNat - min (max (lo.get ⟨k, h⟩).toInt 0).toNat p.toNat)
+          else []) ∧
+      ∀ qs : List Nat, (∀ q ∈ qs, q < m.toNat) →
+        (∀ z ∈ (qs.flatMap fun t => if h : t < m.toNat then
+            List.range' (min (max (lo'.get ⟨t, h⟩).toInt 0).toNat k.toNat)
+              (min (max (hi'.get ⟨t, h⟩).toInt 0).toNat k.toNat - min (max (lo'.get ⟨t, h⟩).toInt 0).toNat k.toNat)
+            else []), z < k.toNat) ∧
+        (qs.flatMap fun t => if h : t < m.toNat then
+            List.range' (min (max (lo'.get ⟨t, h⟩).toInt 0).toNat k.toNat)
+              (min (max (hi'.get ⟨t, h⟩).toInt 0).toNat k.toNat - min (max (lo'.get ⟨t, h⟩).toInt 0).toNat k.toNat)
+            else []).map (fun z => (Column.bitsAt i' (z * 8) 8).toNat) =
+          ((qs.map fun q => (Column.bitsAt i (q * 8) 8).toNat).flatMap fun k =>
+            if h : k < n.toNat then List.range' (min (max (lo.get ⟨k, h⟩).toInt 0).toNat p.toNat)
+              (min (max (hi.get ⟨k, h⟩).toInt 0).toNat p.toNat - min (max (lo.get ⟨k, h⟩).toInt 0).toNat p.toNat)
+            else []) := by
   let L : Nat → Nat := fun t => if ht : t < m.toNat then
     min (max ((pickArr .long ⟨n, lo⟩ i m h).get ⟨t, ht⟩).toInt 0).toNat p.toNat else 0
   let H : Nat → Nat := fun t => if ht : t < m.toNat then
@@ -784,9 +802,8 @@ theorem pickFits_pick_arr {b : Obj} {n : USize} (x : Vals (.arr b) n)
     split
     · rfl
     · simp
-  rw [hW _ (fun t ht => List.mem_range.1 ht)] at hl63 hlU hfb
-  rw [hW qs hq] at hc63 hcU hcb
-  generalize hG : ((List.range m.toNat).flatMap fun t => List.range' (L t) (H t - L t)) = G at hl63 hlU hfb
+  rw [hW _ (fun t ht => List.mem_range.1 ht)] at hl63 hlU
+  generalize hG : ((List.range m.toNat).flatMap fun t => List.range' (L t) (H t - L t)) = G at hl63 hlU
   have hGl : G.length = ((List.range m.toNat).map fun t => H t - L t).sum := by
     rw [← hG, List.length_flatMap]; simp only [List.length_range']
   obtain ⟨s, hsd⟩ : ∃ s, slices p m (longsOf (pickArr .long ⟨n, lo⟩ i m h))
@@ -891,52 +908,113 @@ theorem pickFits_pick_arr {b : Obj} {n : USize} (x : Vals (.arr b) n)
     have hc' := (List.getElem?_eq_getElem h2).symm.trans hc
     rw [List.getElem?_eq_getElem (by simp only [List.length_range']; omega), List.getElem_range'] at hc'
     rw [(Option.some.inj hc'), Nat.one_mul]
-  -- the pick's windows at `qs` are the copies' positions, which the payload index reads back as `i[qs]`'s
-  have hlq : (qs.flatMap fun t => List.range' (S t) (H t - L t)).length =
-      (qs.flatMap fun t => List.range' (L t) (H t - L t)).length := by
-    simp only [List.length_flatMap, List.length_range']
-  subst hsd
-  simp only [Vals.pick, expand, need]
-  rw [dif_pos hEU]
-  simp only [Vals.PickFits]
-  rw [flatMap_congr (l := qs) (g := fun t => List.range' (S t) (H t - L t)) ?w]
-  case w =>
-    intro t ht
-    dsimp only
-    rw [dif_pos (hq t ht), hlo', hhi', eS, eH, Nat.add_sub_cancel_left]
-  refine ⟨by rw [hK]; exact hl63, by rw [hlq]; exact hc63, by rw [hlq]; exact hcU,
-    ih _ _ _ _ ?_ (by rw [hI]; exact hfb) ?_⟩
-  · intro z hz
-    obtain ⟨t, ht, hz⟩ := List.mem_flatMap.1 hz
-    rw [List.mem_range'_1] at hz
-    have := hSm (t + 1) (hq t ht); have := hSs t (hq t ht); rw [hK]; omega
-  · rw [List.map_flatMap, flatMap_congr (g := fun t => List.range' (L t) (H t - L t)) ?e]
-    · exact hcb
-    intro t ht
-    simp only [List.range'_eq_map_range, List.map_map]
-    apply List.map_congr_left; intro j hj; rw [List.mem_range] at hj
-    exact hrd t (hq t ht) j hj
+  -- the pick's windows at any rows are the copies' positions, which the payload index reads back
+  refine ⟨(len (expandBytes 8 0 (tilLongs m) s.2)).toUSize, valCol Ew.sub Ew.vv (sums m s.2) s.2,
+    longsN m (sums m s.2) (by rw [len_sums, hlen2, Nat.min_self]; exact Nat.le_refl _),
+    add (len (expandBytes 8 0 (tilLongs m) s.2)).toUSize (gather 8 s.1 (expandBytes 8 0 (tilLongs m) s.2))
+      (sub (len (expandBytes 8 0 (tilLongs m) s.2)).toUSize
+        (tilLongs (len (expandBytes 8 0 (tilLongs m) s.2)).toUSize)
+        (gather 8 (sub m (sums m s.2) s.2) (expandBytes 8 0 (tilLongs m) s.2))), len_val .., ?eq, ?all, ?qs⟩
+  case eq =>
+    subst hsd
+    simp only [Vals.pick, expand, need]
+    rw [dif_pos hEU]
+  case all => rw [hI, hW _ (fun t ht => List.mem_range.1 ht)]; exact hG.symm
+  case qs =>
+    intro qs hq
+    rw [flatMap_congr (l := qs) (g := fun t => List.range' (S t) (H t - L t)) ?w]
+    case w =>
+      intro t ht
+      dsimp only
+      rw [dif_pos (hq t ht), hlo', hhi', eS, eH, Nat.add_sub_cancel_left]
+    refine ⟨fun z hz => ?_, ?_⟩
+    · obtain ⟨t, ht, hz⟩ := List.mem_flatMap.1 hz
+      rw [List.mem_range'_1] at hz
+      have := hSm (t + 1) (hq t ht); have := hSs t (hq t ht); rw [hK]; omega
+    · rw [List.map_flatMap, flatMap_congr (g := fun t => List.range' (L t) (H t - L t)) ?e, hW qs hq]
+      intro t ht
+      simp only [List.range'_eq_map_range, List.map_map]
+      apply List.map_congr_left; intro j hj; rw [List.mem_range] at hj
+      exact hrd t (hq t ht) j hj
+
+/-- **A picked array side fits** at rows `qs` of the pick, from the side's fit at the rows `i` names and at
+    `i[qs]` (`pick_arr_shape`): the payload picked twice is picked once. -/
+theorem pickFits_pick_arr {b : Obj} {n : USize} (x : Vals (.arr b) n)
+    (ih : ∀ (i : ByteArray) (m : USize) (h : len i = m.toNat) (qs : List Nat), (∀ q ∈ qs, q < m.toNat) →
+      Vals.PickFits b x.2.2.2 ((List.range m.toNat).map fun q => (Column.bitsAt i (q * 8) 8).toNat) →
+      Vals.PickFits b x.2.2.2 (qs.map fun q => (Column.bitsAt i (q * 8) 8).toNat) →
+      Vals.PickFits b (Vals.pick b x.2.2.2 i m h) qs)
+    (i : ByteArray) (m : USize) (h : len i = m.toNat) (qs : List Nat) (hq : ∀ q ∈ qs, q < m.toNat)
+    (hf : Vals.PickFits (.arr b) x ((List.range m.toNat).map fun q => (Column.bitsAt i (q * 8) 8).toNat))
+    (hc : Vals.PickFits (.arr b) x (qs.map fun q => (Column.bitsAt i (q * 8) 8).toNat)) :
+    Vals.PickFits (.arr b) (Vals.pick (.arr b) x i m h) qs := by
+  obtain ⟨p, lo, hi, f⟩ := x
+  dsimp only at ih
+  simp only [Vals.PickFits] at hf hc
+  obtain ⟨hp, hl63, hlU, hfb⟩ := hf
+  obtain ⟨-, hc63, hcU, hcb⟩ := hc
+  obtain ⟨k, lo', hi', i', h', he, hall, hqs⟩ := pick_arr_shape p lo hi f i m h hp hl63 hlU
+  obtain ⟨hlt, hmap⟩ := hqs qs hq
+  have hk := congrArg List.length hall
+  have hlq := congrArg List.length hmap
+  rw [List.length_map, List.length_range] at hk
+  rw [List.length_map] at hlq
+  rw [he]; simp only [Vals.PickFits]
+  exact ⟨by rw [hk]; exact hl63, by rw [hlq]; exact hc63, by rw [hlq]; exact hcU,
+    ih i' k h' _ hlt (by rw [hall]; exact hfb) (by rw [hmap]; exact hcb)⟩
 
 /-- **A picked sum side fits** at rows `qs` of the pick, from the side's fit at the rows `i` names and at
     `i[qs]`: row `q` reads its side at its rank there, which that side's index reads back as `i[q]`'s position. -/
-theorem pickFits_pick_sum {a b : Obj} {n : USize} (x : Vals (.sum a b) n)
-    (iha : ∀ (i : ByteArray) (m : USize) (h : len i = m.toNat) (qs : List Nat), (∀ q ∈ qs, q < m.toNat) →
-      Vals.PickFits a x.2.2.2.2.1 ((List.range m.toNat).map fun q => (Column.bitsAt i (q * 8) 8).toNat) →
-      Vals.PickFits a x.2.2.2.2.1 (qs.map fun q => (Column.bitsAt i (q * 8) 8).toNat) →
-      Vals.PickFits a (Vals.pick a x.2.2.2.2.1 i m h) qs)
-    (ihb : ∀ (i : ByteArray) (m : USize) (h : len i = m.toNat) (qs : List Nat), (∀ q ∈ qs, q < m.toNat) →
-      Vals.PickFits b x.2.2.2.2.2 ((List.range m.toNat).map fun q => (Column.bitsAt i (q * 8) 8).toNat) →
-      Vals.PickFits b x.2.2.2.2.2 (qs.map fun q => (Column.bitsAt i (q * 8) 8).toNat) →
-      Vals.PickFits b (Vals.pick b x.2.2.2.2.2 i m h) qs)
-    (i : ByteArray) (m : USize) (h : len i = m.toNat) (qs : List Nat) (hq : ∀ q ∈ qs, q < m.toNat)
-    (hf : Vals.PickFits (.sum a b) x ((List.range m.toNat).map fun q => (Column.bitsAt i (q * 8) 8).toNat))
-    (hc : Vals.PickFits (.sum a b) x (qs.map fun q => (Column.bitsAt i (q * 8) 8).toNat)) :
-    Vals.PickFits (.sum a b) (Vals.pick (.sum a b) x i m h) qs := by
-  obtain ⟨l, r, tag, idx, xa, xb⟩ := x
-  dsimp only at iha ihb
-  simp only [Vals.PickFits, List.length_map, List.length_range] at hf hc
-  obtain ⟨hm, hl, hr, hfa, hfb⟩ := hf
-  obtain ⟨hqs, -, -, hca, hcb⟩ := hc
+theorem pick_sum_shape {a b : Obj} {n : USize} (l r : USize) (tag : Arr .boolean n) (idx : Arr .long n)
+    (xa : Vals a l) (xb : Vals b r) (i : ByteArray) (m : USize) (h : len i = m.toNat)
+    (hm : m.toNat < 2 ^ 63) (hl : l.toNat < 2 ^ 63) (hr : r.toNat < 2 ^ 63) :
+    ∃ (il ir : ByteArray) (hil : len il < USize.size) (hir : len ir < USize.size),
+      Vals.pick (.sum a b) ⟨l, r, tag, idx, xa, xb⟩ i m h =
+        ⟨(len il).toUSize, (len ir).toUSize, pickArr .boolean ⟨n, tag⟩ i m h,
+          (Vals.pick (.sum a b) ⟨l, r, tag, idx, xa, xb⟩ i m h).2.2.2.1,
+          Vals.pick a xa il _ (USize.toNat_ofNat_of_lt' hil).symm,
+          Vals.pick b xb ir _ (USize.toNat_ofNat_of_lt' hir).symm⟩ ∧
+      (List.range (len il).toUSize.toNat).map (fun z => (Column.bitsAt il (z * 8) 8).toNat) =
+        (((List.range m.toNat).map fun q => (Column.bitsAt i (q * 8) 8).toNat).filterMap fun k =>
+          if hk : k < n.toNat then
+            (if tag.get ⟨k, hk⟩ = false then some (min (max (idx.get ⟨k, hk⟩).toInt 0).toNat (l.toNat - 1)) else none)
+          else if false then none else some l.toNat) ∧
+      (List.range (len ir).toUSize.toNat).map (fun z => (Column.bitsAt ir (z * 8) 8).toNat) =
+        (((List.range m.toNat).map fun q => (Column.bitsAt i (q * 8) 8).toNat).filterMap fun k =>
+          if hk : k < n.toNat then
+            (if tag.get ⟨k, hk⟩ = true then some (min (max (idx.get ⟨k, hk⟩).toInt 0).toNat (r.toNat - 1)) else none)
+          else if true then none else some r.toNat) ∧
+      ∀ qs : List Nat, (∀ q ∈ qs, q < m.toNat) →
+        (∀ z ∈ (qs.filterMap fun k => if hk : k < m.toNat then
+            (if (pickArr .boolean ⟨n, tag⟩ i m h).get ⟨k, hk⟩ = false then some (min (max
+              ((Vals.pick (.sum a b) ⟨l, r, tag, idx, xa, xb⟩ i m h).2.2.2.1.get ⟨k, hk⟩).toInt 0).toNat
+                ((len il).toUSize.toNat - 1)) else none)
+            else if false then none else some (len il).toUSize.toNat), z < (len il).toUSize.toNat) ∧
+        (qs.filterMap fun k => if hk : k < m.toNat then
+            (if (pickArr .boolean ⟨n, tag⟩ i m h).get ⟨k, hk⟩ = false then some (min (max
+              ((Vals.pick (.sum a b) ⟨l, r, tag, idx, xa, xb⟩ i m h).2.2.2.1.get ⟨k, hk⟩).toInt 0).toNat
+                ((len il).toUSize.toNat - 1)) else none)
+            else if false then none else some (len il).toUSize.toNat).map
+            (fun z => (Column.bitsAt il (z * 8) 8).toNat) =
+          ((qs.map fun q => (Column.bitsAt i (q * 8) 8).toNat).filterMap fun k =>
+            if hk : k < n.toNat then
+              (if tag.get ⟨k, hk⟩ = false then some (min (max (idx.get ⟨k, hk⟩).toInt 0).toNat (l.toNat - 1)) else none)
+            else if false then none else some l.toNat) ∧
+        (∀ z ∈ (qs.filterMap fun k => if hk : k < m.toNat then
+            (if (pickArr .boolean ⟨n, tag⟩ i m h).get ⟨k, hk⟩ = true then some (min (max
+              ((Vals.pick (.sum a b) ⟨l, r, tag, idx, xa, xb⟩ i m h).2.2.2.1.get ⟨k, hk⟩).toInt 0).toNat
+                ((len ir).toUSize.toNat - 1)) else none)
+            else if true then none else some (len ir).toUSize.toNat), z < (len ir).toUSize.toNat) ∧
+        (qs.filterMap fun k => if hk : k < m.toNat then
+            (if (pickArr .boolean ⟨n, tag⟩ i m h).get ⟨k, hk⟩ = true then some (min (max
+              ((Vals.pick (.sum a b) ⟨l, r, tag, idx, xa, xb⟩ i m h).2.2.2.1.get ⟨k, hk⟩).toInt 0).toNat
+                ((len ir).toUSize.toNat - 1)) else none)
+            else if true then none else some (len ir).toUSize.toNat).map
+            (fun z => (Column.bitsAt ir (z * 8) 8).toNat) =
+          ((qs.map fun q => (Column.bitsAt i (q * 8) 8).toNat).filterMap fun k =>
+            if hk : k < n.toNat then
+              (if tag.get ⟨k, hk⟩ = true then some (min (max (idx.get ⟨k, hk⟩).toInt 0).toNat (r.toNat - 1)) else none)
+            else if true then none else some r.toNat) := by
   have hF := fun t (ht : t < m.toNat) => pickArr_tag_bit tag i m h ⟨t, ht⟩
   dsimp only at hF
   have hq0 : ∀ t (ht : t < m.toNat), (pickArr .boolean ⟨n, tag⟩ i m h).get ⟨t, ht⟩ =
@@ -1001,14 +1079,6 @@ theorem pickFits_pick_sum {a b : Obj} {n : USize} (x : Vals (.sum a b) n)
     fun L => List.filter_congr fun t _ => by cases Column.bitAt tb t <;> rfl
   have hyes : ∀ L : List Nat, L.filter (fun t => Column.bitAt tb t == true) = L.filter (Column.bitAt tb) :=
     fun L => List.filter_congr fun t _ => by cases Column.bitAt tb t <;> rfl
-  have hfa' : Vals.PickFits a xa (((List.range m.toNat).filter fun t => !Column.bitAt tb t).map P) := by
-    rw [← hnot, ← hside _ (fun t ht => List.mem_range.1 ht) false]; exact hfa
-  have hfb' : Vals.PickFits b xb (((List.range m.toNat).filter (Column.bitAt tb)).map P) := by
-    rw [← hyes, ← hside _ (fun t ht => List.mem_range.1 ht) true]; exact hfb
-  have hca' : Vals.PickFits a xa ((qs.filter fun t => !Column.bitAt tb t).map P) := by
-    rw [← hnot, ← hside qs hq false]; exact hca
-  have hcb' : Vals.PickFits b xb ((qs.filter (Column.bitAt tb)).map P) := by
-    rw [← hyes, ← hside qs hq true]; exact hcb
   have hGL := gather_whereBits p (Ew.notBits m tb) m hpl
   rw [List.filter_congr (q := fun t => !Column.bitAt tb t) (fun t ht => by
       rw [List.mem_range] at ht; exact notBits_bitAt m tb ht),
@@ -1043,33 +1113,22 @@ theorem pickFits_pick_sum {a b : Obj} {n : USize} (x : Vals (.sum a b) n)
       len ix < 2 ^ 63 := fun g ix hG => by
     have := congrArg List.length hG; simp only [List.length_map, List.length_range] at this
     have := List.length_filter_le g (List.range m.toNat); simp only [List.length_range] at this; omega
-  -- one side of the pick at `qs`: the ranks of `qs`'s rows of that side, read back through the side's index
-  have hpart : ∀ (c : Obj) {k : USize} (xc : Vals c k) (g : Nat → Bool) (ix : ByteArray) (hU : len ix < USize.size),
-      (∀ (i : ByteArray) (m : USize) (h : len i = m.toNat) (qs : List Nat), (∀ q ∈ qs, q < m.toNat) →
-        Vals.PickFits c xc ((List.range m.toNat).map fun q => (Column.bitsAt i (q * 8) 8).toNat) →
-        Vals.PickFits c xc (qs.map fun q => (Column.bitsAt i (q * 8) 8).toNat) →
-        Vals.PickFits c (Vals.pick c xc i m h) qs) →
-      (List.range (len ix)).map (fun z => (Column.bitsAt ix (z * 8) 8).toNat) = ((List.range m.toNat).filter g).map P →
-      Vals.PickFits c xc (((List.range m.toNat).filter g).map P) → Vals.PickFits c xc ((qs.filter g).map P) →
-      Vals.PickFits c (Vals.pick c xc ix (len ix).toUSize (USize.toNat_ofNat_of_lt' hU).symm)
-        ((qs.filter g).map fun t => ((List.range t).filter g).length) := by
-    intro c k xc g ix hU ih hG hF1 hF2
-    have hUn : (len ix).toUSize.toNat = len ix := USize.toNat_ofNat_of_lt' hU
-    refine ih _ _ _ _ (fun z hz => ?_) (by rw [hUn, hG]; exact hF1) ?_
-    · obtain ⟨t, ht, rfl⟩ := List.mem_map.1 hz
-      have ht' := List.mem_filter.1 ht
-      rw [hUn]; exact (hrank g ix hG t (hq t ht'.1) ht'.2).1
-    · rw [List.map_map, List.map_congr_left (g := P) ?e]
-      · exact hF2
-      intro t ht
-      have ht' := List.mem_filter.1 ht
-      exact (hrank g ix hG t (hq t ht'.1) ht'.2).2
-  subst hpd
   have hU : ∀ k : Nat, k < USize.size → k.toUSize.toNat = k := fun k hk => USize.toNat_ofNat_of_lt' hk
+  refine ⟨gather 8 p (whereBits m (Ew.notBits m tb)), gather 8 p (whereBits m tb), hilU, hirU, ?eq, ?allL, ?allR, ?_⟩
+  case eq =>
+    subst hpd; subst htb
+    simp only [Vals.pick, Vals.pickShared, need]
+    rw [dif_pos ⟨hilU, hirU⟩]
+  case allL =>
+    rw [hU _ hilU, hGL, ← hnot]; exact (hside _ (fun t ht => List.mem_range.1 ht) false).symm
+  case allR =>
+    rw [hU _ hirU, hGR, ← hyes]; exact (hside _ (fun t ht => List.mem_range.1 ht) true).symm
+  intro qs hq
+  subst hpd
   subst htb
   simp only [Vals.pick, Vals.pickShared, need]
   rw [dif_pos ⟨hilU, hirU⟩]
-  simp only [Vals.PickFits]
+  dsimp only
   -- `tb` is spelled out from here: generalizing it back over the unfolded pick times out
   rw [filterMap_ite (fun t => !Column.bitAt (tagBits (pickArr .boolean ⟨n, tag⟩ i m h)) t) _
       (fun t => ((List.range t).filter fun s => !Column.bitAt (tagBits (pickArr .boolean ⟨n, tag⟩ i m h)) s).length)
@@ -1106,8 +1165,55 @@ theorem pickFits_pick_sum {a b : Obj} {n : USize} (x : Vals (.sum a b) n)
       have hlt := (hrank _ _ hGR t ht hb).1
       simp only [↓reduceIte, Bool.true_eq_false, Option.some.injEq]
       rw [hidx, hU _ hirU]; omega
-  exact ⟨hqs, by rw [hU _ hilU]; exact hlen63 _ _ hGL, by rw [hU _ hirU]; exact hlen63 _ _ hGR,
-    hpart a xa _ _ hilU iha hGL hfa' hca', hpart b xb _ _ hirU ihb hGR hfb' hcb'⟩
+  refine ⟨fun z hz => ?_, ?_, fun z hz => ?_, ?_⟩
+  · obtain ⟨t, ht, rfl⟩ := List.mem_map.1 hz
+    have ht' := List.mem_filter.1 ht
+    rw [hU _ hilU]; exact (hrank _ _ hGL t (hq t ht'.1) ht'.2).1
+  · rw [List.map_map]
+    refine Eq.trans (List.map_congr_left (g := P) fun t ht => ?_) ?_
+    · exact (hrank _ _ hGL t (hq t (List.mem_filter.1 ht).1) (List.mem_filter.1 ht).2).2
+    rw [← hnot]; exact (hside qs hq false).symm
+  · obtain ⟨t, ht, rfl⟩ := List.mem_map.1 hz
+    have ht' := List.mem_filter.1 ht
+    rw [hU _ hirU]; exact (hrank _ _ hGR t (hq t ht'.1) ht'.2).1
+  · rw [List.map_map]
+    refine Eq.trans (List.map_congr_left (g := P) fun t ht => ?_) ?_
+    · exact (hrank _ _ hGR t (hq t (List.mem_filter.1 ht).1) (List.mem_filter.1 ht).2).2
+    rw [← hyes]; exact (hside qs hq true).symm
+
+/-- **A picked sum side fits** at rows `qs` of the pick, from the side's fit at the rows `i` names and at
+    `i[qs]` (`pick_sum_shape`): row `q` reads its side at its rank there, which that side's index reads back. -/
+theorem pickFits_pick_sum {a b : Obj} {n : USize} (x : Vals (.sum a b) n)
+    (iha : ∀ (i : ByteArray) (m : USize) (h : len i = m.toNat) (qs : List Nat), (∀ q ∈ qs, q < m.toNat) →
+      Vals.PickFits a x.2.2.2.2.1 ((List.range m.toNat).map fun q => (Column.bitsAt i (q * 8) 8).toNat) →
+      Vals.PickFits a x.2.2.2.2.1 (qs.map fun q => (Column.bitsAt i (q * 8) 8).toNat) →
+      Vals.PickFits a (Vals.pick a x.2.2.2.2.1 i m h) qs)
+    (ihb : ∀ (i : ByteArray) (m : USize) (h : len i = m.toNat) (qs : List Nat), (∀ q ∈ qs, q < m.toNat) →
+      Vals.PickFits b x.2.2.2.2.2 ((List.range m.toNat).map fun q => (Column.bitsAt i (q * 8) 8).toNat) →
+      Vals.PickFits b x.2.2.2.2.2 (qs.map fun q => (Column.bitsAt i (q * 8) 8).toNat) →
+      Vals.PickFits b (Vals.pick b x.2.2.2.2.2 i m h) qs)
+    (i : ByteArray) (m : USize) (h : len i = m.toNat) (qs : List Nat) (hq : ∀ q ∈ qs, q < m.toNat)
+    (hf : Vals.PickFits (.sum a b) x ((List.range m.toNat).map fun q => (Column.bitsAt i (q * 8) 8).toNat))
+    (hc : Vals.PickFits (.sum a b) x (qs.map fun q => (Column.bitsAt i (q * 8) 8).toNat)) :
+    Vals.PickFits (.sum a b) (Vals.pick (.sum a b) x i m h) qs := by
+  obtain ⟨l, r, tag, idx, xa, xb⟩ := x
+  dsimp only at iha ihb
+  simp only [Vals.PickFits, List.length_map, List.length_range] at hf hc
+  obtain ⟨hm, hl, hr, hfa, hfb⟩ := hf
+  obtain ⟨hqs, -, -, hca, hcb⟩ := hc
+  obtain ⟨il, ir, hil, hir, he, hL, hR, hQ⟩ := pick_sum_shape l r tag idx xa xb i m h hm hl hr
+  obtain ⟨hlt, hmapl, hrt, hmapr⟩ := hQ qs hq
+  have hL' := congrArg List.length hL
+  have hR' := congrArg List.length hR
+  rw [List.length_map, List.length_range] at hL' hR'
+  rw [he]; simp only [Vals.PickFits]
+  exact ⟨hqs,
+    by rw [hL']; exact Nat.lt_of_le_of_lt (List.length_filterMap_le _ _) (by rw [List.length_map, List.length_range]; exact hm),
+    by rw [hR']; exact Nat.lt_of_le_of_lt (List.length_filterMap_le _ _) (by rw [List.length_map, List.length_range]; exact hm),
+    iha il _ _ _ hlt (Eq.mpr (congrArg (Vals.PickFits a xa) hL) hfa)
+      (Eq.mpr (congrArg (Vals.PickFits a xa) hmapl) hca),
+    ihb ir _ _ _ hrt (Eq.mpr (congrArg (Vals.PickFits b xb) hR) hfb)
+      (Eq.mpr (congrArg (Vals.PickFits b xb) hmapr) hcb)⟩
 
 /-- **Picking twice is picking once at the composed rows**: `x` picked at `i` fits at rows `qs` of the pick
     where `x` fits at the rows `i` names and at `i[qs]`. The rows `qs` are hits of the pick: at a miss a
@@ -1128,5 +1234,62 @@ theorem pickFits_pick : (A : Obj) → {n : USize} → (x : Vals A n) → (i : By
       (fun i m h qs hq hf hc => pickFits_pick b _ i m h qs hq hf hc) i m h qs hq hf hc
 
 #print axioms pickFits_pick
+
+/-- **Picking reads at most the source read at the picked rows and at all rows `i` names**, the pick's own row
+    count paid besides: a picked payload's count is the copied windows of all the rows (`pick_arr_shape`), or a
+    side's share of them (`pick_sum_shape`), which the next level's rows already count; a dictionary at most
+    doubles (`pickArr_dict`). Bounded by `2^63` and `USize.size` at all rows, every level fits (`pickFits_of_reads`). -/
+theorem reads_pick : (A : Obj) → {n : USize} → (x : Vals A n) → (i : ByteArray) → (m : USize) →
+    (h : len i = m.toNat) → (qs : List Nat) → (∀ q ∈ qs, q < m.toNat) →
+    Vals.reads A x ((List.range m.toNat).map fun q => (Column.bitsAt i (q * 8) 8).toNat) < 2 ^ 63 →
+    Vals.reads A x ((List.range m.toNat).map fun q => (Column.bitsAt i (q * 8) 8).toNat) < USize.size →
+    Vals.reads A (Vals.pick A x i m h) qs + m.toNat ≤
+      Vals.reads A x (qs.map fun q => (Column.bitsAt i (q * 8) 8).toNat) +
+        Vals.reads A x ((List.range m.toNat).map fun q => (Column.bitsAt i (q * 8) 8).toNat)
+  | .atom t, n, x, i, m, h, qs, _, _, _ => by
+    have hd := pickArr_dict x i m h
+    unfold Vals.reads Vals.pick
+    simp only [List.length_map, List.length_range]
+    omega
+  | .prod a b, n, x, i, m, h, qs, hq, h63, hU => by
+    unfold Vals.reads at h63 hU ⊢
+    unfold Vals.pick; dsimp only
+    have := reads_pick a x.1 i m h qs hq (by omega) (by omega)
+    have := reads_pick b x.2 i m h qs hq (by omega) (by omega)
+    omega
+  | .arr b, n, ⟨p, lo, hi, f⟩, i, m, h, qs, hq, h63, hU => by
+    have hf := pickFits_of_reads h63 hU
+    unfold Vals.PickFits at hf; dsimp only at hf
+    obtain ⟨hp, hl63, hlU, -⟩ := hf
+    obtain ⟨k, lo', hi', i', h', he, hall, hqs⟩ := pick_arr_shape p lo hi f i m h hp hl63 hlU
+    obtain ⟨hlt, hmap⟩ := hqs qs hq
+    rw [he]
+    unfold Vals.reads at h63 hU ⊢
+    dsimp only at h63 hU ⊢
+    have ih := reads_pick b f i' k h' _ hlt (by rw [hall]; omega) (by rw [hall]; omega)
+    rw [hall, hmap] at ih
+    simp only [List.length_map, List.length_range] at h63 hU ⊢
+    omega
+  | .sum a b, n, ⟨l, r, tag, idx, xa, xb⟩, i, m, h, qs, hq, h63, hU => by
+    have hf := pickFits_of_reads h63 hU
+    unfold Vals.PickFits at hf; dsimp only at hf
+    obtain ⟨hm, hl, hr, -, -⟩ := hf
+    rw [List.length_map, List.length_range] at hm
+    obtain ⟨il, ir, hil, hir, he, hL, hR, hQ⟩ := pick_sum_shape l r tag idx xa xb i m h hm hl hr
+    obtain ⟨hlt, hmapl, hrt, hmapr⟩ := hQ qs hq
+    rw [he]
+    unfold Vals.reads at h63 hU ⊢
+    dsimp only at h63 hU ⊢
+    have iha := reads_pick a xa il (len il).toUSize (USize.toNat_ofNat_of_lt' hil).symm _ hlt
+      (by rw [hL]; omega) (by rw [hL]; omega)
+    have ihb := reads_pick b xb ir (len ir).toUSize (USize.toNat_ofNat_of_lt' hir).symm _ hrt
+      (by rw [hR]; omega) (by rw [hR]; omega)
+    rw [hL, hmapl] at iha
+    rw [hR, hmapr] at ihb
+    simp only [Bool.false_eq_true, ↓reduceIte, ↓reduceDIte] at iha ihb h63 hU ⊢
+    simp only [List.length_map, List.length_range] at h63 hU ⊢
+    omega
+
+#print axioms reads_pick
 
 end LeetQ.Rel.Alg
