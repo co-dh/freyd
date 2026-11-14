@@ -4,6 +4,7 @@
 -/
 import LeetQ.Rel.KernelWF.PlaceSpec
 import LeetQ.Rel.KernelWF.PickRow
+import LeetQ.Rel.KernelWF.CodesRec
 
 namespace LeetQ.Rel.Alg
 
@@ -97,15 +98,7 @@ theorem rank_long {n : USize} (x : Arr .long n) (h : QAtomicType.long ≠ .gener
         x.get ⟨p, hp⟩ < x.get ⟨q, hq⟩ ∨ (x.get ⟨p, hp⟩ = x.get ⟨q, hq⟩ ∧ p < q)) := by
   rw [longsOf_rank]
   generalize hB : longsOf x = B
-  have hBs : len B = n.toNat := by
-    obtain ⟨ws, hws⟩ : ∃ ws, longWords n x.enc = some ws := by
-      rcases KernelWF.long_cases x.wf with ⟨b, h⟩ | ⟨M, P, h⟩ <;> simp [longWords, h]
-    obtain ⟨B', hB', -, -, hS⟩ := Arr.dense_long x hws
-    have : longsOf x = B' := by
-      have e : longBytes n x.enc = some B' := by
-        rcases hB' with h | ⟨md, pk, h, rfl⟩ <;> simp only [longBytes, h] <;> rfl
-      exact Option.some_inj.1 ((Option.some_get _).trans e)
-    rw [← hB, this]; exact hS
+  have hBs : len B = n.toNat := by rw [← hB]; exact len_longsOf x
   have hval : ∀ i (hi : i < n.toNat), ((Order.keyAt .i64 B i).toNat : Int) = (x.get ⟨i, hi⟩).toInt + 2 ^ 63 :=
     fun i hi => by
       rw [← key_i64, ← longsOf_get x hi, hB]; rfl
