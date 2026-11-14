@@ -3,11 +3,27 @@
   value, and the grade of `Code.ofLongs` of longs below `2^63` lists them in a stable sort by those longs — at
   row numbers, each row's cells in one block, rows ascending, the incoming order kept inside a block.
 -/
-import LeetQ.Rel.KernelWF.RankSpec
+import LeetQ.Rel.KernelWF.PlaceSpec
+import LeetQ.Rel.KernelWF.PickRow
+import LeetQ.Rel.KernelWF.CodesRec
 
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.KernelWF
+
+/-- The `long` key `Order.keyAt .i64` sorts by, read as a number: `2^63` above the value. -/
+theorem key_i64 (a : Int64) : ((a.toUInt64 ^^^ 0x8000000000000000).toNat : Int) = a.toInt + 2 ^ 63 := by
+  rw [UInt64.toNat_xor, show (0x8000000000000000 : UInt64).toNat = 2 ^ 63 from rfl]
+  have hlt := a.toUInt64.toNat_lt
+  have ht : a.toInt = if 2 * a.toUInt64.toNat < 2 ^ 64 then (a.toUInt64.toNat : Int)
+      else (a.toUInt64.toNat : Int) - 2 ^ 64 := by
+    rw [Int64.toInt, BitVec.toInt_eq_toNat_cond]; rfl
+  rw [ht]
+  by_cases h : a.toUInt64.toNat < 2 ^ 63
+  · rw [xor_pow63 h, if_pos (by omega)]; omega
+  · obtain ⟨y, hy, hx⟩ : ∃ y, y < 2 ^ 63 ∧ a.toUInt64.toNat = y ^^^ 2 ^ 63 :=
+      ⟨a.toUInt64.toNat - 2 ^ 63, by omega, by rw [xor_pow63 (by omega)]; omega⟩
+    rw [if_neg (by omega), hx, Nat.xor_assoc, Nat.xor_self, Nat.xor_zero, xor_pow63 hy]; omega
 
 /-- **`Order.grade .i64` ascending is a stable sort by key**: every row below the count once, each before every
     later row of a greater key and before every later tie. -/
@@ -84,6 +100,7 @@ theorem grade_ofLongs (b : ByteArray) (hN : len b < USize.size)
   rw [hkey i (List.mem_range.1 (hp.mem_iff.1 hi)), hkey j (List.mem_range.1 (hp.mem_iff.1 hj))] at h
   omega
 
+#print axioms key_i64
 #print axioms grade_i64
 #print axioms gradeColumn_long
 #print axioms grade_long
