@@ -305,7 +305,7 @@ theorem rep_tau_list {n : USize} (X : Vals A n)
   have hid : ∀ a b, rep (idU X) a b ↔ a = b ∧ ∃ i, X.row i = a := idU_holds X
   -- a row of `τ X`: `a` listed in `X`, the array `[a]`
   have fwd : ∀ a Y, rep (τ X) a Y → (∃ i, Vals.row X i = a) ∧ Y = [a] := fun a Y h => by
-    obtain ⟨hnd, hm⟩ := h1 a Y h
+    obtain ⟨hnd, hm, -⟩ := h1 a Y h
     obtain ⟨b, hb⟩ := (h2 a).1 ⟨Y, h⟩
     have hi := ((hid a b).1 hb).2
     have hY : ∀ x, x ∈ Y ↔ x = a := fun x =>

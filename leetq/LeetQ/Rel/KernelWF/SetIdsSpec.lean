@@ -118,7 +118,7 @@ theorem gradeBy_lex (seg : ByteArray) (vc : Code)
     · exact Or.inl hlt
     · refine Or.inr ⟨heq, ?_⟩
       have hab := h2 (UInt64.le_iff_toNat_le.2 (by rw [key a ha', key b hb', heq]; exact Nat.le_refl _))
-      exact List.pairwise_iff_getElem.1 hsrt a b (by rw [hPl]; exact ha') (by rw [hPl]; exact hb') hab
+      exact (List.pairwise_iff_getElem.1 hsrt a b (by rw [hPl]; exact ha') (by rw [hPl]; exact hb') hab).1
 
 -- the long `j` of the offsets `o`, and the slice `groupOf o n` puts row `i` in
 set_option hygiene false in

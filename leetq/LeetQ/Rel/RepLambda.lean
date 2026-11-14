@@ -70,11 +70,41 @@ theorem nodup_getElem_inj {α : Type _} {l : List α} (h : l.Nodup) {i j : Nat} 
   · exact c
   · exact absurd e.symm (p j i hj hi c)
 
-/-- `finRange n` has no repeats. -/
-theorem finRange_nodup (n : Nat) : (List.finRange n).Nodup :=
-  List.pairwise_iff_getElem.2 fun i j hi hj c e => by
-    rw [List.getElem_finRange, List.getElem_finRange] at e
-    exact absurd (congrArg Fin.val e) (by simp only [Fin.val_cast]; omega)
+/-- `finRange n` ascends. -/
+theorem finRange_pairwise_lt (n : Nat) : (List.finRange n).Pairwise (· < ·) :=
+  List.pairwise_iff_getElem.2 fun i j hi hj c => by
+    rw [List.getElem_finRange, List.getElem_finRange, Fin.lt_def]; simp only [Fin.val_cast]; exact c
+
+/-- An ascending list of naturals below `n` is a sublist of `range n`. -/
+theorem sublist_range {l : List Nat} {n : Nat} (h : l.Pairwise (· < ·)) (hl : ∀ x ∈ l, x < n) :
+    l.Sublist (List.range n) := by
+  rw [List.range_eq_range']
+  suffices H : ∀ k lo (l : List Nat), l.Pairwise (· < ·) → (∀ x ∈ l, lo ≤ x ∧ x < lo + k) →
+      l.Sublist (List.range' lo k) from
+    H n 0 l h fun x hx => ⟨Nat.zero_le _, by have := hl x hx; omega⟩
+  intro k
+  induction k with
+  | zero =>
+    intro lo l _ hl
+    cases l with
+    | nil => exact List.Sublist.slnil
+    | cons x _ => have := hl x (List.mem_cons.2 (Or.inl rfl)); omega
+  | succ k ih =>
+    intro lo l h hl
+    rw [List.range'_succ]
+    cases l with
+    | nil => exact List.nil_sublist _
+    | cons x l =>
+      have hx := hl x (List.mem_cons.2 (Or.inl rfl))
+      have hgt : ∀ y ∈ l, x < y := fun y hy => List.rel_of_pairwise_cons h hy
+      have hlt : ∀ y ∈ l, y < lo + (k + 1) := fun y hy => (hl y (List.mem_cons_of_mem _ hy)).2
+      by_cases e : x = lo
+      · subst e
+        exact (ih (x + 1) l h.of_cons fun y hy => ⟨hgt y hy, by have := hlt y hy; omega⟩).cons₂ x
+      · refine (ih (lo + 1) (x :: l) h fun y hy => ?_).cons lo
+        rcases List.mem_cons.1 hy with rfl | hy
+        · omega
+        · have := hgt y hy; have := hlt y hy; omega
 
 -- `transpose`'s pieces, as it names them: the key codes, the values' order, the rows grouped, the run starts
 set_option hygiene false in
@@ -94,8 +124,8 @@ section
 attribute [local irreducible] Code.runStarts Code.gather ByteArray.extract
 /-- **`Λ(R)`'s rows, as lists, against `R.nub`**: row `q` is keyed by a key `d.key.row i` of `d = R.nub`, and
     its array IS `d`'s values at a list `L` of rows of `d`, each row once, `L` holding exactly the rows of `d`
-    keyed like `i` — in the kernel's order, the run of that key in the stable grade of the key codes over the
-    values sorted (`sortBy`); every key of `d` keys some row. Hypotheses: the key codes faithful and well formed
+    keyed like `i`, in the order `sortBy` lists `d`'s rows (`L` a sublist of `vp`): the run of that key in the
+    stable grade of the key codes over the values sorted; every key of `d` keys some row. Hypotheses: the key codes faithful and well formed
     (`rep_nub`'s `hK` at `d`), `sortBy_perm`'s `hW`, `d`'s count below `2⁶³`, and the picks fitting
     (`Vals.PickFits`) at the row order and at the run starts. -/
 theorem transpose_row_list (R : Rel A B)
@@ -115,7 +145,7 @@ theorem transpose_row_list (R : Rel A B)
     (∀ q : Fin (Alg.transpose R).n.toNat, ∃ i : Fin (Rel.nub R).n.toNat,
       Vals.row (Alg.transpose R).key q = Vals.row (Rel.nub R).key i ∧ ∃ L : List (Fin (Rel.nub R).n.toNat),
         L.Nodup ∧ (∀ i', i' ∈ L ↔ Vals.row (Rel.nub R).key i' = Vals.row (Rel.nub R).key i) ∧
-          Vals.row (Alg.transpose R).val q = L.map (Vals.row (Rel.nub R).val)) ∧
+          (L.map Fin.val).Sublist (ids vpT) ∧ Vals.row (Alg.transpose R).val q = L.map (Vals.row (Rel.nub R).val)) ∧
     ∀ i : Fin (Rel.nub R).n.toNat, ∃ q : Fin (Alg.transpose R).n.toNat,
       Vals.row (Alg.transpose R).key q = Vals.row (Rel.nub R).key i := by
   have hN : (kcT).n.toNat = (Rel.nub R).n.toNat := by rw [hn]
@@ -129,7 +159,7 @@ theorem transpose_row_list (R : Rel A B)
       Nat.mod_eq_of_lt (by have := USize.size_le; omega)]
   have hvp : (ids vpT).Perm (List.range (kcT).n.toNat) := by
     rw [hN]; exact (sortBy_perm hW B _ _ (by rw [len_tilLongs]; exact hU)).trans htil
-  obtain ⟨hpp, hgrp⟩ := grade_gather_group (kcT) hw hs vpT hvp
+  obtain ⟨hpp, hgrp, hgp, hstab⟩ := grade_gather_group (kcT) hw hs vpT hvp
   -- the row order `p`: its long `s` is `P s`, every row once
   have hlp : len pT = (Rel.nub R).n.toNat := by rw [len_eq_ids, hpp.length_eq, List.length_range, hN]
   have hpl : len pT < USize.size := by rw [hlp]; exact hU
@@ -233,7 +263,8 @@ theorem transpose_row_list (R : Rel A B)
       (fun s _ => by rw [decide_eq_decide]; constructor <;> rintro ⟨h1, h2⟩ <;> exact ⟨by omega, by omega⟩)]
     generalize hS : (List.finRange (Vals.pickPart B (Rel.nub R).val pT).1.toNat).filter (fun s =>
       decide ((Column.bitsAt oT (q.1 * 8) 8).toNat ≤ s.1 ∧ s.1 < (Column.bitsAt oT ((q.1 + 1) * 8) 8).toNat)) = S
-    have hSn : S.Nodup := by rw [← hS]; exact (finRange_nodup _).filter _
+    have hSa : S.Pairwise (· < ·) := by rw [← hS]; exact (finRange_pairwise_lt _).filter _
+    have hSn : S.Nodup := hSa.imp Fin.ne_of_lt
     have hSm : ∀ s, s ∈ S ↔
         (Column.bitsAt oT (q.1 * 8) 8).toNat ≤ s.1 ∧ s.1 < (Column.bitsAt oT ((q.1 + 1) * 8) 8).toNat := fun s => by
       rw [← hS, List.mem_filter, decide_eq_true_iff]; exact ⟨fun h => h.2, fun h => ⟨List.mem_finRange s, h⟩⟩
@@ -246,7 +277,7 @@ theorem transpose_row_list (R : Rel A B)
       rw [← ids_getElem (hsl' s), ← ids_getElem (hsl' s')] at e
       exact Fin.ext (nodup_getElem_inj hpn _ _ e)
     refine ⟨S.map fun s => ⟨_, hP s.1 (hsl s)⟩,
-      List.Pairwise.map _ (fun s s' h e => h (hinj s s' (by injection e))) hSn, fun i' => ?_, ?_⟩
+      List.Pairwise.map _ (fun s s' h e => h (hinj s s' (by injection e))) hSn, fun i' => ?_, ?_, ?_⟩
     · rw [List.mem_map]
       constructor
       · rintro ⟨s, hs, rfl⟩
@@ -258,6 +289,44 @@ theorem transpose_row_list (R : Rel A B)
         subst he
         obtain ⟨h1, h2⟩ := (hrun s q.1 hs' hq).1 ((hcode _ _ hs' (hrlt q.1 hq)).2 e1)
         exact ⟨⟨s, by rw [hp1B]; exact hs'⟩, (hSm _).2 ⟨by omega, by omega⟩, rfl⟩
+    · -- `p`'s long `s` is `vp`'s long `g s`, `g` the grade; along the run `g` ascends (the grade's ties)
+      have hgl : (ids (Code.gather (kcT) vpT).grade).length = (Rel.nub R).n.toNat := by
+        rw [hgp.length_eq, List.length_range, hN]
+      have hvl : (ids vpT).length = (Rel.nub R).n.toNat := by rw [hvp.length_eq, List.length_range, hN]
+      have hgs : ∀ s : Fin (Vals.pickPart B (Rel.nub R).val pT).1.toNat,
+          s.1 < (ids (Code.gather (kcT) vpT).grade).length := fun s => by rw [hgl, ← hlp]; exact hsl s
+      have hgb : ∀ s : Fin (Vals.pickPart B (Rel.nub R).val pT).1.toNat,
+          (Column.bitsAt (Code.gather (kcT) vpT).grade (s.1 * 8) 8).toNat < (Rel.nub R).n.toNat := fun s => by
+        rw [← ids_getElem (hgs s), ← hN]; exact List.mem_range.1 (hgp.mem_iff.1 (List.getElem_mem (hgs s)))
+      have hpg : ∀ s : Fin (Vals.pickPart B (Rel.nub R).val pT).1.toNat, Column.bitsAt pT (s.1 * 8) 8 =
+          Column.bitsAt vpT ((Column.bitsAt (Code.gather (kcT) vpT).grade (s.1 * 8) 8).toNat * 8) 8 := fun s =>
+        gather8_get (by rw [len_eq_ids]; exact hgs s) (by rw [len_eq_ids, hvl]; exact hgb s)
+      have hrq : ∀ s : Fin (Vals.pickPart B (Rel.nub R).val pT).1.toNat, s ∈ S →
+          Column.idAt (Code.gather (kcT) pT).b (kcT).w s.1 =
+            Column.idAt (Code.gather (kcT) pT).b (kcT).w (Column.bitsAt oT (q.1 * 8) 8).toNat := fun s hs => by
+        obtain ⟨h1, h2⟩ := (hSm s).1 hs
+        exact (hrun s.1 q.1 (hsl s) hq).2 ⟨by omega, by omega⟩
+      have hasc' : (S.map fun s => (Column.bitsAt (Code.gather (kcT) vpT).grade (s.1 * 8) 8).toNat).Pairwise
+          (· < ·) := List.pairwise_map.2 (hSa.imp_of_mem fun {s t} hs ht hst => by
+        have e := (hrq s hs).trans (hrq t ht).symm
+        rw [hGid s.1 (hsl s), hGid t.1 (hsl t), hpg s, hpg t] at e
+        have := List.pairwise_iff_getElem.1 hstab s.1 t.1 (hgs s) (hgs t) hst
+        rw [ids_getElem, ids_getElem] at this
+        exact this e)
+      have hr : (List.range (Rel.nub R).n.toNat).map (fun k => (ids vpT)[k]!) = ids vpT :=
+        List.ext_getElem (by rw [List.length_map, List.length_range, hvl]) fun k _ h2 => by
+          rw [List.getElem_map, List.getElem_range]; exact getElem!_pos (ids vpT) k h2
+      have e : ((S.map fun s => (⟨_, hP s.1 (hsl s)⟩ : Fin (Rel.nub R).n.toNat)).map Fin.val) =
+          (S.map fun s => (Column.bitsAt (Code.gather (kcT) vpT).grade (s.1 * 8) 8).toNat).map
+            fun k => (ids vpT)[k]! := by
+        rw [List.map_map, List.map_map]
+        refine List.map_congr_left fun s _ => ?_
+        show (Column.bitsAt pT (s.1 * 8) 8).toNat = (ids vpT)[_]!
+        rw [getElem!_pos (ids vpT) _ (by rw [hvl]; exact hgb s), ids_getElem, hpg s]
+      have hsub := (sublist_range hasc' fun k hk => by
+        obtain ⟨s, -, rfl⟩ := List.mem_map.1 hk; exact hgb s).map fun k => (ids vpT)[k]!
+      rw [hr] at hsub
+      rw [e]; exact hsub
     · rw [List.map_map]
       exact List.map_congr_left fun s _ => hval s.1 s.2 (hsl s)
   · obtain ⟨s, hs', hsi⟩ := hsurj i.1 i.2
@@ -293,7 +362,7 @@ theorem transpose_rows (R : Rel A B)
       Vals.row (Alg.transpose R).key q = Vals.row (Rel.nub R).key i := by
   obtain ⟨h1, h2⟩ := transpose_row_list R hF hw hn hs hW h63 hpk hpv hlo
   refine ⟨fun q => ?_, h2⟩
-  obtain ⟨i, hk, L, -, hL, hv⟩ := h1 q
+  obtain ⟨i, hk, L, -, hL, -, hv⟩ := h1 q
   refine ⟨i, hk, fun x => ?_⟩
   rw [hv, List.mem_map]
   exact ⟨fun ⟨i', h, e⟩ => ⟨i', (hL i').1 h, e⟩, fun ⟨i', h, e⟩ => ⟨i', (hL i').2 h, e⟩⟩
@@ -394,8 +463,9 @@ theorem nub_row_inj (R : Rel A B)
 #print axioms nub_row_inj
 
 /-- **`rep (Λ(R))`, as lists**: the array `Λ(R)` gives a key `a` holds each value `R` relates `a` to, and each
-    exactly once; `Λ(R)` has a row at `a` exactly when `R` has a pair at `a`. `transpose_row_list` read through
-    `nub_row_inj`. Hypotheses: `rep_transpose`'s. -/
+    exactly once, in the order `sortBy` lists the rows of `d = R.nub`: it is the values of the list `L` of `d`'s
+    rows keyed `a`, `L` a sublist of `sortBy`'s permutation `vp`; `Λ(R)` has a row at `a` exactly when `R` has a
+    pair at `a`. `transpose_row_list` read through `nub_row_inj`. Hypotheses: `rep_transpose`'s. -/
 theorem rep_transpose_list (R : Rel A B)
     (hK : (∀ {i j : Nat} (hi : i < (Rel.n R).toNat) (hj : j < (Rel.n R).toNat),
         Column.idAt (kcR).b (kcR).w i = Column.idAt (kcR).b (kcR).w j ↔
@@ -423,12 +493,16 @@ theorem rep_transpose_list (R : Rel A B)
     (h63 : (Rel.nub R).n.toNat < 2 ^ 63)
     (hpk : Vals.PickFits A (Rel.nub R).key (ids pT)) (hpv : Vals.PickFits B (Rel.nub R).val (ids pT))
     (hlo : Vals.PickFits A (Vals.pickPart A (Rel.nub R).key pT).2 (ids loT)) :
-    (∀ a X, rep (Alg.transpose R) a X → X.Nodup ∧ ∀ x, x ∈ X ↔ rep R a x) ∧
+    (∀ a X, rep (Alg.transpose R) a X → X.Nodup ∧ (∀ x, x ∈ X ↔ rep R a x) ∧
+      ∃ L : List (Fin (Rel.nub R).n.toNat), (L.map Fin.val).Sublist (ids vpT) ∧
+        (∀ i, i ∈ L ↔ Vals.row (Rel.nub R).key i = a) ∧ X = L.map (Vals.row (Rel.nub R).val)) ∧
       (∀ a, (∃ X, rep (Alg.transpose R) a X) ↔ ∃ b, rep R a b) := by
   obtain ⟨h1, h2⟩ := rep_transpose R hK hV hk hv hF hw hn hs hW h63 hpk hpv hlo
-  refine ⟨fun a X h => ⟨?_, h1 a X h⟩, h2⟩
-  obtain ⟨q, -, hqX⟩ : (Alg.transpose R).Holds a X := h
-  obtain ⟨i, -, L, hnd, hL, hv'⟩ := (transpose_row_list R hF hw hn hs hW h63 hpk hpv hlo).1 q
+  refine ⟨fun a X h => ?_, h2⟩
+  have hm := h1 a X h
+  obtain ⟨q, hqa, hqX⟩ : (Alg.transpose R).Holds a X := h
+  obtain ⟨i, hki, L, hnd, hL, hsub, hv'⟩ := (transpose_row_list R hF hw hn hs hW h63 hpk hpv hlo).1 q
+  refine ⟨?_, hm, L, hsub, fun i' => by rw [hL i', ← hki, hqa], hqX.symm.trans hv'⟩
   subst hqX
   rw [hv']
   exact List.pairwise_map.2 (hnd.imp_of_mem fun {i' i''} hi' hi'' h e =>
