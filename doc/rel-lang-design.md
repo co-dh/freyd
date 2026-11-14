@@ -409,7 +409,15 @@ checked on the term with every definition expanded, so a prelude or program defi
 | `∼`, the second operand of `−` and `/`, the first of `\` | flipped |
 | the argument of `Λ E thin filter takewhile thinL merge`  | refused |
 
-`X` must end with sign `+`. Each round's value is deduplicated, and the rounds stop when one leaves the row count
+The sign says which way the body moves when `X` grows: `+` it grows too, `−` it shrinks. Walk from the top of the
+body down to each `X`, starting at `+` and flipping at every place the table marks flipped. In
+`νX : s₀ ∩ peer\(X ≠)`, a larger `X` makes `X ≠` larger (kept), a larger `X ≠` makes `peer\(X ≠)` larger, being
+`\`'s second operand (kept), and `∩` keeps it: `+`. In `νX : ∼X` the `∼` flips it to `−`, and no `X = ∼X` exists.
+Every `X` must end at `+`, an even number of flips, which makes the body monotonic, so `μ` and `ν` exist
+(Knaster–Tarski); an operator marked refused is monotonic in neither direction, so `X` under it is rejected
+whatever the count. The check is `Pre.polarity` in `Elab.lean`.
+
+Each round's value is deduplicated, and the rounds stop when one leaves the row count
 unchanged, which on the chain they form means the relation is unchanged (`Alg.fixOn`):
 
 - `μX : φ` starts from `𝟘` and adds at least one row a round, so both objects of `X` need a universe (an array

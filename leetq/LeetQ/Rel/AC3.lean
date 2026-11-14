@@ -1,4 +1,46 @@
-/-
+import LeetQ.Rel.Rep
+
+/-! # AC-3 (arc consistency, Mackworth's algorithm 3): the delta-round kernel of `νX : s ∩ ⋂ₖ Aₖ\(X Cₖ)` and its agreement with the naive rounds -/
+
+namespace LeetQ.Rel.Alg
+
+open LeetQ.Rel
+
+/-- One arc `A\(X C)` of an AC-3 body (`A : V ⟶ V`, `C : D ⟶ D`), with `𝟙(D)` for its division. -/
+structure Revise (V D : Obj) where
+  A : Rel V V
+  C : Rel D D
+  UV : Rel V V
+  UD : Rel D D
+
+/-- The AC-3 body `s ∩ ⋂ₖ Aₖ\(X Cₖ)`, one naive round: `fixOn` on it is `νX` the naive way. -/
+def acRound {V D : Obj} (s : Rel V D) (as : List (Revise V D)) (X : Rel V D) : Rel V D :=
+  as.foldl (fun Y a => Y ∩ leftDiv a.A (X ≫ a.C) a.UV.key a.UD.key) s
+
+/-- One delta round of the AC-3 body, from `(X, Δ)`, `Δ ⊑ 𝟙(V)` the variables whose domain shrank last round:
+    `X′ = X ∩ ⋂ₖ (Δ Aₖ)\(X Cₖ)` and `Δ′ = dom(X − X′)`. `(Δ A)\…` is `⊤` at every `x ∉ ran(Δ A)`, so each
+    division runs only on the rows `ran(Δ A)` (its universe there, so no vacuous row is made) and keeps `X`'s
+    other rows; `X − X′` is the anti-join of the pairs. The tie to the naive round is `AC3.acDelta_round`: from
+    a state satisfying `AcInv`, one delta round denotes one `acRound`, and `Δ′` keeps `AcInv`; `k` rounds of each
+    agree by `AC3.acDelta_iterate`. -/
+def acDelta {V D : Obj} (as : List (Revise V D)) (p : Rel V D × Rel V V) : Rel V D × Rel V V :=
+  let (X, Δ) := p
+  let X' := as.foldl (fun Y a =>
+    let R := Δ ≫ a.A; let T := ran R
+    (antiJoin Y° T)° ∪ (Y ∩ leftDiv R (Δ ≫ X ≫ a.C) T.key a.UD.key)) X
+  (X', ran (outl (antiJoin (idU (X.key, X.val)) (idU (X'.key, X'.val)))))
+
+/-- `νX : s ∩ ⋂ₖ Aₖ\(X Cₖ)` by delta rounds from `(s, 𝟙(V))` — the first the naive round — until `Δ′ = 𝟘`,
+    at most `|s| + 1`, with the rounds run. -/
+def acFix {V D : Obj} (s : Rel V D) (as : List (Revise V D)) (U : Rel V V) : Rel V D × Nat :=
+  let x := s.nub
+  let r := iter (x.n.toNat + 1) (fun (_, Δ, _) => Δ.n == 0)
+    (fun (X, Δ, k) => let (X', Δ') := acDelta as (X, Δ); (X', Δ', k + 1)) (x, U, 0)
+  (r.1, r.2.2)
+
+end LeetQ.Rel.Alg
+
+/-!
   The delta AC-3 round (`Alg.acDelta`) read in `Rel(Set)` against the naive round (`Alg.acRound`): from a state
   satisfying the invariant `AcInv`, one delta round denotes what one naive round does, and its `Δ′` re-establishes
   the invariant.
@@ -7,9 +49,9 @@
   the conclusion `rep_inter`, `rep_leftDiv`, `rep_comp`, `rep_union`, `rep_antiJoin`, `rep_conv` give under their
   own code and fit hypotheses, which this module does not restate.
 -/
-import LeetQ.Rel.Rep
 
-namespace LeetQ.Rel.AcFix
+namespace LeetQ.Rel.AC3
+
 
 open LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.Rep
 
@@ -189,4 +231,4 @@ theorem acDelta_iterate (s : Rel V D) (as : List (Revise V D)) (X₀ : Rel V D) 
     -- `rep (acRound s as X)` is read off `rep X` alone
     rw [rep_acRound s as _ (hNd k), rep_acRound s as _ (hNn k), he]
 
-end LeetQ.Rel.AcFix
+end LeetQ.Rel.AC3

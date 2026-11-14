@@ -1,4 +1,5 @@
 import Std.Data.HashMap
+import LeetQ.Rel.AC3
 import LeetQ.Rel.Lang.Elab
 import LeetQ.Rel.Lang.Parse
 import LeetQ.Rel.Programs.Prelude

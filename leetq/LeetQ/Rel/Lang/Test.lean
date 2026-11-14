@@ -1,7 +1,7 @@
 import LeetQ.Rel.Lang.Eval
 import LeetQ.Rel.Programs.Blocks
 import LeetQ.Rel.Programs.SudokuAC
-import LeetQ.Rel.AcFix
+import LeetQ.Rel.AC3
 
 /-! The Rel language on the blocks world of `doc/rel-lang-design.md` §g, the program `Programs.blocks`; its
     front-end errors; the parser's round trip on every operator of §b. The module builds in 4.1 s (lake, three
