@@ -295,11 +295,8 @@ theorem sym_ids (rk sk v0 v1 : Code)
   refine e.trans (forall_congr' fun u => ?_)
   rw [hRside k hk u, hSside l hl u]
 
--- the pairs `(i, j)` `join l r` answers, as `join_rows` lists them: row `i` of `l`, row `j` of `r`, equal codes
-set_option quotPrecheck false in
-local notation "jp(" l ", " r ")" => ((List.range (Code.n l).toNat).flatMap fun i =>
-  ((List.range (Code.n r).toNat).filter fun j =>
-    Column.idAt (Code.b r) (Code.w r) j == Column.idAt (Code.b l) (Code.w l) i).map (i, ·))
+-- `jp(l, r)`: the pairs `(i, j)` `join l r` answers (`RepDiv`'s)
+open DivN
 
 /-- **`symDiv`'s joined classes**: `lc`, `rc`, the two halves of `sym_ids`'s `sid` as long codes, are well formed
     with one row per key class of `rk`, `sk`; `join lc rc` pairs a class `k` of `rk` with a class `l` of `sk`

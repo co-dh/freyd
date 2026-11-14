@@ -16,11 +16,27 @@ open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg
 
 variable {A B C : Obj}
 
+/-! The notations `rep_leftDiv`/`rep_rightDiv` state their hypotheses with: `open DivN` to state them elsewhere
+    (`c1`, `nubI`, `PQ` are `FoldN`'s, downstream). Unhygienic: they capture `B`, `C`, `Ub`, `ycs` at the use site. -/
+namespace DivN
+
 -- the pairs `(i, j)` `join l r` answers, as `join_rows` lists them: row `i` of `l`, row `j` of `r`, equal codes
 set_option quotPrecheck false in
-local notation "jp(" l ", " r ")" => ((List.range (Code.n l).toNat).flatMap fun i =>
+scoped notation "jp(" l ", " r ")" => ((List.range (Code.n l).toNat).flatMap fun i =>
   ((List.range (Code.n r).toNat).filter fun j =>
     Column.idAt (Code.b r) (Code.w r) j == Column.idAt (Code.b l) (Code.w l) i).map (i, ·))
+-- `leftDiv`'s `y` over the key codes `l`, `k`: the joined rows `(r`'s value, `s`'s value`)`, as `leftDiv` builds it
+set_option hygiene false in
+scoped notation "yJ(" r ", " s ", " l ", " k ")" => (longCount "\\" (join l k).2 fun m h =>
+  (⟨m, Vals.pickN B (Rel.val r) (join l k).1 m (h ▸ join_len l k), Vals.pick C (Rel.val s) (join l k).2 m h⟩ :
+    Rel B C))
+-- `leftDiv`'s vacuous side at its joint codes `ycs`
+set_option hygiene false in
+scoped notation "vacY" => Vals.pickPart B Ub (anti (ycs[2]'(Nat.lt_add_one 2)) (ycs[1]'(Nat.succ_lt_succ (Nat.zero_lt_succ 1))))
+
+end DivN
+
+open DivN
 
 /-- **`leftDiv`'s joined rows, read back**: one row per pair `(i, j)` of `join l r`, in its order, `x`'s row `i`
     beside `z`'s row `j`. Stated over any two codes, not `leftDiv`'s, so the statement holds no `Obj.codes`.
@@ -68,12 +84,6 @@ theorem div_y_rows {n₁ n₂ : USize} (l r : Code) (x : Vals B n₁) (z : Vals 
     exact congrArg x.row (Fin.ext (congrArg Prod.fst hq').symm)
   · rw [pick_row C z _ m hmJ hfC ⟨q, hq⟩, dif_pos hj]
     exact congrArg z.row (Fin.ext (congrArg Prod.snd hq').symm)
-
--- `leftDiv`'s `y` over the key codes `l`, `k`: the joined rows `(r`'s value, `s`'s value`)`, as `leftDiv` builds it
-set_option hygiene false in
-local notation "yJ(" r ", " s ", " l ", " k ")" => (longCount "\\" (join l k).2 fun m h =>
-  (⟨m, Vals.pickN B (Rel.val r) (join l k).1 m (h ▸ join_len l k), Vals.pick C (Rel.val s) (join l k).2 m h⟩ :
-    Rel B C))
 
 /-- **`leftDiv`'s `y`, read back**: `div_y_rows` at the count `longCount` enters with, which `join_rows` bounds. -/
 theorem div_y_holds (r : Rel A B) (s : Rel A C) (l k : Code) (hln : l.n = r.n) (hkn : k.n = s.n)
@@ -305,9 +315,6 @@ theorem one_ok {X : Obj} {n : USize} (x : Vals X n) (h : X.CodesFit (#v[⟨n, x�
   obtain ⟨⟨hF, hW⟩, -⟩ := codes_faithful_wf X _ h
   exact ⟨fun hi hj => hF (k := 0) (l := 0) (by decide) (by decide) hi hj, hW (k := 0) (by decide)⟩
 
--- `leftDiv`'s vacuous side at its joint codes `ycs`
-set_option hygiene false in
-local notation "vacY" => Vals.pickPart B Ub (anti (ycs[2]'(Nat.lt_add_one 2)) (ycs[1]'(Nat.succ_lt_succ (Nat.zero_lt_succ 1))))
 -- `∪`'s razed relation of `P` and `Q` (`rep_union_full`'s `Uc`)
 set_option hygiene false in
 local notation "PQ(" Y ", " Z ")" =>
