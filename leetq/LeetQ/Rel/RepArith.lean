@@ -587,6 +587,187 @@ theorem foldOn_on {E V : Obj} {m n : USize} (e : Vals V m) (Sf : Rel (.prod E V)
 
 #print axioms foldOn_on
 
+/-! ## `sum` -/
+
+theorem nul_toInt : nul.toInt = -2 ^ 63 := by decide
+
+/-- `Int64`'s `+` is `Int`'s up to a multiple of `2^64`. -/
+theorem toInt_add_k (a b : Int64) : ∃ k : Int, (a + b).toInt = a.toInt + b.toInt + k * 2 ^ 64 := by
+  have h64 : ((2 ^ 64 : Nat) : Int) = 2 ^ 64 := by decide
+  rw [Int64.toInt_add, Int.bmod_def, h64]
+  have := Int.emod_add_ediv (a.toInt + b.toInt) (2 ^ 64)
+  split
+  · exact ⟨-((a.toInt + b.toInt) / 2 ^ 64), by omega⟩
+  · exact ⟨-((a.toInt + b.toInt) / 2 ^ 64) - 1, by omega⟩
+
+/-- `Int64`'s `+` is `Int`'s where the integer sum is in range. -/
+theorem toInt_add_of (a b : Int64) (h1 : -2 ^ 63 ≤ a.toInt + b.toInt) (h2 : a.toInt + b.toInt < 2 ^ 63) :
+    (a + b).toInt = a.toInt + b.toInt := by
+  obtain ⟨k, hk⟩ := toInt_add_k a b
+  have := Int64.le_toInt (a + b)
+  have := Int64.toInt_lt (a + b)
+  omega
+
+theorem ne_nul_iff (x : Int64) : x ≠ nul ↔ x.toInt ≠ -2 ^ 63 := by
+  rw [← nul_toInt, ne_eq, ne_eq, Int64.toInt_inj]
+
+/-- **One `plus` step off a non-null second operand**: kept exactly where the first operand is not the null and
+    the integer sum lies strictly between the null and `2^63`; the answer is then `Int64`'s `+`. -/
+theorem plus_step (a b w : Int64) (hb : b ≠ nul) :
+    (w = Ew.intStep Ew.add nul a b ∧ w ≠ nul ∧ (0 ≤ b ↔ a ≤ w)) ↔
+      a ≠ nul ∧ -2 ^ 63 < a.toInt + b.toInt ∧ a.toInt + b.toInt < 2 ^ 63 ∧ w = a + b := by
+  rw [intStep_add]
+  by_cases han : a = nul
+  · rw [if_pos (Or.inl han)]
+    exact ⟨fun ⟨h1, h2, _⟩ => absurd h1 h2, fun ⟨h, _⟩ => absurd han h⟩
+  rw [if_neg (fun h => h.elim han hb)]
+  have hs : (0 : Int64).toInt = 0 := by decide
+  have han' := (ne_nul_iff a).1 han
+  have hb' := (ne_nul_iff b).1 hb
+  have := Int64.le_toInt a
+  have := Int64.toInt_lt a
+  have := Int64.le_toInt b
+  have := Int64.toInt_lt b
+  have := Int64.le_toInt (a + b)
+  have := Int64.toInt_lt (a + b)
+  obtain ⟨k, hk⟩ := toInt_add_k a b
+  rw [ne_nul_iff w, Int64.le_iff_toInt_le, Int64.le_iff_toInt_le, hs]
+  constructor
+  · rintro ⟨rfl, hw, h1, h2⟩
+    by_cases h0 : 0 ≤ b.toInt
+    · have := h1 h0
+      refine ⟨han, ?_, ?_, rfl⟩ <;> omega
+    · have : ¬ a.toInt ≤ (a + b).toInt := fun h => absurd (h2 h) (by omega)
+      refine ⟨han, ?_, ?_, rfl⟩ <;> omega
+  · rintro ⟨-, h1, h2, rfl⟩
+    exact ⟨rfl, by omega, fun _ => by omega, fun _ => by omega⟩
+
+-- the suffix sums of `xs` from `t`: in `Int64` (`Fd`) and in `Int` (`Sd`)
+local notation "Fd(" xs ", " t ")" => List.foldr (· + ·) (0 : Int64) (List.drop t xs)
+local notation "Sd(" xs ", " t ")" => List.sum (List.map Int64.toInt (List.drop t xs))
+
+/-- **`sum`, read back**: an array `xs` of `X` goes to its `Int64` sum `xs.foldr (· + ·) 0` exactly where no element
+    is q's null and every suffix sum `Σ_{s ≥ t} xs[s]`, taken in `Int`, lies strictly between the null `-2^63` and
+    `2^63` — `plus` drops a row whose sum wraps or is the null, and the fold adds from the end. Bound values and
+    hypotheses as `foldOn_on`'s at `Sf = fun D => plus D.val`, `e = col [0]` (`hR`, `hS`, `hran`, `hel` per-round
+    bundles; `E`, `V` are `.long` there, bound by `let`). -/
+theorem Arr.rep_sum {n : USize} (X : Vals (.arr .long) n)
+    (T : Rel .long (.arr .long)) (hT : T = num (idU X) 0) (hn : n.toNat < 2 ^ 63)
+    (hv : Vals.PickFits (.arr .long) X (List.range n.toNat)) (hp : (Rel.val T).1.toNat < 2 ^ 63)
+    (hel : ∀ k, k ≤ (Rel.val T).1.toNat → ∀ a : ByteArray, a = whereBits (Rel.n T)
+        (Ew.cmp Ew.gt Ew.i64 Ew.va (slicesOf (Rel.val T)).2 (one k.toUInt64) (Rel.n T)) →
+      ∀ pos : ByteArray, pos = Kernel.Ew.val Ew.sub Ew.i64 Ew.va nul
+        (gather 8 (add (Rel.n T) (slicesOf (Rel.val T)).1 (slicesOf (Rel.val T)).2) a)
+        (one (k + 1).toUInt64) (len a).toUSize →
+      Vals.PickFits .long (Rel.key T) ((List.range (len a)).map fun q => (Column.bitsAt a (q * 8) 8).toNat) ∧
+      Vals.PickFits .long (Rel.val T).2.2.2 ((List.range (len a)).map fun q => (Column.bitsAt pos (q * 8) 8).toNat))
+    (pend₀ : Rel .long .long) (hpend : pend₀ = top (A := .long) (Rel.key T) (col [0]))
+    (hN : (Rel.n T).toNat * (([0] : List Int64).length.toUSize).toNat < USize.size)
+    (h63 : (Rel.n T).toNat * (([0] : List Int64).length.toUSize).toNat < 2 ^ 63)
+    (hA : Vals.PickFits .long (Rel.key T) ((List.range ((Rel.n T).toNat *
+      (([0] : List Int64).length.toUSize).toNat)).map (· / (([0] : List Int64).length.toUSize).toNat)))
+    (hB : Vals.PickFits .long (col [0]) ((List.range ((Rel.n T).toNat *
+      (([0] : List Int64).length.toUSize).toNat)).map (· % (([0] : List Int64).length.toUSize).toNat)))
+    (Sf : Rel (.prod .long .long) (.prod .long .long) → Rel (.prod .long .long) .long)
+    (hSf : Sf = fun D => plus D.val)
+    (step : Rel .long .long → Rel .long .long → Rel .long .long) (hstep : step = demandStep Sf)
+    (elK : Nat → Rel .long .long) (hE : ∀ k, elK k = elR(T, k))
+    (f : Rel .long .long × Rel .long .long × Nat → Rel .long .long × Rel .long .long × Nat)
+    (hf : ∀ st, f st = rnd(st))
+    (D : Nat → Rel (.prod .long .long) (.prod .long .long))
+    (hD : ∀ k, D k = ran (pair (elK k) (f^[k] (pend₀, Alg.zero, 0)).1))
+    (hR : let V := Obj.long; ∀ i (el : Rel .long .long) (pend P S : Rel .long .long), el = elK i →
+      pend = (f^[i] (pend₀, Alg.zero, 0)).1 → P = (f^[i] (pend₀, Alg.zero, 0)).2.1 → S = step el pend → roundOK)
+    (hS : let E := Obj.long; let V := Obj.long; ∀ i (el : Rel .long .long) (pend : Rel .long .long), el = elK i →
+      pend = (f^[i] (pend₀, Alg.zero, 0)).1 → stepOn)
+    (F : Rel .long .long) (hF : F = foldRows T pend₀ step)
+    (jc : Vector Code 2) (hjc : jc = Obj.codes .long ck2(T°, F)) (hjO : codesOK(jc, ck2(T°, F)))
+    (hjn : (Rel.n F).toNat < 2 ^ 63) (hjM : msum(jc, T°, F) < 2 ^ 63) (hjU : msum(jc, T°, F) < USize.size)
+    (hjA : Vals.PickFits (.arr .long) (Rel.key (T°)) ((mpairs(jc, T°, F)).map Prod.fst))
+    (hjC : Vals.PickFits .long (Rel.val F) ((mpairs(jc, T°, F)).map Prod.snd))
+    (hran : let E := Obj.long; let V := Obj.long; ∀ k, k < (Rel.val T).1.toNat → ∀ P : Rel .long (.prod .long .long),
+      P = pair (elK k) (f^[k] (pend₀, Alg.zero, 0)).1 → ranOK(P)) :
+    ∀ (xs : List Int64) (w : Int64), rep (Alg.Arr.sum X) xs w ↔ (∃ i, X.row i = xs) ∧
+      (∀ t, t ≤ xs.length → -2 ^ 63 < Sd(xs, t) ∧ Sd(xs, t) < 2 ^ 63) ∧ (∀ x ∈ xs, x ≠ nul) ∧
+      w = xs.foldr (· + ·) 0 := by
+  intro xs w
+  have hSf' : ∀ k, k < (Rel.val T).1.toNat → ∀ (p : Int64 × Int64) (w : Int64), rep (Sf (D k)) p w ↔
+      (∃ a, rep (D k) a p) ∧ (w = Ew.intStep Ew.add nul p.1 p.2 ∧ w ≠ nul ∧ (0 ≤ p.2 ↔ p.1 ≤ w)) := by
+    intro k _ p w
+    subst hSf
+    obtain ⟨a, b⟩ := p
+    show rep (plus (D k).val) (a, b) w ↔ _
+    rw [rep_plus]
+    exact and_congr ⟨fun ⟨i, h⟩ => ⟨_, i, rfl, h⟩, fun ⟨_, i, _, h⟩ => ⟨i, h⟩⟩ Iff.rfl
+  rw [show Alg.Arr.sum X = foldOn (col [0]) Sf X by subst hSf; rfl,
+    foldOn_on (col [0]) Sf X T hT hn hv hp hel pend₀ hpend hN h63 hA hB step hstep elK hE f hf D hD hR hS F hF jc
+      hjc hjO hjn hjM hjU hjA hjC hran _ hSf' xs w]
+  refine and_congr Iff.rfl ?_
+  have h1 : ([0] : List Int64).length < USize.size := by
+    show 1 < USize.size; rcases USize.size_eq with e | e <;> omega
+  have hcons : ∀ t (ht : t < xs.length), Sd(xs, t) = (xs[t]).toInt + Sd(xs, t + 1) ∧
+      Fd(xs, t) = xs[t] + Fd(xs, t + 1) := by
+    intro t ht; rw [List.drop_eq_getElem_cons ht, List.map_cons, List.sum_cons]; exact ⟨rfl, rfl⟩
+  have hlast : Sd(xs, xs.length) = 0 ∧ Fd(xs, xs.length) = 0 := by simp
+  constructor
+  · rintro ⟨ys, hy, ⟨p, hp⟩, hst, rfl⟩
+    rw [Vals.row_atom, col_get [0] h1 p] at hp
+    simp only [List.getElem_singleton] at hp
+    -- from the end: `ys[t]` is the suffix sum from `t`, in range, not the null
+    have key : ∀ d t (ht : t ≤ xs.length), t + d = xs.length →
+        ys[t]'(by omega) ≠ nul ∧ (ys[t]'(by omega)).toInt = Sd(xs, t) ∧ ys[t]'(by omega) = Fd(xs, t) ∧
+          -2 ^ 63 < Sd(xs, t) ∧ Sd(xs, t) < 2 ^ 63 := by
+      intro d
+      induction d with
+      | zero =>
+        intro t ht hd
+        obtain rfl : t = xs.length := by omega
+        rw [← hp, hlast.1, hlast.2]
+        exact ⟨by decide, by decide, rfl, by decide, by decide⟩
+      | succ d ih =>
+        intro t ht hd
+        obtain ⟨hb, hbi, hbf, -, -⟩ := ih (t + 1) (by omega) (by omega)
+        have hs := hst t (by omega)
+        obtain ⟨-, h1, h2, hw⟩ := (plus_step _ _ _ hb).1 hs
+        obtain ⟨eS, eF⟩ := hcons t (by omega)
+        refine ⟨hs.2.1, ?_, by rw [hw, hbf, eF], ?_, ?_⟩
+        · rw [hw, toInt_add_of _ _ (by omega) h2, hbi, eS]
+        · rw [eS, ← hbi]; exact h1
+        · rw [eS, ← hbi]; exact h2
+    refine ⟨fun t ht => (key (xs.length - t) t ht (by omega)).2.2.2, fun x hx => ?_, ?_⟩
+    · obtain ⟨t, ht, rfl⟩ := List.getElem_of_mem hx
+      exact ((plus_step _ _ _ (key (xs.length - (t + 1)) (t + 1) ht (by omega)).1).1 (hst t ht)).1
+    · rw [(key xs.length 0 (Nat.zero_le _) (Nat.zero_add _)).2.2.1, List.drop_zero]
+  · rintro ⟨hb, hnn, rfl⟩
+    have hq : ∀ d t (ht : t ≤ xs.length), t + d = xs.length → (Fd(xs, t)).toInt = Sd(xs, t) := by
+      intro d
+      induction d with
+      | zero =>
+        intro t ht hd
+        obtain rfl : t = xs.length := by omega
+        rw [hlast.1, hlast.2]; decide
+      | succ d ih =>
+        intro t ht hd
+        have h := ih (t + 1) (by omega) (by omega)
+        obtain ⟨eS, eF⟩ := hcons t (by omega)
+        have hb' := hb t ht
+        rw [eS] at hb'
+        rw [eF, toInt_add_of _ _ (by omega) (by omega), h, eS]
+    have h0' : 0 < (([0] : List Int64).length.toUSize).toNat := by
+      rw [USize.toNat_ofNat_of_lt' h1]; decide
+    refine ⟨(List.range (xs.length + 1)).map fun t => Fd(xs, t), by simp,
+      ⟨⟨0, h0'⟩, by rw [Vals.row_atom, col_get [0] h1]; simp⟩, fun t ht => ?_, by simp⟩
+    have ey : ∀ s (hs : s < xs.length + 1),
+        ((List.range (xs.length + 1)).map fun t => Fd(xs, t))[s]'(by simp; omega) = Fd(xs, s) :=
+      fun s hs => by simp
+    rw [ey t (by omega), ey (t + 1) (by omega)]
+    obtain ⟨eS, eF⟩ := hcons t ht
+    have hq1 := hq (xs.length - (t + 1)) (t + 1) ht (by omega)
+    have hb0 := hb t (by omega)
+    rw [eS, ← hq1] at hb0
+    exact (plus_step _ _ _ ((ne_nul_iff _).2 (by rw [hq1]; have := (hb (t + 1) ht).1; omega))).2
+      ⟨hnn _ (List.getElem_mem ht), hb0.1, hb0.2, eF⟩
+
 end FoldOn
 
 end LeetQ.Rel.Rep
