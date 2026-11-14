@@ -502,12 +502,15 @@ def swapInC {B : Obj} (qC : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.pr
   let d := domC M.1
   (d.1, s.2 && E.2 && t.2 && M.2 && d.2)
 
-/-- The pairs `(b, c)` of the coreflexive `D` whose swap `(c, b)` passes the test `q`. Written out, not as
-    `swapInC`'s `.1`: `RepThin` unfolds this body inside `thinLOn`'s round. -/
+/-- The pairs `(b, c)` of the coreflexive `D` whose swap `(c, b)` passes the test `q`: `swapInC`'s relation. -/
 def swapIn {B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B))
     (D : Rel (.prod B B) (.prod B B)) : Rel (.prod B B) (.prod B B) :=
-  let s := pair (outr D) (outl D)
-  dom (s ≫ q (ran s))
+  (swapInC (fun r => (q r, true)) D).1
+
+/-- **`swapInC`'s relation, written out**: each twin's `.1` is its op, so the body is `dom (s ≫ q (ran s))`. -/
+theorem swapInC_fst {B : Obj} (qC : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B) × Bool)
+    (D : Rel (.prod B B) (.prod B B)) :
+    (swapInC qC D).1 = dom (pair (outr D) (outl D) ≫ (qC (ran (pair (outr D) (outl D)))).1) := rfl
 
 /-- `thin(Q)` per key, `Q` the test `q` run on the pairs `⟨G,G⟩` of values of one key, never on every pair of
     `ran G`: `(a, c)` dropped when some value `b` of `a` passes `(b, c)` and not `(c, b)`. `thin Q` is this at
@@ -901,6 +904,16 @@ def length {E : Obj} {n : USize} (X : Vals (.arr E) n) : Rel (.arr E) (.atom .lo
 def iterC {α : Type} (n : Nat) (done : α → Bool) (r : α → α × Bool) (a : α) : α × Bool :=
   iter n (fun s => done s.1) (fun s => let g := r s.1; (g.1, s.2 && g.2)) (a, true)
 
+/-- `fixOn` on a step twin `φC` and whether it ran within capacity: `nubC`'s bit at `X₀` `&&` `iterC`'s, each round's
+    the step's `&&` `nubC`'s. `fixOn` keeps its own written-out body: `AC3` reads its `iter` rounds by unfolding it;
+    `fixOnC_fst` ties the two. -/
+def fixOnC {A B : Obj} (n : Nat) (φC : Rel A B → Rel A B × Bool) (X₀ : Rel A B) : (Rel A B × Nat) × Bool :=
+  let x := nubC X₀
+  let r := iterC n (fun s => s.1 == s.2.1.n.toNat)
+    (fun s => let y := φC s.2.1; let z := nubC y.1; ((s.2.1.n.toNat, z.1, s.2.2 + 1), y.2 && z.2))
+    (x.1.n.toNat + 1, x.1, 0)
+  ((r.1.2.1, r.1.2.2), x.2 && r.2)
+
 /-- One round of `suffix` on `(S, F)`, `S ∪ F tail` beside `F tail`, and its bit: `ranC`'s, `tailC`'s, `compC`'s,
     `unionC`'s. -/
 def suffixRound {E : Obj} (st : Rel (.arr E) (.arr E) × Rel (.arr E) (.arr E)) :
@@ -1184,15 +1197,20 @@ def subseqC {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) 
 /-- `subseq`: `subseqC`'s relation. -/
 def subseq {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) := (subseqC X).1
 
+/-- `thinL Q X` and whether it ran within capacity: the `&&` of its pieces' twins' bits, `subseqC`'s first. With `Y`
+    the subsequences (`ranC`), `S` their sets (`setifyC`), `T = (∋ / ∋) ∩ (∈ \ Q°∈)` on `S`, the result is
+    `(setify Y ≫ T ≫ (setify Y)°) ∩ subseq X`. -/
+def thinLC {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) × Bool :=
+  let U := subseqC X; let W := ranC U.1; let s := setifyC W.1.val; let m := memC s.1.val
+  let QS := compC (Q°) (m.1°)
+  let Rd := rightDivC m.1 m.1 s.1.val s.1.val; let Ld := leftDivC (m.1°) QS.1 s.1.val s.1.val
+  let T := interC Rd.1 Ld.1; let H := compC s.1 T.1; let G := compC H.1 (s.1°); let r := interC G.1 U.1
+  (r.1, U.2 && W.2 && s.2 && m.2 && QS.2 && Rd.2 && Ld.2 && T.2 && H.2 && G.2 && r.2)
+
 /-- `thinL(Q) ≜ setify thin(Q) setify° ∩ subseq` on the arrays `X` (`thinL`, AOP/A8_3.lean:567; B&dM p.200,
     binary thinning), `thin(Q) ≜ ⊇ ∩ (∈ \ Q°∈)` on the sets of `Y`, the subsequences of `X` (`thinRel`,
     AOP/A8_1.lean:71); `thinL ⊑ subseq`, so `Y` holds every target. `⊇` is `∋ / ∋`. -/
-def thinL {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) :=
-  let U := subseq X
-  let Y := (ran U).val
-  let S := (setify Y).val
-  let T := rightDiv (mem S) (mem S) S S ∩ leftDiv (mem S)° (Q° ≫ (mem S)°) S S
-  (setify Y ≫ T ≫ (setify Y)°) ∩ U
+def thinL {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) := (thinLC Q X).1
 
 /-- Binary thinning in one pass, the note's implementation of `thinL(Q)` (`bumpFold_le_thinL`,
     AOP/A8_3.lean:629, `⦇[τ, bump(Q)]⦈ ⊑ thinL(Q)`): each element `a` bumped into the thinned rest `ys` —
@@ -1200,22 +1218,21 @@ def thinL {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n) : Rel (.arr 
     both stay when neither (`bumpRel_cons`, AOP/A8_3.lean:381). `Q` is the test `q` on the pairs `(a, b)` each
     round meets, so `Q` needs no universe; `thinL Q` is the specification it refines. -/
 -- `thinLOnC`'s round body on the coreflexive `D` of the round's pairs `(a, ys)`, `q` a twin family: every op by its
--- twin, `swapIn q (ran ab)` written out (`ss`, `rs`, `sw`); the bit the `&&` of every twin's and of `q`'s two calls
+-- twin, `swapIn q (ran ab)` as `swapInC q`; the bit the `&&` of every twin's and of `q`'s call
 def thinBodyC {B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B) × Bool)
     (D : Rel (.prod B (.arr B)) (.prod B (.arr B))) : Rel (.prod B (.arr B)) (.arr B) × Bool :=
   let a := outl D; let ys := outr D
   let un := unconsC ys.val; let u := compC ys un.1; let ab := pairC a (outl u.1); let rab := ranC ab.1
   let G1 := q rab.1; let q1 := compC ab.1 G1.1; let up := domC q1.1
-  let ss := pairC (outr rab.1) (outl rab.1); let rs := ranC ss.1; let G2 := q rs.1; let q2 := compC ss.1 G2.1
-  let sw := domC q2.1; let q3 := compC ab.1 sw.1; let down := domC q3.1
+  let sw := swapInC q rab.1; let q3 := compC ab.1 sw.1; let down := domC q3.1
   let du := domC u.1; let l1 := diffC D du.1; let l2 := diffC du.1 up.1; let l3 := diffC l2.1 down.1
   let lone := unionC l1.1 l3.1; let c1 := consC lone.1
   let ua := compC up.1 a; let uu := compC up.1 u.1; let ru := ranC u.1; let ut := compC uu.1 (outr ru.1)
   let pu := pairC ua.1 ut.1; let c2 := consC pu.1; let dy := compC down.1 ys
   let b1 := unionC c1.1 c2.1; let body := unionC b1.1 dy.1
-  (body.1, un.2 && (u.2 && (ab.2 && (rab.2 && (G1.2 && (q1.2 && (up.2 && (ss.2 && (rs.2 && (G2.2 && (q2.2 &&
+  (body.1, un.2 && (u.2 && (ab.2 && (rab.2 && (G1.2 && (q1.2 && (up.2 &&
     (sw.2 && (q3.2 && (down.2 && (du.2 && (l1.2 && (l2.2 && (l3.2 && (lone.2 && (c1.2 && (ua.2 && (uu.2 &&
-    (ru.2 && (ut.2 && (pu.2 && (c2.2 && (dy.2 && (b1.2 && body.2))))))))))))))))))))))))))))
+    (ru.2 && (ut.2 && (pu.2 && (c2.2 && (dy.2 && (b1.2 && body.2))))))))))))))))))))))))
 
 /-- `thinLOn` and whether it ran within capacity: `foldOnC` at `thinBodyC q`, `q` a twin family. -/
 def thinLOnC {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B) × Bool)

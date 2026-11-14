@@ -196,6 +196,49 @@ theorem rep_mergeC {K B : Obj} (Q : Rel B B) (P : Rel K (.prod (.arr B) (.arr B)
   · intro h
     exact ⟨(a, b), (eP _ _).2 ⟨by rw [hD]; exact ⟨rfl, hS⟩, (hle a b).1 h⟩⟩
 
+/-- **`fixOnC`'s answer is `fixOn`'s** at the step's relation: `iterC_fst`, `nubC_fst`. -/
+theorem fixOnC_fst {A B : Obj} (n : Nat) (φC : Rel A B → Rel A B × Bool) (X₀ : Rel A B) :
+    (fixOnC n φC X₀).1 = fixOn n (fun X => (φC X).1) X₀ := by
+  simp only [fixOnC, iterC_fst, nubC_fst]; rfl
+
+/-- **`fixOn` under `fixOnC`'s bit**: `rep_fixOn`, each round the loop ran read back by its bit (`iterC_run`):
+    `rep_nubC` at the round's `nubC`, `hφ` at its step's bit. What stays is not capacity: `hφ`, the step's own spec,
+    and `hc`, the chain property. -/
+theorem rep_fixOnC {A B : Obj} (n : Nat) (φC : Rel A B → Rel A B × Bool) (X₀ : Rel A B)
+    (Φ : type_of% (rep X₀) → type_of% (rep X₀)) (hb : (fixOnC n φC X₀).2 = true)
+    (hφ : ∀ X, (φC X).2 = true → rep (φC X).1 = Φ (rep X))
+    (hc : ∀ i < n, ((fun X => (φC X).1.nub)^[i] X₀.nub).n.toNat = ((fun X => (φC X).1.nub)^[i + 1] X₀.nub).n.toNat →
+      rep ((fun X => (φC X).1.nub)^[i] X₀.nub) = rep ((fun X => (φC X).1.nub)^[i + 1] X₀.nub)) :
+    ∃ j ≤ n, (fixOnC n φC X₀).1.2 = j ∧ rep (fixOnC n φC X₀).1.1 = Φ^[j] (rep X₀) ∧
+      (j < n → Φ (rep (fixOnC n φC X₀).1.1) = rep (fixOnC n φC X₀).1.1) := by
+  rw [fixOnC_fst]
+  simp only [fixOnC, okbit] at hb
+  obtain ⟨h0, hit⟩ := hb
+  let g : Rel A B → Rel A B := fun X => (φC X).1.nub
+  let r : Nat × Rel A B × Nat → (Nat × Rel A B × Nat) × Bool := fun s =>
+    let y := φC s.2.1; let z := nubC y.1; ((s.2.1.n.toNat, z.1, s.2.2 + 1), y.2 && z.2)
+  -- the round without its bit is `fixOn`'s
+  have ef : (fun s => (r s).1) = fun s : Nat × Rel A B × Nat => (s.2.1.n.toNat, ((φC s.2.1).1).nub, s.2.2 + 1) :=
+    funext fun s => by show (s.2.1.n.toNat, (nubC (φC s.2.1).1).1, s.2.2 + 1) = _; rw [nubC_fst]
+  have es : ∀ i, ((fun s => (r s).1)^[i] ((nubC X₀).1.n.toNat + 1, (nubC X₀).1, 0)).2.1 = g^[i] X₀.nub := by
+    intro i; rw [ef, nubC_fst]
+    cases i with
+    | zero => rfl
+    | succ i => rw [fixOn_iterate (fun X => (φC X).1) X₀ i]
+  refine rep_fixOn n (fun X => (φC X).1) X₀ Φ (by rw [← nubC_fst]; exact rep_nubC X₀ h0) (fun i hi hne => ?_) hc
+  have hr := iterC_run n (fun s => s.1 == s.2.1.n.toNat) r _ hit i hi fun i' hi' => by
+    rw [ef, nubC_fst]
+    cases i' with
+    | zero => show (X₀.nub.n.toNat + 1 == X₀.nub.n.toNat) = false; simp
+    | succ k =>
+      rw [fixOn_iterate (fun X => (φC X).1) X₀ k]
+      simpa using hne k (by omega)
+  have hr' : (φC (g^[i] X₀.nub)).2 = true ∧ (nubC (φC (g^[i] X₀.nub)).1).2 = true := by
+    rw [← es i]; exact Eq.mp (Bool.and_eq_true _ _) hr
+  show rep (φC (g^[i] X₀.nub)).1.nub = Φ (rep (g^[i] X₀.nub))
+  rw [← nubC_fst, rep_nubC _ hr'.2, hφ _ hr'.1]
+
+#print axioms rep_fixOnC
 #print axioms rep_ticC
 #print axioms rep_suffixC
 #print axioms rep_loopOnC
@@ -277,6 +320,25 @@ theorem rep_merge (Q : CRel B B) (P : CRel K (.prod (.arr B) (.arr B))) (le : B.
     (hle : ∀ a b, le a b = true ↔ rep Q.rel a b) (hat : hatOK) (hb : (merge Q P).ok = true) :
     ∀ k zs, rep (merge Q P).rel k zs ↔ ∃ xs ys, rep P.rel k (xs, ys) ∧ zs = List.merge xs ys le :=
   rep_mergeC Q.rel P.rel le hle hat (by simp only [merge, Bool.and_eq_true] at hb; exact hb.2)
+
+/-- `fixOn` on a step over `CRel`s, with the rounds run: ok where `X₀` is, every round's step was and `fixOnC` ran
+    within capacity. The step sees its input as ok: its bit is already in the loop's. -/
+def fixOn {A : Obj} (n : Nat) (φ : CRel A B → CRel A B) (X₀ : CRel A B) : CRel A B × Nat :=
+  let r := fixOnC n (fun D => let s := φ ⟨D, true⟩; (s.rel, s.ok)) X₀.rel; (⟨r.1.1, X₀.ok && r.2⟩, r.1.2)
+
+/-- `hφ` the step's spec where its bit is set; `hc` the chain property (`rep_fixOn`'s). -/
+theorem rep_fixOn {A : Obj} (n : Nat) (φ : CRel A B → CRel A B) (X₀ : CRel A B)
+    (Φ : type_of% (rep X₀.rel) → type_of% (rep X₀.rel)) (hb : (fixOn n φ X₀).1.ok = true)
+    (hφ : ∀ D, (φ ⟨D, true⟩).ok = true → rep (φ ⟨D, true⟩).rel = Φ (rep D))
+    (hc : ∀ i < n, ((fun X => (φ ⟨X, true⟩).rel.nub)^[i] X₀.rel.nub).n.toNat =
+        ((fun X => (φ ⟨X, true⟩).rel.nub)^[i + 1] X₀.rel.nub).n.toNat →
+      rep ((fun X => (φ ⟨X, true⟩).rel.nub)^[i] X₀.rel.nub) =
+        rep ((fun X => (φ ⟨X, true⟩).rel.nub)^[i + 1] X₀.rel.nub)) :
+    ∃ j ≤ n, (fixOn n φ X₀).2 = j ∧ rep (fixOn n φ X₀).1.rel = Φ^[j] (rep X₀.rel) ∧
+      (j < n → Φ (rep (fixOn n φ X₀).1.rel) = rep (fixOn n φ X₀).1.rel) := by
+  -- unfolded first: the conclusion's `.2` against `fixOnC`'s otherwise sends `whnf` into `iter`'s recursion
+  simp only [fixOn, Bool.and_eq_true] at hb ⊢
+  exact rep_fixOnC n _ X₀.rel Φ hb.2 hφ hc
 
 end CRel
 

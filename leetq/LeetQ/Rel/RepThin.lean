@@ -430,7 +430,7 @@ theorem thin_round_rep {B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod
   obtain ⟨t1, t2, J⟩ := hk _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
     _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
   refine ⟨fun s => by rw [eD]; exact ⟨fun h => h.2, fun h => ⟨rfl, h⟩⟩, fun a y v => ?_⟩
-  simp only [hSf, swapIn]
+  simp only [hSf, swapIn, swapInC_fst]
   rw [thin_body_rep le D _ eD _ rfl _ rfl _ rfl _ rfl _ rfl _ t1 _ rfl _ rfl _ rfl _ rfl _ t2 _ rfl _ rfl
     _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl J, eD]
   constructor

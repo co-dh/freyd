@@ -191,6 +191,81 @@ theorem rep_sortSetC (Q : Rel B B) {n : USize} (Y : Vals (.arr B) n) (hat : hatO
   simp only [sortSetC, Bool.and_eq_true] at hb
   exact rep_sortSet Q Y (rep_orderedC Q Y hat hb.1.2) (compC_cmpOK _ _ hb.2)
 
+/-- **`thinL(Q)` under `thinLC`'s bit, elementwise**: an array `xs` of `X` goes to `ys` exactly when `ys` is a
+    sublist of `xs` and each element of `xs` is `Q`-above some element of `ys`. Each piece read back by its twin
+    (`rep_subseqC`, `ranC_oneFit`, `rep_setifyC`, `rep_memC`, `rep_compC`, `rep_rightDivC`, `rep_leftDivC`,
+    `rep_interC`), each piece named once read. What stays: `subseqC`'s `hat`. -/
+theorem rep_thinLC (Q : Rel B B) {n : USize} (X : Vals (.arr B) n) (hat : hatOK) (hb : (thinLC Q X).2 = true) :
+    ∀ xs ys, rep (thinLC Q X).1 xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Sublist xs ∧ ∀ a ∈ xs, ∃ y ∈ ys, rep Q y a := by
+  simp only [thinLC, okbit] at hb ⊢
+  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨hU, hW⟩, hs⟩, hm⟩, hQS⟩, hRd⟩, hLd⟩, hT⟩, hH⟩, hG⟩, hr⟩ := hb
+  have eU := rep_subseqC X hat hU
+  have hWf := ranC_oneFit _ hW
+  generalize (subseqC X).1 = U at eU hWf hW hs hm hQS hRd hLd hT hH hG hr ⊢
+  have eW : ∀ a b, rep (ranC U).1 a b ↔ a = b ∧ ∃ x, rep U x a := fun a b => by
+    show rep (ran U) a b ↔ _
+    rw [rep_ran_corefl U (one_ok _ hWf.1) hWf.2]; exact Iff.rfl
+  generalize (ranC U).1 = W at eW hs hm hQS hRd hLd hT hH hG hr ⊢
+  obtain ⟨eS1, eS2⟩ := rep_setifyC _ hs
+  generalize (setifyC W.val).1 = St at eS1 eS2 hm hQS hRd hLd hT hH hG hr ⊢
+  have eM := rep_memC _ hm
+  generalize (memC St.val).1 = mS at eM hQS hRd hLd hT hH hG hr ⊢
+  have eX : ∀ a s, rep (mS°) a s ↔ (∃ i, St.val.row i = s) ∧ a ∈ s := fun a s => by rw [rep_conv]; exact eM s a
+  have eQS : ∀ a t, rep (compC (Q°) (mS°)).1 a t ↔ ∃ y, rep Q y a ∧ (∃ j, St.val.row j = t) ∧ y ∈ t := fun a t => by
+    rw [rep_compC _ _ hQS, Freyd.Alg.RelSet.comp_apply]
+    exact exists_congr fun y => and_congr (by rw [rep_conv]; exact Iff.rfl) (eX y t)
+  generalize (compC (Q°) (mS°)).1 = QS at eQS hLd hT hH hG hr ⊢
+  -- `⊇ ∩ (∈ \ Q°∈)` on two sets of `St.val`: the second a subset of the first, each element of the first above one
+  have eT : ∀ s t, (∃ i, St.val.row i = s) → (∃ j, St.val.row j = t) →
+      (rep (interC (rightDivC mS mS St.val St.val).1 (leftDivC (mS°) QS St.val St.val).1).1 s t ↔
+        (∀ c ∈ t, c ∈ s) ∧ ∀ a ∈ s, ∃ y ∈ t, rep Q y a) := by
+    intro s t hs ht
+    rw [rep_interC _ _ hT]
+    show rep (rightDivC mS mS St.val St.val).1 s t ∧ rep (leftDivC (mS°) QS St.val St.val).1 s t ↔ _
+    rw [rep_rightDivC _ _ _ _ hRd s t, rep_leftDivC _ _ _ _ hLd s t]
+    simp only [eM, eX, eQS]
+    constructor
+    · rintro ⟨⟨hr, -⟩, ⟨hl, -⟩⟩
+      refine ⟨fun c hc => (hr c ⟨ht, hc⟩).2, fun a ha => ?_⟩
+      obtain ⟨y, hq, -, hy⟩ := hl a ⟨hs, ha⟩
+      exact ⟨y, hy, hq⟩
+    · rintro ⟨h1, h2⟩
+      refine ⟨⟨fun c ⟨_, hc⟩ => ⟨hs, h1 c hc⟩, Or.inr ⟨hs, ht⟩⟩, ⟨fun a ⟨_, ha⟩ => ?_, Or.inr ⟨hs, ht⟩⟩⟩
+      obtain ⟨y, hy, hq⟩ := h2 a ha
+      exact ⟨y, hq, ht, hy⟩
+  generalize (interC (rightDivC mS mS St.val St.val).1 (leftDivC (mS°) QS St.val St.val).1).1 = Tt at eT hH hG hr ⊢
+  have eH : ∀ xs t, rep (compC St Tt).1 xs t ↔ ∃ s, rep St xs s ∧ rep Tt s t := fun xs t => by
+    rw [rep_compC _ _ hH, Freyd.Alg.RelSet.comp_apply]
+  generalize (compC St Tt).1 = H at eH hG hr ⊢
+  have eG : ∀ xs ys, rep (compC H (St°)).1 xs ys ↔ ∃ t, rep H xs t ∧ rep St ys t := fun xs ys => by
+    rw [rep_compC _ _ hG, Freyd.Alg.RelSet.comp_apply]
+    exact exists_congr fun t => and_congr Iff.rfl (by rw [rep_conv]; exact Iff.rfl)
+  generalize (compC H (St°)).1 = G at eG hr ⊢
+  -- a row of `W.val`: an array `U` reaches
+  have hrow : ∀ x zs, rep U x zs → ∃ i, W.val.row i = zs := fun x zs h => by
+    obtain ⟨i, -, hi⟩ := id ((eW zs zs).2 ⟨rfl, x, h⟩); exact ⟨i, hi⟩
+  intro xs ys
+  rw [rep_interC _ _ hr]
+  show rep G xs ys ∧ rep U xs ys ↔ _
+  rw [and_comm, eG, eU, and_assoc]
+  refine and_congr_right fun hx => and_congr_right fun hsl => ⟨?_, fun hq => ?_⟩
+  · rintro ⟨t, hh, ht⟩ a ha
+    obtain ⟨s, hs, hT⟩ := (eH _ _).1 hh
+    obtain ⟨i, -, hi⟩ := id hs
+    obtain ⟨j, -, hj⟩ := id ht
+    obtain ⟨-, hq⟩ := (eT s t ⟨i, hi⟩ ⟨j, hj⟩).1 hT
+    obtain ⟨y, hy, hQ⟩ := hq a (((eS1 xs s hs).2 a).2 ha)
+    exact ⟨y, ((eS1 ys t ht).2 y).1 hy, hQ⟩
+  · obtain ⟨s, hs⟩ := (eS2 xs).2 (hrow xs xs ((eU xs xs).2 ⟨hx, List.Sublist.refl _⟩))
+    obtain ⟨t, ht⟩ := (eS2 ys).2 (hrow xs ys ((eU xs ys).2 ⟨hx, hsl⟩))
+    obtain ⟨i, -, hi⟩ := id hs
+    obtain ⟨j, -, hj⟩ := id ht
+    refine ⟨t, (eH _ _).2 ⟨s, hs, (eT s t ⟨i, hi⟩ ⟨j, hj⟩).2 ⟨fun c hc => ?_, fun a ha => ?_⟩⟩, ht⟩
+    · exact ((eS1 xs s hs).2 c).2 (hsl.subset (((eS1 ys t ht).2 c).1 hc))
+    · obtain ⟨y, hy, hQ⟩ := hq a (((eS1 xs s hs).2 a).1 ha)
+      exact ⟨y, ((eS1 ys t ht).2 y).2 hy, hQ⟩
+
+#print axioms rep_thinLC
 #print axioms rep_diffC
 #print axioms rep_swapInC
 #print axioms rep_estOnC
@@ -241,6 +316,15 @@ def orderedOn (q : CRel (.prod B B) (.prod B B) → CRel (.prod B B) (.prod B B)
 /-- `ordered(Q)` on `X`, ok where `Q` is and `orderedC` ran within capacity. -/
 def ordered (Q : CRel B B) {n : USize} (X : Vals (.arr B) n) : CRel (.arr B) (.arr B) :=
   let r := orderedC Q.rel X; ⟨r.1, Q.ok && r.2⟩
+
+/-- `thinL(Q)` on `X`, ok where `Q` is and `thinLC` ran within capacity. -/
+def thinL (Q : CRel B B) {n : USize} (X : Vals (.arr B) n) : CRel (.arr B) (.arr B) :=
+  let r := thinLC Q.rel X; ⟨r.1, Q.ok && r.2⟩
+
+/-- `hat`: `rep_subseqC`'s. -/
+theorem rep_thinL (Q : CRel B B) {n : USize} (X : Vals (.arr B) n) (hat : hatOK) (hb : (thinL Q X).ok = true) :
+    ∀ xs ys, rep (thinL Q X).rel xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Sublist xs ∧ ∀ a ∈ xs, ∃ y ∈ ys, rep Q.rel y a :=
+  rep_thinLC Q.rel X hat (by simp only [thinL, Bool.and_eq_true] at hb; exact hb.2)
 
 /-- `sortSet(Q)` on `Y`, ok where `Q` is and `sortSetC` ran within capacity. -/
 def sortSet (Q : CRel B B) {n : USize} (Y : Vals (.arr B) n) : CRel (.arr B) (.arr B) :=
