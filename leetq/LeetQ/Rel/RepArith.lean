@@ -585,8 +585,6 @@ theorem foldOn_on {E V : Obj} {m n : USize} (e : Vals V m) (Sf : Rel (.prod E V)
       gi (xs.length - 1 - (xs.length - 1 - t)) t (by omega) (by omega) (by omega)] at h
     exact h
 
-#print axioms foldOn_on
-
 /-! ## `sum` -/
 
 theorem nul_toInt : nul.toInt = -2 ^ 63 := by decide
@@ -595,7 +593,7 @@ theorem nul_toInt : nul.toInt = -2 ^ 63 := by decide
 theorem toInt_add_k (a b : Int64) : ∃ k : Int, (a + b).toInt = a.toInt + b.toInt + k * 2 ^ 64 := by
   have h64 : ((2 ^ 64 : Nat) : Int) = 2 ^ 64 := by decide
   rw [Int64.toInt_add, Int.bmod_def, h64]
-  have := Int.emod_add_ediv (a.toInt + b.toInt) (2 ^ 64)
+  have := Int.emod_add_mul_ediv (a.toInt + b.toInt) (2 ^ 64)
   split
   · exact ⟨-((a.toInt + b.toInt) / 2 ^ 64), by omega⟩
   · exact ⟨-((a.toInt + b.toInt) / 2 ^ 64) - 1, by omega⟩
@@ -767,6 +765,146 @@ theorem Arr.rep_sum {n : USize} (X : Vals (.arr .long) n)
     rw [eS, ← hq1] at hb0
     exact (plus_step _ _ _ ((ne_nul_iff _).2 (by rw [hq1]; have := (hb (t + 1) ht).1; omega))).2
       ⟨hnn _ (List.getElem_mem ht), hb0.1, hb0.2, eF⟩
+
+/-! ## `length` -/
+
+/-- `+ 1` on `Int64.ofNat m` below `2^63 - 1` is `Int64.ofNat (m + 1)`, off the null. -/
+theorem intStep_ofNat_succ (m : Nat) (hm : m + 1 < 2 ^ 63) :
+    Ew.intStep Ew.add nul (Int64.ofNat m) 1 = Int64.ofNat (m + 1) := by
+  have e1 : (Int64.ofNat m).toInt = m := Int64.toInt_ofNat_of_lt (by omega)
+  have e2 : (Int64.ofNat (m + 1)).toInt = (m + 1 : Nat) := Int64.toInt_ofNat_of_lt (by omega)
+  have e3 : (1 : Int64).toInt = 1 := by decide
+  have hn1 : ¬ (Int64.ofNat m = nul ∨ (1 : Int64) = nul) := by
+    rintro (h | h)
+    · exact (ne_nul_iff _).2 (by omega) h
+    · exact (ne_nul_iff _).2 (by rw [e3]; decide) h
+  rw [intStep_add, if_neg hn1]
+  apply Int64.toInt_inj.1
+  rw [toInt_add_of _ _ (by omega) (by omega), e1, e2, e3]
+  omega
+
+/-- **`length`, read back**: an array `xs` of `X` goes to its length. `length X` is the fold of `col [0]` and
+    `outr D ≫ succ (tilCol c)`, `c` the payload's count plus one (`length_eq`); `succ (tilCol c)` never meets its
+    top, since an array of `X` is no longer than the payload (`slicesOf_row`). Bound values (`c`, `sc`, `Sf`, and
+    `foldOn_on`'s) by their equations. Hypotheses: the payload's count plus one fits a `USize` and is below
+    `2^63` (`hX`, `h63X`), `rep_succ`'s at `tilCol c` (`hsucc`), and `foldOn_on`'s, with `rep_comp`'s at
+    `outr (D k)`, `sc` in each round (`hcomp`) — `hel`, `hR`, `hS`, `hran`, `hcomp` per-round bundles (`V` is `.long`
+    there, bound by `let`). -/
+theorem rep_length {E : Obj} {n : USize} (X : Vals (.arr E) n)
+    (hX : X.1.toNat + 1 < USize.size) (h63X : X.1.toNat + 1 < 2 ^ 63)
+    (c : USize) (hc : c = (X.1.toNat + 1).toUSize) (sc : Rel .long .long) (hsc : sc = succ (tilCol c))
+    (hsucc : ∀ s : Arr .long c, s = valCol Ew.add Ew.va (longsOf (tilCol c)) (one 1) →
+      ∀ cs : Vector Code 2, cs = codes .long #v[⟨c, s⟩, ⟨c, tilCol c⟩] →
+        codesL(cs, (#v[⟨c, s⟩, ⟨c, tilCol c⟩] : Vector ((m : USize) × Arr .long m) 2)))
+    (T : Rel .long (.arr E)) (hT : T = num (idU X) 0) (hn : n.toNat < 2 ^ 63)
+    (hv : Vals.PickFits (.arr E) X (List.range n.toNat)) (hp : (Rel.val T).1.toNat < 2 ^ 63)
+    (hel : ∀ k, k ≤ (Rel.val T).1.toNat → ∀ a : ByteArray, a = whereBits (Rel.n T)
+        (Ew.cmp Ew.gt Ew.i64 Ew.va (slicesOf (Rel.val T)).2 (one k.toUInt64) (Rel.n T)) →
+      ∀ pos : ByteArray, pos = Kernel.Ew.val Ew.sub Ew.i64 Ew.va nul
+        (gather 8 (add (Rel.n T) (slicesOf (Rel.val T)).1 (slicesOf (Rel.val T)).2) a)
+        (one (k + 1).toUInt64) (len a).toUSize →
+      Vals.PickFits .long (Rel.key T) ((List.range (len a)).map fun q => (Column.bitsAt a (q * 8) 8).toNat) ∧
+      Vals.PickFits E (Rel.val T).2.2.2 ((List.range (len a)).map fun q => (Column.bitsAt pos (q * 8) 8).toNat))
+    (pend₀ : Rel .long .long) (hpend : pend₀ = top (A := .long) (Rel.key T) (col [0]))
+    (hN : (Rel.n T).toNat * (([0] : List Int64).length.toUSize).toNat < USize.size)
+    (h63 : (Rel.n T).toNat * (([0] : List Int64).length.toUSize).toNat < 2 ^ 63)
+    (hA : Vals.PickFits .long (Rel.key T) ((List.range ((Rel.n T).toNat *
+      (([0] : List Int64).length.toUSize).toNat)).map (· / (([0] : List Int64).length.toUSize).toNat)))
+    (hB : Vals.PickFits .long (col [0]) ((List.range ((Rel.n T).toNat *
+      (([0] : List Int64).length.toUSize).toNat)).map (· % (([0] : List Int64).length.toUSize).toNat)))
+    (Sf : Rel (.prod E .long) (.prod E .long) → Rel (.prod E .long) .long)
+    (hSf : Sf = fun D => outr D ≫ sc)
+    (step : Rel .long E → Rel .long .long → Rel .long .long) (hstep : step = demandStep Sf)
+    (elK : Nat → Rel .long E) (hE : ∀ k, elK k = elR(T, k))
+    (f : Rel .long .long × Rel .long .long × Nat → Rel .long .long × Rel .long .long × Nat)
+    (hf : ∀ st, f st = rnd(st))
+    (D : Nat → Rel (.prod E .long) (.prod E .long))
+    (hD : ∀ k, D k = ran (pair (elK k) (f^[k] (pend₀, Alg.zero, 0)).1))
+    (hR : let V := Obj.long; ∀ i (el : Rel .long E) (pend P S : Rel .long .long), el = elK i →
+      pend = (f^[i] (pend₀, Alg.zero, 0)).1 → P = (f^[i] (pend₀, Alg.zero, 0)).2.1 → S = step el pend → roundOK)
+    (hS : let V := Obj.long; ∀ i (el : Rel .long E) (pend : Rel .long .long), el = elK i →
+      pend = (f^[i] (pend₀, Alg.zero, 0)).1 → stepOn)
+    (F : Rel .long .long) (hF : F = foldRows T pend₀ step)
+    (jc : Vector Code 2) (hjc : jc = Obj.codes .long ck2(T°, F)) (hjO : codesOK(jc, ck2(T°, F)))
+    (hjn : (Rel.n F).toNat < 2 ^ 63) (hjM : msum(jc, T°, F) < 2 ^ 63) (hjU : msum(jc, T°, F) < USize.size)
+    (hjA : Vals.PickFits (.arr E) (Rel.key (T°)) ((mpairs(jc, T°, F)).map Prod.fst))
+    (hjC : Vals.PickFits .long (Rel.val F) ((mpairs(jc, T°, F)).map Prod.snd))
+    (hran : let V := Obj.long; ∀ k, k < (Rel.val T).1.toNat → ∀ P : Rel .long (.prod E .long),
+      P = pair (elK k) (f^[k] (pend₀, Alg.zero, 0)).1 → ranOK(P))
+    (hcomp : ∀ rd, rd < (Rel.val T).1.toNat → ∀ kc : Vector Code 2, kc = Obj.codes .long ck2(outr (D rd), sc) →
+      codesOK(kc, ck2(outr (D rd), sc)) ∧ (Rel.n sc).toNat < 2 ^ 63 ∧ msum(kc, outr (D rd), sc) < 2 ^ 63 ∧
+      msum(kc, outr (D rd), sc) < USize.size ∧
+      Vals.PickFits (.prod E .long) (Rel.key (outr (D rd))) ((mpairs(kc, outr (D rd), sc)).map Prod.fst) ∧
+      Vals.PickFits .long (Rel.val sc) ((mpairs(kc, outr (D rd), sc)).map Prod.snd)) :
+    ∀ (xs : List E.El) (w : Int64), rep (length X) xs w ↔ (∃ i, X.row i = xs) ∧ w = Int64.ofNat xs.length := by
+  intro xs w
+  have hcN : c.toNat = X.1.toNat + 1 := by rw [hc]; exact USize.toNat_ofNat_of_lt' hX
+  -- `sc` on `m` below the payload's count is `m + 1`
+  have hsc' : ∀ m w, m < X.1.toNat → (rep sc (Int64.ofNat m) w ↔ w = Int64.ofNat (m + 1)) := by
+    intro m w hm
+    subst hsc
+    rw [rep_succ (tilCol c) _ rfl _ rfl (hsucc _ rfl _ rfl), intStep_ofNat_succ m (by omega)]
+    simp only [Vals.row_atom, tilCol_get]
+    constructor
+    · rintro ⟨-, h, -⟩; exact h
+    · rintro rfl; exact ⟨⟨⟨m, by omega⟩, rfl⟩, rfl, ⟨m + 1, by omega⟩, rfl⟩
+  have hSf' : ∀ k, k < (Rel.val T).1.toNat → ∀ (p : E.El × Int64) (w : Int64), rep (Sf (D k)) p w ↔
+      (∃ a, rep (D k) a p) ∧ rep sc p.2 w := by
+    intro k hk p w
+    obtain ⟨hK1, hK2, hpk⟩ := hran k hk _ rfl _ rfl
+    obtain ⟨hcO, hcn, hcM, hcU, hcA, hcC⟩ := hcomp k hk _ rfl
+    subst hSf
+    show rep (outr (D k) ≫ sc) p w ↔ _
+    rw [rep_comp _ _ hcO hcn hcM hcU hcA hcC, rep_outr, hD k, rep_ran _ ⟨hK1, hK2⟩ hpk]
+    constructor
+    · rintro ⟨y, ⟨z, ⟨rfl, hz⟩, rfl⟩, hy⟩; exact ⟨⟨p, rfl, hz⟩, hy⟩
+    · rintro ⟨⟨a, rfl, hz⟩, hy⟩; exact ⟨a.2, ⟨a, ⟨rfl, hz⟩, rfl⟩, hy⟩
+  rw [length_eq X hX, show foldOn (col [0]) (fun D => outr D ≫ succ (tilCol (X.1.toNat + 1).toUSize)) X =
+      foldOn (col [0]) Sf X by subst hSf hsc hc; rfl,
+    foldOn_on (col [0]) Sf X T hT hn hv hp hel pend₀ hpend hN h63 hA hB step hstep elK hE f hf D hD hR hS F hF jc
+      hjc hjO hjn hjM hjU hjA hjC hran _ hSf' xs w]
+  have h1 : ([0] : List Int64).length < USize.size := by
+    show 1 < USize.size; rcases USize.size_eq with e | e <;> omega
+  have hL : (∃ i, X.row i = xs) → xs.length ≤ X.1.toNat := by
+    rintro ⟨⟨i, hi⟩, rfl⟩
+    obtain ⟨h1, h2, -⟩ := slicesOf_row X (by omega) hi
+    omega
+  constructor
+  · rintro ⟨hx, ys, hy, ⟨p, hp⟩, hst, hw⟩
+    have hLx := hL hx
+    rw [Vals.row_atom, col_get [0] h1 p] at hp
+    simp only [List.getElem_singleton] at hp
+    -- from the end: `ys[t]` counts the elements from `t`
+    have key : ∀ d t (ht : t ≤ xs.length), t + d = xs.length →
+        ys[t]'(by omega) = Int64.ofNat (xs.length - t) := by
+      intro d
+      induction d with
+      | zero =>
+        intro t ht hd
+        obtain rfl : t = xs.length := by omega
+        rw [← hp, Nat.sub_self]; rfl
+      | succ d ih =>
+        intro t ht hd
+        have h : rep sc (ys[t + 1]'(by omega)) (ys[t]'(by omega)) := hst t (by omega)
+        rw [ih (t + 1) (by omega) (by omega), hsc' _ _ (by omega)] at h
+        rw [h]; congr 1; omega
+    exact ⟨hx, by rw [hw, key xs.length 0 (Nat.zero_le _) (Nat.zero_add _), Nat.sub_zero]⟩
+  · rintro ⟨hx, rfl⟩
+    have hLx := hL hx
+    have h0' : 0 < (([0] : List Int64).length.toUSize).toNat := by
+      rw [USize.toNat_ofNat_of_lt' h1]; decide
+    refine ⟨hx, (List.range (xs.length + 1)).map fun t => Int64.ofNat (xs.length - t), by simp,
+      ⟨⟨0, h0'⟩, ?_⟩, fun t ht => ?_, ?_⟩
+    · rw [Vals.row_atom, col_get [0] h1]
+      simp only [List.getElem_map, List.getElem_range, List.getElem_singleton, Nat.sub_self]; rfl
+    · simp only [List.getElem_map, List.getElem_range]
+      rw [hsc' _ _ (by omega)]; congr 1; omega
+    · simp only [List.getElem_map, List.getElem_range, Nat.sub_zero]
+
+#print axioms foldOn_on
+#print axioms plus_step
+#print axioms Arr.rep_sum
+#print axioms rep_length
 
 end FoldOn
 
