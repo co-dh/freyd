@@ -594,13 +594,16 @@ theorem setIds_spec (vc : Code) (s : ByteArray) {m : Nat}
     fun t ht => by
       simp only
       rw [gather8_get (by omega) (by rw [hsl]; exact hL t ht), hGL t ht, hBw, hBid t (by omega)]
-  rcases hr : (match vc.kind with
-    | some k => Order.groupIdsPair .i64 k vc.n (gather 8 seg p) (vc.gather p).b
-    | none => Order.groupIdsPairIds 64 vc.w.toUSize vc.n (gather 8 seg p) (vc.gather p).b) with ⟨q, fs⟩
+  -- the matcher `setIds` elaborated its lane match to (shared with `Code.eqAt`); a `match` written here
+  -- elaborates to another one, which `generalize` would not find in the goal
+  generalize hX : Code.eqAt.match_1 (fun _ => ByteArray × ByteArray) vc.kind
+    (fun k => Order.groupIdsPair .i64 k vc.n (gather 8 seg p) (vc.gather p).b)
+    (fun _ => Order.groupIdsPairIds 64 vc.w.toUSize vc.n (gather 8 seg p) (vc.gather p).b) = r
+  obtain ⟨q, fs⟩ := r
   have hr' : (q, fs) = match (vc.gather p).kind with
       | some k => Order.groupIdsPair .i64 k vc.n (gather 8 seg p) (vc.gather p).b
       | none => Order.groupIdsPairIds 64 (vc.gather p).w.toUSize vc.n (gather 8 seg p) (vc.gather p).b := by
-    rw [hkind, hBw]; exact hr.symm
+    rw [hkind, hBw]; exact hX.symm
   obtain ⟨hfs, -, hqcap⟩ := pairIds_read _ _ vc.n hBw' hBs' hBn' hA _ hr'
   have hgl := groupLongs_read _ _ vc.n hBw' hBs' hBn' hA _ hr'
   simp only at hfs hqcap
@@ -690,8 +693,13 @@ theorem setIds_spec (vc : Code) (s : ByteArray) {m : Nat}
     constructor
     · intro h; have := congrArg (List.map UInt64.toNat) h; simpa [List.map_map, Function.comp_def] using this
     · intro h
-      refine List.map_injective_iff.2 (fun x y e => UInt64.toNat_inj.1 e) ?_
-      simpa [List.map_map, Function.comp_def] using h
+      have hl := congrArg List.length h
+      simp only [List.length_map, List.length_range] at hl
+      apply List.ext_getElem (by simp only [List.length_map, List.length_range]; exact hl)
+      intro x h1 h2
+      have e := List.getElem_of_eq h (i := x) (by simpa using h1)
+      simp only [List.getElem_map, List.getElem_range] at e ⊢
+      exact UInt64.toNat_inj.1 e
   have hseq : ∀ j < m, (List.range ((Column.bitsAt O' (8 * (j + 1)) 8).toNat - (Column.bitsAt O' (8 * j) 8).toNat)).map
       (fun t => (Column.resAt v 0 vc.w ((Column.bitsAt O' (8 * j) 8).toNat + t)).toNat) =
       (List.range ((Column.bitsAt O' (8 * (j + 1)) 8).toNat - (Column.bitsAt O' (8 * j) 8).toNat)).map
@@ -714,13 +722,15 @@ theorem setIds_spec (vc : Code) (s : ByteArray) {m : Nat}
       · rw [hnext h]; exact h2 h
       · rw [show j + 1 = m by omega, hOl]; exact hi
   have hc := hcore j hj j' hj'
-  dsimp only at hc
-  simp only [need, dif_pos hsize]
-  refine ⟨hR.trans ((harr _ _ _ _).trans ?_), hRle⟩
-  dsimp only
-  rw [hseq j hj, hseq j' hj']
-  exact hc.trans (forall_congr' fun x => iff_congr (hex j hj x) (hex j' hj' x))
+  simp only [need]
+  split
+  · refine ⟨hR.trans ((harr _ _ _ _).trans ?_), hRle⟩
+    dsimp only
+    rw [hseq j hj, hseq j' hj']
+    exact hc.trans (forall_congr' fun x => iff_congr (hex j hj x) (hex j' hj' x))
+  · exact absurd hsize ‹_›
 
+#print axioms setIds_spec
 #print axioms concat_one
 #print axioms slices_core
 #print axioms gradeBy_lex
