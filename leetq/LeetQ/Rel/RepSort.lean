@@ -467,7 +467,7 @@ local notation "setOK" =>
         Vals.row (Rel.nub Ms).key ⟨i, hi⟩ = Vals.row (Rel.nub Ms).key ⟨j, hj⟩) ∧
     laneOK(kt.w) ∧
     kt.n = (Rel.nub Ms).n ∧ kt.b.size = (kt.n.toNat * kt.w + 7) / 8 ∧
-    codesWF ∧
+    B.CodesFit (#v[⟨(Rel.nub Ms).n, (Rel.nub Ms).val⟩] : Vector (Part B) 1) ∧
     (Rel.nub Ms).n.toNat < 2 ^ 63 ∧
     ∀ p lo : ByteArray, p = pT(Ms) → lo = loT(Ms) →
     Vals.PickFits (.arr B) (Rel.nub Ms).key (ids p) ∧ Vals.PickFits B (Rel.nub Ms).val (ids p) ∧

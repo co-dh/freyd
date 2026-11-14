@@ -34,7 +34,7 @@ theorem rep_arrUnion {A : Obj} {n : USize} (X : Vals (.arr (.arr A)) n) (Rm : Re
     (hw : laneOK(kt.w))
     (hn : kt.n = (Rel.nub M).n)
     (hs : kt.b.size = (kt.n.toNat * kt.w + 7) / 8)
-    (hW : codesWF)
+    (hW : A.CodesFit (#v[⟨(Rel.nub M).n, (Rel.nub M).val⟩] : Vector (Part A) 1))
     (h63 : (Rel.nub M).n.toNat < 2 ^ 63)
     (p lo : ByteArray) (hpT : p = pT(M)) (hloT : lo = loT(M))
     (hpk : Vals.PickFits (.arr (.arr A)) (Rel.nub M).key (ids p))

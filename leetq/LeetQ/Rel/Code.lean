@@ -808,7 +808,7 @@ def _root_.LeetQ.Rel.Obj.codes : (A : Obj) → {p : Nat} → Vector (Part A) p �
 /-- The permutation `p` refined stably by the values of `A` at its rows, ascending: `gradeColumn` of each
     atom (a symbol by its string, so the order is the value's, the same in every call), the last component
     first so a product sorts lexicographically. Where no kernel orders the values — a general list, an
-    array — by their codes: an order of this call only. -/
+    array — by the codes of the whole column, read at `p`: an order of this call only. -/
 def _root_.LeetQ.Rel.Obj.sortBy : (A : Obj) → {n : USize} → Vals A n → ByteArray → ByteArray
   | .atom t, _, c, p =>
     let x := Alg.pick t ⟨_, c⟩ p
@@ -816,8 +816,9 @@ def _root_.LeetQ.Rel.Obj.sortBy : (A : Obj) → {n : USize} → Vals A n → Byt
     | some (.bytes g) => gather 8 p g
     | _ => gather 8 p (codes t #v[x])[0].grade
   | .prod a b, _, c, p => Obj.sortBy a c.1 (Obj.sortBy b c.2 p)
-  | .arr b, _, c, p => gather 8 p (Obj.codes (.arr b) #v[Vals.pickPart (.arr b) c p])[0].grade
-  | .sum a b, _, c, p => gather 8 p (Obj.codes (.sum a b) #v[Vals.pickPart (.sum a b) c p])[0].grade
+  -- the input's codes gathered at `p`, not the codes of the picked part: a pick can outgrow the bounds the input fits
+  | .arr b, _, c, p => gather 8 p ((Obj.codes (.arr b) #v[⟨_, c⟩])[0].gather p).grade
+  | .sum a b, _, c, p => gather 8 p ((Obj.codes (.sum a b) #v[⟨_, c⟩])[0].gather p).grade
 
 /-- `|R|` of several relations of one type in one code space, one code per relation. -/
 def pairs {k v : Obj} {p : Nat} (ds : Vector (Rel k v) p) : Vector Code p :=
@@ -1294,17 +1295,3 @@ end Laws
 #print axioms offsets_faithful
 
 end LeetQ.Rel.Alg
-
--- the `hW` of `sortBy_perm`, `rep_tau_list`, `rep_snoc`: every one-part code of an `.arr` or `.sum` side is well
--- formed and counts its part; an atom's is a theorem (`codes_atom_wf`), these need the bounds of `Obj.CodesFit`
-set_option hygiene false in
-notation "codesWF" =>
-  (∀ (b : Obj) (x : Part (.arr b)), laneOK(((Obj.codes (.arr b) #v[x])[0]'Nat.zero_lt_one).w) ∧
-    ((Obj.codes (.arr b) #v[x])[0]'Nat.zero_lt_one).b.size =
-      (((Obj.codes (.arr b) #v[x])[0]'Nat.zero_lt_one).n.toNat * ((Obj.codes (.arr b) #v[x])[0]'Nat.zero_lt_one).w + 7) / 8 ∧
-    ((Obj.codes (.arr b) #v[x])[0]'Nat.zero_lt_one).n = x.1) ∧
-  ∀ (a b : Obj) (x : Part (.sum a b)), laneOK(((Obj.codes (.sum a b) #v[x])[0]'Nat.zero_lt_one).w) ∧
-    ((Obj.codes (.sum a b) #v[x])[0]'Nat.zero_lt_one).b.size =
-      (((Obj.codes (.sum a b) #v[x])[0]'Nat.zero_lt_one).n.toNat *
-        ((Obj.codes (.sum a b) #v[x])[0]'Nat.zero_lt_one).w + 7) / 8 ∧
-    ((Obj.codes (.sum a b) #v[x])[0]'Nat.zero_lt_one).n = x.1

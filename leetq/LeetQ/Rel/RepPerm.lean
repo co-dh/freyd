@@ -632,7 +632,7 @@ section Snoc
 open Pow
 
 namespace ListN
--- `rep_tau_list`'s hypotheses at the side `X` (`n` rows of `A`), all but the universal `hW`
+-- `rep_tau_list`'s hypotheses at the side `X` (`n` rows of `A`)
 set_option hygiene false in
 scoped notation "tauOK(" A ", " cnt ", " X ")" =>
   (((∀ {i j : Nat} (hi : i < (cnt).toNat) (hj : j < (cnt).toNat),
@@ -649,6 +649,7 @@ scoped notation "tauOK(" A ", " cnt ", " X ")" =>
   laneOK((kcT(idU X)).w) ∧
   (kcT(idU X)).n = (Rel.nub (idU X)).n ∧
   (kcT(idU X)).b.size = ((kcT(idU X)).n.toNat * (kcT(idU X)).w + 7) / 8 ∧
+  A.CodesFit (#v[⟨(Rel.nub (idU X)).n, (Rel.nub (idU X)).val⟩] : Vector (Part A) 1) ∧
   (Rel.nub (idU X)).n.toNat < 2 ^ 63 ∧
   Vals.PickFits A (Rel.nub (idU X)).key (ids (pT(idU X))) ∧
   Vals.PickFits A (Rel.nub (idU X)).val (ids (pT(idU X))) ∧
@@ -672,11 +673,11 @@ open ListN
 
 /-- **`snoc`, read back**: a row `(bs, b)` of `P` goes to `bs ++ [b]` and nothing else. `snoc P` is
     `cat (P ≫ ⟨outl D, outr D ≫ τ⟩)`, `D = ran P`; `τ` gives `b` the array `[b]` exactly (`rep_tau_list`).
-    Hypotheses: `rep_tau_list`'s universal `hW`, and every primitive's at the pieces (`snocOK`): `rep_ran`'s at
+    Hypotheses: every primitive's at the pieces (`snocOK`): `rep_ran`'s at
     `P`, `rep_tau_list`'s at `(outr D).val`, `rep_comp`'s at `outr D ≫ τ` and at `P ≫ Q`, `rep_pair`'s at `Q`,
     `rep_cat`'s at the result. -/
 theorem rep_snoc {K B : Obj} (P : Rel K (.prod (.arr B) B))
-    (hW : codesWF) (h : snocOK(K, B, P)) :
+    (h : snocOK(K, B, P)) :
     ∀ k ys, rep (snoc P) k ys ↔ ∃ bs b, rep P k (bs, b) ∧ ys = bs ++ [b] := by
   obtain ⟨⟨hPf, hPp⟩, h1⟩ := h
   obtain ⟨ht, ⟨hcf, hc'⟩, h2⟩ := h1 _ rfl _ rfl
@@ -686,7 +687,7 @@ theorem rep_snoc {K B : Obj} (P : Rel K (.prod (.arr B) B))
   obtain ⟨c1, c2, c3, c4, c5⟩ := hc' _ rfl
   obtain ⟨q1, q2, q3, q4, q5, q6⟩ := hq' _ rfl
   obtain ⟨m1, m2, m3, m4, m5⟩ := hm' _ rfl
-  obtain ⟨hX, hx, hF, hw, hn, hs, h63, hpk, hpv, hlo⟩ := ht
+  obtain ⟨hX, hx, hF, hw, hn, hs, hW, h63, hpk, hpv, hlo⟩ := ht
   have eD := rep_ran_corefl P (one_ok _ hPf) (hPp)
   have eτ := rep_tau_list _ hX hx hF hw hn hs hW h63 hpk hpv hlo
   have eT := rep_comp _ _ (codes_faithful_wf _ _ hcf).1 c1 c2 c3 c4 c5

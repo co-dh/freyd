@@ -126,7 +126,7 @@ attribute [local irreducible] Code.runStarts Code.gather ByteArray.extract
     its array IS `d`'s values at a list `L` of rows of `d`, each row once, `L` holding exactly the rows of `d`
     keyed like `i`, in the order `sortBy` lists `d`'s rows (`L` a sublist of `vp`): the run of that key in the
     stable grade of the key codes over the values sorted; every key of `d` keys some row. Hypotheses: the key codes faithful and well formed
-    (`rep_nub`'s `hK` at `d`), `sortBy_perm`'s `hW`, `d`'s count below `2⁶³`, and the picks fitting
+    (`rep_nub`'s `hK` at `d`), `sortBy_perm`'s fit of `d`'s values (`hW`), `d`'s count below `2⁶³`, and the picks fitting
     (`Vals.PickFits`) at the row order and at the run starts. -/
 theorem transpose_row_list (R : Rel A B)
     (hF : ∀ {i j : Nat} (hi : i < (Rel.nub R).n.toNat) (hj : j < (Rel.nub R).n.toNat),
@@ -134,7 +134,7 @@ theorem transpose_row_list (R : Rel A B)
         Vals.row (Rel.nub R).key ⟨i, hi⟩ = Vals.row (Rel.nub R).key ⟨j, hj⟩)
     (hw : laneOK((kcT).w))
     (hn : (kcT).n = (Rel.nub R).n) (hs : (kcT).b.size = ((kcT).n.toNat * (kcT).w + 7) / 8)
-    (hW : codesWF)
+    (hW : B.CodesFit (#v[⟨(Rel.nub R).n, (Rel.nub R).val⟩] : Vector (Part B) 1))
     (h63 : (Rel.nub R).n.toNat < 2 ^ 63)
     (hpk : Vals.PickFits A (Rel.nub R).key (ids pT)) (hpv : Vals.PickFits B (Rel.nub R).val (ids pT))
     (hlo : Vals.PickFits A (Vals.pickPart A (Rel.nub R).key pT).2 (ids loT)) :
@@ -154,7 +154,8 @@ theorem transpose_row_list (R : Rel A B)
     rw [ids_getElem h1, tilLongs_bitsAt _ hj, List.getElem_range, UInt64.toNat_ofNat',
       Nat.mod_eq_of_lt (by have := USize.size_le; omega)]
   have hvp : (ids vpT).Perm (List.range (kcT).n.toNat) := by
-    rw [hN]; exact (sortBy_perm hW B _ _ (by rw [len_tilLongs]; exact hU)).trans htil
+    rw [hN]; exact (sortBy_perm B _ hW _ (by rw [len_tilLongs]; exact hU)
+      fun t ht => List.mem_range.1 (htil.mem_iff.1 ht)).trans htil
   obtain ⟨hpp, hgrp, hgp, hstab⟩ := grade_gather_group (kcT) hw hs vpT hvp
   -- the row order `p`: its long `s` is `P s`, every row once
   have hlp : len pT = (Rel.nub R).n.toNat := by rw [len_eq_ids, hpp.length_eq, List.length_range, hN]
@@ -342,7 +343,7 @@ theorem transpose_rows (R : Rel A B)
         Vals.row (Rel.nub R).key ⟨i, hi⟩ = Vals.row (Rel.nub R).key ⟨j, hj⟩)
     (hw : laneOK((kcT).w))
     (hn : (kcT).n = (Rel.nub R).n) (hs : (kcT).b.size = ((kcT).n.toNat * (kcT).w + 7) / 8)
-    (hW : codesWF)
+    (hW : B.CodesFit (#v[⟨(Rel.nub R).n, (Rel.nub R).val⟩] : Vector (Part B) 1))
     (h63 : (Rel.nub R).n.toNat < 2 ^ 63)
     (hpk : Vals.PickFits A (Rel.nub R).key (ids pT)) (hpv : Vals.PickFits B (Rel.nub R).val (ids pT))
     (hlo : Vals.PickFits A (Vals.pickPart A (Rel.nub R).key pT).2 (ids loT)) :
@@ -391,7 +392,7 @@ theorem rep_transpose (R : Rel A B)
         Vals.row (Rel.nub R).key ⟨i, hi⟩ = Vals.row (Rel.nub R).key ⟨j, hj⟩)
     (hw : laneOK((kcT).w))
     (hn : (kcT).n = (Rel.nub R).n) (hs : (kcT).b.size = ((kcT).n.toNat * (kcT).w + 7) / 8)
-    (hW : codesWF)
+    (hW : B.CodesFit (#v[⟨(Rel.nub R).n, (Rel.nub R).val⟩] : Vector (Part B) 1))
     (h63 : (Rel.nub R).n.toNat < 2 ^ 63)
     (hpk : Vals.PickFits A (Rel.nub R).key (ids pT)) (hpv : Vals.PickFits B (Rel.nub R).val (ids pT))
     (hlo : Vals.PickFits A (Vals.pickPart A (Rel.nub R).key pT).2 (ids loT)) :
@@ -473,7 +474,7 @@ theorem rep_transpose_list (R : Rel A B)
         Vals.row (Rel.nub R).key ⟨i, hi⟩ = Vals.row (Rel.nub R).key ⟨j, hj⟩)
     (hw : laneOK((kcT).w))
     (hn : (kcT).n = (Rel.nub R).n) (hs : (kcT).b.size = ((kcT).n.toNat * (kcT).w + 7) / 8)
-    (hW : codesWF)
+    (hW : B.CodesFit (#v[⟨(Rel.nub R).n, (Rel.nub R).val⟩] : Vector (Part B) 1))
     (h63 : (Rel.nub R).n.toNat < 2 ^ 63)
     (hpk : Vals.PickFits A (Rel.nub R).key (ids pT)) (hpv : Vals.PickFits B (Rel.nub R).val (ids pT))
     (hlo : Vals.PickFits A (Vals.pickPart A (Rel.nub R).key pT).2 (ids loT)) :

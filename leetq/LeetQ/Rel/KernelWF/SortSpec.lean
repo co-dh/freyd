@@ -104,14 +104,31 @@ theorem gradeColumn_sort {t : QAtomicType} {n : USize} {e v : Enc} (h : gradeCol
            · cases h; exact ⟨_, _, rfl⟩
          · cases h)
 
+/-- **The grade of `kc`'s codes gathered at `vp` is a permutation of `vp`'s positions.** Hypotheses: `kc` well
+    formed, every long of `vp` one of its rows. -/
+theorem grade_gather_perm (kc : Code) (hw : laneOK(kc.w)) (hs : kc.b.size = (kc.n.toNat * kc.w + 7) / 8)
+    (vp : ByteArray) (hl : len vp < USize.size) (hvp : ∀ t ∈ ids vp, t < kc.n.toNat) :
+    (ids (kc.gather vp).grade).Perm (List.range (len vp)) := by
+  have hvl : ∀ j < len vp, (Column.bitsAt vp (j * 8) 8).toNat < kc.n.toNat := fun j hj => by
+    have hj' : j < (ids vp).length := by rw [← len_eq_ids]; exact hj
+    rw [← ids_getElem hj']; exact hvp _ (List.getElem_mem hj')
+  have hcb : 8 ≤ kc.w → 8 * kc.b.size = kc.w * kc.n.toNat := fun h8 => by
+    rcases hw with h | h | h | h | h | h | h <;> rw [h] at hs ⊢ <;> omega
+  obtain ⟨hGw, hGn, -, -⟩ := gather_spec kc vp hl hw hcb hvl
+  have hGs := gather_size kc vp hl hw
+  generalize kc.gather vp = G at hGw hGn hGs
+  rw [← hGw] at hw
+  rw [← hGn, ← hGw] at hGs
+  rw [← hGn]; exact (grade_code G hw hGs).1
+
 /-- **`Obj.sortBy` permutes the rows it is handed**: its answer holds the longs of `p`, each once, at every
-    side. Hypotheses: `len p` fits a `USize`; every one-part code of an `.arr` or `.sum` side is well formed and
-    of its part's count (the codes `sortBy` grades there); an atom's is `codes_atom_wf`. -/
-theorem sortBy_perm
-    (hW : codesWF) :
-    (A : Obj) → {n : USize} → (c : Vals A n) → (p : ByteArray) → len p < USize.size →
+    side. Hypotheses: `c`'s codes fit (`Obj.CodesFit`, the codes `sortBy` grades at an `.arr` or `.sum` side);
+    `len p` fits a `USize`; every long of `p` a row of `c`. -/
+theorem sortBy_perm :
+    (A : Obj) → {n : USize} → (c : Vals A n) → A.CodesFit (#v[⟨n, c⟩] : Vector (Part A) 1) →
+      (p : ByteArray) → len p < USize.size → (∀ t ∈ ids p, t < n.toNat) →
       (ids (A.sortBy c p)).Perm (ids p)
-  | .atom t, n, c, p, hl => by
+  | .atom t, n, c, _, p, hl, _ => by
     have hx := pick_len t ⟨_, c⟩ p hl
     have hc : (ids (Code.grade (codes t #v[pick t ⟨_, c⟩ p])[0])).Perm (List.range (len p)) := by
       obtain ⟨hw, hn, hs, -⟩ := codes_atom_wf t (pick t ⟨_, c⟩ p)
@@ -130,24 +147,18 @@ theorem sortBy_perm
       subst hm
       exact gather_perm (ids_sort_range _ le (Nat.lt_of_lt_of_le hl (by have := USize.size_le; omega)))
     next => exact gather_perm hc
-  | .prod a b, n, c, p, hl => by
-    have h2 := sortBy_perm hW b c.2 p hl
+  | .prod a b, n, c, hf, p, hl, hp => by
+    have ha : a.CodesFit (#v[⟨n, c.1⟩] : Vector (Part a) 1) := by simpa using hf.2.1
+    have hb : b.CodesFit (#v[⟨n, c.2⟩] : Vector (Part b) 1) := by simpa using hf.2.2
+    have h2 := sortBy_perm b c.2 hb p hl hp
     have hl2 : len (b.sortBy c.2 p) < USize.size := by rw [len_eq_ids, h2.length_eq, ← len_eq_ids]; exact hl
-    exact (sortBy_perm hW a c.1 _ hl2).trans h2
-  | .arr b, n, c, p, hl => by
-    obtain ⟨hw, hs, hn⟩ := hW.1 b (Vals.pickPart (.arr b) c p)
-    have hpn : (Vals.pickPart (.arr b) c p).1.toNat = len p := by
-      unfold Vals.pickPart need; rw [dif_pos hl]; exact USize.toNat_ofNat_of_lt' hl
-    have := (grade_code _ hw hs).1
-    rw [hn, hpn] at this
-    exact gather_perm this
-  | .sum a b, n, c, p, hl => by
-    obtain ⟨hw, hs, hn⟩ := hW.2 a b (Vals.pickPart (.sum a b) c p)
-    have hpn : (Vals.pickPart (.sum a b) c p).1.toNat = len p := by
-      unfold Vals.pickPart need; rw [dif_pos hl]; exact USize.toNat_ofNat_of_lt' hl
-    have := (grade_code _ hw hs).1
-    rw [hn, hpn] at this
-    exact gather_perm this
+    exact (sortBy_perm a c.1 ha _ hl2 fun t ht => hp t (h2.mem_iff.1 ht)).trans h2
+  | .arr b, n, c, hf, p, hl, hp => by
+    obtain ⟨hw, hn, hs, -⟩ := (codes_faithful_wf _ _ hf).1.2 (k := 0) Nat.zero_lt_one
+    exact gather_perm (grade_gather_perm _ hw hs p hl fun t ht => by rw [hn]; exact hp t ht)
+  | .sum a b, n, c, hf, p, hl, hp => by
+    obtain ⟨hw, hn, hs, -⟩ := (codes_faithful_wf _ _ hf).1.2 (k := 0) Nat.zero_lt_one
+    exact gather_perm (grade_gather_perm _ hw hs p hl fun t ht => by rw [hn]; exact hp t ht)
 
 /-- **`transpose`'s row order groups the keys**: `kc`'s codes at `vp`, graded stably and read back through `vp`
     (`p = vp@grade(kc@vp)`), hold every row once, and equal codes stand together along `p`; the grade holds
@@ -213,6 +224,7 @@ theorem grade_gather_group (kc : Code)
   exact (hκ _ _ (hg t (by omega)) (hg s (by omega))).1 (by omega)
 
 #print axioms grade_gather_group
+#print axioms grade_gather_perm
 #print axioms ids_gather8
 #print axioms gather_perm
 #print axioms grade_code
