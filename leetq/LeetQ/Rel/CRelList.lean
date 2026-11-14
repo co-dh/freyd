@@ -288,7 +288,7 @@ theorem rep_snocC {K B : Obj} (P : Rel K (.prod (.arr B) B)) (hb : (snocC P).2 =
   rw [snocC_fst]
   simp only [snocC, Bool.and_eq_true] at hb
   obtain ⟨⟨⟨⟨⟨hD, ht⟩, hT⟩, hQ⟩, hM⟩, hr⟩ := hb
-  have eD : (ranC P).1 = ran P := distinctCoreflC_fst _ _
+  have eD : (ranC P).1 = ran P := rfl
   rw [eD] at ht hT hQ hM hr
   simp only [ranC, distinctCoreflC, Bool.and_eq_true] at hD
   simp only [transposeC, Bool.and_eq_true, decide_eq_true_eq] at ht

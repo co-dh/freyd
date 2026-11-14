@@ -40,6 +40,7 @@ theorem compC_ok (R : Rel A B) (S : Rel B C) (hb : (compC R S).2 = true) :
   rw [← hcf] at hlw hls hrw hrs hrc hln hrn'
   obtain ⟨-, hZ⟩ := join_rows _ _ hlw hls hrw hrs hrc (by rw [hrn']; exact hrn) (by rw [hln, hrn']; exact hM)
   unfold compJoinC longCount need at hp
+  dsimp only at hp
   split at hp
   · rename_i hlt
     simp only [Bool.and_eq_true] at hp
@@ -84,7 +85,6 @@ theorem rep_unionC
         USize.size), Vals.RazeFits (.atom t) x y →
       (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
     (R S : Rel A B) (hb : (unionC R S).2 = true) : rep (unionC R S).1 = rep R ∪ rep S := by
-  rw [unionC_fst]
   unfold unionC need at hb
   split at hb
   · rename_i hN

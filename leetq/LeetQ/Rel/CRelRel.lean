@@ -46,19 +46,16 @@ theorem oneOK_of_codesC (X : Obj) {n : USize} (x : Vals X n) (hb : (X.codesC #v[
     the `fitsN` bit `hp`. -/
 theorem rep_distinctCoreflC (t : Obj) {n : USize} (x : Vals t n) (hb : (distinctCoreflC t x).2 = true) :
     rep (distinctCoreflC t x).1 = corefl (A := (⟨t.El⟩ : RelSet.{0})) fun a => ∃ i, x.row i = a := by
-  rw [distinctCoreflC_fst]
   simp only [distinctCoreflC, Bool.and_eq_true] at hb
   exact rep_distinctCorefl t x (oneOK_of_codesC t x hb.1) (pickFits_of_fitsN t x _ hb.2 _ (by simp))
 
 /-- **`rep (dom R) = 𝟙 ∩ rep R (rep R)°` under `domC`'s bit**: `rep_dom`'s premises as `rep_distinctCoreflC`'s. -/
 theorem rep_domC (R : Rel A B) (hb : (domC R).2 = true) : rep (domC R).1 = 𝟙 _ ∩ rep R ≫ (rep R)° := by
-  rw [show (domC R).1 = dom R from distinctCoreflC_fst A R.key]
   simp only [domC, distinctCoreflC, Bool.and_eq_true] at hb
   exact rep_dom R (oneOK_of_codesC A R.key hb.1) (pickFits_of_fitsN A R.key _ hb.2 _ (by simp))
 
 /-- **`rep (ran R) = 𝟙 ∩ (rep R)° (rep R)°°` under `ranC`'s bit**: `rep_ran`'s premises as `rep_domC`'s. -/
 theorem rep_ranC (R : Rel A B) (hb : (ranC R).2 = true) : rep (ranC R).1 = 𝟙 _ ∩ (rep R)° ≫ (rep R)°° := by
-  rw [show (ranC R).1 = ran R from distinctCoreflC_fst B R.val]
   simp only [ranC, distinctCoreflC, Bool.and_eq_true] at hb
   exact rep_ran R (oneOK_of_codesC B R.val hb.1) (pickFits_of_fitsN B R.val _ hb.2 _ (by simp))
 
@@ -66,7 +63,6 @@ theorem rep_ranC (R : Rel A B) (hb : (ranC R).2 = true) : rep (ranC R).1 = 𝟙 
     (`codesC_fits`, `codes_faithful_wf`), the `fitsN` bits `hk`, `hv`. -/
 theorem rep_antiJoinC (R : Rel A B) (T : Rel B B) (hb : (antiJoinC R T).2 = true) :
     rep (antiJoinC R T).1 = rep R ≫ corefl (A := (⟨B.El⟩ : RelSet.{0})) fun b => ¬ ∃ y, rep T y b := by
-  rw [antiJoinC_fst]
   simp only [antiJoinC, Bool.and_eq_true] at hb
   obtain ⟨⟨hcb, hk⟩, hv⟩ := hb
   exact rep_antiJoin R T (codes_faithful_wf B _ (Obj.codesC_fits B _ hcb)).1
@@ -115,7 +111,7 @@ theorem rep_memC {n : USize} (X : Vals (.arr B) n) (hb : (memC X).2 = true) (xs 
     rep (memC X).1 xs x ↔ (∃ i, X.row i = xs) ∧ x ∈ xs :=
   rep_mem X (memC_ok X hb).1 (memC_ok X hb).2 xs x
 
-open Prim in
+open Prim FoldN in
 /-- **`pairC`'s bit is `rep_pair`'s premises** (`pairOK`), as `compC_ok`: the keys' codes fitting, the decided
     bounds, and the three picks' bits read at the join's rows (`join_rows`, `pickC_fits`). -/
 theorem pairC_ok {A B C : Obj} (R : Rel A B) (S : Rel A C) (hb : (pairC R S).2 = true) : pairOK(A, R, S) := by
@@ -133,6 +129,7 @@ theorem pairC_ok {A B C : Obj} (R : Rel A B) (S : Rel A C) (hb : (pairC R S).2 =
   rw [← hcf'] at hlw hls hrw hrs hrc hln hrn'
   obtain ⟨-, hZ⟩ := join_rows _ _ hlw hls hrw hrs hrc (by rw [hrn']; exact hrn) (by rw [hln, hrn']; exact hM)
   unfold pairJoinC longCount need at hp
+  dsimp only at hp
   split at hp
   · rename_i hlt
     simp only [Bool.and_eq_true] at hp

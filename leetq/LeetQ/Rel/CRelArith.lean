@@ -31,7 +31,6 @@ theorem rep_inrC {n : USize} (Y : Vals B n) (hb : (inrC (A := A) Y).2 = true) :
     bound its `h63`, the raze's bit its `hF` (`razeC_fits`). -/
 theorem rep_juncC (R : Rel A C) (S : Rel B C) (hb : (juncC R S).2 = true) :
     rep (juncC R S).1 = Freyd.Alg.junc (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩) (rep R) (rep S) := by
-  rw [juncC_fst]
   unfold juncC need at hb
   split at hb
   · rename_i hN
@@ -98,7 +97,6 @@ theorem rep_leqC {n : USize} (U : Vals (.atom .long) n) (h : QAtomicType.long �
     `codes_faithful_wf`, less its `w < 8` clause). -/
 theorem rep_succC {n : USize} (U : Vals (.atom .long) n) (hb : (succC U).2 = true) (u w : Int64) :
     rep (succC U).1 u w ↔ (∃ i, U.row i = u) ∧ w = Ew.intStep Ew.add nul u 1 ∧ ∃ j, U.row j = w := by
-  rw [succC_fst]
   have hc := (codes_faithful_wf (.atom .long) #v[⟨n, valCol Ew.add Ew.va (longsOf U) (one 1)⟩, ⟨n, U⟩]
     (Obj.codesC_fits (.atom .long) _ hb)).1
   exact rep_succ U _ rfl _ rfl

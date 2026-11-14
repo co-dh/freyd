@@ -45,14 +45,9 @@ def zero : Rel A B := ⟨0, Vals.empty A, Vals.empty B⟩
 instance : Inhabited (Rel A B) := ⟨zero⟩
 
 /-- `R ∪ S`: `razeColumn` of keys and of vals, both at the summed count (`Obj.raze`), the first row of each pair;
-    the summed count fits a `USize`. -/
-private def union (R S : Rel A B) : Rel A B :=
-  need (R.n.toNat + S.n.toNat < USize.size) (fun _ => s!"∪: {R.n} + {S.n} rows do not fit a USize")
-    (fun _ => zero) fun h =>
-  Rel.nub ⟨_, A.raze #[⟨_, R.key⟩, ⟨_, S.key⟩] (by simpa using h), B.raze #[⟨_, R.val⟩, ⟨_, S.val⟩] (by simpa using h)⟩
-
-/-- `∪` and whether it ran within capacity: the summed count's bound (`need`'s guard) and the bits of the two
-    razes and of `nub`'s two codes (`razeC`, `codesC`), `&&` the razed sides fitting at all their rows (`fitsN`). -/
+    the summed count fits a `USize`. Whether it ran within capacity: the summed count's bound (`need`'s guard) and
+    the bits of the two razes and of `nub`'s two codes (`razeC`, `codesC`), `&&` the razed sides fitting at all their
+    rows (`fitsN`). -/
 def unionC (R S : Rel A B) : Rel A B × Bool :=
   need (R.n.toNat + S.n.toNat < USize.size) (fun _ => s!"∪: {R.n} + {S.n} rows do not fit a USize")
     (fun _ => (zero, false)) fun h =>
@@ -63,10 +58,8 @@ def unionC (R S : Rel A B) : Rel A B × Bool :=
   (U.rows (tuples.tupleIds kc.1[0] #[vc.1[0]]).2,
     k.2 && v.2 && kc.2 && vc.2 && Vals.fitsN A U.key U.n.toNat && Vals.fitsN B U.val U.n.toNat)
 
-theorem unionC_fst (R S : Rel A B) : (unionC R S).1 = union R S := by
-  unfold unionC union need; split
-  · cases A <;> cases B <;> rfl
-  · rfl
+/-- `R ∪ S`: `unionC`'s relation. -/
+private def union (R S : Rel A B) : Rel A B := (unionC R S).1
 
 /-- `⊤` on the universes `Ua`, `Ub`: `cross`, its two index columns of one length (`cross_len`). -/
 def top {ma mb : USize} (Ua : Vals A ma) (Ub : Vals B mb) : Rel A B :=
@@ -129,20 +122,15 @@ theorem need_fst {α β : Type} {p : Prop} [Decidable p] (msg : Unit → String)
 theorem _root_.LeetQ.Rel.Obj.codesC_fst (X : Obj) {p : Nat} (cs : Vector (Part X) p) : (X.codesC cs).1 = X.codes cs := by
   cases X <;> rfl
 
-/-- The coreflexive on the distinct elements of `x`: the first row of each code. -/
-def distinctCorefl (t : Obj) {n : USize} (x : Vals t n) : Rel t t :=
-  let i := (t.codes #v[⟨n, x⟩])[0].groupIds.2
-  longCount "distinct" i fun m h => let d := Vals.pick t x i m h; ⟨m, d, d⟩
-
-/-- `distinctCorefl` and whether it ran within capacity: the one-part code's bit (`codesC`) `&&` `x` fitting at all
-    its rows (`fitsN`), the first rows picked being among them. -/
+/-- The coreflexive on the distinct elements of `x`, `𝟙` on `x` at the first row of each code, and whether it ran
+    within capacity: the one-part code's bit (`codesC`) `&&` `x` fitting at all its rows (`fitsN`), the first rows
+    picked being among them. -/
 def distinctCoreflC (t : Obj) {n : USize} (x : Vals t n) : Rel t t × Bool :=
   let c := t.codesC #v[⟨n, x⟩]
-  let i := c.1[0].groupIds.2
-  (longCount "distinct" i fun m h => let d := Vals.pick t x i m h; ⟨m, d, d⟩, c.2 && Vals.fitsN t x n.toNat)
+  ((idU x).rows c.1[0].groupIds.2, c.2 && Vals.fitsN t x n.toNat)
 
-theorem distinctCoreflC_fst (t : Obj) {n : USize} (x : Vals t n) : (distinctCoreflC t x).1 = distinctCorefl t x := by
-  cases t <;> rfl
+/-- The coreflexive on the distinct elements of `x`: `distinctCoreflC`'s relation. -/
+def distinctCorefl (t : Obj) {n : USize} (x : Vals t n) : Rel t t := (distinctCoreflC t x).1
 
 /-- `dom R`: the coreflexive on the distinct keys. -/
 def dom (R : Rel A B) : Rel A A := distinctCorefl A R.key
@@ -156,19 +144,15 @@ def ran (R : Rel A B) : Rel B B := distinctCorefl B R.val
 /-- `ran` and whether it ran within capacity: `distinctCoreflC` of the vals. -/
 def ranC (R : Rel A B) : Rel B B × Bool := distinctCoreflC B R.val
 
-/-- `R ≫ corNeg(C)`, the anti-join: the rows of `R` whose value is no value of `C` (`anti` on one joint coding). -/
-def antiJoin (R : Rel A B) (C : Rel B B) : Rel A B :=
-  let vc := B.codes #v[⟨_, R.val⟩, ⟨_, C.val⟩]
-  R.rows (anti vc[0] vc[1])
-
-/-- `antiJoin` and whether it ran within capacity: the joint value codes' bit (`codesC`) `&&` `R`'s two sides fitting
-    at all its rows (`fitsN`), the kept rows being among them. -/
+/-- `R ≫ corNeg(C)`, the anti-join: the rows of `R` whose value is no value of `C` (`anti` on one joint coding), and
+    whether it ran within capacity: the joint value codes' bit (`codesC`) `&&` `R`'s two sides fitting at all its rows
+    (`fitsN`), the kept rows being among them. -/
 def antiJoinC (R : Rel A B) (C : Rel B B) : Rel A B × Bool :=
   let vc := B.codesC #v[⟨_, R.val⟩, ⟨_, C.val⟩]
   (R.rows (anti vc.1[0] vc.1[1]), vc.2 && Vals.fitsN A R.key R.n.toNat && Vals.fitsN B R.val R.n.toNat)
 
-theorem antiJoinC_fst (R : Rel A B) (C : Rel B B) : (antiJoinC R C).1 = antiJoin R C := by
-  cases B <;> rfl
+/-- `R ≫ corNeg(C)`: `antiJoinC`'s relation. -/
+def antiJoin (R : Rel A B) (C : Rel B B) : Rel A B := (antiJoinC R C).1
 
 /-- `R − S`: the rows of `R` whose pair is no pair of `S` — `inter`'s joint pair codes, `anti` in place of `member`. -/
 private def diff (R S : Rel A B) : Rel A B :=
@@ -432,15 +416,8 @@ def inrC {A B : Obj} {n : USize} (Y : Vals B n) : Rel B (.sum A B) × Bool := (i
 
 /-- `[R, S] : A + B ⟶ C`: `inl x` to what `R` relates `x` to, `inr y` to what `S` relates `y` to. The keys are
     the two key payloads as they are (`sumVals`), the values razed (`Obj.raze`), `R.n + S.n` rows, which fit a
-    `USize`. -/
-def junc {A B C : Obj} (R : Rel A C) (S : Rel B C) : Rel (.sum A B) C :=
-  need (R.n.toNat + S.n.toNat < USize.size) (fun _ => s!"[R,S]: {R.n} + {S.n} rows do not fit a USize")
-    (fun _ => zero) fun hN =>
-  ⟨R.n + S.n, sumVals R.key S.key hN,
-    toUSize_eq (by rw [toNat_add_fits hN]) ▸ C.raze #[⟨_, R.val⟩, ⟨_, S.val⟩] (by simpa using hN)⟩
-
-/-- `[R, S]` and whether it ran within capacity: `need`'s guard, `rep_junc`'s `2^63` bound decided, `&&` the bit
-    of the values' raze (`razeC`). -/
+    `USize`. Whether it ran within capacity: `need`'s guard, `rep_junc`'s `2^63` bound decided, `&&` the bit of the
+    values' raze (`razeC`). -/
 def juncC {A B C : Obj} (R : Rel A C) (S : Rel B C) : Rel (.sum A B) C × Bool :=
   need (R.n.toNat + S.n.toNat < USize.size) (fun _ => s!"[R,S]: {R.n} + {S.n} rows do not fit a USize")
     (fun _ => (zero, false)) fun hN =>
@@ -448,10 +425,8 @@ def juncC {A B C : Obj} (R : Rel A C) (S : Rel B C) : Rel (.sum A B) C × Bool :
   (⟨R.n + S.n, sumVals R.key S.key hN, toUSize_eq (by rw [toNat_add_fits hN]) ▸ v.1⟩,
     decide (R.n.toNat + S.n.toNat ≤ 2 ^ 63) && v.2)
 
-theorem juncC_fst {A B C : Obj} (R : Rel A C) (S : Rel B C) : (juncC R S).1 = junc R S := by
-  unfold juncC junc need; split
-  · cases C <;> rfl
-  · rfl
+/-- `[R, S] : A + B ⟶ C`: `juncC`'s relation. -/
+def junc {A B C : Obj} (R : Rel A C) (S : Rel B C) : Rel (.sum A B) C := (juncC R S).1
 
 /-- `R + S ≜ [R inl, S inr] : A + B ⟶ C + D`, built directly: the key and the value sides share one tag and one
     position column over the payloads of `R` and of `S` as they are, where the composites would join each
@@ -712,25 +687,20 @@ def leqC {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (h : t ≠ .genera
   let l := ltC U h; let u := unionC l.1 (idU U); (u.1, l.2 && u.2)
 
 theorem leqC_fst {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (h : t ≠ .general) : (leqC U h).1 = leq U h := by
-  show (unionC (ltC U h).1 (idU U)).1 = _; rw [unionC_fst, ltC_fst]; rfl
+  show (unionC (ltC U h).1 (idU U)).1 = _; rw [ltC_fst]; rfl
 
 /-- `succ : long ⟶ long` on `U` (`succ`, AOP/A5_6_ListCombinators.lean:343): each `u` to `u + 1` where `u + 1`
     is in `U`, so the range stays in `U` and the top of `U` goes to nothing. `Ew.val` add, then the rows whose
-    sum is a `member` of `U` (`whereBits`), key and sum gathered there. -/
-def succ {n : USize} (U : Vals (.atom .long) n) : Rel (.atom .long) (.atom .long) :=
-  let s : Arr .long n := valCol Ew.add Ew.va (longsOf U) (one 1)
-  let c := codes .long #v[⟨_, s⟩, ⟨_, U⟩]
-  let k := whereBits n (c[0].member c[1])
-  longCount "succ" k fun r hr => ⟨r, Vals.pick _ U k r hr, Vals.pick (.atom .long) s k r hr⟩
-
-/-- `succ` and whether it ran within capacity: the bit of its codes (`codesC`); the picks of atoms stay plain. -/
+    sum is a `member` of `U` (`whereBits`), key and sum gathered there. Whether it ran within capacity: the bit of
+    its codes (`codesC`); the picks of atoms stay plain. -/
 def succC {n : USize} (U : Vals (.atom .long) n) : Rel (.atom .long) (.atom .long) × Bool :=
   let s : Arr .long n := valCol Ew.add Ew.va (longsOf U) (one 1)
   let c := (Obj.atom .long).codesC #v[⟨_, s⟩, ⟨_, U⟩]
   let k := whereBits n (c.1[0].member c.1[1])
   (longCount "succ" k fun r hr => ⟨r, Vals.pick _ U k r hr, Vals.pick (.atom .long) s k r hr⟩, c.2)
 
-theorem succC_fst {n : USize} (U : Vals (.atom .long) n) : (succC U).1 = succ U := rfl
+/-- `succ : long ⟶ long` on `U`: `succC`'s relation. -/
+def succ {n : USize} (U : Vals (.atom .long) n) : Rel (.atom .long) (.atom .long) := (succC U).1
 
 /-- The integral value verb `op` (`Ew.add`, `sub`, `mul`, `idiv`, `imod`) as a relation `long × long ⟶ long` on
     the pairs `W`: each `(u, v)` to `u op v` where that is a `long` other than q's null, and to nothing elsewhere.
@@ -803,7 +773,7 @@ theorem alphaC_fst {K B : Obj} {n : USize} (I : Vals K 1) (P : Vals (.prod B (.a
     (alphaC I P).1 = alpha I P := by
   unfold alphaC alpha; rw [← consC_fst]
   cases consC (idU P)
-  unfold junc; rw [need_fst]; simp only [razeC_fst]; rfl
+  unfold junc juncC; rw [need_fst, need_fst]; simp only [razeC_fst]; rfl
 
 /-- `Λ(R)` total on `U`: each element of `U` that `R` relates to nothing goes to the empty array, which `Λ(R)`,
     one row per key of `R`, has no row for. -/
@@ -1055,7 +1025,7 @@ theorem snocC_fst {K B : Obj} (P : Rel K (.prod (.arr B) B)) : (snocC P).1 = sno
   -- `transposeC`'s `.1` named, so the goal closes syntactically: a defeq check through it evaluates `cat`
   have ht : ∀ R : Rel B B, (transposeC R).1 = transpose R := fun _ => rfl
   unfold snocC snoc ranC ran τ; dsimp only
-  rw [catC_fst, distinctCoreflC_fst, ht]
+  rw [catC_fst, ht]; rfl
 
 /-- `cat° : arr B ⟶ arr B × arr B` on the arrays `X`, each array to every way of cutting it in two: the
     `k`-th prefix beside the `k`-th suffix, `⟨inits, tails⟩ zip ∋`. -/

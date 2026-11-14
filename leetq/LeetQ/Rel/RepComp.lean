@@ -247,7 +247,9 @@ theorem comp_fits (R : Rel A B) (S : Rel B C)
       by omega⟩
   rw [show R ≫ S = longCount "≫" (join (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)).2 (fun m h =>
       (⟨m, Vals.pickN A R.key (join (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)).1 m (h ▸ join_len (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)),
-        Vals.pick C S.val (join (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)).2 m h⟩ : Rel A C)) from rfl]
+        Vals.pick C S.val (join (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)).2 m h⟩ : Rel A C)) by
+    show (compJoinC R S ((B.codesC jcs).1[0]) ((B.codesC jcs).1[1])).1 = _
+    rw [Obj.codesC_fst]; unfold compJoinC longCount; rw [need_fst]; simp only [pickC_fst]; rfl]
   unfold longCount need
   rw [dif_pos hlt]
   dsimp only
