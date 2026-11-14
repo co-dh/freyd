@@ -100,18 +100,6 @@ theorem grade_ofLongs (b : ByteArray) (hN : len b < USize.size)
   rw [hkey i (List.mem_range.1 (hp.mem_iff.1 hi)), hkey j (List.mem_range.1 (hp.mem_iff.1 hj))] at h
   omega
 
-/-- `gather 8 p g` read back as a list: long `j` is `p`'s long at `g`'s long `j`, `g`'s longs below `len p`. -/
-theorem ids_gather8_bits {p g : ByteArray} (hlt : ∀ j < len g, (Column.bitsAt g (j * 8) 8).toNat < len p) :
-    ids (gather 8 p g) = (ids g).map fun j => (ids p)[j]! := by
-  apply List.ext_getElem
-  · simp only [List.length_map, ← len_eq_ids, gather_len]
-  · intro j h1 h2
-    have hj : j < len g := by rw [len_eq_ids]; simpa using h2
-    have hk : (Column.bitsAt g (j * 8) 8).toNat < (ids p).length := by rw [← len_eq_ids]; exact hlt j hj
-    rw [ids_getElem h1, gather8_get hj (hlt j hj), List.getElem_map,
-      ids_getElem (show j < (ids g).length by rw [← len_eq_ids]; exact hj), getElem!_pos (ids p) _ hk,
-      ids_getElem hk]
-
 /-- **A sort `v` regrouped stably by row**: `v` lists `til (len i)` in `R` order, `i` gives each position its
     row (below `2^63`); `v@grade(i@v)` lists every position once, by row ascending and, inside a row, in `v`'s
     `R` order — `bagify`'s `p`, each row's cells one block, sorted by value. -/
@@ -134,16 +122,15 @@ theorem grade_group (i v : ByteArray) (hv : (ids v).Perm (List.range (len i))) (
     (fun a ha => by rw [hwl] at ha; rw [hw a ha]; exact h63 _ (hvlt a ha))
   rw [hwl] at hgp
   generalize hG : (Code.ofLongs (gather 8 i v)).grade = G at hgp hgs
-  have hGlt : ∀ j < len G, (Column.bitsAt G (j * 8) 8).toNat < len v := fun j hj => by
-    have hj' : j < (ids G).length := by rw [← len_eq_ids]; exact hj
-    rw [← ids_getElem hj', hvl]; exact List.mem_range.1 (hgp.mem_iff.1 (List.getElem_mem hj'))
+  have hGm : ∀ t ∈ ids G, t < len v := fun t ht => by rw [hvl]; exact List.mem_range.1 (hgp.mem_iff.1 ht)
   refine ⟨(gather_perm (by rw [hvl]; exact hgp)).trans hv, ?_⟩
-  rw [ids_gather8_bits hGlt, List.pairwise_map]
+  rw [ids_gather8 hGm, List.pairwise_map]
   refine hgs.imp_of_mem fun {a b} ha hb h => ?_
   have ha' := List.mem_range.1 (hgp.mem_iff.1 ha); have hb' := List.mem_range.1 (hgp.mem_iff.1 hb)
   have hva : a < (ids v).length := by rw [hv.length_eq, List.length_range]; exact ha'
   have hvb : b < (ids v).length := by rw [hv.length_eq, List.length_range]; exact hb'
-  rw [getElem!_pos (ids v) a hva, getElem!_pos (ids v) b hvb, ids_getElem hva, ids_getElem hvb]
+  rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hva, Option.getD_some, List.getD_eq_getElem?_getD,
+    List.getElem?_eq_getElem hvb, Option.getD_some, ids_getElem hva, ids_getElem hvb]
   rw [hw a ha', hw b hb'] at h
   rcases h with h | ⟨h1, h2⟩
   · exact .inl h
@@ -301,15 +288,15 @@ theorem sortBy_long {m : USize} (cells : Vals (.atom .long) m) :
   rw [hx] at hp
   generalize Order.grade .i64 false (pick .long ⟨_, cells⟩ (tilLongs m)).1
     (longsOf (pick .long ⟨_, cells⟩ (tilLongs m)).2) = G at hp hs
-  have hlt : ∀ j < len G, (Column.bitsAt G (j * 8) 8).toNat < len (tilLongs m) := fun j hj => by
-    have hj' : j < (ids G).length := by rw [← len_eq_ids]; exact hj
-    rw [← ids_getElem hj', len_tilLongs]; exact List.mem_range.1 (hp.mem_iff.1 (List.getElem_mem hj'))
+  have hGm : ∀ t ∈ ids G, t < len (tilLongs m) := fun t ht => by
+    rw [len_tilLongs]; exact List.mem_range.1 (hp.mem_iff.1 ht)
   have e : ids (gather 8 (tilLongs m) G) = ids G := by
-    rw [ids_gather8_bits hlt]
+    rw [ids_gather8 hGm]
     refine (List.map_congr_left fun j hj => ?_).trans (List.map_id _)
     have hjm := List.mem_range.1 (hp.mem_iff.1 hj)
     have hj' : j < (ids (tilLongs m)).length := by rw [← len_eq_ids, len_tilLongs]; exact hjm
-    rw [getElem!_pos (ids (tilLongs m)) j hj', ids_getElem hj', tilLongs_get hjm]; rfl
+    rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hj', Option.getD_some, ids_getElem hj',
+      tilLongs_get hjm]; rfl
   rw [e]
   refine ⟨hp, hs.imp_of_mem fun {c c'} hc hc' h hm hm' => ?_⟩
   have hk := List.mem_range.1 (hp.mem_iff.1 hc); have hk' := List.mem_range.1 (hp.mem_iff.1 hc')
@@ -319,7 +306,6 @@ theorem sortBy_long {m : USize} (cells : Vals (.atom .long) m) :
 #print axioms sortBy_long
 #print axioms filter_range_lt
 #print axioms sorted_block_perm
-#print axioms ids_gather8_bits
 #print axioms grade_group
 #print axioms sorted_block
 #print axioms key_i64

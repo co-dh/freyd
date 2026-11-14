@@ -119,7 +119,7 @@ theorem idWidth_lane (o : Array Nat) : Column.idWidth o = 0 ∨ Column.idWidth o
 
 /-- **`concatIds` read back**: id `O_k + i` of the answer, `O_k` the counts before part `k`, is part `k`'s id `i`
     read through its map. -/
-theorem concatIds_idAt {w : Nat} (hw : w = 0 ∨ w = 1 ∨ w = 2 ∨ w = 4 ∨ w = 8 ∨ w = 16 ∨ w = 32 ∨ w = 64)
+theorem concatIds_idAt {w : Nat} (hw : w = 0 ∨ laneOK(w))
     (cs : Array USize) (ws : Array Nat) (maps parts : Array ByteArray) (hm : cs.size ≤ parts.size)
     (k : Nat) (hk : k < cs.size) (i : Nat) (hi : i < (cs[k]'hk).toNat) :
     Column.idAt (concatIds w.toUSize (countBytes cs) ws maps parts) w (((cs.toList.take k).map USize.toNat).sum + i) =

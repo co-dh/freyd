@@ -21,26 +21,30 @@ theorem ids_sort_range (m : Nat) (le : Nat → Nat → Bool) (hm : m < 2 ^ 64) :
   rw [ids_indices _ fun i hi => Nat.lt_trans (List.mem_range.1 (hp.mem_iff.1 hi)) hm]
   exact hp
 
+/-- **`gather 8 src idx`, read back** at in-range indices: `src`'s long at each index of `idx`. -/
+theorem ids_gather8 {src idx : ByteArray} (h : ∀ t ∈ ids idx, t < len src) :
+    ids (gather 8 src idx) = (ids idx).map fun t => (ids src).getD t 0 := by
+  apply List.ext_getElem
+  · simp only [List.length_map, ← len_eq_ids, gather_len]
+  · intro j h1 h2
+    have h2' : j < (ids idx).length := by simpa using h2
+    have hj : j < len idx := by rw [len_eq_ids]; exact h2'
+    have hm : (Column.bitsAt idx (j * 8) 8).toNat < len src := by
+      rw [← ids_getElem h2']; exact h _ (List.getElem_mem h2')
+    have hm' : (ids idx)[j] < (ids src).length := by rw [← len_eq_ids, ids_getElem h2']; exact hm
+    rw [ids_getElem h1, List.getElem_map, gather8_get hj hm, ← ids_getElem h2', List.getD_eq_getElem?_getD,
+      List.getElem?_eq_getElem hm', Option.getD_some, ids_getElem hm']
+
 /-- **`gather 8 p g` at a permutation `g` of `p`'s positions holds `p`'s longs, each once.** -/
 theorem gather_perm {p g : ByteArray} (hg : (ids g).Perm (List.range (len p))) :
     (ids (gather 8 p g)).Perm (ids p) := by
-  have hlt : ∀ j < len g, (Column.bitsAt g (j * 8) 8).toNat < len p := fun j hj => by
-    have hj' : j < (ids g).length := by rw [← len_eq_ids]; exact hj
-    rw [← ids_getElem hj']; exact List.mem_range.1 (hg.mem_iff.1 (List.getElem_mem hj'))
-  have e : ids (gather 8 p g) = (ids g).map fun j => (ids p)[j]! := by
-    apply List.ext_getElem
-    · simp only [List.length_map, ← len_eq_ids, gather_len]
-    · intro j h1 h2
-      have hj : j < len g := by rw [len_eq_ids]; simpa using h2
-      have hk : (Column.bitsAt g (j * 8) 8).toNat < (ids p).length := by rw [← len_eq_ids]; exact hlt j hj
-      rw [ids_getElem h1, gather8_get hj (hlt j hj), List.getElem_map,
-        ids_getElem (show j < (ids g).length by rw [← len_eq_ids]; exact hj), getElem!_pos (ids p) _ hk,
-        ids_getElem hk]
-  rw [e]
+  rw [ids_gather8 fun t ht => List.mem_range.1 (hg.mem_iff.1 ht)]
   refine (hg.map _).trans (List.Perm.of_eq ?_)
   apply List.ext_getElem
   · simp [← len_eq_ids]
-  · intro j _ h2; simp only [List.getElem_map, List.getElem_range]; exact getElem!_pos (ids p) j h2
+  · intro j _ h2
+    simp only [List.getElem_map, List.getElem_range, List.getD_eq_getElem?_getD, List.getElem?_eq_getElem h2,
+      Option.getD_some]
 
 /-- **`Code.grade` of a well-formed code is a stable sort of its rows**: a permutation of `til n`, ascending in
     a key `κ` that agrees exactly where the codes do, ties in row order — `grade` at the lane's layout,
@@ -209,6 +213,7 @@ theorem grade_gather_group (kc : Code)
   exact (hκ _ _ (hg t (by omega)) (hg s (by omega))).1 (by omega)
 
 #print axioms grade_gather_group
+#print axioms ids_gather8
 #print axioms gather_perm
 #print axioms grade_code
 #print axioms sortBy_perm

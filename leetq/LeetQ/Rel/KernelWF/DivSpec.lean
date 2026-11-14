@@ -13,12 +13,18 @@ namespace LeetQ.Rel.Alg
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel
 
+namespace DivN
+
 -- a pair of code columns read as one key per row, the key `tupleIds` groups by
-local notation "key2(" a ", " b ")" => fun i => (Column.idAt (Code.b a) (Code.w a) i, Column.idAt (Code.b b) (Code.w b) i)
+scoped notation "key2(" a ", " b ")" => fun i => (Column.idAt (Code.b a) (Code.w a) i, Column.idAt (Code.b b) (Code.w b) i)
+
+end DivN
+
+open DivN
+
 -- a code column at a lane, of exactly its codes, below a byte under its bound: what `tupleIds_firsts` takes
 set_option hygiene false in
-local notation "codeOK(" a ")" => ((Code.w a = 1 ∨ Code.w a = 2 ∨ Code.w a = 4 ∨ Code.w a = 8 ∨ Code.w a = 16 ∨
-  Code.w a = 32 ∨ Code.w a = 64) ∧ ByteArray.size (Code.b a) = (USize.toNat (Code.n a) * Code.w a + 7) / 8 ∧
+local notation "codeOK(" a ")" => (laneOK(Code.w a) ∧ ByteArray.size (Code.b a) = (USize.toNat (Code.n a) * Code.w a + 7) / 8 ∧
   (Code.w a < 8 → ∀ i < USize.toNat (Code.n a),Column.idAt (Code.b a) (Code.w a) i < max (Code.card a) 2))
 
 /-- At most `m` first positions. -/
@@ -123,26 +129,12 @@ theorem whereEqV_ids (n : USize) (a b : ByteArray) :
   · rintro rfl
     rw [if_neg Int64.lt_irrefl, if_pos rfl]
 
-/-- **`gather 8 src idx`, read back** at in-range indices: `src`'s long at each index of `idx`. -/
-theorem ids_gather8 {src idx : ByteArray} (h : ∀ t ∈ ids idx, t < len src) :
-    ids (gather 8 src idx) = (ids idx).map fun t => (ids src).getD t 0 := by
-  apply List.ext_getElem
-  · simp only [List.length_map, ← len_eq_ids, gather_len]
-  · intro j h1 h2
-    have h2' : j < (ids idx).length := by simpa using h2
-    have hj : j < len idx := by rw [len_eq_ids]; exact h2'
-    have hm : (Column.bitsAt idx (j * 8) 8).toNat < len src := by
-      rw [← ids_getElem h2']; exact h _ (List.getElem_mem h2')
-    have hm' : (ids idx)[j] < (ids src).length := by rw [← len_eq_ids, ids_getElem h2']; exact hm
-    rw [ids_getElem h1, List.getElem_map, gather8_get hj hm, ← ids_getElem h2', List.getD_eq_getElem?_getD,
-      List.getElem?_eq_getElem hm', Option.getD_some, ids_getElem hm']
-
 /-- **`leftDiv`'s kept rows, read back**: of the first rows of the pairs `(yc, zc)`, ascending, those whose
     pair's row count equals the number of rows of `rv` holding the first row's `yc` code — `whereEqV` of
     `classSizes` (`tupleIds_sizes`) against `atCnt (cnt rv)` (`join_count`), gathered into the first rows.
     Hypotheses: `yc`, `zc` as `tupleIds_firsts`, `rv` as `join_count`'s right side. -/
 theorem leftDiv_keep (yc zc rv : Code) (hn : zc.n = yc.n) (hy : codeOK(yc)) (hz : codeOK(zc))
-    (hrw : rv.w = 1 ∨ rv.w = 2 ∨ rv.w = 4 ∨ rv.w = 8 ∨ rv.w = 16 ∨ rv.w = 32 ∨ rv.w = 64)
+    (hrw : laneOK(rv.w))
     (hrs : rv.b.size = (rv.n.toNat * rv.w + 7) / 8)
     (hrc : rv.w < 8 → rv.card < USize.size ∧ ∀ i < rv.n.toNat, Column.idAt rv.b rv.w i < rv.card) :
     ids (longCount "\\" (tuples.tupleIds yc #[zc]).2 fun g _ => gather 8 (tuples.tupleIds yc #[zc]).2
@@ -187,7 +179,6 @@ theorem leftDiv_keep (yc zc rv : Code) (hn : zc.n = yc.n) (hy : codeOK(yc)) (hz 
 #print axioms tupleIds_groupOf
 #print axioms tupleIds_sizes
 #print axioms whereEqV_ids
-#print axioms ids_gather8
 #print axioms leftDiv_keep
 
 end LeetQ.Rel.Alg

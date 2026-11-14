@@ -15,6 +15,10 @@ import QLean.Verify.EwEnc
 import QLean.Verify.Gather
 import LeetQ.Rel.Core
 
+-- the lane widths a `Code` may have: one home for the disjunction every `Code.w` hypothesis states (here, the
+-- earliest module stating it: an id pack's lane is `w = 0 ∨ laneOK(w)`)
+notation "laneOK(" w ")" => (w = 1 ∨ w = 2 ∨ w = 4 ∨ w = 8 ∨ w = 16 ∨ w = 32 ∨ w = 64)
+
 namespace LeetQ.Rel.KernelWF
 
 open QLean QLean.Kernel LeetQ.Rel
@@ -614,9 +618,7 @@ theorem answer_wf {t : QAtomicType} {n : USize} {e : Enc}
 /-! ## The `enum` branch: `concatEnum` -/
 
 /-- The widths an id pack takes: `laneWidth`'s answers. -/
-private abbrev Lane (w : Nat) : Prop := w = 0 ∨ w = 1 ∨ w = 2 ∨ w = 4 ∨ w = 8 ∨ w = 16 ∨ w = 32 ∨ w = 64
-
-private theorem lane_idWidth (offs : Array Nat) : Lane (Column.idWidth offs) := by
+private theorem lane_idWidth (offs : Array Nat) : Column.idWidth offs = 0 ∨ laneOK(Column.idWidth offs) := by
   simp only [Column.idWidth, Column.idWidthOf, Column.laneWidth]
   repeat' split
   all_goals omega
@@ -630,7 +632,7 @@ private theorem fold_push_size (g : Nat → UInt8) :
     simp only [ByteArray.size, ByteArray.push, Array.size_push]
 
 /-- **`packIds` at a lane is `⌈n·w/8⌉` bytes**, the size `Enc.WF` asks of an id pack. -/
-theorem packIds_size {w : Nat} (hw : w = 0 ∨ w = 1 ∨ w = 2 ∨ w = 4 ∨ w = 8 ∨ w = 16 ∨ w = 32 ∨ w = 64)
+theorem packIds_size {w : Nat} (hw : w = 0 ∨ laneOK(w))
     (n : Nat) (f : Nat → Nat) : (Column.packIds w n f).size = (n * w + 7) / 8 := by
   have hbytes : ∀ c, 1 ≤ c → c ≤ 8 → (Column.packIds (8 * c) n f).size = (n * (8 * c) + 7) / 8 :=
     fun c h1 h8 => by rw [(Verify.packIds_bytes c n f h1 h8).1, Nat.mul_comm n, Nat.mul_assoc]; omega
@@ -698,7 +700,7 @@ theorem internSyms_lt (blob : ByteArray) (offs : Array Nat) {y : Nat} (hy : y < 
   exact hv
 
 /-- **`concatIds` writes ids below `D`** where every part's ids, read through its map, are. -/
-theorem concatIds_lt {w D : Nat} (hw : Lane w) (cs : Array USize) (ws : Array Nat) (maps parts : Array ByteArray)
+theorem concatIds_lt {w D : Nat} (hw : w = 0 ∨ laneOK(w)) (cs : Array USize) (ws : Array Nat) (maps parts : Array ByteArray)
     (hm : cs.size ≤ parts.size)
     (h : ∀ k (hk : k < cs.size), ∀ i < cs[k].toNat, Column.idAt maps[k]! w (Column.idAt parts[k]! ws[k]! i) < D) :
     ∀ i < (cs.toList.map USize.toNat).sum,

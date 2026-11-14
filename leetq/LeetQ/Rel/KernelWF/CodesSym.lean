@@ -42,7 +42,7 @@ theorem ofLane_idAt {w : Nat} {n : USize} {card : Nat} {ids : ByteArray} {i : Na
 /-- **`Code.ofLane` is a well-formed code** for ids below `card` packed at a lane `w` that holds `card - 1`,
     in exactly `⌈n·w/8⌉` bytes where the lane has bits. -/
 theorem ofLane_wf {w : Nat} {n : USize} {card : Nat} {ids : ByteArray}
-    (hw : w = 0 ∨ w = 1 ∨ w = 2 ∨ w = 4 ∨ w = 8 ∨ w = 16 ∨ w = 32 ∨ w = 64)
+    (hw : w = 0 ∨ laneOK(w))
     (hsz : w ≠ 0 → ids.size = (n.toNat * w + 7) / 8) (hcard : w < 8 → card - 1 < 2 ^ w)
     (hid : ∀ i < n.toNat, Column.idAt ids w i < card) :
     let c := Code.ofLane w n card ids

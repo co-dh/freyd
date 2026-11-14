@@ -111,8 +111,7 @@ theorem div_y_holds (r : Rel A B) (s : Rel A C) (l k : Code) (hln : l.n = r.n) (
   have hm : len (join l k).2 = ((len (join l k).2).toUSize).toNat := (USize.toNat_ofNat_of_lt' hlt).symm
   exact div_y_rows l k r.val s.val hln hkn hlw hls hrw hrs hrc hrn hM hMU hB hC _ hm (hm ▸ join_len l k)
 
--- a pair of code columns read as one key per row, the key `tupleIds` groups by (as `DivSpec`'s)
-local notation "key2(" a ", " b ")" => fun i => (Column.idAt (Code.b a) (Code.w a) i, Column.idAt (Code.b b) (Code.w b) i)
+open Alg.DivN
 
 /-- **`leftDiv`'s counted part, read back**: `y`, the rows of `join l k` (`div_y_rows`) as `(r`'s value, `s`'s
     value`)`, kept at `leftDiv_keep`'s rows, holds `(b, c)` exactly when every `a` that `r` takes to `b` `s` takes to
