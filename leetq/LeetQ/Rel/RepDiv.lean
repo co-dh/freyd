@@ -42,7 +42,7 @@ open DivN OpsN
 
 /-- `divJoinC`'s relation is `yJ`: each pick twin's `.1` its pick (`pickC_fst`), `fit` read as `pickN` reads it. -/
 theorem divJoinC_fst (r : Rel A B) (s : Rel A C) (l k : Code) : (divJoinC r s l k).1 = yJ(B, C, r, s, l, k) := by
-  unfold divJoinC; dsimp only; rw [longCount_fst]; simp only [pickC_fst]; rfl
+  unfold divJoinC longCount; dsimp only; rw [need_fst]; simp only [pickC_fst]; rfl
 
 /-- **`leftDiv`'s joined rows, read back**: one row per pair `(i, j)` of `join l r`, in its order, `x`'s row `i`
     beside `z`'s row `j`. Stated over any two codes, not `leftDiv`'s, so the statement holds no `Obj.codes`.
