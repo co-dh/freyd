@@ -128,7 +128,56 @@ theorem lt_rows_holds {n : USize} (U : Vals (.atom .long) n) (h : QAtomicType.lo
 
 end
 
+-- dup of RepOps's local `codesOK`, `pcs`, `pairsOK`, `misses` (`rep_diff`'s hypotheses), the sides at `long`
+set_option hygiene false in
+local notation "codesOK(" cs ", " ps ")" => ((∀ {k l : Nat} (hk : k < 2) (hl : l < 2) {i j : Nat}
+    (hi : i < (ps[k]'hk).1.toNat) (hj : j < (ps[l]'hl).1.toNat),
+    Column.idAt (cs[k]'hk).b (cs[k]'hk).w i = Column.idAt (cs[l]'hl).b (cs[l]'hl).w j ↔
+      Vals.row (ps[k]'hk).2 ⟨i, hi⟩ = Vals.row (ps[l]'hl).2 ⟨j, hj⟩) ∧
+  ∀ {k : Nat} (hk : k < 2),
+    ((cs[k]'hk).w = 1 ∨ (cs[k]'hk).w = 2 ∨ (cs[k]'hk).w = 4 ∨ (cs[k]'hk).w = 8 ∨ (cs[k]'hk).w = 16 ∨
+      (cs[k]'hk).w = 32 ∨ (cs[k]'hk).w = 64) ∧
+    (cs[k]'hk).n = (ps[k]'hk).1 ∧ (cs[k]'hk).b.size = ((cs[k]'hk).n.toNat * (cs[k]'hk).w + 7) / 8 ∧
+    ((cs[k]'hk).w < 8 → (cs[k]'hk).card < USize.size ∧
+      ∀ i < (cs[k]'hk).n.toNat, Column.idAt (cs[k]'hk).b (cs[k]'hk).w i < (cs[k]'hk).card))
+set_option hygiene false in
+local notation "pcs(" R ", " S ")" =>
+  (#v[⟨Rel.n R, (Rel.key R, Rel.val R)⟩, ⟨Rel.n S, (Rel.key S, Rel.val S)⟩] :
+    Vector (Part (.prod (.atom .long) (.atom .long))) 2)
+set_option hygiene false in
+local notation "pairsOK(" R ", " S ")" => codesOK(pairs #v[R, S], pcs(R, S))
+set_option hygiene false in
+local notation "misses(" R ", " S ")" =>
+  anti ((pairs #v[R, S])[0]'Nat.zero_lt_two) ((pairs #v[R, S])[1]'Nat.one_lt_two)
+
+/-- **`rep (lt U)` at `long`**: the pairs of elements of `U` in `Int64` order, q's null `0N` the least. The rows
+    of every pair of positions whose ranks ascend (`lt_rows_holds`), less the pairs of one value (`rep_diff`).
+    Hypotheses: the pair count fits a `USize` and is below `2^63`; `L` names the rows before the diff;
+    `rep_diff`'s, at `L` and `idU U`. -/
+theorem rep_lt {n : USize} (U : Vals (.atom .long) n) (h : QAtomicType.long ≠ .general)
+    (hN : n.toNat * n.toNat < USize.size) (h63 : n.toNat * n.toNat < 2 ^ 63) (L : Rel (.atom .long) (.atom .long))
+    (hL : L = longCount "<" (cross n n).1 fun nn _ =>
+      longCount "<" (whereBits nn (Ew.cmp Ew.lt Ew.i64 Ew.vv (gather 8 (longsOf (Ops.rank U h)) (cross n n).1)
+          (gather 8 (longsOf (Ops.rank U h)) (cross n n).2) nn)) fun k hk =>
+        ⟨k, Vals.pick _ U (gather 8 (cross n n).1 (whereBits nn (Ew.cmp Ew.lt Ew.i64 Ew.vv
+            (gather 8 (longsOf (Ops.rank U h)) (cross n n).1) (gather 8 (longsOf (Ops.rank U h)) (cross n n).2) nn)))
+            k ((gather_len _ _).trans hk),
+          Vals.pick _ U (gather 8 (cross n n).2 (whereBits nn (Ew.cmp Ew.lt Ew.i64 Ew.vv
+            (gather 8 (longsOf (Ops.rank U h)) (cross n n).1) (gather 8 (longsOf (Ops.rank U h)) (cross n n).2) nn)))
+            k ((gather_len _ _).trans hk)⟩)
+    (hc : pairsOK(L, idU U)) (hk : Vals.PickFits (.atom .long) L.key (ids (misses(L, idU U))))
+    (hv : Vals.PickFits (.atom .long) L.val (ids (misses(L, idU U)))) (a b : Int64) :
+    rep (lt U h) a b ↔ (∃ i, U.row i = a) ∧ (∃ j, U.row j = b) ∧ a < b := by
+  have e : lt U h = L \ idU U := by subst hL; rfl
+  rw [e, rep_diff L (idU U) hc hk hv, rep_apply, rep_apply, lt_rows_holds U h hN h63 L hL, idU_holds]
+  constructor
+  · rintro ⟨⟨p, q, hp, hq, hg, hh, hlt⟩, hne⟩
+    exact ⟨⟨_, hg⟩, ⟨_, hh⟩, hlt.resolve_right fun ⟨e, _⟩ => hne ⟨e, _, hg⟩⟩
+  · rintro ⟨⟨i, hi⟩, ⟨j, hj⟩, hlt⟩
+    exact ⟨⟨i.1, j.1, i.2, j.2, hi, hj, .inl hlt⟩, fun ⟨e, _⟩ => by subst e; exact Int64.lt_irrefl hlt⟩
+
 #print axioms cmp_lt_small
 #print axioms lt_rows_holds
+#print axioms rep_lt
 
 end LeetQ.Rel.Rep
