@@ -163,7 +163,9 @@ def _root_.LeetQ.Rel.Vals.PickFits : (A : Obj) → {n : USize} → Vals A n → 
 
 /-- **What reading `x` at the rows `ps` touches**, the one size measure every fit bound is arithmetic on: the
     rows read at each level, an interned atom's dictionary, an array's payload count, a sum's two side counts —
-    each clause `Vals.PickFits`'s bounds summed, at the same windows (`w`) and side positions (`side`). -/
+    each clause `Vals.PickFits`'s bounds summed, at the same windows (`w`) and side positions (`side`). A payload
+    and a side are read at all their rows as well: `raze` takes them whole (`Vals.RazeFits`), rows no parent row
+    reaches included. -/
 def _root_.LeetQ.Rel.Vals.reads : (A : Obj) → {n : USize} → Vals A n → List Nat → Nat
   | .atom t, n, x, ps =>
     ps.length + (match Arr.enc (t := t) (n := n) x with | .enum _ o _ => o.size | _ => 0)
