@@ -7,7 +7,7 @@ import LeetQ.Rel.RepPower
 namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
-open Pow OpsN UnionN
+open Pow OpsN UnionN ListN
 
 variable {A : Obj}
 
@@ -48,13 +48,7 @@ theorem rep_E {B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) (M : Rel
     (hw : kt.w = 1 ∨ kt.w = 2 ∨ kt.w = 4 ∨ kt.w = 8 ∨ kt.w = 16 ∨ kt.w = 32 ∨ kt.w = 64)
     (hn : kt.n = (Rel.nub M).n)
     (hs : kt.b.size = (kt.n.toNat * kt.w + 7) / 8)
-    (hW : ∀ (B : Obj) (x : Part B), (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 1 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 2 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 4 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 8 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 16 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 32 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 64) ∧
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).b.size =
-        (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n.toNat * ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w + 7) / 8 ∧
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n = x.1)
+    (hW : codesWF)
     (h63 : (Rel.nub M).n.toNat < 2 ^ 63)
     (p lo : ByteArray) (hpT : p = pT(M)) (hloT : lo = loT(M))
     (hpk : Vals.PickFits (.arr A) (Rel.nub M).key (ids p))
@@ -122,13 +116,7 @@ theorem rep_E_list {B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) (M 
     (hw : kt.w = 1 ∨ kt.w = 2 ∨ kt.w = 4 ∨ kt.w = 8 ∨ kt.w = 16 ∨ kt.w = 32 ∨ kt.w = 64)
     (hn : kt.n = (Rel.nub M).n)
     (hs : kt.b.size = (kt.n.toNat * kt.w + 7) / 8)
-    (hW : ∀ (B : Obj) (x : Part B), (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 1 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 2 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 4 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 8 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 16 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 32 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 64) ∧
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).b.size =
-        (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n.toNat * ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w + 7) / 8 ∧
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n = x.1)
+    (hW : codesWF)
     (h63 : (Rel.nub M).n.toNat < 2 ^ 63)
     (p lo : ByteArray) (hpT : p = pT(M)) (hloT : lo = loT(M))
     (hpk : Vals.PickFits (.arr A) (Rel.nub M).key (ids p))

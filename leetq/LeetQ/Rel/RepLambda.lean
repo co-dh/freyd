@@ -13,6 +13,20 @@ open Freyd Freyd.Alg Freyd.Alg.RelSet
 
 variable {A B : Obj}
 
+namespace ListN
+-- the universal `hW` of `sortBy_perm`, `rep_tau_list`, `rep_snoc`: every one-part code is well formed and counts its part
+set_option hygiene false in
+scoped notation "codesWF" =>
+  ∀ (B : Obj) (x : Part B), (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 1 ∨
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 2 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 4 ∨
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 8 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 16 ∨
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 32 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 64) ∧
+    ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).b.size = (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n.toNat *
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w + 7) / 8 ∧
+    ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n = x.1
+end ListN
+open ListN
+
 /-- `longCount` where the count fits a `USize` runs its continuation at that count. -/
 theorem longCount_eq {α : Type} [Inhabited α] (what : String) (b : ByteArray)
     (k : (n : USize) → len b = n.toNat → α) (h : len b < USize.size) :
@@ -134,11 +148,7 @@ theorem transpose_row_list (R : Rel A B)
         Vals.row (Rel.nub R).key ⟨i, hi⟩ = Vals.row (Rel.nub R).key ⟨j, hj⟩)
     (hw : (kcT).w = 1 ∨ (kcT).w = 2 ∨ (kcT).w = 4 ∨ (kcT).w = 8 ∨ (kcT).w = 16 ∨ (kcT).w = 32 ∨ (kcT).w = 64)
     (hn : (kcT).n = (Rel.nub R).n) (hs : (kcT).b.size = ((kcT).n.toNat * (kcT).w + 7) / 8)
-    (hW : ∀ (B : Obj) (x : Part B), (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 1 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 2 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 4 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 8 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 16 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 32 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 64) ∧
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).b.size = (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n.toNat * ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w + 7) / 8 ∧
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n = x.1)
+    (hW : codesWF)
     (h63 : (Rel.nub R).n.toNat < 2 ^ 63)
     (hpk : Vals.PickFits A (Rel.nub R).key (ids pT)) (hpv : Vals.PickFits B (Rel.nub R).val (ids pT))
     (hlo : Vals.PickFits A (Vals.pickPart A (Rel.nub R).key pT).2 (ids loT)) :
@@ -346,11 +356,7 @@ theorem transpose_rows (R : Rel A B)
         Vals.row (Rel.nub R).key ⟨i, hi⟩ = Vals.row (Rel.nub R).key ⟨j, hj⟩)
     (hw : (kcT).w = 1 ∨ (kcT).w = 2 ∨ (kcT).w = 4 ∨ (kcT).w = 8 ∨ (kcT).w = 16 ∨ (kcT).w = 32 ∨ (kcT).w = 64)
     (hn : (kcT).n = (Rel.nub R).n) (hs : (kcT).b.size = ((kcT).n.toNat * (kcT).w + 7) / 8)
-    (hW : ∀ (B : Obj) (x : Part B), (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 1 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 2 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 4 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 8 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 16 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 32 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 64) ∧
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).b.size = (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n.toNat * ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w + 7) / 8 ∧
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n = x.1)
+    (hW : codesWF)
     (h63 : (Rel.nub R).n.toNat < 2 ^ 63)
     (hpk : Vals.PickFits A (Rel.nub R).key (ids pT)) (hpv : Vals.PickFits B (Rel.nub R).val (ids pT))
     (hlo : Vals.PickFits A (Vals.pickPart A (Rel.nub R).key pT).2 (ids loT)) :
@@ -399,11 +405,7 @@ theorem rep_transpose (R : Rel A B)
         Vals.row (Rel.nub R).key ⟨i, hi⟩ = Vals.row (Rel.nub R).key ⟨j, hj⟩)
     (hw : (kcT).w = 1 ∨ (kcT).w = 2 ∨ (kcT).w = 4 ∨ (kcT).w = 8 ∨ (kcT).w = 16 ∨ (kcT).w = 32 ∨ (kcT).w = 64)
     (hn : (kcT).n = (Rel.nub R).n) (hs : (kcT).b.size = ((kcT).n.toNat * (kcT).w + 7) / 8)
-    (hW : ∀ (B : Obj) (x : Part B), (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 1 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 2 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 4 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 8 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 16 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 32 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 64) ∧
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).b.size = (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n.toNat * ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w + 7) / 8 ∧
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n = x.1)
+    (hW : codesWF)
     (h63 : (Rel.nub R).n.toNat < 2 ^ 63)
     (hpk : Vals.PickFits A (Rel.nub R).key (ids pT)) (hpv : Vals.PickFits B (Rel.nub R).val (ids pT))
     (hlo : Vals.PickFits A (Vals.pickPart A (Rel.nub R).key pT).2 (ids loT)) :
@@ -485,11 +487,7 @@ theorem rep_transpose_list (R : Rel A B)
         Vals.row (Rel.nub R).key ⟨i, hi⟩ = Vals.row (Rel.nub R).key ⟨j, hj⟩)
     (hw : (kcT).w = 1 ∨ (kcT).w = 2 ∨ (kcT).w = 4 ∨ (kcT).w = 8 ∨ (kcT).w = 16 ∨ (kcT).w = 32 ∨ (kcT).w = 64)
     (hn : (kcT).n = (Rel.nub R).n) (hs : (kcT).b.size = ((kcT).n.toNat * (kcT).w + 7) / 8)
-    (hW : ∀ (B : Obj) (x : Part B), (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 1 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 2 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 4 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 8 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 16 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 32 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 64) ∧
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).b.size = (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n.toNat * ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w + 7) / 8 ∧
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n = x.1)
+    (hW : codesWF)
     (h63 : (Rel.nub R).n.toNat < 2 ^ 63)
     (hpk : Vals.PickFits A (Rel.nub R).key (ids pT)) (hpv : Vals.PickFits B (Rel.nub R).val (ids pT))
     (hlo : Vals.PickFits A (Vals.pickPart A (Rel.nub R).key pT).2 (ids loT)) :

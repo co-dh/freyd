@@ -609,16 +609,6 @@ section Snoc
 open Pow
 
 namespace ListN
--- `rep_tau_list`'s universal `hW`: every one-part code is well formed and counts its part
-set_option hygiene false in
-scoped notation "codesWF" =>
-  ∀ (B : Obj) (x : Part B), (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 1 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 2 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 4 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 8 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 16 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 32 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 64) ∧
-    ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).b.size = (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n.toNat *
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w + 7) / 8 ∧
-    ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n = x.1
 -- `rep_tau_list`'s hypotheses at the side `X` (`n` rows of `A`), all but the universal `hW`
 set_option hygiene false in
 scoped notation "tauOK(" A ", " cnt ", " X ")" =>

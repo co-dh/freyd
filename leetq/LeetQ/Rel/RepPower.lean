@@ -9,7 +9,7 @@ import LeetQ.Rel.KernelWF.RazeFoR
 namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
-open Freyd Freyd.Alg Freyd.Alg.RelSet
+open Freyd Freyd.Alg Freyd.Alg.RelSet ListN
 
 variable {A : Obj}
 
@@ -57,11 +57,7 @@ theorem rep_tau {n : USize} (X : Vals A n)
       (kcT(idU X)).w = 16 ∨ (kcT(idU X)).w = 32 ∨ (kcT(idU X)).w = 64)
     (hn : (kcT(idU X)).n = (Rel.nub (idU X)).n)
     (hs : (kcT(idU X)).b.size = ((kcT(idU X)).n.toNat * (kcT(idU X)).w + 7) / 8)
-    (hW : ∀ (B : Obj) (x : Part B), (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 1 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 2 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 4 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 8 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 16 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 32 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 64) ∧
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).b.size = (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n.toNat * ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w + 7) / 8 ∧
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n = x.1)
+    (hW : codesWF)
     (h63 : (Rel.nub (idU X)).n.toNat < 2 ^ 63)
     (hpk : Vals.PickFits A (Rel.nub (idU X)).key (ids (pT(idU X))))
     (hpv : Vals.PickFits A (Rel.nub (idU X)).val (ids (pT(idU X))))
@@ -109,11 +105,7 @@ theorem rep_lamOn {B : Obj} {m : USize} (R : Rel A B) (U : Vals A m)
     (hw : kt.w = 1 ∨ kt.w = 2 ∨ kt.w = 4 ∨ kt.w = 8 ∨ kt.w = 16 ∨ kt.w = 32 ∨ kt.w = 64)
     (hn : kt.n = (Rel.nub R).n)
     (hs : kt.b.size = (kt.n.toNat * kt.w + 7) / 8)
-    (hW : ∀ (B : Obj) (x : Part B), (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 1 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 2 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 4 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 8 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 16 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 32 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 64) ∧
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).b.size = (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n.toNat * ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w + 7) / 8 ∧
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n = x.1)
+    (hW : codesWF)
     (h63 : (Rel.nub R).n.toNat < 2 ^ 63)
     (p lo : ByteArray) (hpT : p = pT(R)) (hloT : lo = loT(R))
     (hpk : Vals.PickFits A (Rel.nub R).key (ids p))
@@ -229,11 +221,7 @@ theorem rep_setify {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (hw : kt.w = 1 ∨ kt.w = 2 ∨ kt.w = 4 ∨ kt.w = 8 ∨ kt.w = 16 ∨ kt.w = 32 ∨ kt.w = 64)
     (hn : kt.n = (Rel.nub mS(X)).n)
     (hs : kt.b.size = (kt.n.toNat * kt.w + 7) / 8)
-    (hW : ∀ (B : Obj) (x : Part B), (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 1 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 2 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 4 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 8 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 16 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 32 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 64) ∧
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).b.size = (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n.toNat * ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w + 7) / 8 ∧
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n = x.1)
+    (hW : codesWF)
     (h63 : (Rel.nub mS(X)).n.toNat < 2 ^ 63)
     (p lo : ByteArray) (hpT : p = pT(mS(X))) (hloT : lo = loT(mS(X)))
     (hpk : Vals.PickFits (.arr B) (Rel.nub mS(X)).key (ids p))
@@ -291,11 +279,7 @@ theorem rep_tau_list {n : USize} (X : Vals A n)
       (kcT(idU X)).w = 16 ∨ (kcT(idU X)).w = 32 ∨ (kcT(idU X)).w = 64)
     (hn : (kcT(idU X)).n = (Rel.nub (idU X)).n)
     (hs : (kcT(idU X)).b.size = ((kcT(idU X)).n.toNat * (kcT(idU X)).w + 7) / 8)
-    (hW : ∀ (B : Obj) (x : Part B), (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 1 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 2 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 4 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 8 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 16 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 32 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 64) ∧
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).b.size = (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n.toNat * ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w + 7) / 8 ∧
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n = x.1)
+    (hW : codesWF)
     (h63 : (Rel.nub (idU X)).n.toNat < 2 ^ 63)
     (hpk : Vals.PickFits A (Rel.nub (idU X)).key (ids (pT(idU X))))
     (hpv : Vals.PickFits A (Rel.nub (idU X)).val (ids (pT(idU X))))
@@ -338,11 +322,7 @@ theorem rep_lamOn_list {B : Obj} {m : USize} (R : Rel A B) (U : Vals A m)
     (hw : kt.w = 1 ∨ kt.w = 2 ∨ kt.w = 4 ∨ kt.w = 8 ∨ kt.w = 16 ∨ kt.w = 32 ∨ kt.w = 64)
     (hn : kt.n = (Rel.nub R).n)
     (hs : kt.b.size = (kt.n.toNat * kt.w + 7) / 8)
-    (hW : ∀ (B : Obj) (x : Part B), (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 1 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 2 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 4 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 8 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 16 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 32 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 64) ∧
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).b.size = (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n.toNat * ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w + 7) / 8 ∧
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n = x.1)
+    (hW : codesWF)
     (h63 : (Rel.nub R).n.toNat < 2 ^ 63)
     (p lo : ByteArray) (hpT : p = pT(R)) (hloT : lo = loT(R))
     (hpk : Vals.PickFits A (Rel.nub R).key (ids p))
@@ -410,11 +390,7 @@ theorem rep_setify_list {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (hw : kt.w = 1 ∨ kt.w = 2 ∨ kt.w = 4 ∨ kt.w = 8 ∨ kt.w = 16 ∨ kt.w = 32 ∨ kt.w = 64)
     (hn : kt.n = (Rel.nub mS(X)).n)
     (hs : kt.b.size = (kt.n.toNat * kt.w + 7) / 8)
-    (hW : ∀ (B : Obj) (x : Part B), (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 1 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 2 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 4 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 8 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 16 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 32 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 64) ∧
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).b.size = (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n.toNat * ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w + 7) / 8 ∧
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n = x.1)
+    (hW : codesWF)
     (h63 : (Rel.nub mS(X)).n.toNat < 2 ^ 63)
     (p lo : ByteArray) (hpT : p = pT(mS(X))) (hloT : lo = loT(mS(X)))
     (hpk : Vals.PickFits (.arr B) (Rel.nub mS(X)).key (ids p))
