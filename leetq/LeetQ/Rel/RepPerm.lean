@@ -649,7 +649,7 @@ scoped notation "tauOK(" A ", " cnt ", " X ")" =>
   laneOK((kcT(idU X)).w) ∧
   (kcT(idU X)).n = (Rel.nub (idU X)).n ∧
   (kcT(idU X)).b.size = ((kcT(idU X)).n.toNat * (kcT(idU X)).w + 7) / 8 ∧
-  A.CodesFit (#v[⟨(Rel.nub (idU X)).n, (Rel.nub (idU X)).val⟩] : Vector (Part A) 1) ∧
+  Obj.CodesFit A (#v[⟨(Rel.nub (idU X)).n, (Rel.nub (idU X)).val⟩] : Vector (Part A) 1) ∧
   (Rel.nub (idU X)).n.toNat < 2 ^ 63 ∧
   Vals.PickFits A (Rel.nub (idU X)).key (ids (pT(idU X))) ∧
   Vals.PickFits A (Rel.nub (idU X)).val (ids (pT(idU X))) ∧

@@ -124,11 +124,11 @@ theorem grade_gather_perm (kc : Code) (hw : laneOK(kc.w)) (hs : kc.b.size = (kc.
 /-- **`Obj.sortBy` permutes the rows it is handed**: its answer holds the longs of `p`, each once, at every
     side. Hypotheses: `c`'s codes fit (`Obj.CodesFit`, the codes `sortBy` grades at an `.arr` or `.sum` side);
     `len p` fits a `USize`; every long of `p` a row of `c`. -/
-theorem sortBy_perm :
-    (A : Obj) → {n : USize} → (c : Vals A n) → A.CodesFit (#v[⟨n, c⟩] : Vector (Part A) 1) →
-      (p : ByteArray) → len p < USize.size → (∀ t ∈ ids p, t < n.toNat) →
-      (ids (A.sortBy c p)).Perm (ids p)
-  | .atom t, n, c, _, p, hl, _ => by
+theorem sortBy_perm (A : Obj) {n : USize} (c : Vals A n) (hf : A.CodesFit (#v[⟨n, c⟩] : Vector (Part A) 1))
+    (p : ByteArray) (hl : len p < USize.size) (hp : ∀ t ∈ ids p, t < n.toNat) :
+    (ids (A.sortBy c p)).Perm (ids p) := by
+  induction A generalizing n p with
+  | atom t =>
     have hx := pick_len t ⟨_, c⟩ p hl
     have hc : (ids (Code.grade (codes t #v[pick t ⟨_, c⟩ p])[0])).Perm (List.range (len p)) := by
       obtain ⟨hw, hn, hs, -⟩ := codes_atom_wf t (pick t ⟨_, c⟩ p)
@@ -147,16 +147,24 @@ theorem sortBy_perm :
       subst hm
       exact gather_perm (ids_sort_range _ le (Nat.lt_of_lt_of_le hl (by have := USize.size_le; omega)))
     next => exact gather_perm hc
-  | .prod a b, n, c, hf, p, hl, hp => by
-    have ha : a.CodesFit (#v[⟨n, c.1⟩] : Vector (Part a) 1) := by simpa using hf.2.1
-    have hb : b.CodesFit (#v[⟨n, c.2⟩] : Vector (Part b) 1) := by simpa using hf.2.2
-    have h2 := sortBy_perm b c.2 hb p hl hp
+  | prod a b iha ihb =>
+    have ha : a.CodesFit (#v[⟨n, c.1⟩] : Vector (Part a) 1) := by
+      have h := hf.2.1
+      rwa [show (#v[⟨n, c⟩] : Vector (Part (.prod a b)) 1).map (fun c => (⟨c.1, c.2.1⟩ : Part a)) = #v[⟨n, c.1⟩] from
+        Vector.ext fun i hi => by obtain rfl : i = 0 := by omega
+                                  simp] at h
+    have hb : b.CodesFit (#v[⟨n, c.2⟩] : Vector (Part b) 1) := by
+      have h := hf.2.2
+      rwa [show (#v[⟨n, c⟩] : Vector (Part (.prod a b)) 1).map (fun c => (⟨c.1, c.2.2⟩ : Part b)) = #v[⟨n, c.2⟩] from
+        Vector.ext fun i hi => by obtain rfl : i = 0 := by omega
+                                  simp] at h
+    have h2 := ihb c.2 hb p hl hp
     have hl2 : len (b.sortBy c.2 p) < USize.size := by rw [len_eq_ids, h2.length_eq, ← len_eq_ids]; exact hl
-    exact (sortBy_perm a c.1 ha _ hl2 fun t ht => hp t (h2.mem_iff.1 ht)).trans h2
-  | .arr b, n, c, hf, p, hl, hp => by
+    exact (iha c.1 ha _ hl2 fun t ht => hp t (h2.mem_iff.1 ht)).trans h2
+  | arr b =>
     obtain ⟨hw, hn, hs, -⟩ := (codes_faithful_wf _ _ hf).1.2 (k := 0) Nat.zero_lt_one
     exact gather_perm (grade_gather_perm _ hw hs p hl fun t ht => by rw [hn]; exact hp t ht)
-  | .sum a b, n, c, hf, p, hl, hp => by
+  | sum a b =>
     obtain ⟨hw, hn, hs, -⟩ := (codes_faithful_wf _ _ hf).1.2 (k := 0) Nat.zero_lt_one
     exact gather_perm (grade_gather_perm _ hw hs p hl fun t ht => by rw [hn]; exact hp t ht)
 

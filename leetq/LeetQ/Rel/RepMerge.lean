@@ -429,7 +429,7 @@ local notation "mergeOK" =>
 
 /-- **One round of `mergeOn`, read back**: `merge_round_set` with each primitive's read-back discharged by its
     lemma. The round's values are bound by their equations, the test `G` any relation (`mergeOn`'s is
-    `q(ran h)`); `h` is every primitive's hypotheses at them (`mergeOK`), `hW` `rep_snoc`'s universal one. -/
+    `q(ran h)`); `h` is every primitive's hypotheses at them (`mergeOK`). -/
 theorem merge_round_rep {K B : Obj} (le : B.El → B.El → Bool) (out : Rel K (.arr B)) (St : Rel K SO)
     (mD : Rel SO SO) (hD : mD = ran St) (mx : Rel SO (.arr B)) (hx : mx = outl (outl mD))
     (my : Rel SO (.arr B)) (hy : my = outr (outl mD)) (macc : Rel SO (.arr B)) (hacc : macc = outr mD)
@@ -454,7 +454,7 @@ theorem merge_round_rep {K B : Obj} (le : B.El → B.El → Bool) (out : Rel K (
     (mc2 : Rel SO (.prod (.arr B) (.arr B))) (hc2 : mc2 = pair mC1 my) (mC2 : Rel SO (.arr B)) (hC2 : mC2 = cat mc2)
     (mO : Rel K (.arr B)) (hO : mO = mSf ≫ mC2) (mU : Rel K (.arr B)) (hU : mU = out ∪ mO)
     (htest : ∀ a b, rep mrh (a, b) (a, b) → ((∃ c, rep G (a, b) c) ↔ le a b = true))
-    (hW : codesWF) (h : mergeOK) :
+    (h : mergeOK) :
     (∀ k s', rep mT k s' ↔ ∃ a x b y acc, rep St k ((a :: x, b :: y), acc) ∧
       (le a b = true ∧ s' = ((x, b :: y), acc ++ [a]) ∨ le a b = false ∧ s' = ((a :: x, y), acc ++ [b]))) ∧
     ∀ k z, rep mU k z ↔
@@ -500,13 +500,13 @@ theorem merge_round_rep {K B : Obj} (le : B.El → B.El → Bool) (out : Rel K (
     (by rw [hl]; exact rep_dom_corefl mhq (one_ok _ lf) (lp))
     (by rw [hA1]; exact rep_pair _ _ (codes_faithful_wf _ _ a1f).1 a11 a12 a13 a14 a15 a16)
     (by rw [hS1]; exact rep_pair _ _ (codes_faithful_wf _ _ s1f).1 s11 s12 s13 s14 s15 s16)
-    (by rw [hN1]; exact rep_snoc mS1 hW sn1)
+    (by rw [hN1]; exact rep_snoc mS1 sn1)
     (by rw [hP1]; exact rep_pair _ _ (codes_faithful_wf _ _ p1f).1 p11 p12 p13 p14 p15 p16)
     (by rw [hL1]; exact rep_comp _ _ (codes_faithful_wf _ _ l1f).1 l11 l12 l13 l14 l15)
     (by rw [hnb]; exact rep_antiJoin mboth ml (codes_faithful_wf _ _ nbf).1 nb1 nb2)
     (by rw [hA2]; exact rep_pair _ _ (codes_faithful_wf _ _ a2f).1 a21 a22 a23 a24 a25 a26)
     (by rw [hS2]; exact rep_pair _ _ (codes_faithful_wf _ _ s2f).1 s21 s22 s23 s24 s25 s26)
-    (by rw [hN2]; exact rep_snoc mS2 hW sn2)
+    (by rw [hN2]; exact rep_snoc mS2 sn2)
     (by rw [hP2]; exact rep_pair _ _ (codes_faithful_wf _ _ p2f).1 p21 p22 p23 p24 p25 p26)
     (by rw [hL2]; exact rep_comp _ _ (codes_faithful_wf _ _ l2f).1 l21 l22 l23 l24 l25)
     (by rw [htk]; exact rep_union_full mL1 mL2 tN tNk tNv tFk tFv (one_ok _ tK) (one_ok _ tV) tk tv)
@@ -613,11 +613,11 @@ theorem mergeOn_rounds {K B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.pr
 /-- **`mergeOn`, read back**: key `k` goes to `zs` exactly when `zs` is core's `List.merge xs ys le` of one of its
     pairs `(xs, ys)` in `P`, `le a b` the test on the heads `(a, b)` (`a` first when it passes). The fuel always
     suffices, so the stop is not in the conclusion. The round `f` is bound by its defining equation (`hf`); `h0` is
-    the first state's hypotheses, `hW` `rep_snoc`'s universal one, and `hR` is, at every round up to the fuel, the
+    the first state's hypotheses, and `hR` is, at every round up to the fuel, the
     test read back on the pairs of heads `mrh` the round meets and every primitive's hypotheses (`mergeOK`). -/
 theorem rep_mergeOn {K B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B))
     (P : Rel K (.prod (.arr B) (.arr B))) (le : B.El → B.El → Bool)
-    (f : Rel K (.arr B) × Rel K SO → Rel K (.arr B) × Rel K SO) (hf : mergeF(q)) (hW : codesWF) (h0 : initOK)
+    (f : Rel K (.arr B) × Rel K SO → Rel K (.arr B) × Rel K SO) (hf : mergeF(q)) (h0 : initOK)
     (hR : ∀ i, i < fuelP → ∀ out St, out = (f^[i] initP).1 → St = (f^[i] initP).2 →
       mergeVals(q mrh, (∀ a b, rep mrh (a, b) (a, b) → ((∃ c, rep G (a, b) c) ↔ le a b = true)) ∧ mergeOK)) :
     ∀ k zs, rep (mergeOn q P) k zs ↔ ∃ xs ys, rep P k (xs, ys) ∧ zs = List.merge xs ys le := by
@@ -672,7 +672,7 @@ theorem rep_mergeOn {K B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod 
       _ rfl _ rfl _ rfl _ rfl _ rfl
     have hr := merge_round_rep le _ _ _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ _ rfl _ rfl
       _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
-      _ rfl _ rfl _ rfl htest hW hok
+      _ rfl _ rfl _ rfl htest hok
     have e : f^[i + 1] initP = _ :=
       hf (f^[i] initP).1 (f^[i] initP).2 _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
     rw [e]
@@ -684,13 +684,13 @@ theorem rep_mergeOn {K B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod 
     `rep_pairsIn`'s `cmpOK` at each round's pairs of heads `mrh` in place of the test's read-back. -/
 theorem rep_merge {K B : Obj} (Q : Rel B B) (P : Rel K (.prod (.arr B) (.arr B))) (le : B.El → B.El → Bool)
     (hle : ∀ a b, le a b = true ↔ rep Q a b)
-    (f : Rel K (.arr B) × Rel K SO → Rel K (.arr B) × Rel K SO) (hf : mergeF(pairsIn Q)) (hW : codesWF)
+    (f : Rel K (.arr B) × Rel K SO → Rel K (.arr B) × Rel K SO) (hf : mergeF(pairsIn Q))
     (h0 : initOK)
     (hR : ∀ i, i < fuelP → ∀ out St, out = (f^[i] initP).1 → St = (f^[i] initP).2 →
       mergeVals(pairsIn Q mrh, cmpOK(.prod B B, mrh, idU (t := .prod B B) (m := Rel.n Q) (Rel.key Q, Rel.val Q)) ∧
         mergeOK)) :
     ∀ k zs, rep (merge Q P) k zs ↔ ∃ xs ys, rep P k (xs, ys) ∧ zs = List.merge xs ys le := by
-  refine rep_mergeOn (pairsIn Q) P le f hf hW h0 fun i hi out St ho hS => ?_
+  refine rep_mergeOn (pairsIn Q) P le f hf h0 fun i hi out St ho hS => ?_
   intro mD hD mx hx my hy macc hacc mux hux muy huy mpu hpu mboth hboth mh hh mrh hrh G hG mhq hhq ml hl mA1 hA1
     mS1 hS1 mN1 hN1 mP1 hP1 mL1 hL1 mnb hnb mA2 hA2 mS2 hS2 mN2 hN2 mP2 hP2 mL2 hL2 mtk htk mT hT mfl hfl mSf hSf
     mc1 hc1 mC1 hC1 mc2 hc2 mC2 hC2 mO hO mU hU
