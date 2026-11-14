@@ -555,9 +555,110 @@ theorem map_step_rep {E B : Obj} (el : Rel .long E) (R : Rel E B) (pend : Rel .l
     rw [h2]
     exact ⟨e, he, hR⟩
 
+section MapFold
+
+open QLean.Dep
+
+/-- **`map`, read back**: `F(R)` takes an array `xs` of `X` to every `ys` of its length with `xs[t] R ys[t]` at each
+    `t`. `rep_foldBy` at the step `cons (pair (el ≫ R) pend)` and the seed `nilVal B`, its chain closed by
+    `map_chain`. Bound values and hypotheses as `rep_foldBy`'s (`step` bound by `hstep`), and `map_step_rep`'s at
+    every round (`hC`, a per-round bundle, each bound value with its equation). -/
+theorem rep_map {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n)
+    (T : Rel .long (.arr A)) (hT : T = num (idU X) 0) (hn : n.toNat < 2 ^ 63)
+    (hv : Vals.PickFits (.arr A) X (List.range n.toNat)) (hp : (Rel.val T).1.toNat < 2 ^ 63)
+    (hel : ∀ k, k ≤ (Rel.val T).1.toNat → ∀ a : ByteArray, a = whereBits (Rel.n T)
+        (Ew.cmp Ew.gt Ew.i64 Ew.va (slicesOf (Rel.val T)).2 (one k.toUInt64) (Rel.n T)) →
+      ∀ pos : ByteArray, pos = Kernel.Ew.val Ew.sub Ew.i64 Ew.va nul
+        (gather 8 (add (Rel.n T) (slicesOf (Rel.val T)).1 (slicesOf (Rel.val T)).2) a)
+        (one (k + 1).toUInt64) (len a).toUSize →
+      Vals.PickFits .long (Rel.key T) ((List.range (len a)).map fun q => (Column.bitsAt a (q * 8) 8).toNat) ∧
+      Vals.PickFits A (Rel.val T).2.2.2 ((List.range (len a)).map fun q => (Column.bitsAt pos (q * 8) 8).toNat))
+    (pend₀ : Rel .long (.arr B)) (hpend : pend₀ = top (A := .long) (Rel.key T) (nilVal B))
+    (hN : (Rel.n T).toNat * (1 : USize).toNat < USize.size)
+    (h63 : (Rel.n T).toNat * (1 : USize).toNat < 2 ^ 63)
+    (hA : Vals.PickFits .long (Rel.key T)
+      ((List.range ((Rel.n T).toNat * (1 : USize).toNat)).map (· / (1 : USize).toNat)))
+    (hB : Vals.PickFits (.arr B) (nilVal B)
+      ((List.range ((Rel.n T).toNat * (1 : USize).toNat)).map (· % (1 : USize).toNat)))
+    (step : Rel .long A → Rel .long (.arr B) → Rel .long (.arr B))
+    (hstep : step = fun el pend => cons (pair (el ≫ R) pend))
+    (elK : Nat → Rel .long A) (hE : ∀ k, elK k = elR(T, k))
+    (f : Rel .long (.arr B) × Rel .long (.arr B) × Nat → Rel .long (.arr B) × Rel .long (.arr B) × Nat)
+    (hf : ∀ st, f st = rnd(st))
+    (hR : ∀ i (el : Rel .long A) (pend P S : Rel .long (.arr B)), el = elK i →
+      pend = (f^[i] (pend₀, Alg.zero, 0)).1 → P = (f^[i] (pend₀, Alg.zero, 0)).2.1 → S = step el pend →
+      roundAt((.arr B)))
+    (hC : ∀ i, i ≤ (Rel.val T).1.toNat → ∀ (el : Rel .long A) (pend : Rel .long (.arr B)), el = elK i →
+      pend = (f^[i] (pend₀, Alg.zero, 0)).1 →
+      ∀ jc : Vector Code 2, jc = Obj.codes A (#v[⟨Rel.n el, Rel.val el⟩, ⟨Rel.n R, Rel.key R⟩] : Vector (Part A) 2) →
+      codesOK(jc, (#v[⟨Rel.n el, Rel.val el⟩, ⟨Rel.n R, Rel.key R⟩] : Vector (Part A) 2)) ∧
+      (Rel.n R).toNat < 2 ^ 63 ∧ msum(jc, el, R) < 2 ^ 63 ∧ msum(jc, el, R) < USize.size ∧
+      Vals.PickFits .long (Rel.key el) ((mpairs(jc, el, R)).map Prod.fst) ∧
+      Vals.PickFits B (Rel.val R) ((mpairs(jc, el, R)).map Prod.snd) ∧
+      ∀ Q : Rel .long B, Q = el ≫ R →
+      ∀ kc : Vector Code 2, kc = Obj.codes .long kp2(Q, pend) →
+      codesOK(kc, kp2(Q, pend)) ∧ (Rel.n pend).toNat < 2 ^ 63 ∧ msum(kc, Q, pend) < 2 ^ 63 ∧
+      msum(kc, Q, pend) < USize.size ∧
+      Vals.PickFits .long (Rel.key Q) ((mpairs(kc, Q, pend)).map Prod.fst) ∧
+      Vals.PickFits B (Rel.val Q) ((mpairs(kc, Q, pend)).map Prod.fst) ∧
+      Vals.PickFits (.arr B) (Rel.val pend) ((mpairs(kc, Q, pend)).map Prod.snd) ∧
+      ∀ P : Rel .long (.prod B (.arr B)), P = pair Q pend →
+      (Rel.val P).2.1.toNat < 2 ^ 63 ∧
+      ∀ s : ByteArray × ByteArray, s = slicesOf (Rel.val P).2 →
+      ((List.range (Rel.n P).toNat).map fun r => (Column.bitsAt s.2 (r * 8) 8).toNat).sum + (Rel.n P).toNat <
+        2 ^ 63 ∧
+      ((List.range (Rel.n P).toNat).map fun r => (Column.bitsAt s.2 (r * 8) 8).toNat).sum + (Rel.n P).toNat <
+        USize.size ∧
+      ∀ xi : ByteArray, xi = expandBytes 8 0 (tilLongs (Rel.n P)) s.2 →
+      ∀ m : USize, m = (len xi).toUSize →
+      ∀ xr : ByteArray, xr = sub m (tilLongs m) (gather 8 (sub (Rel.n P) (sums (Rel.n P) s.2) s.2) xi) →
+      ∀ j : ByteArray, j = add m (gather 8 s.1 xi) xr →
+      ∃ hjl : len j = m.toNat, ∀ tl : Vals B m, tl = Vals.pick B (Rel.val P).2.2.2.2 j m hjl →
+      ∀ c1 : ByteArray, c1 = addc (Rel.n P) s.2 1 → ∀ hi : ByteArray, hi = sums (Rel.n P) c1 →
+      ∀ lo : ByteArray, lo = sub (Rel.n P) hi c1 →
+      ∀ dst : ByteArray, dst = addc m (add m (gather 8 lo xi) xr) 1 →
+      ∀ g : ByteArray, g = (Code.ofLongs (concatBytes #[dst, lo])).grade →
+      Vals.PickFits .long (Rel.key P)
+        ((List.range (Rel.n P).toNat).map fun q => (Column.bitsAt (tilLongs (Rel.n P)) (q * 8) 8).toNat) ∧
+      Vals.PickFits B (Rel.val P).2.2.2.2 ((List.range m.toNat).map fun q => (Column.bitsAt j (q * 8) 8).toNat) ∧
+      Vals.RazeFits B tl (Rel.val P).1 ∧
+      ∀ hN, Vals.PickFits B (Obj.raze B #[⟨m, tl⟩, ⟨Rel.n P, (Rel.val P).1⟩] hN)
+        ((List.range (len g)).map fun q => (Column.bitsAt g (q * 8) 8).toNat))
+    (F : Rel .long (.arr B)) (hF : F = foldRows T pend₀ step)
+    (jc : Vector Code 2) (hjc : jc = Obj.codes .long ck2(T°, F)) (hjO : codesOK(jc, ck2(T°, F)))
+    (hjn : (Rel.n F).toNat < 2 ^ 63) (hjM : msum(jc, T°, F) < 2 ^ 63) (hjU : msum(jc, T°, F) < USize.size)
+    (hjA : Vals.PickFits (.arr A) (Rel.key (T°)) ((mpairs(jc, T°, F)).map Prod.fst))
+    (hjC : Vals.PickFits (.arr B) (Rel.val F) ((mpairs(jc, T°, F)).map Prod.snd)) :
+    ∀ (xs : List A.El) ys, rep (Alg.map R X) xs ys ↔ (∃ i, X.row i = xs) ∧ ys.length = xs.length ∧
+      ∀ t (ht : t < xs.length) (ht' : t < ys.length), rep R (xs[t]'ht) (ys[t]'ht') := by
+  subst hstep
+  intro xs ys
+  -- round `i`'s step read back: `map_step_rep` at the round's element and state
+  have hS : ∀ i, i ≤ (Rel.val T).1.toNat → ∀ r v,
+      rep (cons (pair (elK i ≫ R) (f^[i] (pend₀, Alg.zero, 0)).1)) r v ↔
+      ∃ e u, rep (elK i) r e ∧ rep (f^[i] (pend₀, Alg.zero, 0)).1 r u ∧ ∃ b, rep R e b ∧ v = b :: u := by
+    intro i hi r v
+    obtain ⟨hjO, hjn, hjM, hjU, hjA, hjC, hQ⟩ := hC i hi _ _ rfl rfl _ rfl
+    obtain ⟨hkO, hkn, hkM, hkU, hkA, hkB, hkC, hP⟩ := hQ _ rfl _ rfl
+    obtain ⟨hp, hs⟩ := hP _ rfl
+    obtain ⟨hS, hU, hx⟩ := hs _ rfl
+    obtain ⟨hjl, ht⟩ := hx _ rfl _ rfl _ rfl _ rfl
+    obtain ⟨hKf, hTf, hRf, hFf⟩ := ht _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
+    exact map_step_rep _ R _ _ rfl hjO hjn hjM hjU hjA hjC _ rfl _ rfl hkO hkn hkM hkU hkA hkB hkC _ rfl hp _ rfl
+      hS hU _ rfl _ rfl _ rfl _ rfl hjl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl hKf hTf hRf hFf r v
+  refine (rep_foldBy (nilVal B) X T hT hn hv hp hel pend₀ hpend hN h63 hA hB
+    (fun el pend => cons (pair (el ≫ R) pend)) (fun _ eu v => ∃ b, rep R eu.1 b ∧ v = b :: eu.2) elK hE f hf hR hS
+    F hF jc hjc hjO hjn hjM hjU hjA hjC xs ys).trans ?_
+  -- `nilVal B`'s one row is `[]`
+  exact and_congr Iff.rfl ((exists_congr fun zs => exists_congr fun _ => and_congr
+    ⟨fun ⟨_, h⟩ => h.symm, fun h => ⟨⟨0, by simp⟩, h.symm⟩⟩ Iff.rfl).trans (map_chain (rep R) xs ys))
+
+end MapFold
+
 end LeetQ.Rel.Rep
 
 #print axioms LeetQ.Rel.Rep.rep_uncons
 #print axioms LeetQ.Rel.Rep.rep_cons
 #print axioms LeetQ.Rel.Rep.map_chain
 #print axioms LeetQ.Rel.Rep.map_step_rep
+#print axioms LeetQ.Rel.Rep.rep_map

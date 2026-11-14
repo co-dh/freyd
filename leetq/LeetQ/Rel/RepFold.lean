@@ -49,11 +49,12 @@ set_option hygiene false in
 scoped notation "rnd(" st ")" => ((step (elK (st).2.2) (st).1).nub,
   (st).2.1 ∪ (antiJoin ((st).1°) (idU (Rel.key (elK (st).2.2))))°, (st).2.2 + 1)
 
--- `round_rep`'s hypotheses at `el`, `pend`, `P`, `S`, its bound values `jc`, `I`, `Q` quantified with their equations
+-- `round_rep`'s hypotheses at `el`, `pend`, `P`, `S`, its bound values `jc`, `I`, `Q` quantified with their equations;
+-- `roundAt(V)` names the value object, for a fold whose `V` is a composite such as `.arr B`
 set_option hygiene false in
-scoped notation "roundOK" =>
+scoped notation "roundAt(" V ")" =>
   Obj.CodesFit .long (#v[⟨S.n, S.key⟩] : Vector (Part .long) 1) ∧
-  V.CodesFit (#v[⟨S.n, S.val⟩] : Vector (Part V) 1) ∧
+  Obj.CodesFit V (#v[⟨S.n, S.val⟩] : Vector (Part V) 1) ∧
   Vals.PickFits .long S.key (ids nubI(.long, V, S)) ∧ Vals.PickFits V S.val (ids nubI(.long, V, S)) ∧
   Obj.CodesFit .long jparts ∧
   (∀ jc : Vector Code 2, jc = Obj.codes .long jparts → ∀ I : ByteArray, I = anti (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two) →
@@ -66,9 +67,11 @@ scoped notation "roundOK" =>
         USize.size),
       Vals.RazeFits .long P.key Q.key ∧ Vals.RazeFits V P.val Q.val ∧
       Obj.CodesFit .long (#v[⟨(PQ(.long, V)).n, (PQ(.long, V)).key⟩] : Vector (Part .long) 1) ∧
-      V.CodesFit (#v[⟨(PQ(.long, V)).n, (PQ(.long, V)).val⟩] : Vector (Part V) 1) ∧
+      Obj.CodesFit V (#v[⟨(PQ(.long, V)).n, (PQ(.long, V)).val⟩] : Vector (Part V) 1) ∧
       Vals.PickFits .long (PQ(.long, V)).key (ids nubI(.long, V, PQ(.long, V))) ∧
       Vals.PickFits V (PQ(.long, V)).val (ids nubI(.long, V, PQ(.long, V)))
+set_option hygiene false in
+scoped notation "roundOK" => roundAt(V)
 
 -- `RepOps`' `codesOK`: codes `cs` of two parts `ps` faithful, well formed
 set_option hygiene false in
