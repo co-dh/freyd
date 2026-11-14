@@ -34,7 +34,9 @@ def interC (R S : Rel A B) : Rel A B × Bool :=
 
 theorem interC_fst (R S : Rel A B) : (interC R S).1 = inter R S := by
   have e : ∀ {α β : Type} (f : α → β) (a b : α), #v[a, b].map f = #v[f a, f b] := fun _ _ _ => by simp
-  unfold interC inter pairs; dsimp only; rewrite [Obj.codesC_fst]; simp only [Obj.codes, e]
+  show R.rows (whereBits R.n ((Obj.codes (.prod A B) #v[⟨R.n, (R.key, R.val)⟩, ⟨S.n, (S.key, S.val)⟩])[0].member
+    (Obj.codes (.prod A B) #v[⟨R.n, (R.key, R.val)⟩, ⟨S.n, (S.key, S.val)⟩])[1])) = R.rows _
+  unfold pairs; simp only [Obj.codes, e]
 
 /-- `𝟘`: no pair. -/
 def zero : Rel A B := ⟨0, Vals.empty A, Vals.empty B⟩
@@ -63,7 +65,7 @@ def unionC (R S : Rel A B) : Rel A B × Bool :=
 
 theorem unionC_fst (R S : Rel A B) : (unionC R S).1 = union R S := by
   unfold unionC union need; split
-  · simp only [Obj.razeC_fst, Obj.codesC_fst, Rel.nub]
+  · cases A <;> cases B <;> rfl
   · rfl
 
 /-- `⊤` on the universes `Ua`, `Ub`: `cross`, its two index columns of one length (`cross_len`). -/
@@ -110,19 +112,13 @@ def compC (R : Rel A B) (S : Rel B C) : Rel A C × Bool :=
 
 -- the old op kept beside its twin: its read-back proofs `show` its body, which `(compC ..).1` is not by `rfl`
 theorem compC_fst (R : Rel A B) (S : Rel B C) : (compC R S).1 = comp R S := by
-  -- at any codes `c`, then `codesC_fst` under `congrArg`: a `rw` of the codes in the goal times out evaluating `join`
-  have key : ∀ c : Vector Code 2, (longCount "≫" (join c[0] c[1]).2 fun m h =>
-      let k := Vals.pickC A R.key (fit m.toNat (join c[0] c[1]).1) m (fit_len (h ▸ join_len c[0] c[1]))
-      let v := Vals.pickC C S.val (join c[0] c[1]).2 m h
-      ((⟨m, k.1, v.1⟩ : Rel A C), k.2 && v.2)).1 =
-    longCount "≫" (join c[0] c[1]).2 fun m h =>
-      ⟨m, Vals.pickN A R.key (join c[0] c[1]).1 m (h ▸ join_len c[0] c[1]), Vals.pick C S.val (join c[0] c[1]).2 m h⟩ := by
-    intro c; unfold longCount need; split
-    · simp only [Vals.pickC_fst, Vals.pickN]
-    · rfl
-  exact (key _).trans (congrArg (fun c : Vector Code 2 => longCount "≫" (join c[0] c[1]).2 fun m h =>
-    (⟨m, Vals.pickN A R.key (join c[0] c[1]).1 m (h ▸ join_len c[0] c[1]), Vals.pick C S.val (join c[0] c[1]).2 m h⟩ :
-      Rel A C)) (Obj.codesC_fst B _))
+  -- `.1` through `longCount` first: a `split` of the two counts' tests would decide them by evaluating `join`
+  have e : ∀ {α : Type} [Inhabited α] (s : String) (b : ByteArray) (k : (n : USize) → len b = n.toNat → α × Bool),
+      (longCount s b k).1 = longCount s b fun n h => (k n h).1 := by
+    intros; unfold longCount need; split <;> rfl
+  unfold compC comp; dsimp only; refine (e ..).trans ?_
+  -- a twin's `.1` is its helper at each constructor of the side
+  cases A <;> cases B <;> cases C <;> rfl
 
 /-- The coreflexive on the distinct elements of `x`: the first row of each code. -/
 def distinctCorefl (t : Obj) {n : USize} (x : Vals t n) : Rel t t :=
