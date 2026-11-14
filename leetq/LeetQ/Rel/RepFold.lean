@@ -4,6 +4,8 @@
   no element `k` to `out`. This file reads one round in `Rel(Set)` and the rounds' `out` by induction.
 -/
 import LeetQ.Rel.RepDiv
+import LeetQ.Rel.KernelWF.FoldSpec
+import LeetQ.Rel.RepLambda
 
 namespace LeetQ.Rel.Rep
 
@@ -103,6 +105,84 @@ local notation "elR(" ids ", " k ")" =>
    longCount "foldRows" a fun r hr =>
      let pos := Kernel.Ew.val Ew.sub Ew.i64 Ew.va nul (gather 8 ends a) (one ((k) + 1).toUInt64) r
      (⟨r, Vals.pick .long (Rel.key ids) a r hr, Vals.pick _ (Rel.val ids).2.2.2 pos r (len_val ..)⟩ : Rel .long _))
+/-- **Round `k`'s element, read back**: row `r` of `ids` to its array's element `k` from the end, at the rows
+    whose array is longer than `k`. The rows longer than `k` (`a`) and their elements' payload positions (`pos`)
+    are bound by their equations. Hypotheses: the payload count and `k` below `2^63`, `Vals.PickFits` where the
+    key and the payload are picked. -/
+theorem rep_elR {E : Obj} (ids : Rel .long (.arr E)) (k : Nat) (hk : k < 2 ^ 63)
+    (hp : (Rel.val ids).1.toNat < 2 ^ 63) (a : ByteArray)
+    (ha : a = whereBits (Rel.n ids)
+      (Ew.cmp Ew.gt Ew.i64 Ew.va (slicesOf (Rel.val ids)).2 (one k.toUInt64) (Rel.n ids)))
+    (pos : ByteArray) (hpos : pos = Kernel.Ew.val Ew.sub Ew.i64 Ew.va nul
+      (gather 8 (add (Rel.n ids) (slicesOf (Rel.val ids)).1 (slicesOf (Rel.val ids)).2) a)
+      (one (k + 1).toUInt64) (len a).toUSize)
+    (hKf : Vals.PickFits .long (Rel.key ids)
+      ((List.range (len a)).map fun q => (Column.bitsAt a (q * 8) 8).toNat))
+    (hVf : Vals.PickFits E (Rel.val ids).2.2.2
+      ((List.range (len a)).map fun q => (Column.bitsAt pos (q * 8) 8).toNat)) :
+    ∀ r x, rep elR(ids, k) r x ↔ ∃ i, Vals.row (Rel.key ids) i = r ∧
+      ∃ hl : k < (Vals.row (Rel.val ids) i).length,
+        x = (Vals.row (Rel.val ids) i)[(Vals.row (Rel.val ids) i).length - 1 - k]'(by omega) := by
+  intro r x
+  have hlen : len a < USize.size := by
+    rw [ha]; exact Nat.lt_of_le_of_lt (len_whereBits_le _ _) (Rel.n ids).toNat_lt_size
+  have hm : ((len a).toUSize).toNat = len a := USize.toNat_ofNat_of_lt' hlen
+  have hR := fun i (hi : i < (Rel.n ids).toNat) => slicesOf_row (Rel.val ids) hp hi
+  have hA := whereGt_ids (Rel.n ids) (slicesOf (Rel.val ids)).2 hk fun i hi => by have := (hR i hi).1; omega
+  rw [← ha] at hA
+  have hmem : ∀ i, i ∈ QLean.Verify.ids a ↔
+      i < (Rel.n ids).toNat ∧ k < (Column.bitsAt (slicesOf (Rel.val ids)).2 (i * 8) 8).toNat := fun i => by
+    rw [hA, List.mem_filter, List.mem_range, decide_eq_true_iff]
+  have hP2 : len pos = ((len a).toUSize).toNat := by rw [hpos]; exact len_val ..
+  -- the `q`-th row of the round's element, at the row `a[q]` of `ids`
+  have hq : ∀ (q : Nat) (hq : q < len a) (h1 : len a = ((len a).toUSize).toNat)
+      (h2 : len pos = ((len a).toUSize).toNat),
+      ∃ (hi : (Column.bitsAt a (q * 8) 8).toNat < (Rel.n ids).toNat),
+        k < (Vals.row (Rel.val ids) ⟨_, hi⟩).length ∧
+        Vals.row (Vals.pick .long (Rel.key ids) a _ h1) ⟨q, by omega⟩ = Vals.row (Rel.key ids) ⟨_, hi⟩ ∧
+        ∀ hl : k < (Vals.row (Rel.val ids) ⟨_, hi⟩).length,
+          Vals.row (Vals.pick E (Rel.val ids).2.2.2 pos _ h2) ⟨q, by omega⟩ =
+            (Vals.row (Rel.val ids) ⟨_, hi⟩)[(Vals.row (Rel.val ids) ⟨_, hi⟩).length - 1 - k]'(by omega) := by
+    intro q hq h1 h2
+    have hin : (Column.bitsAt a (q * 8) 8).toNat ∈ QLean.Verify.ids a := by
+      have hq' : q < (QLean.Verify.ids a).length := by rw [← len_eq_ids]; exact hq
+      rw [← ids_getElem hq']; exact List.getElem_mem hq'
+    obtain ⟨hi, hki⟩ := (hmem _).1 hin
+    obtain ⟨hLC, hln, hget⟩ := hR _ hi
+    refine ⟨hi, by rw [hln]; exact hki, ?_, fun hl => ?_⟩
+    · rw [pick_row .long (Rel.key ids) a _ h1 (by rw [← h1]; exact hKf), dif_pos hi]
+    · rw [pick_row E (Rel.val ids).2.2.2 pos _ h2 (by rw [← h1]; exact hVf)]
+      have hend := add_get (n := Rel.n ids) (a := (slicesOf (Rel.val ids)).1) (b := (slicesOf (Rel.val ids)).2)
+        hi (by omega)
+      have hg : (Column.bitsAt (gather 8 (add (Rel.n ids) (slicesOf (Rel.val ids)).1 (slicesOf (Rel.val ids)).2) a)
+          (q * 8) 8).toNat = (Column.bitsAt (slicesOf (Rel.val ids)).1 ((Column.bitsAt a (q * 8) 8).toNat * 8) 8).toNat +
+            (Column.bitsAt (slicesOf (Rel.val ids)).2 ((Column.bitsAt a (q * 8) 8).toNat * 8) 8).toNat := by
+        rw [gather8_get hq (by unfold add; rw [len_val]; exact hi)]; exact hend
+      have hP : (Column.bitsAt pos (q * 8) 8).toNat =
+          (Column.bitsAt (slicesOf (Rel.val ids)).1 ((Column.bitsAt a (q * 8) 8).toNat * 8) 8).toNat +
+            (Column.bitsAt (slicesOf (Rel.val ids)).2 ((Column.bitsAt a (q * 8) 8).toNat * 8) 8).toNat - (k + 1) := by
+        rw [hpos, subConst_get (by omega) (by rw [hg]; omega) (by rw [hg]; omega), hg]
+      rw [dif_pos (by rw [hP]; omega), hget _ (by omega) (by rw [hln]; omega)]
+      refine congrArg (Vals.row (Rel.val ids).2.2.2) (Fin.ext ?_)
+      show (Column.bitsAt pos (q * 8) 8).toNat = _ + ((Vals.row (Rel.val ids) ⟨_, hi⟩).length - 1 - k)
+      rw [hP, hln]; omega
+  subst ha hpos
+  dsimp only
+  rw [longCount_eq _ _ _ hlen]
+  show (∃ q, _ ∧ _) ↔ _
+  constructor
+  · rintro ⟨q, hr, hx⟩
+    obtain ⟨hi, hki, hK, hV⟩ := hq q.1 (Nat.lt_of_lt_of_eq q.2 hm) hm.symm hP2
+    exact ⟨⟨_, hi⟩, hK.symm.trans hr, hki, hx.symm.trans (hV hki)⟩
+  · rintro ⟨⟨i, hi⟩, hr, hl, hx⟩
+    have hin := (hmem i).2 ⟨hi, by rw [← (hR i hi).2.1]; exact hl⟩
+    obtain ⟨q, hq', hqe⟩ := List.getElem_of_mem hin
+    rw [ids_getElem hq'] at hqe
+    have hq'' := Nat.lt_of_lt_of_eq hq' (len_eq_ids _).symm
+    obtain ⟨hi', hki, hK, hV⟩ := hq q hq'' hm.symm hP2
+    subst hqe
+    exact ⟨⟨q, Nat.lt_of_lt_of_eq hq'' hm.symm⟩, hK.trans hr, (hV hl).trans hx.symm⟩
+
 -- `foldRows`' round, its element bound to `elK`: `round_rep`'s `S.nub` and `P ∪ Q`
 set_option hygiene false in
 local notation "rnd(" st ")" => ((step (elK (st).2.2) (st).1).nub,
@@ -192,9 +272,91 @@ theorem rounds_rep {E V : Obj} (pend₀ : Rel .long V) (step : Rel .long E → R
       · exact Or.inl ⟨i, hi, h⟩
       · exact Or.inr h
 
+/-- **The rounds' states and `out`, in `Set`**: `st i r` holds the values row `r` reaches after `i` rounds, each
+    round taking `S` on the row's element `i` from the end of `xs r` (`hst`, the states' defining recurrence).
+    Up to the row's length a state is a chain `ys` of `S`-steps from a seed in `st 0` along the last `i`
+    elements; past the length it is empty; and `out` at a stop `j` past the length, or where the row's state `j`
+    is empty, is the state at the length — the stop does not matter. -/
+theorem rounds_closed {K E V : Type} (xs : K → List E) (S : E × V → V → Prop) (st : Nat → K → V → Prop)
+    (hst : ∀ i r v, st (i + 1) r v ↔
+      ∃ e u, (∃ hl : i < (xs r).length, e = (xs r)[(xs r).length - 1 - i]'(by omega)) ∧ st i r u ∧ S (e, u) v) :
+    (∀ i r v (hi : i ≤ (xs r).length), st i r v ↔ ∃ ys : List V, ∃ hy : ys.length = i + 1,
+      st 0 r (ys[i]'(by omega)) ∧
+      (∀ t (ht : t < i), S ((xs r)[(xs r).length - i + t]'(by omega), ys[t + 1]'(by omega)) (ys[t]'(by omega))) ∧
+      v = ys[0]'(by omega)) ∧
+    (∀ i r v, (xs r).length < i → ¬ st i r v) ∧
+    (∀ j r v, ((xs r).length < j ∨ ∀ u, ¬ st j r u) →
+      ((∃ i < j, st i r v ∧ ¬ ∃ e, ∃ hl : i < (xs r).length, e = (xs r)[(xs r).length - 1 - i]'(by omega)) ↔
+        st (xs r).length r v)) := by
+  have gi : ∀ (l : List E) a b (ha : a < l.length) (hb : b < l.length), a = b → l[a] = l[b] := by
+    intro l a b ha hb h; subst h; rfl
+  have past : ∀ i r v, (xs r).length < i → ¬ st i r v := by
+    intro i r v hi h
+    cases i with
+    | zero => exact absurd hi (Nat.not_lt_zero _)
+    | succ i => obtain ⟨_, _, ⟨hl, _⟩, _⟩ := (hst i r v).1 h; omega
+  have down : ∀ j d r v, st (j + d) r v → ∃ u, st j r u := by
+    intro j d
+    induction d with
+    | zero => intro r v h; exact ⟨v, h⟩
+    | succ d ih => intro r v h; obtain ⟨_, u, _, hu, _⟩ := (hst (j + d) r v).1 h; exact ih r u hu
+  have closed : ∀ i r v (hi : i ≤ (xs r).length), st i r v ↔ ∃ ys : List V, ∃ hy : ys.length = i + 1,
+      st 0 r (ys[i]'(by omega)) ∧
+      (∀ t (ht : t < i), S ((xs r)[(xs r).length - i + t]'(by omega), ys[t + 1]'(by omega)) (ys[t]'(by omega))) ∧
+      v = ys[0]'(by omega) := by
+    intro i
+    induction i with
+    | zero =>
+      intro r v _
+      refine ⟨fun h => ⟨[v], rfl, h, fun t ht => absurd ht (Nat.not_lt_zero _), rfl⟩, ?_⟩
+      rintro ⟨ys, hy, h0, -, rfl⟩; exact h0
+    | succ i ih =>
+      intro r v hi
+      rw [hst]
+      constructor
+      · rintro ⟨e, u, ⟨hl, rfl⟩, hu, hS⟩
+        obtain ⟨ys, hy, h0, hstep, rfl⟩ := (ih r u (by omega)).1 hu
+        refine ⟨v :: ys, by simp [hy], by simpa using h0, fun t ht => ?_, rfl⟩
+        cases t with
+        | zero =>
+          simp only [List.getElem_cons_succ, List.getElem_cons_zero]
+          rw [gi (xs r) _ ((xs r).length - 1 - i) _ (by omega) (by omega)]; exact hS
+        | succ t =>
+          have h := hstep t (by omega)
+          simp only [List.getElem_cons_succ]
+          rw [gi (xs r) _ ((xs r).length - i + t) _ (by omega) (by omega)]; exact h
+      · rintro ⟨ys, hy, h0, hstep, hv⟩
+        rcases ys with _ | ⟨w, ys⟩
+        · simp at hy
+        have hy' : ys.length = i + 1 := by simp at hy; omega
+        subst hv
+        refine ⟨(xs r)[(xs r).length - 1 - i]'(by omega), ys[0]'(by omega), ⟨by omega, rfl⟩,
+          (ih r _ (by omega)).2 ⟨ys, hy', by simpa using h0, fun t ht => ?_, rfl⟩, ?_⟩
+        · have h := hstep (t + 1) (by omega)
+          simp only [List.getElem_cons_succ] at h
+          rw [gi (xs r) _ ((xs r).length - (i + 1) + (t + 1)) _ (by omega) (by omega)]; exact h
+        · have h := hstep 0 (by omega)
+          simp only [List.getElem_cons_succ, List.getElem_cons_zero] at h
+          rw [gi (xs r) _ ((xs r).length - (i + 1) + 0) _ (by omega) (by omega)]; exact h
+  refine ⟨closed, past, fun j r v hj => ⟨?_, fun h => ?_⟩⟩
+  · rintro ⟨i, hij, hs, hn⟩
+    have hL : (xs r).length ≤ i := Nat.le_of_not_lt fun hl => hn ⟨_, hl, rfl⟩
+    rcases Nat.lt_or_eq_of_le hL with hlt | heq
+    · exact absurd hs (past i r v hlt)
+    · rw [heq]; exact hs
+  · have hLj : (xs r).length < j := by
+      rcases hj with hj | hj
+      · exact hj
+      · refine Nat.lt_of_not_le fun hle => ?_
+        obtain ⟨u, hu⟩ := down j ((xs r).length - j) r v (by rw [Nat.add_sub_of_le hle]; exact h)
+        exact hj u hu
+    exact ⟨_, hLj, h, fun ⟨_, hl, _⟩ => Nat.lt_irrefl _ hl⟩
+
 end LeetQ.Rel.Rep
 
 #print axioms LeetQ.Rel.Rep.round_rep
+#print axioms LeetQ.Rel.Rep.rep_elR
 #print axioms LeetQ.Rel.Rep.iter_stop
 #print axioms LeetQ.Rel.Rep.foldRows_iter
 #print axioms LeetQ.Rel.Rep.rounds_rep
+#print axioms LeetQ.Rel.Rep.rounds_closed
