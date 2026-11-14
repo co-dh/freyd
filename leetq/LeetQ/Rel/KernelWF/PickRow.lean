@@ -1235,29 +1235,63 @@ theorem pickFits_pick : (A : Obj) → {n : USize} → (x : Vals A n) → (i : By
 
 #print axioms pickFits_pick
 
-/-- **Picking reads at most the source read at the picked rows and at all rows `i` names**, the pick's own row
-    count paid besides: a picked payload's count is the copied windows of all the rows (`pick_arr_shape`), or a
-    side's share of them (`pick_sum_shape`), which the next level's rows already count; a dictionary at most
-    doubles (`pickArr_dict`). Bounded by `2^63` and `USize.size` at all rows, every level fits (`pickFits_of_reads`). -/
+/-- **A picked side read at some rows and at all its rows**, the step `reads_pick` takes at a sum: two readings
+    of the side `xa` picked at `g`, one at the rows `SO` and one at all `L` rows, each bounded by `ih`, the second
+    paid at the picked rows `Y` a second time, so the factor grows from `Ka` to `2 * Ka + 1`. -/
+theorem reads_pick_side {a : Obj} {l L : USize} (xa : Vals a l) (pa : Vals a L) (g : Nat → Nat)
+    {SO X Y : List Nat} {Ka K : Nat} (hK : 2 * Ka + 1 ≤ K)
+    (ih : ∀ qs : List Nat, (∀ q ∈ qs, q < L.toNat) →
+      Vals.reads a pa qs + L.toNat ≤ Vals.reads a xa (qs.map g) + Ka * Vals.reads a xa ((List.range L.toNat).map g))
+    (hSO : ∀ q ∈ SO, q < L.toNat) (hX : SO.map g = X) (hY : (List.range L.toNat).map g = Y) :
+    Vals.reads a pa (SO ++ List.range L.toNat) + L.toNat ≤
+      Vals.reads a xa (X ++ List.range l.toNat) + K * Vals.reads a xa (Y ++ List.range l.toNat) := by
+  have h1 := ih SO hSO
+  have h2 := ih (List.range L.toNat) fun q hq => List.mem_range.1 hq
+  rw [hX, hY] at h1; rw [hY] at h2
+  have ap := reads_append pa SO (List.range L.toNat)
+  have sX := reads_sublist xa (List.sublist_append_left X (List.range l.toNat))
+  have sY := reads_sublist xa (List.sublist_append_left Y (List.range l.toNat))
+  have m1 := Nat.mul_le_mul_left Ka sY
+  have m2 := Nat.mul_le_mul_right (Vals.reads a xa (Y ++ List.range l.toNat)) hK
+  rw [Nat.add_mul, Nat.mul_assoc, Nat.one_mul] at m2
+  omega
+
+/-- **Picking reads at most the source read at the picked rows, and `3 ^ sizeOf A` times at all rows `i`
+    names**, the pick's own row count paid besides: a picked payload's count is the copied windows of all the rows
+    (`pick_arr_shape`), or a side's share of them (`pick_sum_shape`), which the next level's rows already count; a
+    dictionary at most doubles (`pickArr_dict`). The factor: a sum's side is read at all its rows as well
+    (`Vals.reads`), and a pick may repeat a source side row, so each sum level pays its sides' picked rows twice
+    more (`reads_pick_side`). Bounded by `2^63` and `USize.size` at all rows, every level fits (`pickFits_of_reads`). -/
 theorem reads_pick : (A : Obj) → {n : USize} → (x : Vals A n) → (i : ByteArray) → (m : USize) →
     (h : len i = m.toNat) → (qs : List Nat) → (∀ q ∈ qs, q < m.toNat) →
     Vals.reads A x ((List.range m.toNat).map fun q => (Column.bitsAt i (q * 8) 8).toNat) < 2 ^ 63 →
     Vals.reads A x ((List.range m.toNat).map fun q => (Column.bitsAt i (q * 8) 8).toNat) < USize.size →
     Vals.reads A (Vals.pick A x i m h) qs + m.toNat ≤
       Vals.reads A x (qs.map fun q => (Column.bitsAt i (q * 8) 8).toNat) +
-        Vals.reads A x ((List.range m.toNat).map fun q => (Column.bitsAt i (q * 8) 8).toNat)
+        3 ^ sizeOf A * Vals.reads A x ((List.range m.toNat).map fun q => (Column.bitsAt i (q * 8) 8).toNat)
   | .atom t, n, x, i, m, h, qs, _, _, _ => by
+    refine Nat.le_trans ?_ (Nat.add_le_add_left (Nat.le_mul_of_pos_left _ (Nat.pow_pos (by decide))) _)
     have hd := pickArr_dict x i m h
     unfold Vals.reads Vals.pick
     simp only [List.length_map, List.length_range]
     omega
   | .prod a b, n, x, i, m, h, qs, hq, h63, hU => by
+    have ka : 3 ^ sizeOf a ≤ 3 ^ sizeOf (Obj.prod a b) :=
+      Nat.pow_le_pow_right (by decide) (by simp only [Obj.prod.sizeOf_spec]; omega)
+    have kb : 3 ^ sizeOf b ≤ 3 ^ sizeOf (Obj.prod a b) :=
+      Nat.pow_le_pow_right (by decide) (by simp only [Obj.prod.sizeOf_spec]; omega)
     unfold Vals.reads at h63 hU ⊢
     unfold Vals.pick; dsimp only
-    have := reads_pick a x.1 i m h qs hq (by omega) (by omega)
-    have := reads_pick b x.2 i m h qs hq (by omega) (by omega)
+    have := Nat.le_trans (reads_pick a x.1 i m h qs hq (by omega) (by omega))
+      (Nat.add_le_add_left (Nat.mul_le_mul_right _ ka) _)
+    have := Nat.le_trans (reads_pick b x.2 i m h qs hq (by omega) (by omega))
+      (Nat.add_le_add_left (Nat.mul_le_mul_right _ kb) _)
+    rw [Nat.mul_add]
     omega
   | .arr b, n, ⟨p, lo, hi, f⟩, i, m, h, qs, hq, h63, hU => by
+    have kb : 3 ^ sizeOf b ≤ 3 ^ sizeOf (Obj.arr b) :=
+      Nat.pow_le_pow_right (by decide) (by simp only [Obj.arr.sizeOf_spec]; omega)
+    have km := Nat.le_mul_of_pos_left m.toNat (Nat.pow_pos (n := sizeOf (Obj.arr b)) (by decide : 0 < 3))
     have hf := pickFits_of_reads h63 hU
     unfold Vals.PickFits at hf; dsimp only at hf
     obtain ⟨hp, hl63, hlU, -⟩ := hf
@@ -1266,11 +1300,20 @@ theorem reads_pick : (A : Obj) → {n : USize} → (x : Vals A n) → (i : ByteA
     rw [he]
     unfold Vals.reads at h63 hU ⊢
     dsimp only at h63 hU ⊢
-    have ih := reads_pick b f i' k h' _ hlt (by rw [hall]; omega) (by rw [hall]; omega)
+    have ih := Nat.le_trans (reads_pick b f i' k h' _ hlt (by rw [hall]; omega) (by rw [hall]; omega))
+      (Nat.add_le_add_left (Nat.mul_le_mul_right _ kb) _)
     rw [hall, hmap] at ih
-    simp only [List.length_map, List.length_range] at h63 hU ⊢
+    simp only [List.length_map, List.length_range, Nat.mul_add] at h63 hU ⊢
     omega
   | .sum a b, n, ⟨l, r, tag, idx, xa, xb⟩, i, m, h, qs, hq, h63, hU => by
+    have hpos : 0 < 3 ^ sizeOf a := Nat.pow_pos (by decide)
+    have hposb : 0 < 3 ^ sizeOf b := Nat.pow_pos (by decide)
+    have ka : 3 ^ (sizeOf a + 1) ≤ 3 ^ sizeOf (Obj.sum a b) :=
+      Nat.pow_le_pow_right (by decide) (by simp only [Obj.sum.sizeOf_spec]; omega)
+    have kb : 3 ^ (sizeOf b + 1) ≤ 3 ^ sizeOf (Obj.sum a b) :=
+      Nat.pow_le_pow_right (by decide) (by simp only [Obj.sum.sizeOf_spec]; omega)
+    rw [Nat.pow_succ] at ka kb
+    have km := Nat.le_mul_of_pos_left m.toNat (Nat.pow_pos (n := sizeOf (Obj.sum a b)) (by decide : 0 < 3))
     have hf := pickFits_of_reads h63 hU
     unfold Vals.PickFits at hf; dsimp only at hf
     obtain ⟨hm, hl, hr, -, -⟩ := hf
@@ -1280,14 +1323,18 @@ theorem reads_pick : (A : Obj) → {n : USize} → (x : Vals A n) → (i : ByteA
     rw [he]
     unfold Vals.reads at h63 hU ⊢
     dsimp only at h63 hU ⊢
-    have iha := reads_pick a xa il (len il).toUSize (USize.toNat_ofNat_of_lt' hil).symm _ hlt
-      (by rw [hL]; omega) (by rw [hL]; omega)
-    have ihb := reads_pick b xb ir (len ir).toUSize (USize.toNat_ofNat_of_lt' hir).symm _ hrt
-      (by rw [hR]; omega) (by rw [hR]; omega)
-    rw [hL, hmapl] at iha
-    rw [hR, hmapr] at ihb
-    simp only [Bool.false_eq_true, ↓reduceIte, ↓reduceDIte] at iha ihb h63 hU ⊢
-    simp only [List.length_map, List.length_range] at h63 hU ⊢
+    have sa : ∀ {B : Nat} (s : List Nat), Vals.reads a xa (s ++ List.range l.toNat) < B → Vals.reads a xa s < B :=
+      fun s hs => Nat.lt_of_le_of_lt (reads_sublist xa (List.sublist_append_left s _)) hs
+    have sb : ∀ {B : Nat} (s : List Nat), Vals.reads b xb (s ++ List.range r.toNat) < B → Vals.reads b xb s < B :=
+      fun s hs => Nat.lt_of_le_of_lt (reads_sublist xb (List.sublist_append_left s _)) hs
+    have fa := reads_pick_side (K := 3 ^ sizeOf (Obj.sum a b)) (Ka := 3 ^ sizeOf a) xa _ _ (by omega)
+      (fun qs hq => reads_pick a xa il (len il).toUSize (USize.toNat_ofNat_of_lt' hil).symm qs hq
+        (by rw [hL]; exact sa _ (by omega)) (by rw [hL]; exact sa _ (by omega))) hlt hmapl hL
+    have fb := reads_pick_side (K := 3 ^ sizeOf (Obj.sum a b)) (Ka := 3 ^ sizeOf b) xb _ _ (by omega)
+      (fun qs hq => reads_pick b xb ir (len ir).toUSize (USize.toNat_ofNat_of_lt' hir).symm qs hq
+        (by rw [hR]; exact sb _ (by omega)) (by rw [hR]; exact sb _ (by omega))) hrt hmapr hR
+    simp only [Bool.false_eq_true, ↓reduceIte, ↓reduceDIte] at fa fb h63 hU ⊢
+    simp only [List.length_map, List.length_range, Nat.mul_add] at h63 hU ⊢
     omega
 
 #print axioms reads_pick
