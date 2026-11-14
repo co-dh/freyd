@@ -1,6 +1,7 @@
 import Std.Data.HashMap
 import LeetQ.Rel.AC3
 import LeetQ.Rel.Lang.Elab
+import LeetQ.Rel.Lang.Member
 import LeetQ.Rel.Lang.Parse
 import LeetQ.Rel.Programs.Prelude
 
@@ -75,6 +76,15 @@ def acArcs (k : Nat) : {V D : Obj} → {d : Bool} → Tm V D d → Option (List 
     if h : V' = V ∧ D' = D then some [⟨h.1 ▸ A, h.2 ▸ C, UV, UD⟩] else none
   | _, _, _, _ => none
 
+/-- The fixed-point variable `k` in the round being run: `build` puts a variable only inside the fixed point
+    binding it, so a missing one is its bug. -/
+def varVal (ρ : List (Nat × Val)) (k : Nat) (A B : Obj) : Rel A B :=
+  match (ρ.lookup k).bind (Val.at? A B) with
+  | some R => R
+  | none => @panic (Rel A B) ⟨zero⟩ s!"internal: the fixed-point variable {k} is not bound here"
+
+mutual
+
 /-- `t` on the keys `D`: exact at every key of `D`; a closed term ignores `D`. In `RS`, `S` runs on `ran(R)`.
     A sub-term `.share k` whose identity occurs more than once (`cnt`) runs once per demand. -/
 def ev (cnt : Array Nat) (ρ : List (Nat × Val)) : {A B : Obj} → {d : Bool} → Tm A B d → Dem d A → EvM (Rel A B)
@@ -91,6 +101,11 @@ def ev (cnt : Array Nat) (ρ : List (Nat × Val)) : {A B : Obj} → {d : Bool} �
   | _, _, _, .comp (e := e) R S, D => do
     let r ← ev cnt ρ R D; if r.n == 0 then pure zero else return r ≫ (← ev cnt ρ S (Dem.of e (ran r)))
   | _, _, _, .conv R, _ => return (← ev cnt ρ R ())°
+  -- a closed `∩`/`−` whose side has a test rule is never a table: it is tested on the other side's rows (`Member`)
+  | _, _, _, .meet (d := false) (e := false) R S, _ => do
+    Member.meetM (← evP cnt ρ R) (← evP cnt ρ S) (ev cnt ρ R ()) (ev cnt ρ S ())
+  | _, _, _, .diff (d := false) (e := false) R S, _ => do
+    Member.diffM (← evP cnt ρ R) (← evP cnt ρ S) (ev cnt ρ R ()) (ev cnt ρ S ())
   | _, _, _, .meet (d := d) (e := e) R S, D => return (← ev cnt ρ R (Dem.l d e D)) ∩ (← ev cnt ρ S (Dem.r d e D))
   | _, _, _, .join (d := d) (e := e) R S, D => return (← ev cnt ρ R (Dem.l d e D)) ∪ (← ev cnt ρ S (Dem.r d e D))
   | _, _, _, .diff (d := d) (e := e) R S, D => return (← ev cnt ρ R (Dem.l d e D)) \ (← ev cnt ρ S (Dem.r d e D))
@@ -156,10 +171,7 @@ def ev (cnt : Array Nat) (ρ : List (Nat × Val)) : {A B : Obj} → {d : Bool} �
     let r ← ev cnt ρ R (Dem.of d (ran (outl D)))
     let U := ran r
     pure (D ≫ ((pair r° (outl U))° ≫ outr U))
-  -- `build` puts a variable only inside the fixed point binding it, so a missing one is its bug
-  | A, B, _, .var k, _ => match (ρ.lookup k).bind (Val.at? A B) with
-    | some R => pure R
-    | none => pure (@panic (Rel A B) ⟨zero⟩ s!"internal: the fixed-point variable {k} is not bound here")
+  | A, B, _, .var k, _ => pure (varVal ρ k A B)
   -- each round one evaluation, as a fold step: what the body shares, it shares within the round
   -- an AC-3 body runs by delta rounds (`acFix`), decided once before the rounds; any other body naively
   | A, B, _, .nu k S body, _ => do
@@ -182,6 +194,30 @@ def ev (cnt : Array Nat) (ρ : List (Nat × Val)) : {A B : Obj} → {d : Bool} �
       let V ← ev cnt ρ R D
       modify fun m => m.insert k ((m.getD k #[]).push ⟨A, D, ⟨A, B, V⟩⟩)
       pure V
+
+/-- `t` as a plan for membership tests (`Member.TP`): a closed node with a test rule kept, a child without one
+    evaluated as its table; `none` at any other node, which its parent then evaluates as a table. -/
+def evP (cnt : Array Nat) (ρ : List (Nat × Val)) : {A B : Obj} → {d : Bool} → Tm A B d → EvM (Option (Member.TP A B))
+  | _, _, _, .val R => pure (some (.leaf R))
+  | _, _, _, .uni U => pure (some (.leaf (idU U)))
+  | A, B, _, .var k => pure (some (.leaf (varVal ρ k A B)))
+  | _, _, _, .share _ R => evP cnt ρ R
+  | _, _, _, .own R => evP cnt ρ R
+  | _, _, _, .comp (d := false) (e := false) R S => return some (.comp
+      (← Member.orLeaf (evP cnt ρ R) (ev cnt ρ R ())) (← Member.orLeaf (evP cnt ρ S) (ev cnt ρ S ())))
+  | _, _, _, .conv R => return some (.conv (← Member.orLeaf (evP cnt ρ R) (ev cnt ρ R ())))
+  | _, _, _, .meet (d := false) (e := false) R S => return some (.meet
+      (← Member.orLeaf (evP cnt ρ R) (ev cnt ρ R ())) (← Member.orLeaf (evP cnt ρ S) (ev cnt ρ S ())))
+  | _, _, _, .join (d := false) (e := false) R S => return some (.join
+      (← Member.orLeaf (evP cnt ρ R) (ev cnt ρ R ())) (← Member.orLeaf (evP cnt ρ S) (ev cnt ρ S ())))
+  | _, _, _, .diff (d := false) (e := false) R S => return some (.diff
+      (← Member.orLeaf (evP cnt ρ R) (ev cnt ρ R ())) (← Member.orLeaf (evP cnt ρ S) (ev cnt ρ S ())))
+  | _, _, _, .ldiv R S UB UC => return some (.ldiv
+      (← Member.orLeaf (evP cnt ρ R) (ev cnt ρ R ())) (← Member.orLeaf (evP cnt ρ S) (ev cnt ρ S ()))
+      (← ev cnt ρ UB ()) (← ev cnt ρ UC ()))
+  | _, _, _, _ => pure none
+
+end
 
 /-! ### Sharing: every sub-term an identity, structurally -/
 
