@@ -166,7 +166,7 @@ def _root_.LeetQ.Rel.Vals.PickFits : (A : Obj) → {n : USize} → Vals A n → 
     each clause `Vals.PickFits`'s bounds summed, at the same windows (`w`) and side positions (`side`). -/
 def _root_.LeetQ.Rel.Vals.reads : (A : Obj) → {n : USize} → Vals A n → List Nat → Nat
   | .atom t, n, x, ps =>
-    ps.length + (match Arr.enc (t := t) (n := n) x with | .enum _ o _ => o.size - 1 | _ => 0)
+    ps.length + (match Arr.enc (t := t) (n := n) x with | .enum _ o _ => o.size | _ => 0)
   | .prod a b, _, x, ps => Vals.reads a x.1 ps + Vals.reads b x.2 ps
   | .arr b, n, ⟨p, lo, hi, f⟩, ps =>
     let w (k : Nat) : List Nat := if h : k < n.toNat then
@@ -180,6 +180,24 @@ def _root_.LeetQ.Rel.Vals.reads : (A : Obj) → {n : USize} → Vals A n → Lis
         (if tag.get ⟨k, h⟩ = s then some (min (max (idx.get ⟨k, h⟩).toInt 0).toNat (c - 1)) else none)
       else if s then none else some c
     ps.length + l.toNat + r.toNat + Vals.reads a x (side false l.toNat) + Vals.reads b y (side true r.toNat)
+
+/-- **A pick at most doubles an atom side's dictionary** (`gatherColumn_dict`): the entry count, not the
+    `o.size - 1` entries `PickFits` bounds, because a miss may append the empty entry to a one-entry offsets array. -/
+theorem pickArr_dict {t : QAtomicType} {n : USize} (x : Arr t n) (i : ByteArray) (m : USize) (h : len i = m.toNat) :
+    (match Arr.enc (pickArr t ⟨n, x⟩ i m h) with | .enum _ o _ => o.size | _ => 0) ≤
+      2 * (match Arr.enc x with | .enum _ o _ => o.size | _ => 0) := by
+  have hl : len i < USize.size := h ▸ m.toNat_lt_size
+  have cast : ∀ {k : USize} (e : k = m) (y : Arr t k), Arr.enc (e ▸ y : Arr t m) = Arr.enc y := by
+    intro k e y; subst e; rfl
+  unfold pickArr; rw [cast]
+  by_cases hg : t = .general
+  · subst hg
+    obtain ⟨xs, he, -⟩ := KernelWF.general_cases (pick .general ⟨n, x⟩ i).2.wf
+    rw [he]; exact Nat.zero_le _
+  · obtain ⟨e, he, hp⟩ := pick_eq_gather hg ⟨n, x⟩ i hl
+    have hpe : Arr.enc (pick t ⟨n, x⟩ i).2 = e := congrArg Prod.snd hp
+    rw [hpe]
+    exact KernelWF.gatherColumn_dict x.wf i (by rw [USize.toNat_ofNat_of_lt' hl]; rfl) he
 
 /-- **Every row read is counted**: the rows themselves bound the measure from below. -/
 theorem length_le_reads {A : Obj} {n : USize} (x : Vals A n) (ps : List Nat) : ps.length ≤ Vals.reads A x ps := by

@@ -395,4 +395,38 @@ theorem gatherColumn_wf {t : QAtomicType} {n : USize} {e : Enc} (hw : Enc.WF t n
       simp_all [gatherBits_size, gatherBytes_size, gatherAlp_size, gatherSyms_size, gatherSyms_wf, gatherIds_wf,
         toNat_small, small_mod]
 
+/-- `gatherIds` keeps the dictionary or appends its one empty entry. -/
+theorem gatherIds_dof_size (dict : ByteArray) (dof : Array Nat) (inRange : Unit → Bool)
+    (g : USize → USize → UInt64 → ByteArray) : (gatherIds dict dof inRange g).2.1.size ≤ dof.size + 1 := by
+  simp only [gatherIds]; split <;> simp
+
+/-- **`x@i` at most doubles a dictionary's entry count**: only an interned source answers interned, with its
+    dictionary or that plus the empty entry a miss reads (`gatherIds`), and a well-formed one has an entry. -/
+theorem gatherColumn_dict {t : QAtomicType} {n : USize} {e : Enc} (hw : Enc.WF t n e)
+    (i : ByteArray) {m : USize} (hm : m.toNat = i.size / 8) {e' : Enc}
+    (h : gatherColumn t n e m (.bytes i) = some e') :
+    (match e' with | .enum _ o _ => o.size | _ => 0) ≤ 2 * (match e with | .enum _ o _ => o.size | _ => 0) := by
+  have w' := gatherColumn_wf hw i hm h
+  have hz : ¬ i.size < m.toNat * 8 := by omega
+  cases e' with
+  | enum d' o' ids' =>
+    cases t <;> try (exfalso; simp [Enc.WF] at w'; done)
+    cases e with
+    | enum d o ids =>
+      obtain ⟨-, hd, -, -, -⟩ := id hw
+      have hp := hd.pos
+      have hg := gatherIds_dof_size d o (fun _ => allBelow n i) fun w wo e => gatherPacked n w wo e ids i
+      unfold gatherColumn at h
+      simp [-Nat.not_lt, hz, foRColumn, Enc.bytesOf, denseWidth] at h
+      split at h
+      · simp at h
+      · simp only [Option.some.injEq, Enc.enum.injEq] at h
+        obtain ⟨-, rfl, -⟩ := h
+        exact Nat.le_trans hg (show o.size + 1 ≤ 2 * o.size by omega)
+    | syms blob offs =>
+      unfold gatherColumn at h
+      simp [-Nat.not_lt, hz, denseWidth, foRColumn, Enc.bytesOf, QAtomicType.width] at h
+    | _ => exfalso; simp [Enc.WF, QAtomicType.width] at hw
+  | _ => exact Nat.zero_le _
+
 end LeetQ.Rel.KernelWF
