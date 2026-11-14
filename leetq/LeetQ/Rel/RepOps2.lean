@@ -21,12 +21,12 @@ open QLean.Verify
 
 -- the values of `R` and of `T` as parts of `B`, their joint codes, and the rows `anti` keeps, as `antiJoin` names them
 set_option hygiene false in
-local notation "avp(" B ", " R ", " T ")" =>
+notation "avp(" B ", " R ", " T ")" =>
   (#v[⟨Rel.n R, Rel.val R⟩, ⟨Rel.n T, Rel.val T⟩] : Vector (Part B) 2)
 set_option hygiene false in
-local notation "avc(" B ", " R ", " T ")" => Obj.codes B avp(B, R, T)
+notation "avc(" B ", " R ", " T ")" => Obj.codes B avp(B, R, T)
 set_option hygiene false in
-local notation "amiss(" B ", " R ", " T ")" =>
+notation "amiss(" B ", " R ", " T ")" =>
   anti ((avc(B, R, T))[0]'Nat.zero_lt_two) ((avc(B, R, T))[1]'Nat.one_lt_two)
 
 /-- Row `i` of `R` is marked by `member` on the joint value codes exactly when its value is a value of `T`. -/
