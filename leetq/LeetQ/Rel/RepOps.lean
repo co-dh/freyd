@@ -460,9 +460,10 @@ section Pairs
 
 open QLean.Verify
 
+namespace OpsN
 -- codes `cs` of two parts `ps` faithful and well formed, in `rep_comp`'s `hc` form (`codes_prod_faithful_wf`'s)
 set_option hygiene false in
-local notation "codesOK(" cs ", " ps ")" => ((∀ {k l : Nat} (hk : k < 2) (hl : l < 2) {i j : Nat}
+scoped notation "codesOK(" cs ", " ps ")" => ((∀ {k l : Nat} (hk : k < 2) (hl : l < 2) {i j : Nat}
     (hi : i < (ps[k]'hk).1.toNat) (hj : j < (ps[l]'hl).1.toNat),
     Column.idAt (cs[k]'hk).b (cs[k]'hk).w i = Column.idAt (cs[l]'hl).b (cs[l]'hl).w j ↔
       Vals.row (ps[k]'hk).2 ⟨i, hi⟩ = Vals.row (ps[l]'hl).2 ⟨j, hj⟩) ∧
@@ -472,18 +473,26 @@ local notation "codesOK(" cs ", " ps ")" => ((∀ {k l : Nat} (hk : k < 2) (hl :
     (cs[k]'hk).n = (ps[k]'hk).1 ∧ (cs[k]'hk).b.size = ((cs[k]'hk).n.toNat * (cs[k]'hk).w + 7) / 8 ∧
     ((cs[k]'hk).w < 8 → (cs[k]'hk).card < USize.size ∧
       ∀ i < (cs[k]'hk).n.toNat, Column.idAt (cs[k]'hk).b (cs[k]'hk).w i < (cs[k]'hk).card))
--- the two relations as parts of a product side; their keys, their values, as parts of one side each (the fields
--- are applied, not projected: `R.n` would be one identifier, not the parameter `R`)
+-- the two relations as parts of a product side, the sides read off `R`, `S` (the fields are applied, not
+-- projected: `R.n` would be one identifier, not the parameter `R`)
 set_option hygiene false in
-local notation "pcs(" R ", " S ")" =>
-  (#v[⟨Rel.n R, (Rel.key R, Rel.val R)⟩, ⟨Rel.n S, (Rel.key S, Rel.val S)⟩] : Vector (Part (.prod A B)) 2)
+scoped notation "pcs(" R ", " S ")" =>
+  (#v[⟨Rel.n R, (Rel.key R, Rel.val R)⟩, ⟨Rel.n S, (Rel.key S, Rel.val S)⟩] : Vector (Part (.prod _ _)) 2)
+-- the joint pair codes `pairs #v[R, S]` faithful and well formed
+set_option hygiene false in
+scoped notation "pairsOK(" R ", " S ")" => codesOK(pairs #v[R, S], pcs(R, S))
+-- the rows of `R` whose pair is no pair of `S`, as `−` computes them
+set_option hygiene false in
+scoped notation "misses(" R ", " S ")" =>
+  anti ((pairs #v[R, S])[0]'Nat.zero_lt_two) ((pairs #v[R, S])[1]'Nat.one_lt_two)
+end OpsN
+open OpsN
+
+-- the keys, the values, of the two relations as parts of one side each
 set_option hygiene false in
 local notation "kp(" R ", " S ")" => (#v[⟨Rel.n R, Rel.key R⟩, ⟨Rel.n S, Rel.key S⟩] : Vector (Part A) 2)
 set_option hygiene false in
 local notation "vp(" R ", " S ")" => (#v[⟨Rel.n R, Rel.val R⟩, ⟨Rel.n S, Rel.val S⟩] : Vector (Part B) 2)
--- the joint pair codes `pairs #v[R, S]` faithful and well formed
-set_option hygiene false in
-local notation "pairsOK(" R ", " S ")" => codesOK(pairs #v[R, S], pcs(R, S))
 -- what `codes_prod_faithful_wf` takes to conclude `pairsOK`: the keys' and the values' codes, one lane each, and
 -- the summed count
 set_option hygiene false in
@@ -493,11 +502,9 @@ local notation "partsOK(" R ", " S ")" =>
   codesOK(Obj.codes B vp(R, S), vp(R, S)) ∧
   (∀ {k l : Nat} (hk : k < 2) (hl : l < 2), ((Obj.codes B vp(R, S))[k]'hk).w = ((Obj.codes B vp(R, S))[l]'hl).w) ∧
   ((pcs(R, S)).toList.map (·.1.toNat)).sum < USize.size
--- the rows of `R` whose pair is a pair of `S`, as `∩` and `⊑` compute them, and the rest, as `−` does
+-- the rows of `R` whose pair is a pair of `S`, as `∩` and `⊑` compute them
 set_option hygiene false in
 local notation "hits" => whereBits R.n (((pairs #v[R, S])[0]'Nat.zero_lt_two).member ((pairs #v[R, S])[1]'Nat.one_lt_two))
-set_option hygiene false in
-local notation "misses" => anti ((pairs #v[R, S])[0]'Nat.zero_lt_two) ((pairs #v[R, S])[1]'Nat.one_lt_two)
 
 /-- Row `i` of `R` is marked by `member` exactly when its pair is a pair of `S` (`member_bit`, the codes faithful). -/
 theorem pairs_member (R S : Rel A B) (hc : pairsOK(R, S)) {i : Nat} (hi : i < R.n.toNat) :
@@ -570,15 +577,15 @@ theorem rep_inter (R S : Rel A B) (hc : pairsOK(R, S)) (hk : Vals.PickFits A R.k
 /-- **`rep (R − S) = rep R − rep S`**, pointwise (`Rel(Set)` names no difference): `−` keeps the rows of `R` whose
     pair `S` does not hold (`anti_ids`, `pairs_member`), read back by `rows_keep` as `∩`. Hypotheses: `rep_inter`'s,
     at the rows `anti` keeps. -/
-theorem rep_diff (R S : Rel A B) (hc : pairsOK(R, S)) (hk : Vals.PickFits A R.key (ids (misses)))
-    (hv : Vals.PickFits B R.val (ids (misses))) (a : A.El) (b : B.El) :
+theorem rep_diff (R S : Rel A B) (hc : pairsOK(R, S)) (hk : Vals.PickFits A R.key (ids (misses(R, S))))
+    (hv : Vals.PickFits B R.val (ids (misses(R, S)))) (a : A.El) (b : B.El) :
     rep (R \ S) a b ↔ rep R a b ∧ ¬ rep S a b := by
   obtain ⟨hw0, hn0, hs0, -⟩ := hc.2 (k := 0) (by decide)
   obtain ⟨hw1, -, hs1, -⟩ := hc.2 (k := 1) (by decide)
   have hI := (anti_ids _ _ hw0 hw1 hs0 hs1).1
   replace hn0 : ((pairs #v[R, S])[0]'Nat.zero_lt_two).n = R.n := hn0
   rw [hn0] at hI
-  show (R.rows (misses)).Holds a b ↔ R.Holds a b ∧ ¬ S.Holds a b
+  show (R.rows (misses(R, S))).Holds a b ↔ R.Holds a b ∧ ¬ S.Holds a b
   rw [rows_keep R _ _ hI hk hv]
   have hnot : ∀ x : Bool, (!x) = true ↔ ¬ x = true := by decide
   constructor
@@ -671,8 +678,8 @@ theorem rep_inter_parts (R S : Rel A B) (h : partsOK(R, S)) (hk : Vals.PickFits 
   rep_inter R S (pairsOK_of_parts R S h) hk hv
 
 /-- `rep_diff`, its pair codes from the parts'. -/
-theorem rep_diff_parts (R S : Rel A B) (h : partsOK(R, S)) (hk : Vals.PickFits A R.key (ids (misses)))
-    (hv : Vals.PickFits B R.val (ids (misses))) (a : A.El) (b : B.El) :
+theorem rep_diff_parts (R S : Rel A B) (h : partsOK(R, S)) (hk : Vals.PickFits A R.key (ids (misses(R, S))))
+    (hv : Vals.PickFits B R.val (ids (misses(R, S)))) (a : A.El) (b : B.El) :
     rep (R \ S) a b ↔ rep R a b ∧ ¬ rep S a b :=
   rep_diff R S (pairsOK_of_parts R S h) hk hv a b
 

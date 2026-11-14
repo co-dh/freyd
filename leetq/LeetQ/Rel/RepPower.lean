@@ -35,7 +35,7 @@ scoped notation "kcX(" X ")" => (Obj.codes _ (#v[⟨_, X⟩] : Vector (Part _) 1
 set_option hygiene false in
 scoped notation "nubX(" X ")" => (tuples.tupleIds (kcX(X)) #[kcX(X)]).2
 end Pow
-open Pow
+open Pow OpsN UnionN
 
 /-- **`rep (τ X)`: each element of `X` to the array holding it alone**: an array `τ X` gives `a` holds exactly
     `a`, and `τ X` has a row at `a` exactly when `X` lists `a` — `rep_transpose` at `idU X`, whose key and value
@@ -81,30 +81,6 @@ theorem rep_tau {n : USize} (X : Vals A n)
 /-! ## `lamOn`, `setify`, `E`: `Λ(R)` made total on a side -/
 
 namespace Pow
--- a one-part code `c` of the `m` values `x` faithful and well formed, `rep_nub`'s `hK` form
-set_option hygiene false in
-scoped notation "cOK(" c ", " m ", " x ")" => ((∀ {i j : Nat} (hi : i < USize.toNat m) (hj : j < USize.toNat m),
-    Column.idAt (c).b (c).w i = Column.idAt (c).b (c).w j ↔ Vals.row x ⟨i, hi⟩ = Vals.row x ⟨j, hj⟩) ∧
-  ((c).w = 1 ∨ (c).w = 2 ∨ (c).w = 4 ∨ (c).w = 8 ∨ (c).w = 16 ∨ (c).w = 32 ∨ (c).w = 64) ∧ (c).n = m ∧
-    (c).b.size = ((c).n.toNat * (c).w + 7) / 8 ∧
-    ((c).w < 8 → (c).card < USize.size ∧ ∀ i < (c).n.toNat, Column.idAt (c).b (c).w i < (c).card))
--- two-part codes `cs` of the parts `ps` faithful and well formed (`RepOps`' `codesOK`)
-set_option hygiene false in
-scoped notation "codesOK(" cs ", " ps ")" => ((∀ {k l : Nat} (hk : k < 2) (hl : l < 2) {i j : Nat}
-    (hi : i < (ps[k]'hk).1.toNat) (hj : j < (ps[l]'hl).1.toNat),
-    Column.idAt (cs[k]'hk).b (cs[k]'hk).w i = Column.idAt (cs[l]'hl).b (cs[l]'hl).w j ↔
-      Vals.row (ps[k]'hk).2 ⟨i, hi⟩ = Vals.row (ps[l]'hl).2 ⟨j, hj⟩) ∧
-  ∀ {k : Nat} (hk : k < 2),
-    ((cs[k]'hk).w = 1 ∨ (cs[k]'hk).w = 2 ∨ (cs[k]'hk).w = 4 ∨ (cs[k]'hk).w = 8 ∨ (cs[k]'hk).w = 16 ∨
-      (cs[k]'hk).w = 32 ∨ (cs[k]'hk).w = 64) ∧
-    (cs[k]'hk).n = (ps[k]'hk).1 ∧ (cs[k]'hk).b.size = ((cs[k]'hk).n.toNat * (cs[k]'hk).w + 7) / 8 ∧
-    ((cs[k]'hk).w < 8 → (cs[k]'hk).card < USize.size ∧
-      ∀ i < (cs[k]'hk).n.toNat, Column.idAt (cs[k]'hk).b (cs[k]'hk).w i < (cs[k]'hk).card))
--- `rep_nub`'s codes of a relation `R` (`RepLambda`'s `kcR`, `vcR`, taking `R`)
-set_option hygiene false in
-scoped notation "kcR(" R ")" => (Obj.codes _ (#v[⟨Rel.n R, Rel.key R⟩] : Vector (Part _) 1))[0]'Nat.zero_lt_one
-set_option hygiene false in
-scoped notation "vcR(" R ")" => (Obj.codes _ (#v[⟨Rel.n R, Rel.val R⟩] : Vector (Part _) 1))[0]'Nat.zero_lt_one
 -- `lamOn R U`'s parts: `Λ(R)`; the elements of `U` that `R` relates to nothing; each of them to the empty array
 set_option hygiene false in
 scoped notation "lT(" R ")" => LeetQ.Rel.Alg.transpose R
@@ -113,18 +89,6 @@ scoped notation "lD(" R ", " U ")" => (LeetQ.Rel.Alg.idU U \ LeetQ.Rel.Alg.dom R
 set_option hygiene false in
 scoped notation "lN(" R ", " U ", " B ")" =>
   LeetQ.Rel.Alg.top (Rel.key (LeetQ.Rel.Alg.idU U \ LeetQ.Rel.Alg.dom R)) (LeetQ.Rel.Alg.nilVal B)
--- `−`'s joint pair parts of `R`, `S` (`RepOps`' `pcs`, taking `R`, `S`)
-set_option hygiene false in
-scoped notation "pcs(" R ", " S ")" =>
-  (#v[⟨Rel.n R, (Rel.key R, Rel.val R)⟩, ⟨Rel.n S, (Rel.key S, Rel.val S)⟩] : Vector (Part (.prod _ _)) 2)
--- `∪`'s two key parts and two value parts and their raze (`RazeFoR`'s `Uc`, taking the parts; the raze's count
--- proofs are the hypotheses `hNk`, `hNv`)
-set_option hygiene false in
-scoped notation "pk(" R ", " S ")" => (#[⟨Rel.n R, Rel.key R⟩, ⟨Rel.n S, Rel.key S⟩] : Array (Part _))
-set_option hygiene false in
-scoped notation "pv(" R ", " S ")" => (#[⟨Rel.n R, Rel.val R⟩, ⟨Rel.n S, Rel.val S⟩] : Array (Part _))
-set_option hygiene false in
-scoped notation "Uc(" R ", " S ")" => (⟨_, Obj.raze _ (pk(R, S)) hNk, Obj.raze _ (pv(R, S)) hNv⟩ : Rel _ _)
 end Pow
 open Pow
 
@@ -175,7 +139,7 @@ theorem rep_lamOn {B : Obj} {m : USize} (R : Rel A B) (U : Vals A m)
     (hNk : ((pk(T, N)).toList.map fun c : Part A => c.1.toNat).sum < USize.size)
     (hNv : ((pv(T, N)).toList.map fun c : Part (.arr B) => c.1.toNat).sum < USize.size)
     (hFk : Vals.RazeFits A (Rel.key T) (Rel.key N)) (hFv : Vals.RazeFits (.arr B) (Rel.val T) (Rel.val N))
-    (L : Rel A (.arr B)) (hL : L = Uc(T, N)) (ku vu : Code) (hku : ku = kcR(L)) (hvu : vu = vcR(L))
+    (L : Rel A (.arr B)) (hL : L = Uc(T, N, hNk, hNv)) (ku vu : Code) (hku : ku = kcR(L)) (hvu : vu = vcR(L))
     (huK : cOK(ku, Rel.n L, Rel.key L)) (huV : cOK(vu, Rel.n L, Rel.val L))
     (huk : Vals.PickFits A (Rel.key L) (ids (tuples.tupleIds ku #[vu]).2))
     (huv : Vals.PickFits (.arr B) (Rel.val L) (ids (tuples.tupleIds ku #[vu]).2)) :
@@ -292,7 +256,7 @@ theorem rep_setify {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (hNk : ((pk(T, N)).toList.map fun c : Part (.arr B) => c.1.toNat).sum < USize.size)
     (hNv : ((pv(T, N)).toList.map fun c : Part (.arr B) => c.1.toNat).sum < USize.size)
     (hFk : Vals.RazeFits (.arr B) (Rel.key T) (Rel.key N)) (hFv : Vals.RazeFits (.arr B) (Rel.val T) (Rel.val N))
-    (L : Rel (.arr B) (.arr B)) (hL : L = Uc(T, N)) (ku vu : Code) (hku : ku = kcR(L)) (hvu : vu = vcR(L))
+    (L : Rel (.arr B) (.arr B)) (hL : L = Uc(T, N, hNk, hNv)) (ku vu : Code) (hku : ku = kcR(L)) (hvu : vu = vcR(L))
     (huK : cOK(ku, Rel.n L, Rel.key L)) (huV : cOK(vu, Rel.n L, Rel.val L))
     (huk : Vals.PickFits (.arr B) (Rel.key L) (ids (tuples.tupleIds ku #[vu]).2))
     (huv : Vals.PickFits (.arr B) (Rel.val L) (ids (tuples.tupleIds ku #[vu]).2)) :

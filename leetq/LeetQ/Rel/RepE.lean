@@ -7,7 +7,7 @@ import LeetQ.Rel.RepPower
 namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
-open Pow
+open Pow OpsN UnionN
 
 variable {A : Obj}
 
@@ -79,7 +79,7 @@ theorem rep_E {B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) (M : Rel
     (hNv : ((pv(T, N)).toList.map fun c : Part (.arr B) => c.1.toNat).sum < USize.size)
     (hFk : Vals.RazeFits (.arr A) (Rel.key T) (Rel.key N))
     (hFv : Vals.RazeFits (.arr B) (Rel.val T) (Rel.val N))
-    (L : Rel (.arr A) (.arr B)) (hL : L = Uc(T, N))
+    (L : Rel (.arr A) (.arr B)) (hL : L = Uc(T, N, hNk, hNv))
     (ku vu : Code) (hku : ku = kcR(L)) (hvu : vu = vcR(L))
     (huK : cOK(ku, Rel.n L, Rel.key L)) (huV : cOK(vu, Rel.n L, Rel.val L))
     (huk : Vals.PickFits (.arr A) (Rel.key L) (ids (tuples.tupleIds ku #[vu]).2))
