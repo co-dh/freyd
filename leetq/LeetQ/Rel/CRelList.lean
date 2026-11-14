@@ -47,25 +47,59 @@ theorem rep_zipC {K A B : Obj} (P : Rel K (.prod (.arr A) (.arr B))) (hb : (zipC
   exact rep_zip P (pickFits_of_fitsN _ _ _ ha _ (by simp)) (pickFits_of_fitsN _ _ _ hb _ (by simp)) _ rfl hS hU
     _ rfl _ rfl _ rfl _ rfl _ rfl (pickFits_of_fitsN _ _ _ hk _ (by simp))
 
-/-- **`rep (cons P)` under `consC`'s bit**: the decided bounds are `rep_cons`'s `hS`, `hU`, the `fitsN` bits its `hV`,
-    `hKf`; inside `expand`, the raze's bit its `hRf` (`razeC_fits`), the last pick's its `hFf` (`pickC_fits`). -/
-theorem rep_consC {K B : Obj} (P : Rel K (.prod B (.arr B))) (hb : (consC P).2 = true) :
-    ∀ k ys, rep (consC P).1 k ys ↔ ∃ b bs, rep P k (b, bs) ∧ ys = b :: bs := by
-  rw [consC_fst]
+open ListN in
+/-- **`consC`'s bit is `rep_cons`'s premises** (`consOK`): the decided bounds its `hS`, `hU`, the `fitsN` bits its
+    `hV`, `hKf`; inside `expand`, the raze's bit its `hRf` (`razeC_fits`), the last pick's its `hFf` (`pickC_fits`). -/
+theorem consC_ok {K B : Obj} (P : Rel K (.prod B (.arr B))) (hb : (consC P).2 = true) : consOK(K, B, P) := by
   simp only [consC, expand, longCount, need, Bool.and_eq_true, decide_eq_true_eq] at hb
   obtain ⟨⟨⟨⟨hV, hS⟩, hU⟩, hK⟩, hb⟩ := hb
+  refine ⟨pickFits_of_fitsN _ _ _ hV _ (by simp), ?_⟩
+  rintro s rfl
+  refine ⟨hS, hU, ?_⟩
+  rintro xi rfl m rfl xr rfl j rfl tl rfl c1 rfl hi rfl lo rfl dst rfl g rfl
+  refine ⟨pickFits_of_fitsN _ _ _ hK _ (by simp), ?_⟩
   split at hb
   · split at hb
     · split at hb
       · rename_i hp
         simp only [Bool.and_eq_true] at hb
-        have hRf := Obj.razeC_fits B _ _ _ (by rfl) _ hb.1
         have hFf := Vals.pickC_fits B _ _ _ _ hb.2
         rw [razeC_fst, USize.toNat_ofNat_of_lt' hp] at hFf
-        exact rep_cons P (pickFits_of_fitsN _ _ _ hV _ (by simp)) _ rfl hS hU _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
-          _ rfl _ rfl _ rfl _ rfl (pickFits_of_fitsN _ _ _ hK _ (by simp)) hRf (fun _ => hFf)
+        exact ⟨Obj.razeC_fits B _ _ _ (by rfl) _ hb.1, fun _ => hFf⟩
       · exact absurd hb Bool.false_ne_true
     · exact absurd hb Bool.false_ne_true
+  · exact absurd hb Bool.false_ne_true
+
+theorem rep_consC {K B : Obj} (P : Rel K (.prod B (.arr B))) (hb : (consC P).2 = true) :
+    ∀ k ys, rep (consC P).1 k ys ↔ ∃ b bs, rep P k (b, bs) ∧ ys = b :: bs := by
+  rw [consC_fst]
+  obtain ⟨hV, h⟩ := consC_ok P hb
+  obtain ⟨hS, hU, h⟩ := h _ rfl
+  obtain ⟨hK, hR, hF⟩ := h _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
+  exact rep_cons P hV _ rfl hS hU _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl hK hR hF
+
+open Freyd Freyd.Alg Freyd.Alg.RelSet in
+/-- **`rep (α)` under `alphaC`'s bit**: `need`'s guard is `rep_alpha`'s `hN`, the decided bound its `h63`, the
+    raze's bit its `hF` (`razeC_fits`), `consC`'s bit its `hc` (`consC_ok`). -/
+theorem rep_alphaC {K B : Obj} {n : USize} (I : Vals K 1) (P : Vals (.prod B (.arr B)) n)
+    (hb : (alphaC I P).2 = true) :
+    rep (alphaC I P).1 = Freyd.Alg.junc (sumCop (⟨K.El⟩ : RelSet.{0}) ⟨B.El × List B.El⟩)
+      (corefl (A := (⟨K.El⟩ : RelSet.{0})) (fun u => ∃ i, I.row i = u) ≫
+        (graph (fun _ => []) :(⟨K.El⟩ : RelSet.{0}) ⟶ ⟨List B.El⟩))
+      (corefl (A := (⟨B.El × List B.El⟩ : RelSet.{0})) (fun p => ∃ i, P.row i = p) ≫
+        (graph (fun p => p.1 :: p.2) :(⟨B.El × List B.El⟩ : RelSet.{0}) ⟶ ⟨List B.El⟩)) := by
+  rw [alphaC_fst]
+  unfold alphaC at hb
+  generalize hc : consC (idU P) = c at hb
+  obtain ⟨S, cb⟩ := c
+  have hS : S = cons (idU P) := (congrArg Prod.fst hc).symm.trans (consC_fst _)
+  subst hS
+  simp only [need] at hb
+  split at hb
+  · rename_i hN
+    simp only [Bool.and_eq_true, decide_eq_true_eq] at hb
+    obtain ⟨⟨h63, hv⟩, hcb⟩ := hb
+    exact rep_alpha I P hN h63 (Obj.razeC_fits (.arr B) _ _ _ (by rfl) _ hv) (consC_ok _ (by rw [hc]; exact hcb))
   · exact absurd hb Bool.false_ne_true
 
 /-- **`rep (cat P)` under `catC`'s bit**: as `rep_consC`, the two sides' `fitsN` bits `rep_cat`'s `hVa`, `hVb`. -/
@@ -174,6 +208,10 @@ def cat (P : CRel K (.prod (.arr B) (.arr B))) : CRel K (.arr B) := let r := cat
 /-- `zip`, ok where `P` is and `zipC` ran within capacity. -/
 def zip (P : CRel K (.prod (.arr A) (.arr B))) : CRel K (.arr (.prod A B)) := let r := zipC P.rel; ⟨r.1, P.ok && r.2⟩
 
+/-- `α ≜ [nil, cons]` on `I` and `P`, ok where `alphaC` ran within capacity. -/
+def alpha (I : Vals K 1) (P : Vals (.prod B (.arr B)) n) : CRel (.sum K (.prod B (.arr B))) (.arr B) :=
+  let r := alphaC I P; ⟨r.1, r.2⟩
+
 theorem rep_uncons (X : Vals (.arr B) n) (hb : (uncons X).ok = true) :
     ∀ (xs : List B.El) b bs, rep (uncons X).rel xs (b, bs) ↔ (∃ j, X.row j = xs) ∧ xs = b :: bs :=
   rep_unconsC X hb
@@ -211,6 +249,15 @@ theorem rep_cat (P : CRel K (.prod (.arr B) (.arr B))) (hb : (cat P).ok = true) 
 theorem rep_zip (P : CRel K (.prod (.arr A) (.arr B))) (hb : (zip P).ok = true) :
     ∀ k zs, rep (zip P).rel k zs ↔ ∃ xs ys, rep P.rel k (xs, ys) ∧ zs = List.zip xs ys :=
   rep_zipC P.rel (by simp only [zip, Bool.and_eq_true] at hb; exact hb.2)
+
+open Freyd Freyd.Alg Freyd.Alg.RelSet in
+theorem rep_alpha (I : Vals K 1) (P : Vals (.prod B (.arr B)) n) (hb : (alpha I P).ok = true) :
+    rep (alpha I P).rel = Freyd.Alg.junc (sumCop (⟨K.El⟩ : RelSet.{0}) ⟨B.El × List B.El⟩)
+      (corefl (A := (⟨K.El⟩ : RelSet.{0})) (fun u => ∃ i, I.row i = u) ≫
+        (graph (fun _ => []) :(⟨K.El⟩ : RelSet.{0}) ⟶ ⟨List B.El⟩))
+      (corefl (A := (⟨B.El × List B.El⟩ : RelSet.{0})) (fun p => ∃ i, P.row i = p) ≫
+        (graph (fun p => p.1 :: p.2) :(⟨B.El × List B.El⟩ : RelSet.{0}) ⟶ ⟨List B.El⟩)) :=
+  rep_alphaC I P hb
 
 end CRel
 

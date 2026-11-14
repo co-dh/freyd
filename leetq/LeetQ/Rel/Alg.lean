@@ -615,6 +615,26 @@ def alpha {K B : Obj} {n : USize} (I : Vals K 1) (P : Vals (.prod B (.arr B)) n)
     Rel (.sum K (.prod B (.arr B))) (.arr B) :=
   junc (nil I) (cons (idU P))
 
+/-- `α` and whether it ran within capacity: `junc`'s body at `nil I` and `consC (idU P)`, its raze of the values
+    twinned (`razeC`); `rep_alpha`'s second count bound decided, `&&` the raze's and `consC`'s bits. -/
+def alphaC {K B : Obj} {n : USize} (I : Vals K 1) (P : Vals (.prod B (.arr B)) n) :
+    Rel (.sum K (.prod B (.arr B))) (.arr B) × Bool :=
+  let R := nil (B := B) I
+  -- matched, not projected: the body is then generic in `S`, which `alphaC_fst` cases on
+  match consC (idU P) with
+  | (S, cb) =>
+  need (R.n.toNat + S.n.toNat < USize.size) (fun _ => s!"[R,S]: {R.n} + {S.n} rows do not fit a USize")
+    (fun _ => default) fun hN =>
+  let v := Obj.razeC (.arr B) #[⟨_, R.val⟩, ⟨_, S.val⟩] (by simpa using hN)
+  (⟨R.n + S.n, sumVals R.key S.key hN, toUSize_eq (by rw [toNat_add_fits hN]) ▸ v.1⟩,
+    decide (R.n.toNat + S.n.toNat ≤ 2 ^ 63) && v.2 && cb)
+
+theorem alphaC_fst {K B : Obj} {n : USize} (I : Vals K 1) (P : Vals (.prod B (.arr B)) n) :
+    (alphaC I P).1 = alpha I P := by
+  unfold alphaC alpha; rw [← consC_fst]
+  cases consC (idU P)
+  unfold junc; rw [need_fst]; simp only [razeC_fst]; rfl
+
 /-- `Λ(R)` total on `U`: each element of `U` that `R` relates to nothing goes to the empty array, which `Λ(R)`,
     one row per key of `R`, has no row for. -/
 def lamOn {A B : Obj} {m : USize} (R : Rel A B) (U : Vals A m) : Rel A (.arr B) :=
