@@ -365,6 +365,158 @@ theorem rep_thin {A B : Obj} (Q : Rel B B) (G : Rel A B)
 
 end Est
 
+/-! ## `P` -/
+
+section PowerRel
+
+open FoldN Prim
+
+namespace DivN
+
+-- `rep_leftDiv`'s hypotheses at `leftDiv R S Ub Uc` (`R : Rel K B`, `S : Rel K C`; `Ub`, `Uc` of sizes `mb`, `mc`),
+-- its codes `kc`, `ycs`, `zc`, rows `y`, kept rows `I` and sides `P`, `Q` bound by their equations
+set_option hygiene false in
+scoped notation "divOK(" K ", " B ", " C ", " R ", " S ", " mb ", " Ub ", " mc ", " Uc ")" =>
+  (Obj.CodesFit K (#v[⟨Rel.n R, Rel.key R⟩] : Vector (Part K) 1) ∧
+    Obj.CodesFit B (#v[⟨Rel.n R, Rel.val R⟩] : Vector (Part B) 1) ∧
+    Vals.PickFits K (Rel.key R) (ids nubI(K, B, R)) ∧ Vals.PickFits B (Rel.val R) (ids nubI(K, B, R)) ∧
+    Obj.CodesFit K (#v[⟨Rel.n S, Rel.key S⟩] : Vector (Part K) 1) ∧
+    Obj.CodesFit C (#v[⟨Rel.n S, Rel.val S⟩] : Vector (Part C) 1) ∧
+    Vals.PickFits K (Rel.key S) (ids nubI(K, C, S)) ∧ Vals.PickFits C (Rel.val S) (ids nubI(K, C, S)) ∧
+    Obj.CodesFit K (#v[⟨Rel.n (Rel.nub R), Rel.key (Rel.nub R)⟩, ⟨Rel.n (Rel.nub S), Rel.key (Rel.nub S)⟩] :
+      Vector (Part K) 2) ∧
+    (Rel.n (Rel.nub S)).toNat < 2 ^ 63 ∧
+    ∀ kc : Vector Code 2, kc = Obj.codes K (#v[⟨Rel.n (Rel.nub R), Rel.key (Rel.nub R)⟩,
+        ⟨Rel.n (Rel.nub S), Rel.key (Rel.nub S)⟩] : Vector (Part K) 2) →
+      ((List.range (kc[0]'Nat.zero_lt_two).n.toNat).map fun i => ((List.range (kc[1]'Nat.one_lt_two).n.toNat).filter
+        fun j => Column.idAt (kc[1]'Nat.one_lt_two).b (kc[1]'Nat.one_lt_two).w j ==
+          Column.idAt (kc[0]'Nat.zero_lt_two).b (kc[0]'Nat.zero_lt_two).w i).length).sum < 2 ^ 63 ∧
+      ((List.range (kc[0]'Nat.zero_lt_two).n.toNat).map fun i => ((List.range (kc[1]'Nat.one_lt_two).n.toNat).filter
+        fun j => Column.idAt (kc[1]'Nat.one_lt_two).b (kc[1]'Nat.one_lt_two).w j ==
+          Column.idAt (kc[0]'Nat.zero_lt_two).b (kc[0]'Nat.zero_lt_two).w i).length).sum < USize.size ∧
+      Vals.PickFits B (Rel.val (Rel.nub R)) ((jp(kc[0]'Nat.zero_lt_two, kc[1]'Nat.one_lt_two)).map Prod.fst) ∧
+      Vals.PickFits C (Rel.val (Rel.nub S)) ((jp(kc[0]'Nat.zero_lt_two, kc[1]'Nat.one_lt_two)).map Prod.snd) ∧
+      ∀ y : Rel B C, y = yJ(B, C, Rel.nub R, Rel.nub S, kc[0]'Nat.zero_lt_two, kc[1]'Nat.one_lt_two) →
+      Obj.CodesFit B (#v[⟨Rel.n y, Rel.key y⟩, ⟨Rel.n (Rel.nub R), Rel.val (Rel.nub R)⟩, ⟨mb, Ub⟩] :
+        Vector (Part B) 3) ∧
+      Obj.CodesFit C (#v[⟨Rel.n y, Rel.val y⟩] : Vector (Part C) 1) ∧
+      ∀ ycs : Vector Code 3, ycs = Obj.codes B (#v[⟨Rel.n y, Rel.key y⟩, ⟨Rel.n (Rel.nub R), Rel.val (Rel.nub R)⟩,
+          ⟨mb, Ub⟩] : Vector (Part B) 3) →
+      ∀ zc : Vector Code 1, zc = Obj.codes C (#v[⟨Rel.n y, Rel.val y⟩] : Vector (Part C) 1) →
+      Vals.PickFits B Ub (ids (anti (ycs[2]'(Nat.lt_add_one 2)) (ycs[1]'(Nat.succ_lt_succ (Nat.zero_lt_succ 1))))) ∧
+      (vacY(B, Ub, ycs)).1.toNat * USize.toNat mc < USize.size ∧
+      (vacY(B, Ub, ycs)).1.toNat * USize.toNat mc < 2 ^ 63 ∧
+      Vals.PickFits B (vacY(B, Ub, ycs)).2
+        ((List.range ((vacY(B, Ub, ycs)).1.toNat * USize.toNat mc)).map (· / USize.toNat mc)) ∧
+      Vals.PickFits C Uc ((List.range ((vacY(B, Ub, ycs)).1.toNat * USize.toNat mc)).map (· % USize.toNat mc)) ∧
+      ∀ I : ByteArray, I = (longCount "\\" (tuples.tupleIds (ycs[0]'(Nat.zero_lt_succ 2)) #[zc[0]'Nat.zero_lt_one]).2
+          fun g _ => gather 8 (tuples.tupleIds (ycs[0]'(Nat.zero_lt_succ 2)) #[zc[0]'Nat.zero_lt_one]).2
+            (whereEqV g (classSizes (ycs[0]'(Nat.zero_lt_succ 2)).n
+                (tuples.tupleIds (ycs[0]'(Nat.zero_lt_succ 2)) #[zc[0]'Nat.zero_lt_one]))
+              (atCnt (cnt (ycs[1]'(Nat.succ_lt_succ (Nat.zero_lt_succ 1))))
+                ((ycs[0]'(Nat.zero_lt_succ 2)).gather
+                  (tuples.tupleIds (ycs[0]'(Nat.zero_lt_succ 2)) #[zc[0]'Nat.zero_lt_one]).2)))) →
+      Vals.PickFits B (Rel.key y) (ids I) ∧ Vals.PickFits C (Rel.val y) (ids I) ∧
+      ∀ P : Rel B C, P = Rel.rows y I → ∀ Q : Rel B C, Q = top (vacY(B, Ub, ycs)).2 Uc →
+        (Rel.n P).toNat + (Rel.n Q).toNat < USize.size ∧
+        ∃ (hNk : ((#[⟨Rel.n P, Rel.key P⟩, ⟨Rel.n Q, Rel.key Q⟩] : Array (Part B)).toList.map
+            fun c : Part B => c.1.toNat).sum < USize.size)
+          (hNv : ((#[⟨Rel.n P, Rel.val P⟩, ⟨Rel.n Q, Rel.val Q⟩] : Array (Part C)).toList.map
+            fun c : Part C => c.1.toNat).sum < USize.size),
+          Vals.RazeFits B (Rel.key P) (Rel.key Q) ∧ Vals.RazeFits C (Rel.val P) (Rel.val Q) ∧
+          Obj.CodesFit B (#v[⟨(PQ(B, C)).n, (PQ(B, C)).key⟩] : Vector (Part B) 1) ∧
+          Obj.CodesFit C (#v[⟨(PQ(B, C)).n, (PQ(B, C)).val⟩] : Vector (Part C) 1) ∧
+          Vals.PickFits B (PQ(B, C)).key (ids nubI(B, C, PQ(B, C))) ∧
+          Vals.PickFits C (PQ(B, C)).val (ids nubI(B, C, PQ(B, C))))
+
+end DivN
+
+open DivN
+
+/-- **`rep (P R X Y)`: an array of `X` to an array of `Y` exactly when `R` relates every element of the first to
+    some element of the second and every element of the second comes from some element of the first.** `P` is
+    `leftDiv (mem X)° (R ≫ (mem Y)°) X Y ∩ rightDiv (mem X ≫ R) (mem Y) X Y` (`rep_inter`, `rep_leftDiv`,
+    `rep_rightDiv`, `rep_comp`, `rep_conv`, `rep_mem`); its relations are bound by their equations. Hypotheses:
+    `rep_mem`'s at `X`, `Y`; `rep_comp`'s at `RY`, `XR`; `rep_leftDiv`'s at `L` and at the `leftDiv` that
+    `rightDiv` is the converse of (`divOK`); `rep_inter`'s at `L ∩ D`. -/
+theorem rep_P {A B : Obj} {n m : USize} (R : Rel A B) (X : Vals (.arr A) n) (Y : Vals (.arr B) m)
+    (mX : Rel (.arr A) A) (hmX : mX = Alg.mem X) (mY : Rel (.arr B) B) (hmY : mY = Alg.mem Y)
+    (RY : Rel A (.arr B)) (hRY : RY = R ≫ mY°) (XR : Rel (.arr A) B) (hXR : XR = mX ≫ R)
+    (L : Rel (.arr A) (.arr B)) (hL : L = leftDiv (mX°) RY X Y)
+    (D : Rel (.arr A) (.arr B)) (hD : D = rightDiv XR mY X Y)
+    (hXv : Vals.PickFits (.arr A) X (List.range n.toNat))
+    (hXk : Vals.PickFits (.arr A) X ((List.range n.toNat).flatMap fun r =>
+      if h : r < n.toNat then List.replicate (X.row ⟨r, h⟩).length r else []))
+    (hYv : Vals.PickFits (.arr B) Y (List.range m.toNat))
+    (hYk : Vals.PickFits (.arr B) Y ((List.range m.toNat).flatMap fun r =>
+      if h : r < m.toNat then List.replicate (Y.row ⟨r, h⟩).length r else []))
+    (hcRY : cmpOK(B, R, mY°)) (hcXR : cmpOK(A, mX, R))
+    (hdL : divOK(A, .arr A, .arr B, mX°, RY, n, X, m, Y))
+    (hdD : divOK(B, .arr B, .arr A, mY°, XR°, m, Y, n, X))
+    (hi : ∀ pc : Vector Code 2, pc = pairs #v[L, D] →
+      codesOK(pc, (#v[⟨Rel.n L, (Rel.key L, Rel.val L)⟩, ⟨Rel.n D, (Rel.key D, Rel.val D)⟩] :
+        Vector (Part (.prod (.arr A) (.arr B))) 2)) ∧
+      ∀ I : ByteArray, I = whereBits (Rel.n L) ((pc[0]'Nat.zero_lt_two).member (pc[1]'Nat.one_lt_two)) →
+        Vals.PickFits (.arr A) (Rel.key L) (ids I) ∧ Vals.PickFits (.arr B) (Rel.val L) (ids I))
+    (xs : (Obj.arr A).El) (ys : (Obj.arr B).El) :
+    rep (Alg.P R X Y) xs ys ↔ (∃ i, X.row i = xs) ∧ (∃ j, Y.row j = ys) ∧
+      (∀ a ∈ xs, ∃ b ∈ ys, rep R a b) ∧ (∀ b ∈ ys, ∃ a ∈ xs, rep R a b) := by
+  have eX : ∀ a xs, rep (mX°) a xs ↔ (∃ i, X.row i = xs) ∧ a ∈ xs := fun a xs => by
+    rw [rep_conv, hmX]; exact rep_mem X hXv hXk xs a
+  have eY : ∀ ys b, rep mY ys b ↔ (∃ j, Y.row j = ys) ∧ b ∈ ys := fun ys b => by
+    rw [hmY]; exact rep_mem Y hYv hYk ys b
+  obtain ⟨hf1, h1'⟩ := hcRY
+  obtain ⟨c1, c2, c3, c4, c5⟩ := h1' _ rfl
+  obtain ⟨hf2, h2'⟩ := hcXR
+  obtain ⟨d1, d2, d3, d4, d5⟩ := h2' _ rfl
+  have eRY : ∀ a ys, rep RY a ys ↔ ∃ b, rep R a b ∧ (∃ j, Y.row j = ys) ∧ b ∈ ys := fun a ys => by
+    rw [hRY, rep_comp _ _ (codes_faithful_wf _ _ hf1).1 c1 c2 c3 c4 c5, Freyd.Alg.RelSet.comp_apply]
+    exact exists_congr fun b => and_congr Iff.rfl (by rw [rep_conv]; exact eY ys b)
+  have eXR : ∀ xs b, rep XR xs b ↔ ∃ a, ((∃ i, X.row i = xs) ∧ a ∈ xs) ∧ rep R a b := fun xs b => by
+    rw [hXR, rep_comp _ _ (codes_faithful_wf _ _ hf2).1 d1 d2 d3 d4 d5, Freyd.Alg.RelSet.comp_apply]
+    exact exists_congr fun a => and_congr (by rw [hmX]; exact rep_mem X hXv hXk xs a) Iff.rfl
+  obtain ⟨l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, lk⟩ := hdL
+  obtain ⟨l11, l12, l13, l14, ly⟩ := lk _ rfl
+  obtain ⟨l15, l16, lc⟩ := ly _ rfl
+  obtain ⟨l17, l18, l19, l20, l21, lI⟩ := lc _ rfl _ rfl
+  obtain ⟨l22, l23, lP⟩ := lI _ rfl
+  obtain ⟨l24, lN, lV, l25, l26, l27, l28, l29, l30⟩ := lP _ rfl _ rfl
+  obtain ⟨r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, rk⟩ := hdD
+  obtain ⟨r11, r12, r13, r14, ry⟩ := rk _ rfl
+  obtain ⟨r15, r16, rc⟩ := ry _ rfl
+  obtain ⟨r17, r18, r19, r20, r21, rI⟩ := rc _ rfl _ rfl
+  obtain ⟨r22, r23, rP⟩ := rI _ rfl
+  obtain ⟨r24, rN, rV, r25, r26, r27, r28, r29, r30⟩ := rP _ rfl _ rfl
+  obtain ⟨hic, hiI⟩ := hi _ rfl
+  obtain ⟨hik, hiv⟩ := hiI _ rfl
+  have e : Alg.P R X Y = L ∩ D := by subst hL hD hRY hXR hmX hmY; rfl
+  rw [e, rep_inter L D hic hik hiv]
+  show rep L xs ys ∧ rep D xs ys ↔ _
+  rw [hL, rep_leftDiv (mX°) RY X Y l1 l2 l3 l4 l5 l6 l7 l8 _ rfl l9 l10 l11 l12 l13 l14 _ rfl _ rfl l15 _ rfl l16
+      _ rfl l22 l23 l17 l18 l19 l20 l21 _ _ rfl rfl l24 lN lV l25 l26 l27 l28 l29 l30 xs ys,
+    hD, rep_rightDiv XR mY X Y r1 r2 r3 r4 r5 r6 r7 r8 _ rfl r9 r10 r11 r12 r13 r14 _ rfl _ rfl r15 _ rfl r16
+      _ rfl r22 r23 r17 r18 r19 r20 r21 _ _ rfl rfl r24 rN rV r25 r26 r27 r28 r29 r30 xs ys]
+  simp only [eX, eRY, eY, eXR]
+  constructor
+  · rintro ⟨⟨hl, hl'⟩, ⟨hr, hr'⟩⟩
+    have hx : ∃ i, X.row i = xs := by rcases hl' with ⟨_, h, _⟩ | ⟨h, _⟩ <;> exact h
+    have hy : ∃ j, Y.row j = ys := by rcases hr' with ⟨_, h, _⟩ | ⟨_, h⟩ <;> exact h
+    refine ⟨hx, hy, fun a ha => ?_, fun b hb => ?_⟩
+    · obtain ⟨b, hR, -, hb⟩ := hl a ⟨hx, ha⟩
+      exact ⟨b, hb, hR⟩
+    · obtain ⟨a, ⟨-, ha⟩, hR⟩ := hr b ⟨hy, hb⟩
+      exact ⟨a, ha, hR⟩
+  · rintro ⟨hx, hy, hl, hr⟩
+    refine ⟨⟨fun a ⟨_, ha⟩ => ?_, Or.inr ⟨hx, hy⟩⟩, ⟨fun b ⟨_, hb⟩ => ?_, Or.inr ⟨hx, hy⟩⟩⟩
+    · obtain ⟨b, hb, hR⟩ := hl a ha
+      exact ⟨b, hR, hy, hb⟩
+    · obtain ⟨a, ha, hR⟩ := hr b hb
+      exact ⟨a, ⟨hx, ha⟩, hR⟩
+
+end PowerRel
+
+#print axioms rep_P
+
 #print axioms rep_tail
 #print axioms rep_pairsIn
 #print axioms rep_swapIn
