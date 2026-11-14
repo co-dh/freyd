@@ -385,7 +385,8 @@ theorem pickPart_row {n : USize} (x : Vals B n) (I : ByteArray) (hL : len I < US
 /-- **`symDiv`'s joined part, read back**: `hit`, the pairs of `join lc rc` (`sym_pairs`) read at the first rows
     of the key classes, holds `(x, y)` exactly when `R` takes `x` somewhere and `R`'s fibre at `x` is `S`'s at
     `y`. Hypotheses: `sym_pairs`'; `rk`, `sk` code `R.key`, `S.key` faithfully, `v0`, `v1` code `R.val`, `S.val`
-    jointly faithfully; `rf`, `sf`, `hit` by their defining equations, the sides pick back, the join's counts fit. -/
+    jointly faithfully; `rf`, `sf`, `hit` by their defining equations; `R.key`, `S.key` pick back at all their
+    rows, the product of `R`'s and `S`'s counts fits; the sides pick back at the join's pairs. -/
 theorem sym_hit_holds (R : Rel A C) (S : Rel B C) (rk sk v0 v1 : Code)
     (rkw : laneOK(rk.w))
     (rks : rk.b.size = (rk.n.toNat * rk.w + 7) / 8)
@@ -415,8 +416,9 @@ theorem sym_hit_holds (R : Rel A C) (S : Rel B C) (rk sk v0 v1 : Code)
     (hv : ∀ {a b : Nat} (ha : a < R.n.toNat) (hb : b < S.n.toNat),
       Column.idAt v0.b v0.w a = Column.idAt v1.b v1.w b ↔ R.val.row ⟨a, ha⟩ = S.val.row ⟨b, hb⟩)
     (rf : Part A) (hrf : rf = Vals.pickPart A R.key fr) (sf : Part B) (hsf : sf = Vals.pickPart B S.key fs)
-    (hRf : Vals.PickFits A R.key (ids fr)) (hSf : Vals.PickFits B S.key (ids fs))
-    (hM : lc.n.toNat * rc.n.toNat < min (2 ^ 63) USize.size)
+    (hRk : Vals.PickFits A R.key (List.range R.n.toNat)) (hSk : Vals.PickFits B S.key (List.range S.n.toNat))
+    (hRS : R.n.toNat * S.n.toNat < min (2 ^ 63) USize.size)
+    -- output size: the join repeats a class's first row once per matching class, so an `.arr` key copies its window
     (hB : Vals.PickFits A rf.2 ((jp(lc, rc)).map Prod.fst)) (hC : Vals.PickFits B sf.2 ((jp(lc, rc)).map Prod.snd))
     (hit : Rel A B)
     (hhit : hit = longCount "/ₛ" (join lc rc).2 fun m h => (⟨m, Vals.pickN A rf.2 (join lc rc).1 m
@@ -432,6 +434,13 @@ theorem sym_hit_holds (R : Rel A C) (S : Rel B C) (rk sk v0 v1 : Code)
   have hKS : KS ≤ sk.n.toNat := firstsOf_length_le _ _
   have hlfr : len fr = KR := by rw [len_eq_ids, hfr]
   have hlfs : len fs = KS := by rw [len_eq_ids, hfs]
+  -- the first rows are a sublist of the rows, the class counts at most the row counts
+  have hRf : Vals.PickFits A R.key (ids fr) :=
+    pickFits_sublist (by rw [hfr, ← rkn]; exact List.filter_sublist) hRk
+  have hSf : Vals.PickFits B S.key (ids fs) :=
+    pickFits_sublist (by rw [hfs, ← skn]; exact List.filter_sublist) hSk
+  have hM : lc.n.toNat * rc.n.toNat < min (2 ^ 63) USize.size :=
+    Nat.lt_of_le_of_lt (by rw [ln, rn, ← rkn, ← skn]; exact Nat.mul_le_mul hKR hKS) hRS
   -- the picked first rows
   obtain ⟨rf1, rfr⟩ := pickPart_row R.key fr (by rw [hlfr]; exact Nat.lt_of_le_of_lt hKR rk.n.toNat_lt_size)
     (fun t ht => by rw [hfr] at ht; rw [← rkn]; exact firsts_lt _ _ ht) hRf
@@ -580,6 +589,17 @@ theorem anti_pick_rows {mu mv : USize} (U : Vals B mu) (V : Vals B mv) (uc vc : 
     rw [hvn] at hjn
     exact hno ⟨⟨j, hjn⟩, ((hj hjn hp).1 hje).trans e⟩
 
+/-- **`U` picked at `anti uc vc` counts at most `uc`'s rows**: `anti` keeps a sublist of them. -/
+theorem pickPart_anti_count {X : Obj} {m : USize} (U : Vals X m) (uc vc : Code) :
+    (Vals.pickPart X U (anti uc vc)).1.toNat ≤ uc.n.toNat := by
+  have hl : (ids (anti uc vc)).length ≤ uc.n.toNat := by simpa using (anti_sublist uc vc).length_le
+  have hL : len (anti uc vc) < USize.size := by rw [len_eq_ids]; exact Nat.lt_of_le_of_lt hl uc.n.toNat_lt_size
+  have hpd : Vals.pickPart X U (anti uc vc) =
+      ⟨(len (anti uc vc)).toUSize, Vals.pick X U _ _ (USize.toNat_ofNat_of_lt' hL).symm⟩ := by
+    unfold Vals.pickPart need; rw [dif_pos hL]
+  rw [hpd]; show ((len (anti uc vc)).toUSize).toNat ≤ _
+  rw [USize.toNat_ofNat_of_lt' hL, len_eq_ids]; exact hl
+
 -- `symDiv`'s vacuous sides: the elements of `Ua`, `Ub` coded as no key of `R`, `S`
 set_option hygiene false in
 local notation "vacA" => Vals.pickPart A Ua (anti uac rk)
@@ -587,7 +607,8 @@ set_option hygiene false in
 local notation "vacB" => Vals.pickPart B Ub (anti ubc sk)
 
 /-- **`symDiv`'s vacuous part, read back**: `⊤` on the elements of `Ua` that are no key of `R` and the elements
-    of `Ub` that are no key of `S`. Hypotheses: `anti_pick_rows`' on each side, `rep_top`'s. -/
+    of `Ub` that are no key of `S`. Hypotheses: `anti_pick_rows`' on each side; the product of the universes'
+    counts fits (`rep_top`'s bounds, `anti` keeping at most those rows); `rep_top`'s fits. -/
 theorem sym_vac_holds (R : Rel A C) (S : Rel B C) {ma mb : USize} (Ua : Vals A ma) (Ub : Vals B mb)
     (uac rk ubc sk : Code)
     (uaw : laneOK(uac.w))
@@ -602,12 +623,18 @@ theorem sym_vac_holds (R : Rel A C) (S : Rel B C) {ma mb : USize} (Ua : Vals A m
     (hb : ∀ {j p : Nat} (hj : j < S.n.toNat) (hp : p < mb.toNat),
       Column.idAt sk.b sk.w j = Column.idAt ubc.b ubc.w p ↔ S.key.row ⟨j, hj⟩ = Ub.row ⟨p, hp⟩)
     (hPa : Vals.PickFits A Ua (List.range ma.toNat)) (hPb : Vals.PickFits B Ub (List.range mb.toNat))
-    (hN : (vacA).1.toNat * (vacB).1.toNat < USize.size) (h63 : (vacA).1.toNat * (vacB).1.toNat < 2 ^ 63)
+    (hUab : ma.toNat * mb.toNat < min (2 ^ 63) USize.size)
+    -- output size: `⊤` repeats each side's row once per row of the other, so an `.arr` side copies its window
     (hA : Vals.PickFits A (vacA).2 ((List.range ((vacA).1.toNat * (vacB).1.toNat)).map (· / (vacB).1.toNat)))
     (hB : Vals.PickFits B (vacB).2 ((List.range ((vacA).1.toNat * (vacB).1.toNat)).map (· % (vacB).1.toNat)))
     (x : A.El) (y : B.El) :
     (top (vacA).2 (vacB).2).Holds x y ↔
       ((∃ p, Ua.row p = x) ∧ ¬∃ c, R.Holds x c) ∧ ((∃ j, Ub.row j = y) ∧ ¬∃ c, S.Holds y c) := by
+  have hle : (vacA).1.toNat * (vacB).1.toNat ≤ ma.toNat * mb.toNat := Nat.mul_le_mul
+    (Nat.le_trans (pickPart_anti_count Ua uac rk) (Nat.le_of_eq (congrArg USize.toNat uan)))
+    (Nat.le_trans (pickPart_anti_count Ub ubc sk) (Nat.le_of_eq (congrArg USize.toNat ubn)))
+  have hN := Nat.lt_of_le_of_lt hle (Nat.lt_of_lt_of_le hUab (Nat.min_le_right _ _))
+  have h63 := Nat.lt_of_le_of_lt hle (Nat.lt_of_lt_of_le hUab (Nat.min_le_left _ _))
   have nR : (¬∃ j, R.key.row j = x) ↔ ¬∃ c, R.Holds x c :=
     not_congr ⟨fun ⟨j, e⟩ => ⟨_, j, e, rfl⟩, fun ⟨_, j, e, _⟩ => ⟨j, e⟩⟩
   have nS : (¬∃ j, S.key.row j = y) ↔ ¬∃ c, S.Holds y c :=
@@ -628,8 +655,10 @@ open OpsN
 
 /-- **`rep (R /ₛ S)`**: `x` to `y` exactly when `R`'s fibre at `x` is `S`'s at `y`, and either `R` takes `x`
     somewhere, or `x` and `y` are elements of the universes `Ua`, `Ub`. `symDiv`'s intermediate values are bound
-    to variables by their defining equations. Hypotheses: `Obj.CodesFit` of every coded part; the counts fit;
-    `Vals.PickFits` where a part is picked; `Vals.RazeFits` of `∪`'s raze. -/
+    to variables by their defining equations. Hypotheses: `Obj.CodesFit` of every coded part; the input counts
+    fit (`R`'s and `S`'s summed and multiplied, `Ua`'s and `Ub`'s multiplied); `Vals.PickFits` of the inputs at
+    all their rows; the output-size facts: `Vals.PickFits` at the rows the join and `⊤` repeat, the result's row
+    count, `Vals.RazeFits` and `Obj.CodesFit` of `∪`'s raze. -/
 theorem rep_symDiv {ma mb : USize} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma) (Ub : Vals B mb)
     (vc : Vector Code 2) (hvc : vc = C.codes #v[⟨R.n, R.val⟩, ⟨S.n, S.val⟩])
     (hfv : C.CodesFit #v[⟨R.n, R.val⟩, ⟨S.n, S.val⟩])
@@ -648,21 +677,26 @@ theorem rep_symDiv {ma mb : USize} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma) 
     (lc rc : Code) (hlc : lc = Code.ofLongs (sid.extract 0 (8 * len fr)))
     (hrc : rc = Code.ofLongs (sid.extract (8 * len fr) sid.size))
     (rf : Part A) (hrf : rf = Vals.pickPart A R.key fr) (sf : Part B) (hsf : sf = Vals.pickPart B S.key fs)
-    (hRf : Vals.PickFits A R.key (ids fr)) (hSf : Vals.PickFits B S.key (ids fs))
-    (hM : lc.n.toNat * rc.n.toNat < min (2 ^ 63) USize.size)
+    (hRk : Vals.PickFits A R.key (List.range R.n.toNat)) (hSk : Vals.PickFits B S.key (List.range S.n.toNat))
+    (hRS : R.n.toNat * S.n.toNat < min (2 ^ 63) USize.size)
+    -- output size: the join repeats a class's first row once per matching class, so an `.arr` key copies its window
     (hB : Vals.PickFits A rf.2 ((jp(lc, rc)).map Prod.fst)) (hC : Vals.PickFits B sf.2 ((jp(lc, rc)).map Prod.snd))
     (hPa : Vals.PickFits A Ua (List.range ma.toNat)) (hPb : Vals.PickFits B Ub (List.range mb.toNat))
-    (hN : (vacA).1.toNat * (vacB).1.toNat < USize.size) (h63 : (vacA).1.toNat * (vacB).1.toNat < 2 ^ 63)
+    (hUab : ma.toNat * mb.toNat < min (2 ^ 63) USize.size)
+    -- output size: `⊤` repeats each side's row once per row of the other, so an `.arr` side copies its window
     (hA : Vals.PickFits A (vacA).2 ((List.range ((vacA).1.toNat * (vacB).1.toNat)).map (· / (vacB).1.toNat)))
     (hBv : Vals.PickFits B (vacB).2 ((List.range ((vacA).1.toNat * (vacB).1.toNat)).map (· % (vacB).1.toNat)))
     (P Q : Rel A B)
     (hPe : P = longCount "/ₛ" (join lc rc).2 fun m h => (⟨m, Vals.pickN A rf.2 (join lc rc).1 m
       (Nat.le_trans (Nat.le_of_eq h.symm) (join_len lc rc)), Vals.pick B sf.2 (join lc rc).2 m h⟩ : Rel A B))
     (hQe : Q = top (vacA).2 (vacB).2)
+    -- output size: the result's row count, which the razed output `PQ(A, B)` below is built with
     (hU : P.n.toNat + Q.n.toNat < USize.size)
+    -- output size: generic-type parts (symbol dictionaries, ALP, `.arr`/`.sum` payloads) razed and coded together
     (hFk : Vals.RazeFits A P.key Q.key) (hFv : Vals.RazeFits B P.val Q.val)
     (hUK : A.CodesFit (#v[⟨(PQ(A, B)).n, (PQ(A, B)).key⟩] : Vector (Part A) 1))
     (hUV : B.CodesFit (#v[⟨(PQ(A, B)).n, (PQ(A, B)).val⟩] : Vector (Part B) 1))
+    -- output size: the razed output picked at all its rows, its `.arr` payload summed over the repeated rows
     (hUk : Vals.PickFits A (PQ(A, B)).key (List.range (PQ(A, B)).n.toNat))
     (hUv : Vals.PickFits B (PQ(A, B)).val (List.range (PQ(A, B)).n.toNat)) (x : A.El) (y : B.El) :
     rep (symDiv R S Ua Ub) x y ↔
@@ -698,10 +732,10 @@ theorem rep_symDiv {ma mb : USize} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma) 
     rkn' skn' (fun ha ha' => aF (k := 0) (l := 0) (by decide) (by decide) ha ha')
     (fun hb hb' => bF (k := 0) (l := 0) (by decide) (by decide) hb hb')
     (fun ha hb => vF (k := 0) (l := 1) (by decide) (by decide) ha hb)
-    rf hrf sf hsf hRf hSf hM hB hC P hPe x y
+    rf hrf sf hsf hRk hSk hRS hB hC P hPe x y
   have hQ := sym_vac_holds R S Ua Ub _ _ _ _ uaw rkw uas rks ubw skw ubs sks uan rkn' ubn skn'
     (fun hj hp => aF (k := 0) (l := 1) (by decide) (by decide) hj hp)
-    (fun hj hp => bF (k := 0) (l := 1) (by decide) (by decide) hj hp) hPa hPb hN h63 hA hBv x y
+    (fun hj hp => bF (k := 0) (l := 1) (by decide) (by decide) hj hp) hPa hPb hUab hA hBv x y
   subst hQe
   refine (or_congr hP hQ).trans ?_
   constructor
