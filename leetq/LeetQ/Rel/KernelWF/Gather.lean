@@ -117,8 +117,13 @@ theorem gatherSyms_utf8 (blob : ByteArray) (offs : Array Nat) (ix : ByteArray) (
   -- a hit's bytes, up to the byte before the next start, are the entry without its NUL
   have hkey : ∀ i, (blob.extract offs[i]! (offs[i + 1]! - 1)).data.toList = Verify.symAt blob offs i := fun i => by
     unfold Verify.symAt Column.symKey Column.symBytes
-    simp only [Verify.extract_toList]
-    congr 1; split <;> omega
+    simp only
+    split
+    · simp only [Verify.extract_toList]
+      congr 1; split <;> omega
+    · rename_i hn
+      rw [getElem!_neg offs (i + 1) hn]
+      simp [Verify.extract_toList]
   unfold gatherSyms
   dsimp only
   generalize hr : List.foldl _ (ByteArray.empty, #[0]) (List.range (ix.size / 8)) = r

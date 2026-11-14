@@ -87,13 +87,15 @@ theorem gatherColumn_get_syms {n : USize} {blob : ByteArray} {offs : Array Nat}
   simp only [gatherColumn, denseWidth, foRColumn, Enc.bytesOf, hz, if_false, Option.map_some,
     Option.some.injEq] at h
   subst h
-  obtain ⟨-, hJ⟩ := gatherSyms_spec blob offs i
+  obtain ⟨hS, hJ⟩ := gatherSyms_spec blob offs i
   obtain ⟨lo, h1, h2, h3⟩ := hJ k (hm ▸ hk)
   simp only [Enc.WF] at hw
   have hg : gatherAt (offs.size - 1) i k = some (Column.bitsAt i (k * 8) 8).toNat := by
     simp only [gatherAt]; rw [if_pos (by omega)]
   simp only [hg] at h2 h3
-  simp only [Enc.get, if_pos hk, if_pos hin, Column.symBytes, extract_upto]
+  simp only [Enc.get, if_pos hk, if_pos hin, Column.symBytes,
+    if_pos (show k + 1 < (gatherSyms blob offs i).2.size by omega),
+    if_pos (show (Column.bitsAt i (k * 8) 8).toNat + 1 < offs.size by have := hw.1; omega), extract_upto]
   generalize blob.extract _ _ = K at h2 h3 ⊢
   have e1 : (gatherSyms blob offs i).2[k]! = lo := by simp [getElem!_def, h1]
   have e2 : (gatherSyms blob offs i).2[k + 1]! = lo + K.size + 1 := by simp [getElem!_def, h2]
@@ -234,20 +236,18 @@ theorem symKey_push {d : ByteArray} {o : Array Nat} (hl : o[o.size - 1]! = d.siz
     · rw [if_pos (by omega), if_pos hr, Array.getElem?_push_lt (by rw [ByteArray.size_data]; omega),
         Array.getElem?_eq_getElem (by rw [ByteArray.size_data]; omega)]
     · rw [if_neg (by omega), if_neg hr]
-  unfold Column.symKey Column.symBytes
-  dsimp only
-  rw [extract_upto, extract_upto, hP q, hP (q + 1)]
   by_cases h1 : q + 1 < o.size
-  · rw [if_pos (by omega : q < o.size), if_pos h1]
+  · simp only [Column.symKey, Column.symBytes, Array.size_push, if_pos h1, if_pos (show q + 1 < o.size + 1 by omega)]
+    rw [extract_upto, extract_upto, hP q, hP (q + 1), if_pos (by omega : q < o.size), if_pos h1]
     exact hX _ _ (by have := hle (q + 1) h1; omega)
-  · have hq : q < o.size → o[q]! = d.size := fun h => by rw [show q = o.size - 1 by omega]; exact hl
-    have hle' : (if q + 1 = o.size then d.size + 1 else 0) - 1 ≤
-        (if q < o.size then o[q]! else if q = o.size then d.size + 1 else 0) := by
-      by_cases h2 : q < o.size
-      · rw [if_pos (by omega), if_pos h2, hq h2]; omega
-      · rw [if_neg (by omega), if_neg h2]; omega
-    rw [if_neg h1, getElem!_neg o (q + 1) h1, extract_empty d (show (default : Nat) - 1 ≤ o[q]! from Nat.zero_le _),
-      extract_empty (d.push 0) hle', extract_self, extract_self]
+  -- `o` holds no entry `q`, so it reads empty; the pushed table holds one only at `q + 1 = o.size`, the empty one
+  · simp only [Column.symKey, Column.symBytes, Array.size_push, if_neg h1, Nat.add_zero, extract_self]
+    by_cases h2 : q + 1 < o.size + 1
+    · have hq : o[q]! = d.size := by rw [show q = o.size - 1 by omega]; exact hl
+      simp only [if_pos h2]
+      rw [extract_upto, hP q, hP (q + 1), if_pos (by omega : q < o.size), if_neg h1,
+        if_pos (by omega : q + 1 = o.size), hq, Nat.add_sub_cancel, extract_self]
+    · simp only [if_neg h2, Nat.add_zero, extract_self]
 
 /-- Belongs in qlean. **`x@i` at an interned symbol column, read back**: symbol `k` of the answer is
     symbol `i[k]` of `x`, the empty symbol a miss would point at appended past every entry. -/
@@ -404,7 +404,7 @@ theorem gatherColumn_miss_syms {n : USize} {blob : ByteArray} {offs : Array Nat}
   simp only [gatherColumn, denseWidth, foRColumn, Enc.bytesOf, hz, if_false, Option.map_some,
     Option.some.injEq] at h
   subst h
-  obtain ⟨-, hJ⟩ := gatherSyms_spec blob offs i
+  obtain ⟨hS, hJ⟩ := gatherSyms_spec blob offs i
   obtain ⟨lo, h1, h2, -⟩ := hJ k (hm ▸ hk)
   simp only [Enc.WF] at hw
   have hg : gatherAt (offs.size - 1) i k = none := by
@@ -412,7 +412,8 @@ theorem gatherColumn_miss_syms {n : USize} {blob : ByteArray} {offs : Array Nat}
   simp only [hg, ByteArray.size_empty] at h2
   have e1 : (gatherSyms blob offs i).2[k]! = lo := by simp [getElem!_def, h1]
   have e2 : (gatherSyms blob offs i).2[k + 1]! = lo + 0 + 1 := by simp [getElem!_def, h2]
-  simp only [Enc.get, if_pos hk, Column.symBytes, extract_upto, e1, e2, Nat.add_zero, Nat.add_sub_cancel,
+  simp only [Enc.get, if_pos hk, Column.symBytes,
+    if_pos (show k + 1 < (gatherSyms blob offs i).2.size by omega), extract_upto, e1, e2, Nat.add_zero, Nat.add_sub_cancel,
     extract_self]
   rfl
 
