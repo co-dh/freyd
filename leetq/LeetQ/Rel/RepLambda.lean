@@ -395,9 +395,40 @@ local notation "vcR" => (Obj.codes B (#v[⟨Rel.n R, Rel.val R⟩] : Vector (Par
 set_option hygiene false in
 local notation "nubR" => (tuples.tupleIds kcR #[vcR]).2
 
+/-- **The nub's key codes, from a fit at the nub's key**: faithful and well formed (`codes_faithful_wf` at the one
+    part); the nub's count below `2^63` where `R`'s is, as it keeps a filter of `R`'s rows (`nub_row`, `nub_ids`). -/
+theorem nub_key_codes (R : Rel A B)
+    (hK : (∀ {i j : Nat} (hi : i < (Rel.n R).toNat) (hj : j < (Rel.n R).toNat),
+        Column.idAt (kcR).b (kcR).w i = Column.idAt (kcR).b (kcR).w j ↔
+          Vals.row (Rel.key R) ⟨i, hi⟩ = Vals.row (Rel.key R) ⟨j, hj⟩) ∧
+      laneOK((kcR).w) ∧
+        (kcR).n = Rel.n R ∧ (kcR).b.size = ((kcR).n.toNat * (kcR).w + 7) / 8 ∧
+        ((kcR).w < 8 → (kcR).card < USize.size ∧ ∀ i < (kcR).n.toNat, Column.idAt (kcR).b (kcR).w i < (kcR).card))
+    (hV : (∀ {i j : Nat} (hi : i < (Rel.n R).toNat) (hj : j < (Rel.n R).toNat),
+        Column.idAt (vcR).b (vcR).w i = Column.idAt (vcR).b (vcR).w j ↔
+          Vals.row (Rel.val R) ⟨i, hi⟩ = Vals.row (Rel.val R) ⟨j, hj⟩) ∧
+      laneOK((vcR).w) ∧
+        (vcR).n = Rel.n R ∧ (vcR).b.size = ((vcR).n.toNat * (vcR).w + 7) / 8 ∧
+        ((vcR).w < 8 → (vcR).card < USize.size ∧ ∀ i < (vcR).n.toNat, Column.idAt (vcR).b (vcR).w i < (vcR).card))
+    (hk : Vals.PickFits A (Rel.key R) (List.range R.n.toNat)) (hv : Vals.PickFits B (Rel.val R) (List.range R.n.toNat))
+    (hWk : A.CodesFit (#v[⟨(Rel.nub R).n, (Rel.nub R).key⟩] : Vector (Part A) 1)) (h63 : (Rel.n R).toNat < 2 ^ 63) :
+    (∀ {i j : Nat} (hi : i < (Rel.nub R).n.toNat) (hj : j < (Rel.nub R).n.toNat),
+      Column.idAt (kcT).b (kcT).w i = Column.idAt (kcT).b (kcT).w j ↔
+        Vals.row (Rel.nub R).key ⟨i, hi⟩ = Vals.row (Rel.nub R).key ⟨j, hj⟩) ∧
+      laneOK((kcT).w) ∧ (kcT).n = (Rel.nub R).n ∧ (kcT).b.size = ((kcT).n.toNat * (kcT).w + 7) / 8 ∧
+      (Rel.nub R).n.toNat < 2 ^ 63 := by
+  obtain ⟨⟨hF, hW⟩, -⟩ := codes_faithful_wf A _ hWk
+  obtain ⟨hw, hn, hs, -⟩ := hW (k := 0) (by decide)
+  refine ⟨fun hi hj => hF (k := 0) (l := 0) (by decide) (by decide) hi hj, hw, hn, hs, ?_⟩
+  have hle : (ids nubR).length ≤ R.n.toNat := by
+    rw [nub_ids R hK hV]; simpa [firstsOf] using List.length_filter_le _ (List.range R.n.toNat)
+  rw [(nub_row R hK hV hk hv).1]; omega
+
+#print axioms nub_key_codes
+
 /-- **`rep (Λ(R))` is the power transpose of `rep R`**: the array `Λ(R)` gives a key `a` holds exactly the
     values `R` relates `a` to, and `Λ(R)` has a row at `a` exactly when `R` has a pair at `a`. Hypotheses:
-    `rep_nub`'s (`hK hV hk hv`), and `transpose_rows`' at `d = R.nub`. -/
+    `rep_nub`'s (`hK hV hk hv`), the fits at the nub's two sides, `R`'s count below `2^63`. -/
 theorem rep_transpose (R : Rel A B)
     (hK : (∀ {i j : Nat} (hi : i < (Rel.n R).toNat) (hj : j < (Rel.n R).toNat),
         Column.idAt (kcR).b (kcR).w i = Column.idAt (kcR).b (kcR).w j ↔
@@ -412,13 +443,10 @@ theorem rep_transpose (R : Rel A B)
         (vcR).n = Rel.n R ∧ (vcR).b.size = ((vcR).n.toNat * (vcR).w + 7) / 8 ∧
         ((vcR).w < 8 → (vcR).card < USize.size ∧ ∀ i < (vcR).n.toNat, Column.idAt (vcR).b (vcR).w i < (vcR).card))
     (hk : Vals.PickFits A (Rel.key R) (List.range R.n.toNat)) (hv : Vals.PickFits B (Rel.val R) (List.range R.n.toNat))
-    (hF : ∀ {i j : Nat} (hi : i < (Rel.nub R).n.toNat) (hj : j < (Rel.nub R).n.toNat),
-      Column.idAt (kcT).b (kcT).w i = Column.idAt (kcT).b (kcT).w j ↔
-        Vals.row (Rel.nub R).key ⟨i, hi⟩ = Vals.row (Rel.nub R).key ⟨j, hj⟩)
-    (hw : laneOK((kcT).w))
-    (hn : (kcT).n = (Rel.nub R).n) (hs : (kcT).b.size = ((kcT).n.toNat * (kcT).w + 7) / 8)
+    -- generic sides: the nub copies `R`'s cells, whose dictionaries, general cells, nested payloads no `R` fact bounds
+    (hWk : A.CodesFit (#v[⟨(Rel.nub R).n, (Rel.nub R).key⟩] : Vector (Part A) 1))
     (hW : B.CodesFit (#v[⟨(Rel.nub R).n, (Rel.nub R).val⟩] : Vector (Part B) 1))
-    (h63 : (Rel.nub R).n.toNat < 2 ^ 63) :
+    (h63 : (Rel.n R).toNat < 2 ^ 63) :
     (∀ a X, rep (Alg.transpose R) a X → ∀ x, x ∈ X ↔ rep R a x) ∧
       (∀ a, (∃ X, rep (Alg.transpose R) a X) ↔ ∃ b, rep R a b) := by
   have hd := rep_nub R hK hV hk hv
@@ -426,6 +454,7 @@ theorem rep_transpose (R : Rel A B)
   have hdh : ∀ a b, (Rel.nub R).Holds a b ↔ R.Holds a b := fun a b => by
     show rep (Rel.nub R) a b ↔ rep R a b
     rw [hd]
+  obtain ⟨hF, hw, hn, hs, h63⟩ := nub_key_codes R hK hV hk hv hWk h63
   obtain ⟨hrow, hcov⟩ := transpose_rows R hF hw hn hs hW h63 hpk hpv
   refine ⟨fun a X h x => ?_, fun a => ⟨fun ⟨X, h⟩ => ?_, fun ⟨b, hb⟩ => ?_⟩⟩
   · obtain ⟨q, hqa, hqX⟩ : (Alg.transpose R).Holds a X := h
@@ -493,18 +522,16 @@ theorem rep_transpose_list (R : Rel A B)
         (vcR).n = Rel.n R ∧ (vcR).b.size = ((vcR).n.toNat * (vcR).w + 7) / 8 ∧
         ((vcR).w < 8 → (vcR).card < USize.size ∧ ∀ i < (vcR).n.toNat, Column.idAt (vcR).b (vcR).w i < (vcR).card))
     (hk : Vals.PickFits A (Rel.key R) (List.range R.n.toNat)) (hv : Vals.PickFits B (Rel.val R) (List.range R.n.toNat))
-    (hF : ∀ {i j : Nat} (hi : i < (Rel.nub R).n.toNat) (hj : j < (Rel.nub R).n.toNat),
-      Column.idAt (kcT).b (kcT).w i = Column.idAt (kcT).b (kcT).w j ↔
-        Vals.row (Rel.nub R).key ⟨i, hi⟩ = Vals.row (Rel.nub R).key ⟨j, hj⟩)
-    (hw : laneOK((kcT).w))
-    (hn : (kcT).n = (Rel.nub R).n) (hs : (kcT).b.size = ((kcT).n.toNat * (kcT).w + 7) / 8)
+    -- generic sides: the nub copies `R`'s cells, whose dictionaries, general cells, nested payloads no `R` fact bounds
+    (hWk : A.CodesFit (#v[⟨(Rel.nub R).n, (Rel.nub R).key⟩] : Vector (Part A) 1))
     (hW : B.CodesFit (#v[⟨(Rel.nub R).n, (Rel.nub R).val⟩] : Vector (Part B) 1))
-    (h63 : (Rel.nub R).n.toNat < 2 ^ 63) :
+    (h63 : (Rel.n R).toNat < 2 ^ 63) :
     (∀ a X, rep (Alg.transpose R) a X → X.Nodup ∧ (∀ x, x ∈ X ↔ rep R a x) ∧
       ∃ L : List (Fin (Rel.nub R).n.toNat), (L.map Fin.val).Sublist (ids vpT) ∧
         (∀ i, i ∈ L ↔ Vals.row (Rel.nub R).key i = a) ∧ X = L.map (Vals.row (Rel.nub R).val)) ∧
       (∀ a, (∃ X, rep (Alg.transpose R) a X) ↔ ∃ b, rep R a b) := by
-  obtain ⟨h1, h2⟩ := rep_transpose R hK hV hk hv hF hw hn hs hW h63
+  obtain ⟨h1, h2⟩ := rep_transpose R hK hV hk hv hWk hW h63
+  obtain ⟨hF, hw, hn, hs, h63⟩ := nub_key_codes R hK hV hk hv hWk h63
   obtain ⟨hpk, hpv⟩ := nub_pickFits R hK hV hk hv
   refine ⟨fun a X h => ?_, h2⟩
   have hm := h1 a X h

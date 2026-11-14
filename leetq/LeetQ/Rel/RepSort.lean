@@ -439,14 +439,10 @@ local notation "setOK" =>
     cOK(kc, Rel.n Ms, Rel.key Ms) ∧ cOK(vc, Rel.n Ms, Rel.val Ms) ∧
     Vals.PickFits (.arr B) (Rel.key Ms) (List.range (Rel.n Ms).toNat) ∧
     Vals.PickFits B (Rel.val Ms) (List.range (Rel.n Ms).toNat) ∧
-    ∀ kt : Code, kt = kcT(Ms) →
-    (∀ {i j : Nat} (hi : i < (Rel.nub Ms).n.toNat) (hj : j < (Rel.nub Ms).n.toNat),
-      Column.idAt kt.b kt.w i = Column.idAt kt.b kt.w j ↔
-        Vals.row (Rel.nub Ms).key ⟨i, hi⟩ = Vals.row (Rel.nub Ms).key ⟨j, hj⟩) ∧
-    laneOK(kt.w) ∧
-    kt.n = (Rel.nub Ms).n ∧ kt.b.size = (kt.n.toNat * kt.w + 7) / 8 ∧
+    -- the nub copies `Wy`'s arrays: their nested payloads and `B`'s dictionaries, general cells no input fact bounds
+    (Obj.arr B).CodesFit (#v[⟨(Rel.nub Ms).n, (Rel.nub Ms).key⟩] : Vector (Part (.arr B)) 1) ∧
     B.CodesFit (#v[⟨(Rel.nub Ms).n, (Rel.nub Ms).val⟩] : Vector (Part B) 1) ∧
-    (Rel.nub Ms).n.toNat < 2 ^ 63 ∧
+    (Rel.n Ms).toNat < 2 ^ 63 ∧
     ∀ pc : Vector Code 2, pc = pairs #v[idU (Rel.val Wy), dom Ms] →
     codesOK(pc, (#v[⟨Rel.n (idU (Rel.val Wy)), (Rel.key (idU (Rel.val Wy)), Rel.val (idU (Rel.val Wy)))⟩,
       ⟨Rel.n (dom Ms), (Rel.key (dom Ms), Rel.val (dom Ms))⟩] : Vector (Part (.prod (.arr B) (.arr B))) 2)) ∧
@@ -494,12 +490,12 @@ theorem rep_thinL {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n)
   subst hMs
   obtain ⟨hmv, hmk, k1⟩ := hset
   obtain ⟨hK, hV, hk, hv', k2⟩ := k1 _ _ rfl rfl
-  obtain ⟨hF', hw, hn', hs, hW, h63', k4⟩ := k2 _ rfl
+  obtain ⟨hWk, hW, h63', k4⟩ := k2
   obtain ⟨hc, k6⟩ := k4 _ rfl
   obtain ⟨ht63, k7⟩ := k6 _ rfl
   obtain ⟨hN', hFk, hFv, k8⟩ := k7 _ _ rfl rfl
   obtain ⟨huK, huV, huk, huv⟩ := k8 _ rfl _ _ rfl rfl
-  have hS := rep_setify_list (Rel.val Wy) hmv hmk _ _ rfl rfl hK hV hk hv' _ rfl hF' hw hn' hs hW h63'
+  have hS := rep_setify_list (Rel.val Wy) hmv hmk _ _ rfl rfl hK hV hk hv' hWk hW h63'
     _ rfl hc _ rfl ht63 _ _ rfl rfl hN' hFk hFv _ rfl _ _ rfl rfl
     huK huV huk huv
   rw [← hSt] at hS

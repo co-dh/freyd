@@ -612,14 +612,10 @@ scoped notation "tauOK(" A ", " cnt ", " X ")" =>
       ((kcX(X)).w < 8 → (kcX(X)).card < USize.size ∧
         ∀ i < (kcX(X)).n.toNat, Column.idAt (kcX(X)).b (kcX(X)).w i < (kcX(X)).card)) ∧
   Vals.PickFits A X (List.range (cnt).toNat) ∧
-  (∀ {i j : Nat} (hi : i < (Rel.nub (idU X)).n.toNat) (hj : j < (Rel.nub (idU X)).n.toNat),
-    Column.idAt (kcT(idU X)).b (kcT(idU X)).w i = Column.idAt (kcT(idU X)).b (kcT(idU X)).w j ↔
-      Vals.row (Rel.nub (idU X)).key ⟨i, hi⟩ = Vals.row (Rel.nub (idU X)).key ⟨j, hj⟩) ∧
-  laneOK((kcT(idU X)).w) ∧
-  (kcT(idU X)).n = (Rel.nub (idU X)).n ∧
-  (kcT(idU X)).b.size = ((kcT(idU X)).n.toNat * (kcT(idU X)).w + 7) / 8 ∧
+  -- generic `A`: the nub copies `X`'s cells, whose dictionaries, general cells, nested payloads no `X` fact bounds
+  Obj.CodesFit A (#v[⟨(Rel.nub (idU X)).n, (Rel.nub (idU X)).key⟩] : Vector (Part A) 1) ∧
   Obj.CodesFit A (#v[⟨(Rel.nub (idU X)).n, (Rel.nub (idU X)).val⟩] : Vector (Part A) 1) ∧
-  (Rel.nub (idU X)).n.toNat < 2 ^ 63)
+  (cnt).toNat < 2 ^ 63)
 
 -- every primitive's hypotheses in `snoc P`, `P : Rel K (B* × B)`, each piece bound by its equation as `snoc`
 -- builds it
@@ -653,9 +649,9 @@ theorem rep_snoc {K B : Obj} (P : Rel K (.prod (.arr B) B))
   obtain ⟨c1, c2, c3, c4⟩ := hc' _ rfl
   obtain ⟨q1, q2, q3, q4, q5⟩ := hq' _ rfl
   obtain ⟨m1, m2, m3, m4⟩ := hm' _ rfl
-  obtain ⟨hX, hx, hF, hw, hn, hs, hW, h63⟩ := ht
+  obtain ⟨hX, hx, hWk, hW, h63⟩ := ht
   have eD := rep_ran_corefl P (one_ok _ hPf) (hPp)
-  have eτ := rep_tau_list _ hX hx hF hw hn hs hW h63
+  have eτ := rep_tau_list _ hX hx hWk hW h63
   have eT := rep_comp _ _ (codes_faithful_wf _ _ hcf).1 c1 c2 c3 c4
   have eQ := rep_pair _ _ (codes_faithful_wf _ _ hqf).1 q1 q2 q3 q4 q5
   have eM := rep_comp _ _ (codes_faithful_wf _ _ hmf).1 m1 m2 m3 m4
