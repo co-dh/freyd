@@ -239,7 +239,7 @@ so the prelude's folds `prefix concat subseq tails filter takewhile`).
   and `xexp` (`Ew.pow`), whose results are float, and `^` (`Ew.fill`), which on numbers with no null is `π₂`.
 - Not in the language yet (`no` in the architecture table): `⦇R⦈`, `F(R)` on datatypes other than lists;
   sorting sets (`setify° ordered(Q)`: its target is lists, which have no demand (§a), and a set has unboundedly
-  many ordered listings with repeats); tabulation (`array`, `row`, `col`); `μX : φ(X)` and `R*` (§d).
+  many ordered listings with repeats); tabulation (`array`, `row`, `col`); `R*` (§d).
 
 ### The prelude
 
