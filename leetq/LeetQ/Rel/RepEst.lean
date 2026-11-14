@@ -54,7 +54,9 @@ theorem rep_arrUnion {A : Obj} {n : USize} (X : Vals (.arr (.arr A)) n) (Rm : Re
     (hcc : codesOK(jc(mS(X), Rm), jcs(mS(X), Rm)))
     (hcrn : (Rel.n Rm).toNat < 2 ^ 63) (hcM : (Rel.n (mS(X))).toNat * (Rel.n Rm).toNat < min (2 ^ 63) USize.size)
     (hcA : Vals.PickFits (.arr (.arr A)) (Rel.key mS(X)) ((jpairs(mS(X), Rm)).map Prod.fst))
-    (hcC : Vals.PickFits A (Rel.val Rm) ((jpairs(mS(X), Rm)).map Prod.snd))
+    -- `Rm = mem X.2.2.2` is computed: its values' reading at all rows is `mem`'s output, not an input's
+    (hcC : ((Rel.n (mS(X))).toNat + 1) * Vals.reads A (Rel.val Rm) (List.range (Rel.n Rm).toNat) <
+      min (2 ^ 63) USize.size)
     -- `rep_mem` at the payload `X.2.2.2`
     (hv2 : Vals.PickFits (.arr A) X.2.2.2 (List.range X.1.toNat))
     (hk2 : Vals.PickFits (.arr A) X.2.2.2 ((List.range X.1.toNat).flatMap fun r =>

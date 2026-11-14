@@ -50,6 +50,68 @@ theorem pickFits_atom_snd {t : QAtomicType} {n : USize} (x : Vals (.atom t) n) {
     obtain ⟨p, hp, rfl⟩ := List.mem_map.1 hk
     exact (join_pairs_lt hp).2
 
+/-- **A join's left rows repeat a row at most `b` times**: once per right row its filter keeps, and only rows
+    below `N` occur. -/
+theorem join_fst_count {b : Nat} {P : Nat → Nat → Bool} (N k : Nat) :
+    (((List.range N).flatMap fun i => ((List.range b).filter (P i)).map (i, ·)).map Prod.fst).count k ≤
+      if k < N then b else 0 := by
+  induction N with
+  | zero => simp
+  | succ N ih =>
+    have hl := Nat.le_trans (List.length_filter_le (P N) (List.range b)) (Nat.le_of_eq (List.length_range ..))
+    rw [List.range_succ, List.flatMap_append, List.map_append, List.count_append, List.flatMap_singleton,
+      List.map_map, show (Prod.fst ∘ fun j => (N, j)) = fun (_ : Nat) => N from rfl, List.map_const',
+      List.count_replicate]
+    by_cases hk : k < N
+    · have : ¬ (N == k) = true := by simp only [beq_iff_eq]; omega
+      rw [if_pos hk] at ih; rw [if_neg this, if_pos (by omega)]; omega
+    · rw [if_neg hk] at ih
+      by_cases he : k = N
+      · subst he; rw [if_pos (by simp), if_pos (by omega)]; omega
+      · have : ¬ (N == k) = true := by simp only [beq_iff_eq]; omega
+        rw [if_neg this]; omega
+
+/-- **A join's right rows repeat a row at most once per left row**: each left row's filter of `List.range b` keeps
+    a row at most once. -/
+theorem join_snd_count {b : Nat} {P : Nat → Nat → Bool} (N k : Nat) :
+    (((List.range N).flatMap fun i => ((List.range b).filter (P i)).map (i, ·)).map Prod.snd).count k ≤ N := by
+  induction N with
+  | zero => simp
+  | succ N ih =>
+    have h1 := (List.filter_sublist : (List.filter (P N) (List.range b)).Sublist _).count_le k
+    rw [List.count_range] at h1
+    rw [List.range_succ, List.flatMap_append, List.map_append, List.count_append, List.flatMap_singleton,
+      List.map_map, show (Prod.snd ∘ fun j => (N, j)) = id from rfl, List.map_id]
+    split at h1 <;> omega
+
+/-- **A side fits at a join's left rows** where its reading at all rows, once per right row and once more, fits:
+    the left rows repeat each row at most `b` times (`join_fst_count`, `reads_count_le`). -/
+theorem pickFits_join_fst {A : Obj} {n : USize} (x : Vals A n) {b : Nat} {P : Nat → Nat → Bool}
+    (h : (b + 1) * Vals.reads A x (List.range n.toNat) < min (2 ^ 63) USize.size) :
+    Vals.PickFits A x (((List.range n.toNat).flatMap fun i => ((List.range b).filter (P i)).map (i, ·)).map
+      Prod.fst) := by
+  apply pickFits_of_reads <;>
+    refine Nat.lt_of_le_of_lt (reads_count_le x (c := b + 1) (N := n.toNat) (Nat.succ_pos _) fun k hk => ?_)
+      (Nat.lt_of_lt_of_le h (by first | exact Nat.min_le_left _ _ | exact Nat.min_le_right _ _)) <;>
+  · obtain ⟨p, hp, rfl⟩ := List.mem_map.1 hk
+    have hlt := (join_pairs_lt hp).1
+    have hc := join_fst_count (b := b) (P := P) n.toNat p.1
+    rw [if_pos hlt] at hc
+    exact ⟨hlt, by omega⟩
+
+/-- **A side fits at a join's right rows** where its reading at all rows, once per left row and once more, fits
+    (`join_snd_count`, `reads_count_le`). -/
+theorem pickFits_join_snd {A : Obj} {n : USize} (x : Vals A n) {a : Nat} {P : Nat → Nat → Bool}
+    (h : (a + 1) * Vals.reads A x (List.range n.toNat) < min (2 ^ 63) USize.size) :
+    Vals.PickFits A x (((List.range a).flatMap fun i => ((List.range n.toNat).filter (P i)).map (i, ·)).map
+      Prod.snd) := by
+  apply pickFits_of_reads <;>
+    refine Nat.lt_of_le_of_lt (reads_count_le x (c := a + 1) (N := n.toNat) (Nat.succ_pos _) fun k hk => ?_)
+      (Nat.lt_of_lt_of_le h (by first | exact Nat.min_le_left _ _ | exact Nat.min_le_right _ _)) <;>
+  · obtain ⟨p, hp, rfl⟩ := List.mem_map.1 hk
+    have hc := join_snd_count (b := n.toNat) (P := P) a p.2
+    exact ⟨(join_pairs_lt hp).2, by omega⟩
+
 section Comp
 
 open Freyd Freyd.Alg.RelSet
@@ -74,6 +136,8 @@ theorem rep_comp (R : Rel A B) (S : Rel B C)
           ∀ i < (jc[k]'hk).n.toNat, Column.idAt (jc[k]'hk).b (jc[k]'hk).w i < (jc[k]'hk).card))
     (hrn : S.n.toNat < 2 ^ 63)
     (hM : R.n.toNat * S.n.toNat < min (2 ^ 63) USize.size)
+    -- fits, not reads bounds: an atom side fits outright (`pickFits_atom_fst`); an input side discharges them by
+    -- `pickFits_join_fst`/`_snd`
     (hA : Vals.PickFits A R.key ((jpairs).map Prod.fst)) (hC : Vals.PickFits C S.val ((jpairs).map Prod.snd)) :
     rep (R ≫ S) = rep R ≫ rep S := by
   obtain ⟨hF, hW⟩ := hc
