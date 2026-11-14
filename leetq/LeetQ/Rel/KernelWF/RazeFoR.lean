@@ -241,6 +241,61 @@ theorem raze_row_full (A : Obj) {n m : USize} (x : Vals A n) (y : Vals A m) (hF 
 
 end LeetQ.Rel.KernelWF
 
+namespace LeetQ.Rel.Alg
+
+open QLean QLean.Kernel QLean.Dep QLean.Verify LeetQ.Rel
+
+/-- **The razed column reads part `k`'s element `i` past the counts before `k`**, on every answer of
+    `razeColumn` (dense, FoR, ALP; `razeTo_toList_all`), the ALP join's offsets 32 bits (`hA`). -/
+theorem raze_get {t : QAtomicType} {w : Nat} (hw : t.width = some w) (hb : t ≠ .boolean) {p : Nat}
+    (cs : Vector (Part (.atom t)) p) (hN : (cs.toList.map (·.1.toNat)).sum < USize.size)
+    (hA : Column.alpEncodes t = true → (cs.toList.map (·.1.toNat)).sum < 2 ^ 32)
+    {k : Nat} (hk : k < p) {i : Nat} (hi : i < cs[k].1.toNat)
+    (hO : ((cs.toList.take k).map (·.1.toNat)).sum + i < (raze t cs.toArray).1.toNat) :
+    (raze t cs.toArray).2.get ⟨_, hO⟩ = cs[k].2.get ⟨i, hi⟩ := by
+  have hl := KernelWF.razeTo_toList_all hw hb cs.toArray rfl hN (by simpa using hA)
+  unfold razeTo at hl
+  rw [KernelWF.cast_toList] at hl
+  have ho := flatMap_offset (fun c : Part (.atom t) => c.2.toList) (·.1.toNat) (fun c => Arr.length_toList _)
+    cs.toList (k := k) (by simpa using hk) (i := i) (by simpa using hi)
+  simp only [Vector.toList_toArray] at hl
+  rw [← hl, List.getElem?_eq_getElem (by rw [Arr.length_toList]; exact hO), Arr.getElem_toList,
+    List.getElem?_eq_getElem (by rw [Arr.length_toList]; simpa using hi)] at ho
+  have := Option.some_inj.1 ho
+  rw [this, Arr.getElem_toList]; rfl
+
+/-- **A small integral side: its codes are faithful jointly across the parts.** Part `k`'s code at `i` and
+    part `l`'s at `j` agree exactly when the rows do; the parts in any encoding, their summed count a `USize`. -/
+theorem codes_small_int_parts_faithful {t : QAtomicType} {k₀ : Scan.Kind} (ht : orderKind t = some k₀)
+    (hk₀ : k₀ = .u8 ∨ k₀ = .i16 ∨ k₀ = .i32) {p : Nat} (cs : Vector (Part (.atom t)) p)
+    (hN : (cs.toList.map (·.1.toNat)).sum < USize.size)
+    {k l : Nat} (hk : k < p) (hl : l < p) {i j : Nat} (hi : i < cs[k].1.toNat) (hj : j < cs[l].1.toNat) :
+    Column.idAt (Obj.codes (.atom t) cs)[k].b (Obj.codes (.atom t) cs)[k].w i =
+        Column.idAt (Obj.codes (.atom t) cs)[l].b (Obj.codes (.atom t) cs)[l].w j ↔
+      Vals.row cs[k].2 ⟨i, hi⟩ = Vals.row cs[l].2 ⟨j, hj⟩ := by
+  obtain ⟨hW, -, -, hB, -⟩ := small_int_width ht hk₀
+  have hA : Column.alpEncodes t = true → (cs.toList.map (·.1.toNat)).sum < 2 ^ 32 := fun h => by
+    rcases hk₀ with rfl | rfl | rfl <;> cases t <;> simp [orderKind] at ht <;> simp [Column.alpEncodes] at h
+  have hX := raze_len t cs.toArray hN
+  obtain ⟨hw, hn, -, -⟩ := codes_small_int_wf ht hk₀ (raze t cs.toArray)
+  have hs : (((cs.map (·.1)).toList).map (·.toNat)).sum = (Obj.codes (.atom t) #v[raze t cs.toArray])[0].n.toNat := by
+    rw [hn, hX, Vector.toList_map, List.map_map]; rfl
+  have hO : ∀ k, (((cs.map (·.1)).toList.take k).map (·.toNat)).sum = ((cs.toList.take k).map (·.1.toNat)).sum :=
+    fun k => by rw [Vector.toList_map, ← List.map_take, List.map_map]; rfl
+  have hlt : ∀ k (hk : k < p), ∀ i < cs[k].1.toNat, ((cs.toList.take k).map (·.1.toNat)).sum + i < (raze t cs.toArray).1.toNat :=
+    fun k hk i hi => by
+      have := take_sum_le (cs.toList.map (·.1.toNat)) (k := k) (by simpa using hk)
+      simp only [List.getElem_map, Vector.getElem_toList, ← List.map_take] at this
+      rw [hX]; exact Nat.lt_of_lt_of_le (by omega) this
+  rw [codes_small_int_cut ht hk₀ cs (by omega)]
+  obtain ⟨hwk, -, -, hck⟩ := cut_get _ (cs.map (·.1)) hw hs hk
+  obtain ⟨hwl, -, -, hcl⟩ := cut_get _ (cs.map (·.1)) hw hs hl
+  rw [hwk, hwl, hck i (by simpa using hi), hcl j (by simpa using hj), hO, hO,
+    codes_small_int_faithful ht hk₀ _ (hlt k hk i hi) (hlt l hl j hj), Vals.row_atom, Vals.row_atom, Vals.row_atom,
+    Vals.row_atom, raze_get hW hB cs hN hA hk hi, raze_get hW hB cs hN hA hl hj]
+
+end LeetQ.Rel.Alg
+
 namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF Freyd Freyd.Alg Freyd.Alg.RelSet

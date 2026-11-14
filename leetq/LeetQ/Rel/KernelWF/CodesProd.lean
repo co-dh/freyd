@@ -448,58 +448,6 @@ theorem encodedParts_parts_bytes {t : QAtomicType} {p : Nat} (cs : Vector (Part 
     obtain ⟨j, hj, rfl⟩ := Array.mem_iff_getElem.1 hd'
     exact hd j (by simpa using hj)
 
-/-- The razed column, where `razeColumn` answers it dense (`hD`, the parts in any encoding), reads part `k`'s
-    element `i` past the counts before `k`. -/
-theorem raze_get_bytes {t : QAtomicType} {w : Nat} (hw : t.width = some w) (hb : t ≠ .boolean) {p : Nat}
-    (cs : Vector (Part (.atom t)) p)
-    (hD : ∀ r, encodedParts t (cs.toArray.map (·.2.part)) = some r → denseCheaper (if r.1 then 8 else 5) r.2.1
-      (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat))) = true)
-    (hN : (cs.toList.map (·.1.toNat)).sum < USize.size)
-    {k : Nat} (hk : k < p) {i : Nat} (hi : i < cs[k].1.toNat)
-    (hO : ((cs.toList.take k).map (·.1.toNat)).sum + i < (raze t cs.toArray).1.toNat) :
-    (raze t cs.toArray).2.get ⟨_, hO⟩ = cs[k].2.get ⟨i, hi⟩ := by
-  have hl := KernelWF.razeTo_toList_dense hw hb cs.toArray rfl hN hD
-  unfold razeTo at hl
-  rw [KernelWF.cast_toList] at hl
-  have ho := flatMap_offset (fun c : Part (.atom t) => c.2.toList) (·.1.toNat) (fun c => Arr.length_toList _)
-    cs.toList (k := k) (by simpa using hk) (i := i) (by simpa using hi)
-  simp only [Vector.toList_toArray] at hl
-  rw [← hl, List.getElem?_eq_getElem (by rw [Arr.length_toList]; exact hO), Arr.getElem_toList,
-    List.getElem?_eq_getElem (by rw [Arr.length_toList]; simpa using hi)] at ho
-  have := Option.some_inj.1 ho
-  rw [this, Arr.getElem_toList]; rfl
-
-/-- **A small integral side whose `raze` is dense: its codes are faithful jointly across the parts.** Part
-    `k`'s code at `i` and part `l`'s at `j` agree exactly when the rows do; the parts in any encoding, `razeColumn`
-    joining them dense (`hD`), their summed count a `USize`. -/
-theorem codes_small_int_parts_faithful {t : QAtomicType} {k₀ : Scan.Kind} (ht : orderKind t = some k₀)
-    (hk₀ : k₀ = .u8 ∨ k₀ = .i16 ∨ k₀ = .i32) {p : Nat} (cs : Vector (Part (.atom t)) p)
-    (hD : ∀ w r, t.width = some w → encodedParts t (cs.toArray.map (·.2.part)) = some r →
-      denseCheaper (if r.1 then 8 else 5) r.2.1 (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat))) = true)
-    (hN : (cs.toList.map (·.1.toNat)).sum < USize.size)
-    {k l : Nat} (hk : k < p) (hl : l < p) {i j : Nat} (hi : i < cs[k].1.toNat) (hj : j < cs[l].1.toNat) :
-    Column.idAt (Obj.codes (.atom t) cs)[k].b (Obj.codes (.atom t) cs)[k].w i =
-        Column.idAt (Obj.codes (.atom t) cs)[l].b (Obj.codes (.atom t) cs)[l].w j ↔
-      Vals.row cs[k].2 ⟨i, hi⟩ = Vals.row cs[l].2 ⟨j, hj⟩ := by
-  obtain ⟨hW, -, -, hB, -⟩ := small_int_width ht hk₀
-  have hX := raze_len t cs.toArray hN
-  obtain ⟨hw, hn, -, -⟩ := codes_small_int_wf ht hk₀ (raze t cs.toArray)
-  have hs : (((cs.map (·.1)).toList).map (·.toNat)).sum = (Obj.codes (.atom t) #v[raze t cs.toArray])[0].n.toNat := by
-    rw [hn, hX, Vector.toList_map, List.map_map]; rfl
-  have hO : ∀ k, (((cs.map (·.1)).toList.take k).map (·.toNat)).sum = ((cs.toList.take k).map (·.1.toNat)).sum :=
-    fun k => by rw [Vector.toList_map, ← List.map_take, List.map_map]; rfl
-  have hlt : ∀ k (hk : k < p), ∀ i < cs[k].1.toNat, ((cs.toList.take k).map (·.1.toNat)).sum + i < (raze t cs.toArray).1.toNat :=
-    fun k hk i hi => by
-      have := take_sum_le (cs.toList.map (·.1.toNat)) (k := k) (by simpa using hk)
-      simp only [List.getElem_map, Vector.getElem_toList, ← List.map_take] at this
-      rw [hX]; exact Nat.lt_of_lt_of_le (by omega) this
-  rw [codes_small_int_cut ht hk₀ cs (by omega)]
-  obtain ⟨hwk, -, -, hck⟩ := cut_get _ (cs.map (·.1)) hw hs hk
-  obtain ⟨hwl, -, -, hcl⟩ := cut_get _ (cs.map (·.1)) hw hs hl
-  rw [hwk, hwl, hck i (by simpa using hi), hcl j (by simpa using hj), hO, hO,
-    codes_small_int_faithful ht hk₀ _ (hlt k hk i hi) (hlt l hl j hj), Vals.row_atom, Vals.row_atom, Vals.row_atom,
-    Vals.row_atom, raze_get_bytes hW hB cs (fun r => hD _ r hW) hN hk hi, raze_get_bytes hW hB cs (fun r => hD _ r hW) hN hl hj]
-
 /-- **A small integral side of several parts: each part's code is well formed**, the parts' summed count a
     `USize`. -/
 theorem codes_small_int_parts_wf {t : QAtomicType} {k₀ : Scan.Kind} (ht : orderKind t = some k₀)
