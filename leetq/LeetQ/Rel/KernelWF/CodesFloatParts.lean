@@ -115,24 +115,6 @@ theorem codes_float_cut {t : QAtomicType} (ht : t = .real ∨ t = .float ∨ t =
     (by unfold rangeOffsets; rcases ht with rfl | rfl | rfl <;> simp [orderKind])
     (float_intern ht (raze t cs.toArray).2)
 
-/-- **One part of a float side, in any encoding, is coded by `groupIdsColumn` at `bitsType`**, read by
-    `Code.ofIds`. -/
-theorem codes_float_one {t : QAtomicType} (ht : t = .real ∨ t = .float ∨ t = .datetime) (x : Part (.atom t)) :
-    ∃ q, groupIdsColumn (KernelWF.bitsType t) x.1 x.2.enc = some q ∧
-      (Obj.codes (.atom t) #v[x])[0] = Code.ofIds (len q.2) x.1 q.1 := by
-  have hsome := KernelWF.groupIdsColumn_bitsType_isSome (by rcases ht with rfl | rfl | rfl <;> decide) x.2.wf
-    fun d o ids he => (float_intern ht x.2 d o ids he).elim
-  refine ⟨_, (Option.some_get hsome).symm, ?_⟩
-  -- at a concrete type and payload constructor every branch test of `codes` reduces
-  obtain ⟨n, v, hv⟩ := x
-  cases v <;> try exact hv.elim
-  rename_i t' n' e a
-  obtain ⟨h1, h2, hwf⟩ := hv
-  subst h1 h2
-  rcases ht with rfl | rfl | rfl <;> cases e <;> simp [Enc.WF, QAtomicType.width] at hwf <;>
-    simp [Obj.codes, Alg.codes, rangeOffsets, orderKind, raze, Column.intern, Code.cut, vmapM_one, Column.encodes,
-      Arr.enc, KernelWF.bitsType]
-
 /-- **A float side: each part's code is well formed, and all on one lane** — the parts and their `raze` in any
     encoding, the parts' summed count a `USize`. -/
 theorem codes_float_parts_wf {t : QAtomicType} (ht : t = .real ∨ t = .float ∨ t = .datetime) {p : Nat}
@@ -160,30 +142,7 @@ theorem codes_float_parts_wf {t : QAtomicType} (ht : t = .real ∨ t = .float �
   refine ⟨hw, by simp, rfl, fun h8 => ⟨(hid h8).1, fun i hi => ?_⟩⟩
   rw [hik i hi]; exact (hid h8).2 _ (by omega)
 
-/-- **One part of a small integral or float side, in any encoding: its codes are faithful and well formed**
-    (`codes_small_int_faithful`/`_wf`; a float through `codes_float_one`). -/
-theorem codes_num_one_faithful_wf {t : QAtomicType} {k₀ : Scan.Kind} (ht : orderKind t = some k₀)
-    (x : Part (.atom t)) (hk₀ : k₀ = .u8 ∨ k₀ = .i16 ∨ k₀ = .i32 ∨ k₀ = .f32 ∨ k₀ = .f64) :
-    (∀ {i j : Nat} (hi : i < x.1.toNat) (hj : j < x.1.toNat),
-      Column.idAt (Obj.codes (.atom t) #v[x])[0].b (Obj.codes (.atom t) #v[x])[0].w i =
-          Column.idAt (Obj.codes (.atom t) #v[x])[0].b (Obj.codes (.atom t) #v[x])[0].w j ↔
-        Vals.row x.2 ⟨i, hi⟩ = Vals.row x.2 ⟨j, hj⟩) ∧
-    (let c := (Obj.codes (.atom t) #v[x])[0]
-    laneOK(c.w) ∧ c.n = x.1 ∧ c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
-      (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)) := by
-  rcases hk₀ with hk | hk | hk | hf
-  all_goals try exact ⟨fun hi hj => codes_small_int_faithful ht (by simp [hk]) x hi hj,
-    codes_small_int_wf ht (by simp [hk]) x⟩
-  have hft : t = .real ∨ t = .float ∨ t = .datetime := by
-    rcases hf with rfl | rfl <;> cases t <;> simp [orderKind] at ht <;> simp
-  obtain ⟨q, hq, hc⟩ := codes_float_one hft x
-  obtain ⟨-, -, g, -, -, hq1, hq2, -⟩ := float_groups hft x.2 hq
-  refine ⟨fun hi hj => ?_, ?_⟩
-  · rw [hc, Vals.row_atom, Vals.row_atom]; exact ofIds_float_faithful hft x.2 hq hi hj
-  · rw [hc]; exact ofIds_groupOf_wf g x.1 hq1 hq2
-
 #print axioms float_groups
 #print axioms codes_float_parts_wf
-#print axioms codes_num_one_faithful_wf
 
 end LeetQ.Rel.Alg

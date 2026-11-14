@@ -53,14 +53,6 @@ theorem rep_sum (R : Rel A C) (S : Rel B D) (hN : R.n.toNat + S.n.toNat < USize.
       refine ⟨⟨R.n.toNat + j.1, hk2 _ (by omega)⟩, ?_, ?_⟩ <;> rw [sumVals_row _ _ hN h63, dif_neg hj] <;>
         simp only [Nat.add_sub_cancel_left]
 
-/-- `rep_sum` at boolean atoms, both counts below `2^31`: the two bounds hold on every platform. -/
-theorem rep_sum_boolean (R S : Rel (.atom .boolean) (.atom .boolean)) (hR : R.n.toNat < 2 ^ 31)
-    (hS : S.n.toNat < 2 ^ 31) :
-    rep (LeetQ.Rel.Alg.sum R S) =
-      ((sumCop (⟨(Obj.atom .boolean).El⟩ : RelSet.{0}) ⟨(Obj.atom .boolean).El⟩).u₁° ≫ rep R ≫ (sumCop (⟨(Obj.atom .boolean).El⟩ : RelSet.{0}) ⟨(Obj.atom .boolean).El⟩).u₁) ∪
-      ((sumCop (⟨(Obj.atom .boolean).El⟩ : RelSet.{0}) ⟨(Obj.atom .boolean).El⟩).u₂° ≫ rep S ≫ (sumCop (⟨(Obj.atom .boolean).El⟩ : RelSet.{0}) ⟨(Obj.atom .boolean).El⟩).u₂) :=
-  rep_sum R S (by rcases USize.size_eq with h | h <;> omega) (by omega)
-
 /-- A one-part tag column `tags #[(n, x)]` reads `x` at each of its `n ≤ 2^63` rows. -/
 theorem tags_one_get (x : Bool) {n : USize} (h63 : n.toNat ≤ 2 ^ 63) (i : Fin n.toNat) :
     (tags #[(n, x)] n).get i = x := by
@@ -114,18 +106,6 @@ theorem rep_inr {n : USize} (Y : Vals B n) (h63 : n.toNat ≤ 2 ^ 63) :
       exact ⟨y, ⟨rfl, i, hy⟩, hs.symm.trans (congrArg Sum.inr hy)⟩
     · rintro ⟨z, ⟨rfl, i, hy⟩, rfl⟩
       exact ⟨i, hy, by rw [inr_row Y h63 i]; exact congrArg Sum.inr hy⟩
-
-/-- `rep_inl` on a long universe below `2^31` values. -/
-theorem rep_inl_long {n : USize} (X : Vals (.atom .long) n) (hn : n.toNat < 2 ^ 31) :
-    rep (inl (B := B) X) = corefl (A := (⟨(Obj.atom .long).El⟩ : RelSet.{0})) (fun x => ∃ i, X.row i = x) ≫
-      (sumCop (⟨(Obj.atom .long).El⟩ : RelSet.{0}) ⟨B.El⟩).u₁ :=
-  rep_inl X (by omega)
-
-/-- `rep_inr` on a long universe below `2^31` values. -/
-theorem rep_inr_long {n : USize} (Y : Vals (.atom .long) n) (hn : n.toNat < 2 ^ 31) :
-    rep (inr (A := A) Y) = corefl (A := (⟨(Obj.atom .long).El⟩ : RelSet.{0})) (fun y => ∃ i, Y.row i = y) ≫
-      (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨(Obj.atom .long).El⟩).u₂ :=
-  rep_inr Y (by omega)
 
 end Sum
 
@@ -402,34 +382,6 @@ theorem rep_prod (R : Rel A B) (S : Rel C D) (hN : R.n.toNat * S.n.toNat < USize
     · exact (a2.trans (congrArg R.val.row (Fin.ext hdiv))).trans hi2
     · exact (c2.trans (congrArg S.val.row (Fin.ext hmod))).trans hj2
 
-/-- `rep_prod` at atom sides, the pair count below `2^31`: every pick is below its side's count (`pickFits_atom`). -/
-theorem rep_prod_atoms {t₁ t₂ t₃ t₄ : QAtomicType} (R : Rel (.atom t₁) (.atom t₂)) (S : Rel (.atom t₃) (.atom t₄))
-    (h : R.n.toNat * S.n.toNat < 2 ^ 31) : rep (LeetQ.Rel.Alg.prod R S) = rprodMap (rep R) (rep S) :=
-  have hl : ∀ k ∈ (List.range (R.n.toNat * S.n.toNat)).map (· / S.n.toNat), k < R.n.toNat := fun k hk => by
-    obtain ⟨k', hk', rfl⟩ := List.mem_map.1 hk
-    exact Nat.div_lt_of_lt_mul (by rw [Nat.mul_comm]; exact List.mem_range.1 hk')
-  have hr : ∀ k ∈ (List.range (R.n.toNat * S.n.toNat)).map (· % S.n.toNat), k < S.n.toNat := fun k hk => by
-    obtain ⟨k', hk', rfl⟩ := List.mem_map.1 hk
-    exact Nat.mod_lt _ (Nat.pos_of_ne_zero fun e => by
-      have := List.mem_range.1 hk'; rw [e, Nat.mul_zero] at this; omega)
-  rep_prod R S (by rcases USize.size_eq with e | e <;> omega) (by omega) (pickFits_atom _ hl) (pickFits_atom _ hl)
-    (pickFits_atom _ hr) (pickFits_atom _ hr)
-
-/-- `rep_top` on atom universes, whose pair count is below `2^31`: every pick is below its side's count, so both
-    sides fit outright (`pickFits_atom`). -/
-theorem rep_top_atoms {t t' : QAtomicType} {ma mb : USize} (Ua : Vals (.atom t) ma) (Ub : Vals (.atom t') mb)
-    (h : ma.toNat * mb.toNat < 2 ^ 31) :
-    rep (LeetQ.Rel.Alg.top Ua Ub) = corefl (A := (⟨(Obj.atom t).El⟩ : RelSet.{0})) (fun a => ∃ i, Ua.row i = a) ≫
-      relTop ≫ corefl (A := (⟨(Obj.atom t').El⟩ : RelSet.{0})) (fun b => ∃ j, Ub.row j = b) :=
-  rep_top Ua Ub (by rcases USize.size_eq with e | e <;> omega) (by omega)
-    (pickFits_atom Ua fun k hk => by
-      obtain ⟨k', hk', rfl⟩ := List.mem_map.1 hk
-      exact Nat.div_lt_of_lt_mul (by rw [Nat.mul_comm]; exact List.mem_range.1 hk'))
-    (pickFits_atom Ub fun k hk => by
-      obtain ⟨k', hk', rfl⟩ := List.mem_map.1 hk
-      exact Nat.mod_lt _ (Nat.pos_of_ne_zero fun e => by
-        have := List.mem_range.1 hk'; rw [e, Nat.mul_zero] at this; omega))
-
 end Top
 
 /-! ## `∩`, `⊑`, `==`: `member` on the joint pair codes -/
@@ -559,32 +511,6 @@ theorem rep_diff (R S : Rel A B) (hc : pairsOK(R, S)) (hk : Vals.PickFits A R.ke
     refine ⟨i, hia, hib, (hnot _).2 fun hbit => hS ?_⟩
     obtain ⟨j, hj1, hj2⟩ := (pairs_member R S hc i.2).1 hbit
     exact ⟨j, hj1.trans hia, hj2.trans hib⟩
-
-/-- `rep_inter` at atom sides: the kept rows are rows of `R` (`whereBits_ids`), so both columns fit outright. -/
-theorem rep_inter_atoms {t t' : QAtomicType} (R S : Rel (.atom t) (.atom t'))
-    (hc : (∀ {k l : Nat} (hk : k < 2) (hl : l < 2) {i j : Nat}
-        (hi : i < ((#v[⟨R.n, (R.key, R.val)⟩, ⟨S.n, (S.key, S.val)⟩] : Vector (Part (.prod (.atom t) (.atom t'))) 2)[k]'hk).1.toNat)
-        (hj : j < ((#v[⟨R.n, (R.key, R.val)⟩, ⟨S.n, (S.key, S.val)⟩] : Vector (Part (.prod (.atom t) (.atom t'))) 2)[l]'hl).1.toNat),
-        Column.idAt ((pairs #v[R, S])[k]'hk).b
-            ((pairs #v[R, S])[k]'hk).w i =
-          Column.idAt ((pairs #v[R, S])[l]'hl).b
-            ((pairs #v[R, S])[l]'hl).w j ↔
-        Vals.row (A := .prod (.atom t) (.atom t'))
-            ((#v[⟨R.n, (R.key, R.val)⟩, ⟨S.n, (S.key, S.val)⟩] : Vector (Part (.prod (.atom t) (.atom t'))) 2)[k]'hk).2 ⟨i, hi⟩ =
-          Vals.row (A := .prod (.atom t) (.atom t'))
-            ((#v[⟨R.n, (R.key, R.val)⟩, ⟨S.n, (S.key, S.val)⟩] : Vector (Part (.prod (.atom t) (.atom t'))) 2)[l]'hl).2 ⟨j, hj⟩) ∧
-      ∀ {k : Nat} (hk : k < 2),
-        let c := (pairs #v[R, S])[k]'hk
-        laneOK(c.w) ∧
-        c.n = ((#v[⟨R.n, (R.key, R.val)⟩, ⟨S.n, (S.key, S.val)⟩] : Vector (Part (.prod (.atom t) (.atom t'))) 2)[k]'hk).1 ∧
-        c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
-        (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)) :
-    rep (R ∩ S) = rep R ∩ rep S :=
-  have hlt : ∀ f ∈ ids (whereBits R.n (((pairs #v[R, S])[0]'Nat.zero_lt_two).member ((pairs #v[R, S])[1]'Nat.one_lt_two))),
-      f < R.n.toNat := fun f hf => by
-    obtain ⟨hI, -, hmemI⟩ := whereBits_ids R.n (((pairs #v[R, S])[0]'Nat.zero_lt_two).member ((pairs #v[R, S])[1]'Nat.one_lt_two))
-    rw [hI] at hf; exact ((hmemI _).1 hf).1
-  rep_inter R S hc (pickFits_atom _ hlt) (pickFits_atom _ hlt)
 
 /-- **`(R ⊑ S) = true ↔ rep R ⊑ rep S`**: `⊑` counts the rows of `R` whose pair `S` holds (`pairs_member`), all
     `R.n` of them exactly when every pair of `R` is one of `S`. Hypothesis: the joint pair codes (`hc`); nothing is

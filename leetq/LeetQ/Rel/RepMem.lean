@@ -63,49 +63,6 @@ theorem rep_mem {n : USize} (X : Vals (.arr B) n) (hv : Vals.PickFits (.arr B) X
     · rw [pick_row B X.2.2.2 _ _ _ hvf ⟨z, hz'⟩, dif_pos (by rw [e2]; exact hrj), ← hjx]
       exact congrArg X.2.2.2.row (Fin.ext e2)
 
-/-- **`rep_mem` on arrays of atoms (booleans, longs, …), from sizes alone**: the payload below `2^63`, and the
-    total of the squared cell lengths below `2^63` and `USize.size` — `mem`'s keys copy each cell once per
-    element (`Σ |cell|²` values), its values each element once (`Σ |cell| ≤ Σ |cell|²`). -/
-theorem rep_mem_atom {t : QAtomicType} {n : USize} (X : Vals (.arr (.atom t)) n) (hp : X.1.toNat < 2 ^ 63)
-    (hq : ((List.range n.toNat).map fun r => if h : r < n.toNat then (X.row ⟨r, h⟩).length ^ 2 else 0).sum < 2 ^ 63)
-    (hqU : ((List.range n.toNat).map fun r => if h : r < n.toNat then (X.row ⟨r, h⟩).length ^ 2 else 0).sum <
-      USize.size)
-    (xs : (Obj.arr (.atom t)).El) (x : (Obj.atom t).El) :
-    rep (Alg.mem X) xs x ↔ (∃ i, X.row i = xs) ∧ x ∈ xs := by
-  have hmono : ∀ (l : List Nat) (f g : Nat → Nat), (∀ a ∈ l, f a ≤ g a) → (l.map f).sum ≤ (l.map g).sum := by
-    intro l f g h
-    induction l with
-    | nil => exact Nat.le_refl _
-    | cons a l ih =>
-      simp only [List.map_cons, List.sum_cons]
-      exact Nat.add_le_add (h a (by simp)) (ih fun b hb => h b (by simp [hb]))
-  have h1 : ((List.range n.toNat).map fun r => if h : r < n.toNat then (X.row ⟨r, h⟩).length else 0).sum ≤
-      ((List.range n.toNat).map fun r => if h : r < n.toNat then (X.row ⟨r, h⟩).length ^ 2 else 0).sum :=
-    hmono _ _ _ fun r _ => by
-      by_cases h : r < n.toNat
-      · rw [dif_pos h, dif_pos h, Nat.pow_two]; exact Nat.le_mul_self _
-      · rw [dif_neg h, dif_neg h]; exact Nat.le_refl _
-  have hrep : ∀ a b : Nat, (List.replicate a b).sum = a * b := fun a b => by
-    induction a with
-    | zero => rw [Nat.zero_mul]; rfl
-    | succ a ih => rw [List.replicate_succ, List.sum_cons, ih, Nat.succ_mul, Nat.add_comm]
-  have hflat : ∀ (l : List Nat) (f : Nat → List Nat) (g : Nat → Nat),
-      ((l.flatMap f).map g).sum = (l.map fun a => ((f a).map g).sum).sum := by
-    intro l f g
-    induction l with
-    | nil => rfl
-    | cons a l ih => simp only [List.flatMap_cons, List.map_append, List.sum_append_nat, List.map_cons, List.sum_cons, ih]
-  have h2 : (((List.range n.toNat).flatMap fun r =>
-      if h : r < n.toNat then List.replicate (X.row ⟨r, h⟩).length r else []).map
-        fun r => if h : r < n.toNat then (X.row ⟨r, h⟩).length else 0).sum =
-      ((List.range n.toNat).map fun r => if h : r < n.toNat then (X.row ⟨r, h⟩).length ^ 2 else 0).sum := by
-    rw [hflat]; congr 1; apply List.map_congr_left; intro r _
-    by_cases h : r < n.toNat
-    · rw [dif_pos h, dif_pos h, List.map_replicate, dif_pos h, hrep, Nat.pow_two]
-    · rw [dif_neg h, dif_neg h]; rfl
-  exact rep_mem X (pickFits_arr_atom X _ hp (Nat.lt_of_le_of_lt h1 hq) (Nat.lt_of_le_of_lt h1 hqU))
-    (pickFits_arr_atom X _ hp (h2 ▸ hq) (h2 ▸ hqU)) xs x
-
 end Mem
 
 /-! ## `num`: the rows numbered from `k` -/
@@ -143,15 +100,7 @@ theorem rep_num {A B : Obj} (R : Rel A B) (k : USize) (hk : k.toNat + R.n.toNat 
   · rintro ⟨i, rfl, rfl⟩
     exact ⟨i, hkey i, hval i⟩
 
-/-- `rep_num` with atom values: `til` picks rows below the count, so the values fit outright (`pickFits_atom`). -/
-theorem rep_num_atom {A : Obj} {t : QAtomicType} (R : Rel A (.atom t)) (k : USize) (hk : k.toNat + R.n.toNat < 2 ^ 63)
-    (a : Obj.long.El) (y : (Obj.atom t).El) :
-    rep (num R k) a y ↔ ∃ i : Fin R.n.toNat, a = Int64.ofNat (k.toNat + i.1) ∧ R.val.row i = y :=
-  rep_num R k hk (pickFits_atom _ fun _ h => List.mem_range.1 h) a y
-
 #print axioms rep_mem
-#print axioms rep_mem_atom
 #print axioms rep_num
-#print axioms rep_num_atom
 
 end LeetQ.Rel.Rep
