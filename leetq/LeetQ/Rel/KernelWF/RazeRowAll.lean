@@ -88,15 +88,7 @@ open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF 
 
 variable {A B C : Obj}
 
--- dup of RazeRow's local notations `Uc`, `kcU`, `vcU`, `nubU` (local there)
-set_option hygiene false in
-local notation "Uc" => (⟨_, A.raze #[⟨R.n, R.key⟩, ⟨S.n, S.key⟩] hNk, B.raze #[⟨R.n, R.val⟩, ⟨S.n, S.val⟩] hNv⟩ : Rel A B)
-set_option hygiene false in
-local notation "kcU" => (Obj.codes _ (#v[⟨(Uc).n, (Uc).key⟩] : Vector (Part _) 1))[0]
-set_option hygiene false in
-local notation "vcU" => (Obj.codes _ (#v[⟨(Uc).n, (Uc).val⟩] : Vector (Part _) 1))[0]
-set_option hygiene false in
-local notation "nubU" => (tuples.tupleIds kcU #[vcU]).2
+open RazeN
 
 section
 variable (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)

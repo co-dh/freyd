@@ -9,7 +9,7 @@ namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
 
-open FoldN Prim
+open FoldN OpsN Prim
 
 /-! `cons`'s, `cat`'s and `snoc`'s bundles, one home: `open ListN` in every file that reads back a composite of
     them (`snocOK` also needs `Pow`, `FoldN` and `Prim` open). -/

@@ -109,7 +109,7 @@ end ArrUnion
 
 section Est
 
-open FoldN Prim
+open FoldN OpsN Prim
 
 /-- **`rep (tail X)`: an array of `X` to its tail**: `tail X` is `outr (uncons X)` (`outr_holds`, `rep_uncons`).
     Hypotheses: `rep_uncons`'s. -/
@@ -369,7 +369,7 @@ end Est
 
 section PowerRel
 
-open FoldN Prim
+open FoldN OpsN Prim
 
 namespace DivN
 

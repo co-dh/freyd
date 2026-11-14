@@ -8,7 +8,7 @@ namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
 
-open FoldN
+open FoldN OpsN
 
 /-- **`subseq`'s step, read back**: `cons (pair el pend) ∪ pend` takes row `r`'s element `e` and list `u` to
     `e :: u`, and keeps every list `pend` holds at `r`, whether or not `r` has an element this round. The codes

@@ -55,14 +55,8 @@ theorem block_slice (g : Nat → List Nat) {K t : Nat} (ht : t < K) (G φ : Nat 
     refine ⟨o + (pg(g, t) + q), by omega, by omega, ?_⟩
     rw [hG _ (by omega), flatMap_get_at g ht hq, List.getElem?_eq_getElem hq, Option.getD_some]
 
--- the first rows of `c`'s classes, the rows of class `t`, and the rows before class `j` (`segments_spec`'s)
-set_option hygiene false in
-local notation "F(" c ")" => Verify.firstsOf (Column.idAt (Code.b c) (Code.w c)) (USize.toNat (Code.n c))
-set_option hygiene false in
-local notation "cls(" c ", " t ")" => (List.range (USize.toNat (Code.n c))).filter fun i =>
-  Verify.groupOf (Column.idAt (Code.b c) (Code.w c)) (USize.toNat (Code.n c)) i == t
-set_option hygiene false in
-local notation "pre(" c ", " j ")" => List.sum (List.map (fun t => List.length (cls(c, t))) (List.range j))
+-- `segments_spec`'s `F`, `cls`, `pre`, and `setIds_spec`'s `T`
+open Alg.SegN
 
 /-- **`segments c` as `symDiv` reads it**: `segments_spec`, plus the classes cover the `n` rows, and class `t`
     is the rows whose code is that of its first row. Hypotheses: `segments_spec`'s. -/
@@ -89,8 +83,6 @@ set_option hygiene false in
 local notation "KR" => List.length (F(rk))
 set_option hygiene false in
 local notation "KS" => List.length (F(sk))
-set_option hygiene false in
-local notation "T(" j ")" => UInt64.toNat (Column.bitsAt s (j * 8) 8)
 
 /-- **`symDiv`'s set ids, read back**: over the key codes `rk`, `sk` and the joint value codes `v0`, `v1` of `R`
     and `S`, `symDiv`'s `ids` holds one long per key class of `rk`, then one per key class of `sk`; a class `i` of
@@ -634,16 +626,8 @@ theorem sym_vac_holds (R : Rel A C) (S : Rel B C) {ma mb : USize} (Ua : Vals A m
   · rintro ⟨hx, hy⟩
     exact ⟨x, ⟨rfl, eA.2 hx⟩, y, trivial, rfl, eB.2 hy⟩
 
--- the one-part code and `nub`'s first rows, and `∪`'s razed relation of `P` and `Q` (`RepDiv`'s, restated)
-set_option hygiene false in
-local notation "c1(" X ", " n ", " x ")" => (Obj.codes X (#v[⟨n, x⟩] : Vector (Part X) 1))[0]'Nat.zero_lt_one
-set_option hygiene false in
-local notation "nubI(" X ", " Y ", " R ")" =>
-  (tuples.tupleIds (c1(X, Rel.n R, Rel.key R)) #[c1(Y, Rel.n R, Rel.val R)]).2
-set_option hygiene false in
-local notation "PQ(" Y ", " Z ")" =>
-  (⟨_, Obj.raze Y #[⟨Rel.n P, Rel.key P⟩, ⟨Rel.n Q, Rel.key Q⟩] hNk,
-    Obj.raze Z #[⟨Rel.n P, Rel.val P⟩, ⟨Rel.n Q, Rel.val Q⟩] hNv⟩ : Rel Y Z)
+-- the one-part code, `nub`'s first rows and `∪`'s razed relation of `P` and `Q` are `RepOps2`'s
+open OpsN
 
 /-- **`rep (R /ₛ S)`**: `x` to `y` exactly when `R`'s fibre at `x` is `S`'s at `y`, and either `R` takes `x`
     somewhere, or `x` and `y` are elements of the universes `Ua`, `Ub`. `symDiv`'s intermediate values are bound

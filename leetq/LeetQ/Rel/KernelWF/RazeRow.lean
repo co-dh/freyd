@@ -133,15 +133,20 @@ open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF 
 
 variable {A B : Obj}
 
--- the relation `∪` razes before its `nub`, and that relation's codes and first rows, named as `rep_nub` names them
+/-! The relation `∪` razes before its `nub`, and that relation's codes and first rows, named as `rep_nub` names
+    them; one home: `open RazeN` in every file that reads them. Unhygienic: they capture `A`, `B`, `R`, `S`, `hNk`,
+    `hNv`. Not in `UnionN`, whose users keep `Uc` free as a name. -/
+namespace RazeN
 set_option hygiene false in
-local notation "Uc" => (⟨_, A.raze #[⟨R.n, R.key⟩, ⟨S.n, S.key⟩] hNk, B.raze #[⟨R.n, R.val⟩, ⟨S.n, S.val⟩] hNv⟩ : Rel A B)
+scoped notation "Uc" => (⟨_, A.raze #[⟨R.n, R.key⟩, ⟨S.n, S.key⟩] hNk, B.raze #[⟨R.n, R.val⟩, ⟨S.n, S.val⟩] hNv⟩ : Rel A B)
 set_option hygiene false in
-local notation "kcU" => (Obj.codes A (#v[⟨(Uc).n, (Uc).key⟩] : Vector (Part A) 1))[0]'Nat.zero_lt_one
+scoped notation "kcU" => (Obj.codes A (#v[⟨(Uc).n, (Uc).key⟩] : Vector (Part A) 1))[0]'Nat.zero_lt_one
 set_option hygiene false in
-local notation "vcU" => (Obj.codes B (#v[⟨(Uc).n, (Uc).val⟩] : Vector (Part B) 1))[0]'Nat.zero_lt_one
+scoped notation "vcU" => (Obj.codes B (#v[⟨(Uc).n, (Uc).val⟩] : Vector (Part B) 1))[0]'Nat.zero_lt_one
 set_option hygiene false in
-local notation "nubU" => (tuples.tupleIds kcU #[vcU]).2
+scoped notation "nubU" => (tuples.tupleIds kcU #[vcU]).2
+end RazeN
+open RazeN
 
 /-- `∪` within the fits bound: the `nub` of the razed relation. -/
 theorem union_eq_nub (R S : Rel A B) (hN : R.n.toNat + S.n.toNat < USize.size)

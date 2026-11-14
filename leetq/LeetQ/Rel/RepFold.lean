@@ -14,21 +14,11 @@ open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
 -- `codesOK` is `RepOps`' (`OpsN`); the fold notations below use it
 open OpsN
 
-/-! The fold notations, one home: `open FoldN` in every file that states a fold read-back. Unhygienic: they
+/-! The fold notations, one home: `open FoldN OpsN` in every file that states a fold read-back (they expand to
+    `OpsN`'s `codesOK`, `c1`, `nubI`, `PQ`). Unhygienic: they
     capture `E`, `V`, `P`, `Q`, `S`, `el`, `pend`, `step`, `elK`, `Sf`, `hNk`, `hNv` at the use site. -/
 namespace FoldN
 
--- `RepDiv`'s `c1`, `nubI`, `PQ`. The index proof is a term: a bare `[0]` postpones `get_elem_tactic` to the end
--- of the header that uses it, where it runs against every hypothesis
-set_option hygiene false in
-scoped notation "c1(" X ", " n ", " x ")" => (Obj.codes X (#v[⟨n, x⟩] : Vector (Part X) 1))[0]'Nat.zero_lt_one
-set_option hygiene false in
-scoped notation "nubI(" X ", " Y ", " R ")" =>
-  (tuples.tupleIds (c1(X, Rel.n R, Rel.key R)) #[c1(Y, Rel.n R, Rel.val R)]).2
-set_option hygiene false in
-scoped notation "PQ(" Y ", " Z ")" =>
-  (⟨_, Obj.raze Y #[⟨Rel.n P, Rel.key P⟩, ⟨Rel.n Q, Rel.key Q⟩] hNk,
-    Obj.raze Z #[⟨Rel.n P, Rel.val P⟩, ⟨Rel.n Q, Rel.val Q⟩] hNv⟩ : Rel Y Z)
 -- the parts `antiJoin pend° (idU el.key)` codes: the rows of `pend`, the rows of `el`
 set_option hygiene false in
 scoped notation "jparts" => (#v[⟨Rel.n (pend°), Rel.val (pend°)⟩,

@@ -12,7 +12,7 @@ namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
 
-open FoldN Prim ListN Pow
+open FoldN OpsN Prim ListN Pow
 
 /-- **The states of a merge, in `Set`**: `st i k` holds the states key `k` reaches after `i` rounds, `out i k` the
     arrays flushed before round `i`. A round takes `((a :: x, b :: y), acc)` to `((x, b :: y), acc ++ [a])` when

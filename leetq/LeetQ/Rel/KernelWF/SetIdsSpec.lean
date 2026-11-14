@@ -499,9 +499,13 @@ theorem slices_core {N m : Nat} {O G L c κ : Nat → Nat} {K : Nat → Nat × N
     simp only [List.length_map, List.length_range] at h1 h2
     exact (hκ _ _ (hLF _ (by have := hoffle (j + 1) hj; omega)) (hLF _ (by have := hoffle (j' + 1) hj'; omega))).1 e
 
--- the long `j` of the starts `s`, and the row the grade `p` puts at sorted position `t`
+-- the long `j` of the starts `s` (with `segments`' classes, `SegN`), and the row the grade `p` puts at sorted
+-- position `t`
+namespace SegN
 set_option hygiene false in
-local notation "T(" j ")" => UInt64.toNat (Column.bitsAt s (j * 8) 8)
+scoped notation "T(" j ")" => UInt64.toNat (Column.bitsAt s (j * 8) 8)
+end SegN
+open SegN
 set_option hygiene false in
 local notation "LP(" t ")" => UInt64.toNat (Column.bitsAt p (t * 8) 8)
 -- the (slice, code) key of sorted position `t`

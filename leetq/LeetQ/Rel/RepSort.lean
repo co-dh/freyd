@@ -10,7 +10,7 @@ namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
 
-open FoldN Prim ListN
+open FoldN OpsN Prim ListN
 
 /-- Every element `Q`-below every later one, said on the suffixes: `y` heads a suffix `y :: zs` of `xs` and `z` is
     in `zs` exactly when `y` comes before `z` in `xs`. -/

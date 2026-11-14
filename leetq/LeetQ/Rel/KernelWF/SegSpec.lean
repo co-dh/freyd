@@ -186,16 +186,20 @@ theorem groupIds_packed (c : Code)
     · simp only [Verify.groupOf]; congr 1
     · simp only [Order.idKey, Nat.min_eq_left (Nat.le_of_lt (hlt i hi)), Nat.min_eq_left (Nat.le_of_lt (hlt j hj))]
 
+/-! `segments`' classes, one home: `open SegN` in every file that reads `segments` back. -/
+namespace SegN
 -- the first rows of `c`'s classes, by first occurrence
 set_option hygiene false in
-local notation "F(" c ")" => Verify.firstsOf (Column.idAt (Code.b c) (Code.w c)) (USize.toNat (Code.n c))
+scoped notation "F(" c ")" => Verify.firstsOf (Column.idAt (Code.b c) (Code.w c)) (USize.toNat (Code.n c))
 -- the rows of class `t` of `c`, ascending
 set_option hygiene false in
-local notation "cls(" c ", " t ")" => (List.range (USize.toNat (Code.n c))).filter fun i =>
+scoped notation "cls(" c ", " t ")" => (List.range (USize.toNat (Code.n c))).filter fun i =>
   Verify.groupOf (Column.idAt (Code.b c) (Code.w c)) (USize.toNat (Code.n c)) i == t
 -- the number of rows in the classes before `j`
 set_option hygiene false in
-local notation "pre(" c ", " j ")" => List.sum (List.map (fun t => List.length (cls(c, t))) (List.range j))
+scoped notation "pre(" c ", " j ")" => List.sum (List.map (fun t => List.length (cls(c, t))) (List.range j))
+end SegN
+open SegN
 
 /-- **`segments c`, read back**: its firsts are `groupIds`' first rows; its permutation lists the rows class
     by class, classes in first-occurrence order, each ascending; its offsets are `K + 1` longs, offset `j` the
