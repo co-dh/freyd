@@ -21,7 +21,6 @@ rel_program knapsack after prelude where
     value : [α×β] ⟶ α ≜ F(π₁)sum                  -- value ≜ sum list(val): the total value of a packing
     weight : [α×β] ⟶ β ≜ F(π₂)sum                 -- weight ≜ sum list(wt): its total weight
     within(w : α ⟶ β) : [γ×α] ⟶ [γ×α] ≜ dom(weight ≤ w)   -- the packing weighs at most w
-    ≥ : N ⟶ N ≜ ≤°
 
     /- The orders on packings (knap-defn); [N×N] has no universe, so est, merge and thinL run them on the pairs they
        compare. -/

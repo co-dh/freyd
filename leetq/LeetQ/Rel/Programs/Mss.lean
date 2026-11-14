@@ -13,7 +13,6 @@ rel_program mss after prelude where
     obj N = -10…20                                -- the elements and the sums
 
     zero : 1 ⟶ N ≜ {(∗,0)}                        -- the note's `zero`
-    ≥ : α ⟶ α ≜ ≤°                                -- the order `est` maximises over
 
     /- The specification, Lean `mss ≜ Λ(segment sum) est(≥)`. -/
 

@@ -254,11 +254,15 @@ they lift, run on demand and converse as their bodies do. The `LeetQ` library `n
 |--------------|----------------------------------------------------------------|---------------------------------------------|
 | `1`          | `obj 1 = {∗}`                                                  | the terminal object: its one value          |
 | `∈`          | `∈ : α ⟶ [α] ≜ ∋°`                                             | membership, the converse of `∋`             |
+| `≥`          | `≥ : α ⟶ α ≜ ≤°`                                               | the named converse of `≤`                   |
+| `>`          | `> : α ⟶ α ≜ <°`                                               | the named converse of `<`                   |
+| `≠`          | `≠ : α ⟶ α ≜ < ∪ >`                                            | inequality, without a complement            |
 | `R ⇒ S`      | `_⇒_(R : α ⟶ β, S : α ⟶ β) : α ⟶ β ≜ ∼R ∪ S`                   | implication                                 |
 | `R ⊕ S`      | `_⊕_(R : α ⟶ β, S : γ ⟶ δ) : α+γ ⟶ β+δ ≜ [R inl, S inr]`       | the sum of relations                        |
 | `R + S`      | `_+_(R : α ⟶ β, S : α ⟶ β) : α ⟶ β ≜ ⟨R,S⟩plus`                | the sum of two values                       |
 | `frac(R,S)`  | `frac(R : α ⟶ γ, S : β ⟶ γ) : α ⟶ β ≜ R/S ∩ (S/R)°`            | the symmetric division                      |
 | `cor(S)`     | `cor(S : α ⟶ β) : α×β ⟶ α×β ≜ dom(π₁S ∩ π₂)`                  | the pairs of `S`, as a coreflexive          |
+| `mid(R)`     | `mid(R : α ⟶ α) : α ⟶ α×α ≜ ⟨R°,R⟩`                            | y ↦ (x,z) with x R y and y R z              |
 | `head`       | `head : [α] ⟶ α ≜ cons° π₁`                                    | the first element (B&dM p.267)              |
 | `tail`       | `tail : [α] ⟶ [α] ≜ cons° π₂`                                  | all but the first (B&dM p.149)              |
 | `init`       | `init : [α] ⟶ [α] ≜ snoc° π₁`                                  | all but the last (B&dM p.249)               |

@@ -6,11 +6,15 @@ rel_program prelude where
     obj 1 = {∗}                                   -- the terminal object: its one value
 
     ∈ : α ⟶ [α] ≜ ∋°                              -- membership, the converse of ∋
+    ≥ : α ⟶ α ≜ ≤°                                -- the named converse of ≤
+    > : α ⟶ α ≜ <°                                -- the named converse of <
+    ≠ : α ⟶ α ≜ < ∪ >                             -- inequality, without a complement
     _⇒_(R : α ⟶ β, S : α ⟶ β) : α ⟶ β ≜ ∼R ∪ S                  -- implication
     _⊕_(R : α ⟶ β, S : γ ⟶ δ) : α+γ ⟶ β+δ ≜ [R inl, S inr]      -- the sum of relations, A+B ⟶ C+D
     _+_(R : α ⟶ β, S : α ⟶ β) : α ⟶ β ≜ ⟨R,S⟩plus               -- the sum of two values
     frac(R : α ⟶ γ, S : β ⟶ γ) : α ⟶ β ≜ R/S ∩ (S/R)°           -- the symmetric division
     cor(S : α ⟶ β) : α×β ⟶ α×β ≜ dom(π₁S ∩ π₂)                  -- the pairs of S, as a coreflexive
+    mid(R : α ⟶ α) : α ⟶ α×α ≜ ⟨R°,R⟩                            -- y ↦ (x,z) with x R y and y R z: mid(<) is x<y<z
 
     -- The list functions of B&dM written as their definitions (diagram order); `ran(nil)` is the fold's seed [].
 
