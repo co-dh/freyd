@@ -8,6 +8,7 @@ import LeetQ.Rel.KernelWF.CodesSymParts
 import LeetQ.Rel.KernelWF.CodesLongParts
 import LeetQ.Rel.KernelWF.CodesFloatParts
 import LeetQ.Rel.KernelWF.CodesGuidParts
+import LeetQ.Rel.KernelWF.CodesGeneral
 
 namespace LeetQ.Rel.Alg
 
@@ -16,7 +17,8 @@ open QLean QLean.Dep QLean.Kernel QLean.Verify LeetQ.Rel
 /-- The bounds `Obj.codes` needs at every node of `A`, on the parts it hands that node: each node theorem's
     size bounds and `Vals.PickFits`; at an atom, the kinds a several-part theorem covers — boolean, a small
     integral or a float side whose raze answers dense (`bytesOf` of each part), an `.i64` side of `.bytes` parts,
-    a symbol side whose dictionaries summed fit a `USize`, a guid side. -/
+    a symbol side whose dictionaries summed fit a `USize`, a guid side, a general side whose elements hold no
+    `IndexCell` (`cellFree`, where `valEq` is `=`). -/
 def _root_.LeetQ.Rel.Obj.CodesFit : (A : Obj) → {p : Nat} → Vector (Part A) p → Prop
   | .atom t, p, cs => (cs.toList.map (·.1.toNat)).sum < USize.size ∧
     (t = .boolean ∨
@@ -27,7 +29,8 @@ def _root_.LeetQ.Rel.Obj.CodesFit : (A : Obj) → {p : Nat} → Vector (Part A) 
       (orderKind t = some .i64 ∧ ∀ k (hk : k < p), ∃ b, (cs[k]'hk).2.enc = .bytes b) ∨
       (t = .symbol ∧
         (cs.toList.map fun c => match c.2.enc with | .enum _ o _ => o.size - 1 | _ => c.1.toNat).sum < USize.size) ∨
-      t = .guid)
+      t = .guid ∨
+      (t = .general ∧ ∀ k (hk : k < p) xs, (cs[k]'hk).2.enc = .gen xs → ∀ x ∈ xs, cellFree x = true))
   | .prod a b, _, cs => (cs.toList.map (·.1.toNat)).sum < USize.size ∧
     Obj.CodesFit a (cs.map fun c => (⟨c.1, c.2.1⟩ : Part a)) ∧ Obj.CodesFit b (cs.map fun c => (⟨c.1, c.2.2⟩ : Part b))
   | .arr b, p, cs => (∀ k (hk : k < p), Vals.PickFits (.arr b) (cs[k]'hk).2 (List.range (cs[k]'hk).1.toNat)) ∧
@@ -109,7 +112,7 @@ theorem codes_faithful_wf (A : Obj) : ∀ {p : Nat} (cs : Vector (Part A) p), A.
   induction A with
   | atom t =>
     intro p cs ⟨hN, ht⟩
-    rcases ht with rfl | ⟨k₀, ht, hk₀, h1, hd⟩ | ⟨ht, hd⟩ | ⟨rfl, hD⟩ | rfl
+    rcases ht with rfl | ⟨k₀, ht, hk₀, h1, hd⟩ | ⟨ht, hd⟩ | ⟨rfl, hD⟩ | rfl | ⟨rfl, hC⟩
     · refine ⟨⟨fun hk hl _ _ hi hj => codes_boolean_faithful cs hk hl hi hj, fun hk => ?_⟩, fun hk hl => ?_⟩
       · obtain ⟨h1, h2, h3, h4⟩ := codes_boolean_wf cs hk
         exact ⟨Or.inl h2, h1, h3, h4⟩
@@ -126,6 +129,9 @@ theorem codes_faithful_wf (A : Obj) : ∀ {p : Nat} (cs : Vector (Part A) p), A.
     · refine ⟨⟨fun hk hl _ _ hi hj => codes_guid_parts_faithful cs hN hk hl hi hj,
         fun hk => codes_guid_parts_wf cs hN hk⟩, fun hk hl => ?_⟩
       rw [codes_guid_cut cs (by omega)]; exact cut_lane _ _ hk hl
+    · refine ⟨⟨fun hk hl _ _ hi hj => codes_general_faithful cs hN hC hk hl hi hj,
+        fun hk => codes_general_wf cs hN hk⟩, fun hk hl => ?_⟩
+      rw [codes_general cs]; exact cut_lane _ _ hk hl
   | prod a b iha ihb =>
     intro p cs ⟨hN, ha, hb⟩
     exact codes_prod_faithful_wf cs rfl rfl rfl rfl (iha _ ha).1 (iha _ ha).2 (ihb _ hb).1 (ihb _ hb).2 hN

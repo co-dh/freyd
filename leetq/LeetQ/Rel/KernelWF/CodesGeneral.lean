@@ -44,7 +44,7 @@ theorem codes_general {p : Nat} (cs : Vector (Part (.atom .general)) p) :
       (pack (gens (raze .general cs.toArray).2).toList.length (firstIds (gens (raze .general cs.toArray).2).toList)).cut
         (cs.map (·.1)) := by
   show codes .general cs = _
-  unfold codes; rw [dif_pos rfl]; rfl
+  unfold codes; rw [dif_pos rfl]
 
 /-- **The razed list of a `general` side lists its parts' elements one part after another.** -/
 theorem gens_raze_general {p : Nat} (cs : Vector (Part (.atom .general)) p)
@@ -64,13 +64,13 @@ theorem codes_general_get {p : Nat} (cs : Vector (Part (.atom .general)) p)
     (c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = (cs[k]'hk).1 ∧
       c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
       ∀ i (hi : i < (cs[k]'hk).1.toNat), ∃ h : ((cs.toList.take k).map (·.1.toNat)).sum + i < L.length,
-        Column.idAt c.b c.w i = L.findIdx (valEq (L[_]'h)) ∧
-        L[_]'h = Vals.row (cs[k]'hk).2 ⟨i, hi⟩ := by
+        Column.idAt c.b c.w i = L.findIdx (valEq (L[((cs.toList.take k).map (·.1.toNat)).sum + i]'h)) ∧
+        L[((cs.toList.take k).map (·.1.toNat)).sum + i]'h = Vals.row (cs[k]'hk).2 ⟨i, hi⟩ := by
   intro L c
   have hL := gens_raze_general cs hN
   have hlen : L.length = (cs.toList.map (·.1.toNat)).sum := by
     show (gens _).toList.length = _
-    rw [hL, List.length_flatMap]; simp [Arr.length_toList]
+    rw [hL, List.length_flatMap]; congr 1; exact List.map_congr_left fun c _ => Arr.length_toList c.2
   have hU : L.length < 2 ^ 64 := by rcases USize.size_eq with h | h <;> rw [h] at hN <;> omega
   obtain ⟨hsz, hget⟩ := firstIds_get L hU
   have hlg : len (firstIds L) = L.length := by simp [len, hsz]
@@ -133,6 +133,11 @@ theorem codes_general_wf {p : Nat} (cs : Vector (Part (.atom .general)) p)
   obtain ⟨hw, hn, hsz, -⟩ := codes_general_get cs hN hk
   refine ⟨by rcases hw with h | h | h | h <;> simp [c, h], hn, hsz, fun h8 => ?_⟩
   exfalso; rcases hw with h | h | h | h <;> simp only [c] at h8 <;> omega
+
+-- `0f` and `-0f` are one value to q's `~` and two rows to Rel: two codes; an equal row repeats its code
+#guard let c := (Obj.codes (.atom .general)
+    #v[genCol #[.atom (.float 0), .atom (.float 0x8000000000000000), .atom (.float 0)]])[0]
+  (List.range 3).map (Column.idAt c.b c.w) == [0, 1, 0]
 
 #print axioms codes_general_faithful
 #print axioms codes_general_wf
