@@ -3,7 +3,7 @@
   the rows it reads, and `sortBy`'s answer holds the rows it was handed, each once.
 -/
 import LeetQ.Rel.KernelWF.JoinContent
-import LeetQ.Rel.KernelWF.CodesProd
+import LeetQ.Rel.KernelWF.CodesAll
 import LeetQ.Rel.KernelWF.Reduce
 
 namespace LeetQ.Rel.Alg
@@ -105,8 +105,8 @@ theorem gradeColumn_sort {t : QAtomicType} {n : USize} {e v : Enc} (h : gradeCol
          · cases h)
 
 /-- **`Obj.sortBy` permutes the rows it is handed**: its answer holds the longs of `p`, each once, at every
-    side. Hypotheses: `len p` fits a `USize`; every one-part code is well formed and of its part's count (the
-    codes `sortBy` grades where no kernel orders the values). -/
+    side. Hypotheses: `len p` fits a `USize`; every one-part code of an `.arr` or `.sum` side is well formed and
+    of its part's count (the codes `sortBy` grades there); an atom's is `codes_atom_wf`. -/
 theorem sortBy_perm
     (hW : codesWF) :
     (A : Obj) → {n : USize} → (c : Vals A n) → (p : ByteArray) → len p < USize.size →
@@ -114,7 +114,7 @@ theorem sortBy_perm
   | .atom t, n, c, p, hl => by
     have hx := pick_len t ⟨_, c⟩ p hl
     have hc : (ids (Code.grade (codes t #v[pick t ⟨_, c⟩ p])[0])).Perm (List.range (len p)) := by
-      obtain ⟨hw, hs, hn⟩ := hW (.atom t) (pick t ⟨_, c⟩ p)
+      obtain ⟨hw, hn, hs, -⟩ := codes_atom_wf t (pick t ⟨_, c⟩ p)
       have := (grade_code _ hw hs).1
       rw [show ((Obj.codes (.atom t) #v[pick t ⟨_, c⟩ p])[0]).n = _ from hn, hx] at this
       exact this
@@ -135,14 +135,14 @@ theorem sortBy_perm
     have hl2 : len (b.sortBy c.2 p) < USize.size := by rw [len_eq_ids, h2.length_eq, ← len_eq_ids]; exact hl
     exact (sortBy_perm hW a c.1 _ hl2).trans h2
   | .arr b, n, c, p, hl => by
-    obtain ⟨hw, hs, hn⟩ := hW (.arr b) (Vals.pickPart (.arr b) c p)
+    obtain ⟨hw, hs, hn⟩ := hW.1 b (Vals.pickPart (.arr b) c p)
     have hpn : (Vals.pickPart (.arr b) c p).1.toNat = len p := by
       unfold Vals.pickPart need; rw [dif_pos hl]; exact USize.toNat_ofNat_of_lt' hl
     have := (grade_code _ hw hs).1
     rw [hn, hpn] at this
     exact gather_perm this
   | .sum a b, n, c, p, hl => by
-    obtain ⟨hw, hs, hn⟩ := hW (.sum a b) (Vals.pickPart (.sum a b) c p)
+    obtain ⟨hw, hs, hn⟩ := hW.2 a b (Vals.pickPart (.sum a b) c p)
     have hpn : (Vals.pickPart (.sum a b) c p).1.toNat = len p := by
       unfold Vals.pickPart need; rw [dif_pos hl]; exact USize.toNat_ofNat_of_lt' hl
     have := (grade_code _ hw hs).1

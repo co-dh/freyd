@@ -144,4 +144,31 @@ theorem codes_faithful_wf (A : Obj) : ∀ {p : Nat} (cs : Vector (Part A) p), A.
 
 #print axioms codes_faithful_wf
 
+/-- **An atom side's one-part code is well formed and counts its part, with no premise**: a lane of `1 … 64`
+    bits, `⌈n·w/8⌉` bytes, ids below `card` under a byte. One part's count is a `USize`, so the several-part
+    theorems' summed-count bound holds by itself; `.arr` and `.sum` are not here, their codes need bounds. -/
+theorem codes_atom_wf (t : QAtomicType) (x : Part (.atom t)) :
+    let c := (Obj.codes (.atom t) #v[x])[0]
+    laneOK(c.w) ∧ c.n = x.1 ∧ c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
+      (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) := by
+  have hN : (#v[x].toList.map (·.1.toNat)).sum < USize.size := by simp [x.1.toNat_lt_size]
+  cases t
+  case boolean =>
+    obtain ⟨h1, h2, h3, h4⟩ := codes_boolean_wf #v[x] Nat.zero_lt_one
+    exact ⟨Or.inl h2, h1, h3, h4⟩
+  all_goals first
+    | exact codes_general_wf #v[x] hN Nat.zero_lt_one
+    | exact codes_guid_wf x
+    | exact codes_symbol_wf x
+    | exact codes_long_one_wf rfl x
+    -- the kind disjunctions as terms, not `by`: a deferred tactic fails after `first` has committed
+    | exact codes_small_int_wf rfl (Or.inl rfl) x
+    | exact codes_small_int_wf rfl (Or.inr (Or.inl rfl)) x
+    | exact codes_small_int_wf rfl (Or.inr (Or.inr rfl)) x
+    | exact (codes_float_parts_wf (Or.inl rfl) #v[x] hN Nat.zero_lt_one).1
+    | exact (codes_float_parts_wf (Or.inr (Or.inl rfl)) #v[x] hN Nat.zero_lt_one).1
+    | exact (codes_float_parts_wf (Or.inr (Or.inr rfl)) #v[x] hN Nat.zero_lt_one).1
+
+#print axioms codes_atom_wf
+
 end LeetQ.Rel.Alg

@@ -1295,10 +1295,16 @@ end Laws
 
 end LeetQ.Rel.Alg
 
--- the universal `hW` of `sortBy_perm`, `rep_tau_list`, `rep_snoc`: every one-part code is well formed and counts its part
+-- the `hW` of `sortBy_perm`, `rep_tau_list`, `rep_snoc`: every one-part code of an `.arr` or `.sum` side is well
+-- formed and counts its part; an atom's is a theorem (`codes_atom_wf`), these need the bounds of `Obj.CodesFit`
 set_option hygiene false in
 notation "codesWF" =>
-  ∀ (B : Obj) (x : Part B), laneOK(((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w) ∧
-    ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).b.size = (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n.toNat *
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w + 7) / 8 ∧
-    ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n = x.1
+  (∀ (b : Obj) (x : Part (.arr b)), laneOK(((Obj.codes (.arr b) #v[x])[0]'Nat.zero_lt_one).w) ∧
+    ((Obj.codes (.arr b) #v[x])[0]'Nat.zero_lt_one).b.size =
+      (((Obj.codes (.arr b) #v[x])[0]'Nat.zero_lt_one).n.toNat * ((Obj.codes (.arr b) #v[x])[0]'Nat.zero_lt_one).w + 7) / 8 ∧
+    ((Obj.codes (.arr b) #v[x])[0]'Nat.zero_lt_one).n = x.1) ∧
+  ∀ (a b : Obj) (x : Part (.sum a b)), laneOK(((Obj.codes (.sum a b) #v[x])[0]'Nat.zero_lt_one).w) ∧
+    ((Obj.codes (.sum a b) #v[x])[0]'Nat.zero_lt_one).b.size =
+      (((Obj.codes (.sum a b) #v[x])[0]'Nat.zero_lt_one).n.toNat *
+        ((Obj.codes (.sum a b) #v[x])[0]'Nat.zero_lt_one).w + 7) / 8 ∧
+    ((Obj.codes (.sum a b) #v[x])[0]'Nat.zero_lt_one).n = x.1
