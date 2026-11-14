@@ -439,17 +439,12 @@ theorem rep_loop {K X Y : Obj} (F : Rel (.prod X Y) X) (P : Rel K (.prod X (.arr
     (fun Q hQ R hR' T hT du hdu A hA O hO => ⟨fun _ _ => by rw [e], hR i hi out St ho hS D hD W hW u hu p hp G e
       Q hQ R hR' T hT du hdu A hA O hO⟩)
 
-/-- `h^[j+1] a` is `h` after `h^[j]`. -/
-private theorem iterate_succ_out {α : Type} (h : α → α) : ∀ (j : Nat) (a : α), h^[j + 1] a = h (h^[j] a)
-  | 0, _ => rfl
-  | j + 1, a => iterate_succ_out h j (h a)
-
 /-- **`fixOn`'s state after round `i`**: the count of round `i - 1`'s relation, round `i`'s, and `i`. -/
 theorem fixOn_iterate {A B : Obj} (φ : Rel A B → Rel A B) (X₀ : Rel A B) : ∀ i,
     (fun s : Nat × Rel A B × Nat => (s.2.1.n.toNat, (φ s.2.1).nub, s.2.2 + 1))^[i + 1] (X₀.nub.n.toNat + 1, X₀.nub, 0) =
       (((fun X => (φ X).nub)^[i] X₀.nub).n.toNat, (fun X => (φ X).nub)^[i + 1] X₀.nub, i + 1)
   | 0 => rfl
-  | i + 1 => by rw [iterate_succ_out _ (i + 1), fixOn_iterate φ X₀ i, iterate_succ_out (fun X => (φ X).nub) (i + 1)]
+  | i + 1 => congrArg (fun s : Nat × Rel A B × Nat => (s.2.1.n.toNat, (φ s.2.1).nub, s.2.2 + 1)) (fixOn_iterate φ X₀ i)
 
 /-- **`fixOn`, read back**: with `st i` the `i`-th round's state `nub(φ(…nub(X₀)))`, `fixOn n φ X₀` stops at a round
     `j ≤ n`, answers it, and denotes `Φ^[j](rep X₀)`, `Φ` what one round does to the denotation; below the fuel `j`
@@ -475,23 +470,23 @@ theorem rep_fixOn {A B : Obj} (n : Nat) (φ : Rel A B → Rel A B) (X₀ : Rel A
   have hfix : fixOn n φ X₀ = ((iter n done f s₀).2.1, (iter n done f s₀).2.2) := rfl
   obtain ⟨j, hjn, he, hstop, hlt⟩ := iter_stop done f n s₀
   -- the rounds the loop ran, read back
-  have hg : ∀ i < j, rep (g^[i + 1] X₀.nub) = Φ (rep (g^[i] X₀.nub)) := fun i hi => by
-    rw [iterate_succ_out g i]
-    exact hφ i (by omega) fun k hk h => by
+  have hg : ∀ i < j, rep (g^[i + 1] X₀.nub) = Φ (rep (g^[i] X₀.nub)) := fun i hi =>
+    hφ i (by omega) fun k hk h => by
       have := hlt (k + 1) (by omega)
-      rw [hd k, h] at this; simp at this
+      rw [hd k] at this
+      exact (by simpa using this : (g^[k] X₀.nub).n.toNat ≠ (g^[k + 1] X₀.nub).n.toNat) h
   have hr : ∀ i ≤ j, rep (g^[i] X₀.nub) = Φ^[i] (rep X₀) := by
     intro i
     induction i with
     | zero => intro _; exact h₀
-    | succ i ih => intro hi; rw [hg i (by omega), ih (by omega), iterate_succ_out Φ i]
+    | succ i ih => intro hi; rw [hg i (by omega), ih (by omega)]; rfl
   rw [hfix, he]
   cases j with
   | zero =>
     refine ⟨0, Nat.zero_le _, rfl, h₀, fun h => ?_⟩
     rcases hstop with e | e
     · omega
-    · simp [done, s₀] at e
+    · exact absurd (show (X₀.nub.n.toNat + 1 == X₀.nub.n.toNat) = true from e) (by simp)
   | succ i =>
     rw [hs i]
     refine ⟨i + 1, hjn, rfl, hr (i + 1) (Nat.le_refl _), fun h => ?_⟩

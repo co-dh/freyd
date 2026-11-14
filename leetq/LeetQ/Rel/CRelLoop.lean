@@ -144,12 +144,12 @@ theorem rep_fixOnC {A B : Obj} (n : Nat) (φC : Rel A B → Rel A B × Bool) (X�
   have hr := iterC_run n (fun s => s.1 == s.2.1.n.toNat) r _ hit i hi fun i' hi' => by
     rw [ef, nubC_fst]
     cases i' with
-    | zero => simp
+    | zero => show (X₀.nub.n.toNat + 1 == X₀.nub.n.toNat) = false; simp
     | succ k =>
       rw [fixOn_iterate (fun X => (φC X).1) X₀ k]
       simpa using hne k (by omega)
   have hr' : (φC (g^[i] X₀.nub)).2 = true ∧ (nubC (φC (g^[i] X₀.nub)).1).2 = true := by
-    rw [← es i]; exact (Bool.and_eq_true _ _).1 hr
+    rw [← es i]; exact Eq.mp (Bool.and_eq_true _ _) hr
   show rep (φC (g^[i] X₀.nub)).1.nub = Φ (rep (g^[i] X₀.nub))
   rw [← nubC_fst, rep_nubC _ hr'.2, hφ _ hr'.1]
 
@@ -221,8 +221,10 @@ theorem rep_fixOn {A : Obj} (n : Nat) (φ : CRel A B → CRel A B) (X₀ : CRel 
       rep ((fun X => (φ ⟨X, true⟩).rel.nub)^[i] X₀.rel.nub) =
         rep ((fun X => (φ ⟨X, true⟩).rel.nub)^[i + 1] X₀.rel.nub)) :
     ∃ j ≤ n, (fixOn n φ X₀).2 = j ∧ rep (fixOn n φ X₀).1.rel = Φ^[j] (rep X₀.rel) ∧
-      (j < n → Φ (rep (fixOn n φ X₀).1.rel) = rep (fixOn n φ X₀).1.rel) :=
-  rep_fixOnC n _ X₀.rel Φ (by simp only [fixOn, Bool.and_eq_true] at hb; exact hb.2) hφ hc
+      (j < n → Φ (rep (fixOn n φ X₀).1.rel) = rep (fixOn n φ X₀).1.rel) := by
+  -- unfolded first: the conclusion's `.2` against `fixOnC`'s otherwise sends `whnf` into `iter`'s recursion
+  simp only [fixOn, Bool.and_eq_true] at hb ⊢
+  exact rep_fixOnC n _ X₀.rel Φ hb.2 hφ hc
 
 end CRel
 
