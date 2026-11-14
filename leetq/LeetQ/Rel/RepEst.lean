@@ -27,15 +27,11 @@ theorem rep_arrUnion {A : Obj} {n : USize} (X : Vals (.arr (.arr A)) n) (Rm : Re
     (hK : cOK(kc, Rel.n M, Rel.key M)) (hV : cOK(vc, Rel.n M, Rel.val M))
     (hk : Vals.PickFits (.arr (.arr A)) (Rel.key M) (List.range (Rel.n M).toNat))
     (hv : Vals.PickFits A (Rel.val M) (List.range (Rel.n M).toNat))
-    (kt : Code) (hkt : kt = kcT(M))
-    (hF : ∀ {i j : Nat} (hi : i < (Rel.nub M).n.toNat) (hj : j < (Rel.nub M).n.toNat),
-      Column.idAt kt.b kt.w i = Column.idAt kt.b kt.w j ↔
-        Vals.row (Rel.nub M).key ⟨i, hi⟩ = Vals.row (Rel.nub M).key ⟨j, hj⟩)
-    (hw : laneOK(kt.w))
-    (hn : kt.n = (Rel.nub M).n)
-    (hs : kt.b.size = (kt.n.toNat * kt.w + 7) / 8)
+    -- the nub copies `X`'s arrays: their nested payloads and `A`'s dictionaries, general cells no input fact bounds
+    (hWk : (Obj.arr (.arr A)).CodesFit (#v[⟨(Rel.nub M).n, (Rel.nub M).key⟩] : Vector (Part (.arr (.arr A))) 1))
     (hW : A.CodesFit (#v[⟨(Rel.nub M).n, (Rel.nub M).val⟩] : Vector (Part A) 1))
-    (h63 : (Rel.nub M).n.toNat < 2 ^ 63)
+    (h63 : (Rel.n M).toNat < 2 ^ 63)
+    -- two parts coded jointly: a generic `A`'s ALP sum and dictionaries are unbounded by `X`
     (pc : Vector Code 2) (hpc : pc = pairs #v[LeetQ.Rel.Alg.idU X, LeetQ.Rel.Alg.dom M])
     (hc : codesOK(pc, pcs(LeetQ.Rel.Alg.idU X, LeetQ.Rel.Alg.dom M)))
     (D : Rel (.arr (.arr A)) (.arr (.arr A))) (hD : D = lD(M, X))
@@ -66,7 +62,7 @@ theorem rep_arrUnion {A : Obj} {n : USize} (X : Vals (.arr (.arr A)) n) (Rm : Re
     (∀ xss Y, rep (Arr.union X) xss Y → (∃ i, Vals.row X i = xss) ∧ ∀ y, y ∈ Y ↔ ∃ xs ∈ xss, y ∈ xs) ∧
       (∀ xss, (∃ Y, rep (Arr.union X) xss Y) ↔ ∃ i, Vals.row X i = xss) := by
   subst hRm
-  obtain ⟨h1, h2⟩ := rep_E (mem X.2.2.2) X M kc vc hkc hvc hK hV hk hv kt hkt hF hw hn hs hW h63
+  obtain ⟨h1, h2⟩ := rep_E (mem X.2.2.2) X M kc vc hkc hvc hK hV hk hv hWk hW h63
     pc hpc hc D hD ht63 T N hT hN0 hN hFk hFv L hL ku vu hku hvu huK
     huV huk huv hM hmv hmk hcc hcrn hcM hcA hcC
   -- every element of a cell of `X` is a row of its payload: a cell's window ends inside the payload

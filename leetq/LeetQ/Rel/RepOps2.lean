@@ -2,6 +2,7 @@
   `rep` of the second group of `Alg` ops: each executable op read in `Rel(Set)`, as `RepOps` does the first.
 -/
 import LeetQ.Rel.RepOps
+import LeetQ.Rel.KernelWF.CodesAll
 
 namespace LeetQ.Rel.Rep
 
@@ -100,6 +101,7 @@ theorem corefl_le_dom {X Y : RelSet.{0}} (P : X.carrier → Prop) (S : X ⟶ Y) 
     `idU U ⊑ dom R` (`rep_le`, `rep_idU`, `rep_dom`). Hypotheses: `rep_le`'s joint pair codes of `idU U` and
     `dom R`, `rep_dom`'s on `R.key`. -/
 theorem rep_entire (R : Rel A B) {m : USize} (U : Vals A m)
+    -- two parts coded jointly: a generic `A`'s ALP sum and dictionaries at `U`, `dom R` no `R` fact bounds
     (hc : codesOK(pairs #v[idU U, dom R], pcs(idU U, dom R))) (hK : oneOK(A, R.n, R.key))
     (hp : Vals.PickFits A R.key (List.range R.n.toNat)) :
     entire R U = true ↔ ∀ a, (∃ i, U.row i = a) → ∃ b, rep R a b := by
@@ -110,6 +112,7 @@ theorem rep_entire (R : Rel A B) {m : USize} (U : Vals A m)
 /-- **`surjective R U = true ↔ U? ⊑ ran (rep R)`**: `entire R° U` (`rep_entire`, `convArr_holds`). Hypotheses:
     `rep_entire`'s at `R°`, whose keys are `R.val`. -/
 theorem rep_surjective (R : Rel A B) {m : USize} (U : Vals B m)
+    -- two parts coded jointly: a generic `B`'s ALP sum and dictionaries at `U`, `ran R` no `R` fact bounds
     (hc : codesOK(pairs #v[idU U, dom (R°)], pcs(idU U, dom (R°)))) (hK : oneOK(B, R.n, R.val))
     (hp : Vals.PickFits B R.val (List.range R.n.toNat)) :
     surjective R U = true ↔ ∀ b, (∃ i, U.row i = b) → ∃ a, rep R a b :=
@@ -170,9 +173,12 @@ theorem nub_rows_inj (R : Rel A B) (hK : oneOK(A, R.n, R.key)) (hV : oneOK(B, R.
     `nub_rows_inj`, `rep_nub`). Hypotheses: `rep_nub`'s, and the key code of `R.nub` that `simple` groups. -/
 theorem rep_simple (R : Rel A B) (hK : oneOK(A, R.n, R.key)) (hV : oneOK(B, R.n, R.val))
     (hk : Vals.PickFits A R.key (List.range R.n.toNat)) (hv : Vals.PickFits B R.val (List.range R.n.toNat))
-    (hS : oneOK(A, R.nub.n, R.nub.key)) :
+    -- generic `A`: the nub copies `R`'s keys, whose dictionaries, general cells, nested payloads no `R` fact bounds
+    (hS : A.CodesFit (#v[⟨R.nub.n, R.nub.key⟩] : Vector (Part A) 1)) :
     simple R = true ↔ ∀ a b b', rep R a b → rep R a b' → b = b' := by
-  obtain ⟨hF, hw, hn, hs, hcard⟩ := hS
+  obtain ⟨⟨hF0, hW0⟩, -⟩ := codes_faithful_wf A _ hS
+  obtain ⟨hF, hw, hn, hs, hcard⟩ : oneOK(A, R.nub.n, R.nub.key) :=
+    ⟨fun hi hj => hF0 (k := 0) (l := 0) (by decide) (by decide) hi hj, hW0 (k := 0) (by decide)⟩
   show (len (c1(A, R.nub.n, R.nub.key)).groupIds.2 == R.nub.n.toNat) = true ↔ _
   rw [beq_iff_eq, len_eq_ids, groupIds_firsts _ hw hs hcard, hn, firsts_length_iff, ← rep_nub R hK hV hk hv]
   simp only [rep_apply]
@@ -188,7 +194,8 @@ theorem rep_simple (R : Rel A B) (hK : oneOK(A, R.n, R.key)) (hV : oneOK(B, R.n,
     Hypotheses: `rep_simple`'s at `R°`, whose keys are `R.val`. -/
 theorem rep_injective (R : Rel A B) (hK : oneOK(B, R.n, R.val)) (hV : oneOK(A, R.n, R.key))
     (hk : Vals.PickFits B R.val (List.range R.n.toNat)) (hv : Vals.PickFits A R.key (List.range R.n.toNat))
-    (hS : oneOK(B, (Rel.nub (R°)).n, (Rel.nub (R°)).key)) :
+    -- generic `B`: the nub copies `R`'s values, whose dictionaries, general cells, nested payloads no `R` fact bounds
+    (hS : B.CodesFit (#v[⟨(Rel.nub (R°)).n, (Rel.nub (R°)).key⟩] : Vector (Part B) 1)) :
     injective R = true ↔ ∀ a a' b, rep R a b → rep R a' b → a = a' := by
   refine (rep_simple (R°) hK hV hk hv hS).trans ⟨fun h a a' b h1 h2 => h b a a' ?_ ?_, fun h b a a' h1 h2 => h a a' b ?_ ?_⟩
   · exact (convArr_holds R.key R.val a b).2 h1
@@ -198,10 +205,12 @@ theorem rep_injective (R : Rel A B) (hK : oneOK(B, R.n, R.val)) (hV : oneOK(A, R
 
 /-- **`isMap R U = true`**: `rep R` entire on `U` and simple — `rep_entire` and `rep_simple`, their hypotheses. -/
 theorem rep_isMap (R : Rel A B) {m : USize} (U : Vals A m)
+    -- two parts coded jointly: a generic `A`'s ALP sum and dictionaries at `U`, `dom R` no `R` fact bounds
     (hc : codesOK(pairs #v[idU U, dom R], pcs(idU U, dom R))) (hK : oneOK(A, R.n, R.key))
     (hV : oneOK(B, R.n, R.val))
     (hk : Vals.PickFits A R.key (List.range R.n.toNat)) (hv : Vals.PickFits B R.val (List.range R.n.toNat))
-    (hS : oneOK(A, R.nub.n, R.nub.key)) :
+    -- generic `A`: the nub copies `R`'s keys, whose dictionaries, general cells, nested payloads no `R` fact bounds
+    (hS : A.CodesFit (#v[⟨R.nub.n, R.nub.key⟩] : Vector (Part A) 1)) :
     isMap R U = true ↔
       (∀ a, (∃ i, U.row i = a) → ∃ b, rep R a b) ∧ ∀ a b b', rep R a b → rep R a b' → b = b' := by
   show (entire R U && simple R) = true ↔ _
