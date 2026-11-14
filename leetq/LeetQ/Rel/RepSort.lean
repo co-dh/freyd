@@ -46,13 +46,9 @@ local notation "ordOK" =>
     and every `z` of `zs`, the test `q E` reaches `(y, z)`; and the test sees every such `(y, z)` (`E` holds it).
     The pieces are bound as `orderedOn` builds them: `Su` the suffixes, `T` their `uncons`, `D = ran T`,
     `yz` the pairs `(y, z)`, `bad` those the test misses, `C` the arrays with a bad suffix. Hypotheses:
-    `rep_suffix`'s (`g`, `hg`, `hR`) and every primitive's at the pieces (`ordOK`). -/
+    `hS`, `suffix X` read back (`rep_suffix`, `rep_suffixC`), and every primitive's at the pieces (`ordOK`). -/
 theorem rep_orderedOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B))
-    (X : Vals (.arr B) n)
-    (g : Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B) → Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B))
-    (hg : ∀ S F, g (S, F) = (S ∪ F ≫ tail (ran F).val, F ≫ tail (ran F).val))
-    -- kept: each round's suffixes `F` and their union `S` are intermediates; RazeFits/CodesFit no input bounds
-    (hR : ∀ i, i ≤ X.1.toNat → ∀ S F, S = (g^[i] (idU X, idU X)).1 → F = (g^[i] (idU X, idU X)).2 → sufOK)
+    (X : Vals (.arr B) n) (hS : ∀ xs ys, rep (suffix X) xs ys ↔ (∃ j, X.row j = xs) ∧ ys <:+ xs)
     (Su : Rel (.arr B) (.arr B)) (hSu : Su = suffix X) (Wu : Rel (.arr B) (.arr B)) (hWu : Wu = ran Su)
     (T : Rel (.arr B) (.prod B (.arr B))) (hT : T = Su ≫ uncons (Rel.val Wu))
     (D : Rel (.prod B (.arr B)) (.prod B (.arr B))) (hD : D = ran T)
@@ -77,7 +73,7 @@ theorem rep_orderedOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) →
   obtain ⟨k1, k2, k3, k4⟩ := hC' _ rfl
   obtain ⟨a1, a2⟩ := hA'
   have eS : ∀ xs ys, rep Su xs ys ↔ (∃ j, X.row j = xs) ∧ ys <:+ xs := by
-    rw [hSu]; exact rep_suffix X g hg hR
+    rw [hSu]; exact hS
   have eW : ∀ a a', rep Wu a a' ↔ a = a' ∧ ∃ k, rep Su k a := fun a a' => by
     rw [hWu, rep_ran_corefl Su (one_ok _ hSf) (hSp)]; exact Iff.rfl
   have eU := rep_uncons (Rel.val Wu) _ rfl _ rfl _ rfl u1
@@ -180,10 +176,7 @@ theorem rep_orderedOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) →
     later one. `rep_orderedOn` at `q := pairsIn Q` (`rep_pairsIn`), the suffix form turned into `Pairwise`
     (`suffix_pairwise`). Hypotheses: `rep_orderedOn`'s, then `rep_pairsIn`'s at `E`. -/
 theorem rep_ordered {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n)
-    (g : Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B) → Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B))
-    (hg : ∀ S F, g (S, F) = (S ∪ F ≫ tail (ran F).val, F ≫ tail (ran F).val))
-    -- kept: each round's suffixes `F` and their union `S` are intermediates; RazeFits/CodesFit no input bounds
-    (hR : ∀ i, i ≤ X.1.toNat → ∀ S F, S = (g^[i] (idU X, idU X)).1 → F = (g^[i] (idU X, idU X)).2 → sufOK)
+    (hS : ∀ xs ys, rep (suffix X) xs ys ↔ (∃ j, X.row j = xs) ∧ ys <:+ xs)
     (Su : Rel (.arr B) (.arr B)) (hSu : Su = suffix X) (Wu : Rel (.arr B) (.arr B)) (hWu : Wu = ran Su)
     (T : Rel (.arr B) (.prod B (.arr B))) (hT : T = Su ≫ uncons (Rel.val Wu))
     (D : Rel (.prod B (.arr B)) (.prod B (.arr B))) (hD : D = ran T)
@@ -197,7 +190,7 @@ theorem rep_ordered {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n)
     (h : ∀ q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B), q = pairsIn Q → ordOK)
     (hq : cmpOK(.prod B B, E, idU (t := .prod B B) (m := Rel.n Q) (Rel.key Q, Rel.val Q))) :
     ∀ xs ys, rep (ordered Q X) xs ys ↔ (∃ i, X.row i = xs) ∧ ys = xs ∧ xs.Pairwise (fun y z => rep Q y z) := by
-  obtain ⟨h1, h2⟩ := rep_orderedOn (pairsIn Q) X g hg hR Su hSu Wu hWu T hT D hD O hO V hV M hM yz hyz E hE bad hbad
+  obtain ⟨h1, h2⟩ := rep_orderedOn (pairsIn Q) X hS Su hSu Wu hWu T hT D hD O hO V hV M hM yz hyz E hE bad hbad
     C hC (h _ rfl)
   intro xs ys
   rw [show ordered Q X = orderedOn (pairsIn Q) X from rfl, h2]
@@ -211,10 +204,7 @@ theorem rep_ordered {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n)
     is `Q`-ordered. `sortSet Q Y` is `(setify Y)° ≫ ordered Q Y` (`rep_comp`, `rep_conv`, `rep_ordered`).
     Hypotheses: `rep_ordered`'s at `Y`, `rep_comp`'s at the composite. -/
 theorem rep_sortSet {B : Obj} {n : USize} (Q : Rel B B) (Y : Vals (.arr B) n)
-    (g : Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B) → Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B))
-    (hg : ∀ S F, g (S, F) = (S ∪ F ≫ tail (ran F).val, F ≫ tail (ran F).val))
-    -- kept: each round's suffixes `F` and their union `S` are intermediates; RazeFits/CodesFit no input bounds
-    (hR : ∀ i, i ≤ Y.1.toNat → ∀ S F, S = (g^[i] (idU Y, idU Y)).1 → F = (g^[i] (idU Y, idU Y)).2 → sufOK)
+    (hS : ∀ xs ys, rep (suffix Y) xs ys ↔ (∃ j, Y.row j = xs) ∧ ys <:+ xs)
     (Su : Rel (.arr B) (.arr B)) (hSu : Su = suffix Y) (Wu : Rel (.arr B) (.arr B)) (hWu : Wu = ran Su)
     (T : Rel (.arr B) (.prod B (.arr B))) (hT : T = Su ≫ uncons (Rel.val Wu))
     (D : Rel (.prod B (.arr B)) (.prod B (.arr B))) (hD : D = ran T)
@@ -232,7 +222,7 @@ theorem rep_sortSet {B : Obj} {n : USize} (Q : Rel B B) (Y : Vals (.arr B) n)
       rep (setify Y) ys s ∧ (∃ i, Y.row i = ys) ∧ ys.Pairwise (fun y z => rep Q y z) := by
   obtain ⟨hf, h'⟩ := hc
   obtain ⟨c1, c2, c3, c4⟩ := h' _ rfl
-  have eO := rep_ordered Q Y g hg hR Su hSu Wu hWu T hT D hD O hO V hV M hM yz hyz E hE bad hbad C hC
+  have eO := rep_ordered Q Y hS Su hSu Wu hWu T hT D hD O hO V hV M hM yz hyz E hE bad hbad C hC
     (fun q hq' => h q hq' Y rfl) hq
   intro s ys
   rw [show sortSet Q Y = (setify Y)° ≫ ordered Q Y from rfl,

@@ -478,12 +478,28 @@ def fixOn {A B : Obj} (n : Nat) (φ : Rel A B → Rel A B) (X₀ : Rel A B) : Re
     (x.n.toNat + 1, x, 0)
   (r.2.1, r.2.2)
 
+/-- `pairsIn Q D` and whether it ran within capacity: `compC`'s bit. -/
+def pairsInC {B : Obj} (Q : Rel B B) (D : Rel (.prod B B) (.prod B B)) : Rel (.prod B B) (.prod B B) × Bool :=
+  compC D (idU (Q.key, Q.val))
+
 /-- The order `Q` as a test of pairs:the pairs of the coreflexive `D` that are pairs of `Q`. Every op that
     takes an order runs it as such a test, on the pairs it compares (`estOn`, …); `Q` closed is this test. -/
 def pairsIn {B : Obj} (Q : Rel B B) (D : Rel (.prod B B) (.prod B B)) : Rel (.prod B B) (.prod B B) :=
-  D ≫ idU (Q.key, Q.val)
+  (pairsInC Q D).1
 
-/-- The pairs `(b, c)` of the coreflexive `D` whose swap `(c, b)` passes the test `q`. -/
+/-- The pairs `(b, c)` of the coreflexive `D` whose swap `(c, b)` passes the test `qC`, and whether it ran within
+    capacity: the `&&` of `pairC`'s, `ranC`'s, the test's, `compC`'s and `domC`'s bits. -/
+def swapInC {B : Obj} (qC : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B) × Bool)
+    (D : Rel (.prod B B) (.prod B B)) : Rel (.prod B B) (.prod B B) × Bool :=
+  let s := pairC (outr D) (outl D)
+  let E := ranC s.1
+  let t := qC E.1
+  let M := compC s.1 t.1
+  let d := domC M.1
+  (d.1, s.2 && E.2 && t.2 && M.2 && d.2)
+
+/-- The pairs `(b, c)` of the coreflexive `D` whose swap `(c, b)` passes the test `q`. Written out, not as
+    `swapInC`'s `.1`: `RepThin` unfolds this body inside `thinLOn`'s round. -/
 def swapIn {B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B))
     (D : Rel (.prod B B) (.prod B B)) : Rel (.prod B B) (.prod B B) :=
   let s := pair (outr D) (outl D)
@@ -491,32 +507,59 @@ def swapIn {B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod
 
 /-- `thin(Q)` per key, `Q` the test `q` run on the pairs `⟨G,G⟩` of values of one key, never on every pair of
     `ran G`: `(a, c)` dropped when some value `b` of `a` passes `(b, c)` and not `(c, b)`. `thin Q` is this at
-    `pairsIn Q`. -/
+    `pairsIn Q`. `thinOnC`'s bit is the `&&` of its pieces' and the test's (twice: on `D` and inside `swapInC`). -/
+def thinOnC {A B : Obj} (qC : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B) × Bool) (G : Rel A B) :
+    Rel A B × Bool :=
+  let P := pairC G G
+  let D := ranC P.1
+  let t := qC D.1
+  let S := swapInC qC D.1
+  let Y := diffC t.1 S.1
+  let M := compC P.1 (outr Y.1)
+  let r := diffC G M.1
+  (r.1, P.2 && D.2 && t.2 && S.2 && Y.2 && M.2 && r.2)
+
+/-- `thinOn q G`: `thinOnC`'s relation at the test `q` with no bit of its own. -/
 def thinOn {A B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B)) (G : Rel A B) :
-    Rel A B :=
-  let P := pair G G
-  let D := ran P
-  G \ P ≫ outr (q D \ swapIn q D)
+    Rel A B := (thinOnC (fun r => (q r, true)) G).1
 
 /-- `est(Q)` per key, `Q` the test `q` run on the pairs `⟨G,G⟩` of values of one key: `(a, b)` dropped when
-    some other value `c` of `a` fails `(b, c)`. `est Q` is this at `pairsIn Q`. -/
+    some other value `c` of `a` fails `(b, c)`. `est Q` is this at `pairsIn Q`. `estOnC`'s bit is the `&&` of its
+    pieces' and the test's. -/
+def estOnC {A B : Obj} (qC : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B) × Bool) (G : Rel A B) :
+    Rel A B × Bool :=
+  let P := pairC G G
+  let D := ranC P.1
+  let V := ranC G
+  let t := qC D.1
+  let Y := diffC D.1 t.1
+  let W := pairC V.1 V.1
+  let N := ranC W.1
+  let Z := diffC Y.1 N.1
+  let M := compC P.1 (outl Z.1)
+  let r := diffC G M.1
+  (r.1, P.2 && D.2 && V.2 && t.2 && Y.2 && W.2 && N.2 && Z.2 && M.2 && r.2)
+
+/-- `estOn q G`: `estOnC`'s relation at the test `q` with no bit of its own. -/
 def estOn {A B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B)) (G : Rel A B) :
-    Rel A B :=
-  let P := pair G G
-  let D := ran P
-  let V := ran G
-  G \ P ≫ outl ((D \ q D) \ ran (pair V V))
+    Rel A B := (estOnC (fun r => (q r, true)) G).1
+
+/-- `est Q G` and whether it ran within capacity: `estOnC` at the test `pairsInC Q`. -/
+def estC {A B : Obj} (Q : Rel B B) (G : Rel A B) : Rel A B × Bool := estOnC (pairsInC Q) G
+
+/-- `thin Q G` and whether it ran within capacity: `thinOnC` at the test `pairsInC Q`. -/
+def thinC {A B : Obj} (Q : Rel B B) (G : Rel A B) : Rel A B × Bool := thinOnC (pairsInC Q) G
 
 /-- `est(Q)` per key of the family `G : A ⟶ B`, the `Q`-least values, `∋ ∩ (∈ \ Q°)`: the rows `(a, b)` of
     `G` with `b Q c` for every other value `c` of `a`. The pairs `(a, b)` it drops are those with a value `c`
     of `a`, `c ≠ b`, and no `b Q c`, so `est`, as `thin`, reads `Q` up to its reflexive closure, and a strict
     linear order answers as its reflexive one. -/
-def est {A B : Obj} (Q : Rel B B) (G : Rel A B) : Rel A B := estOn (pairsIn Q) G
+def est {A B : Obj} (Q : Rel B B) (G : Rel A B) : Rel A B := (estC Q G).1
 
 /-- `thin(Q)` per key of the family `G : A ⟶ B`, the `Q`-minimal values: the rows `(a, b)` of `G` with no
     `(a, c)` of `G` where `c` is strictly `Q`-below `b`, the strict part being `Q \ Q°` (`Q` itself when
     strict). -/
-def thin {A B : Obj} (Q : Rel B B) (G : Rel A B) : Rel A B := thinOn (pairsIn Q) G
+def thin {A B : Obj} (Q : Rel B B) (G : Rel A B) : Rel A B := (thinC Q G).1
 
 /-- A pick twin's `.1` is the pick, at each constructor of the side. -/
 theorem pickC_fst (A : Obj) {n : USize} (x : Vals A n) (i : ByteArray) (m : USize) (h : len i = m.toNat) :
@@ -1049,23 +1092,51 @@ def bagify {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) :
 
 /-- `ordered(Q)`, the coreflexive on the arrays `X` that are `Q`-ordered, each element `Q`-below every later
     one (`orderedP`, AOP/A5_6_ListCombinators.lean:162): the arrays with no non-empty suffix `y :: ys` and `z`
-    of `ys` outside `y Q z`. `cons°` of the suffixes, the pairs `(y, z)`, those no pair of `Q` (`antiJoin`). -/
+    of `ys` outside `y Q z`. `cons°` of the suffixes, the pairs `(y, z)`, those no pair of `Q` (`antiJoin`).
+    `orderedOnC`'s bit is the `&&` of its pieces' and the test's. -/
+def orderedOnC {B : Obj} {n : USize} (qC : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B) × Bool)
+    (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) × Bool :=
+  let S := suffixC X
+  let W := ranC S.1
+  let u := unconsC W.1.val
+  let T := compC S.1 u.1
+  let D := ranC T.1
+  let V := ranC (outr D.1)
+  let m := memC V.1.val
+  let M := compC (outr D.1) m.1
+  let yz := pairC (outl D.1) M.1
+  let E := ranC yz.1
+  let t := qC E.1
+  let bad := antiJoinC yz.1 t.1
+  let db := domC bad.1
+  let C := compC T.1 db.1
+  let dC := domC C.1
+  let r := antiJoinC (idU X) dC.1
+  (r.1, S.2 && W.2 && u.2 && T.2 && D.2 && V.2 && m.2 && M.2 && yz.2 && E.2 && t.2 && bad.2 && db.2 && C.2 &&
+    dC.2 && r.2)
+
+/-- `orderedOn q X`: `orderedOnC`'s relation at the test `q` with no bit of its own. -/
 def orderedOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B))
-    (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) :=
-  let T := suffix X ≫ uncons (ran (suffix X)).val
-  let D := ran T
-  let yz := pair (outl D) (outr D ≫ mem (ran (outr D)).val)
-  let bad := antiJoin yz (q (ran yz))
-  antiJoin (idU X) (dom (T ≫ dom bad))
+    (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) := (orderedOnC (fun r => (q r, true)) X).1
+
+/-- `ordered Q X` and whether it ran within capacity: `orderedOnC` at the test `pairsInC Q`. -/
+def orderedC {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) × Bool :=
+  orderedOnC (pairsInC Q) X
 
 /-- `ordered(Q)`, `Q` closed: `orderedOn` at `pairsIn Q`, the test run on the pairs `(y, z)` it compares. -/
-def ordered {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) := orderedOn (pairsIn Q) X
+def ordered {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) := (orderedC Q X).1
+
+/-- `sortSet Q Y` and whether it ran within capacity: the `&&` of `setifyC`'s, `orderedC`'s and `compC`'s bits. -/
+def sortSetC {B : Obj} {n : USize} (Q : Rel B B) (Y : Vals (.arr B) n) : Rel (.arr B) (.arr B) × Bool :=
+  let s := setifyC Y
+  let o := orderedC Q Y
+  let c := compC (s.1)° o.1
+  (c.1, s.2 && o.2 && c.2)
 
 /-- `sort(Q) ≜ setify° ordered(Q) : P B ⟶ arr B` (`sortRel`, AOP/A8_3.lean:77; B&dM p.201, "sorting sets"):
     a set to its `Q`-ordered listings among the arrays `Y`. A relation into lists has no finite image without
     a universe (`[1, 1, 2]` lists `{1, 2}` under `≤`), so the lists range over `Y`, as `P`'s do. -/
-def sortSet {B : Obj} {n : USize} (Q : Rel B B) (Y : Vals (.arr B) n) : Rel (.arr B) (.arr B) :=
-  (setify Y)° ≫ ordered Q Y
+def sortSet {B : Obj} {n : USize} (Q : Rel B B) (Y : Vals (.arr B) n) : Rel (.arr B) (.arr B) := (sortSetC Q Y).1
 
 /-- `subseq ≜ ⦇[nil, cons ∪ π₂]⦈` on the arrays `X`, each array to each of its subsequences (`subseq`,
     AOP/A5_6_ListCombinators.lean:127): a head kept or dropped. -/
