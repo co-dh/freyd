@@ -11,6 +11,7 @@
   on small literal relations, and the laws that the kernels' Lean bodies make reachable are proved.
 -/
 import LeetQ.Rel.KernelWF.Gather
+import LeetQ.Rel.ValEq
 import QLean.Kernel.Sort
 import QLean.Kernel.Structural
 import QLean.Kernel.Reduce
@@ -422,17 +423,22 @@ def rangeOffsets {p : Nat} (a : QAtomicType) (cs : Vector (USize × Enc) p) (tot
     | _ => none
   cs.mapM part
 
+/-- Each element's code: the position of the first element `valEq` to it, as a long payload. Rel's `=`, not
+    q's `~` (`findList`), which folds the float zeros and runs out of fuel; quadratic, as `findList` is. -/
+def firstIds (l : List QValue) : ByteArray :=
+  l.foldl (fun b x => Column.pushBits b (l.findIdx (valEq x)).toUInt64 8) .empty
+
 /-- Joint codes of the parts `cs`, one `Code` per part, in one code space:
     - `bits`: each part is its own code, a bit wide, order-preserving;
     - `foR` or dense of a long type: the offsets from the joint least element (`rangeOffsets`), order-preserving;
     - `enum`, and `syms` interned by `razeColumn`/`Column.intern`: the joint dictionary's ids at their lane;
     - anything else: one coding pass over the `raze` (`groupIdsColumn` at `bitsType`: ids by first
-      appearance of the bits, at any encoding), read at the width they are packed at (`Code.ofIds`). A general list is `findList` of
-      the join against itself, its positions packed. -/
+      appearance of the bits, at any encoding), read at the width they are packed at (`Code.ofIds`). A general
+      list is `firstIds` of the join, packed. -/
 def codes {p : Nat} (t : QAtomicType) (cs : Vector ((n : USize) × Arr t n) p) : Vector Code p :=
   if hg : t = .general then by
     subst hg
-    exact let all := gens (raze .general cs.toArray).2; (pack all.size (findList all all)).cut (cs.map (·.1))
+    exact let all := (gens (raze .general cs.toArray).2).toList; (pack all.length (firstIds all)).cut (cs.map (·.1))
   else
   match cs.mapM (fun c => match c.2.enc with | .bits b => some (⟨1, c.1, 2, b⟩ : Code) | _ => none) with
   | some bs => bs
