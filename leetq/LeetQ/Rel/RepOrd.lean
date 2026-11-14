@@ -360,7 +360,7 @@ theorem rep_bagify {n : USize} (X : Vals (.arr (.atom .long)) n) (hp : X.1.toNat
     exact congrArg (Vals.row X) (Fin.ext (tilLongs_get q.2))
   obtain ⟨hxU, hlp, hrow⟩ := bag_row X hp hn hS hU _ rfl _ rfl _ rfl _ rfl _ rfl
   intro xs ys
-  unfold bagify expand need
+  unfold bagify bagifyC expand need
   dsimp only
   rw [dif_pos hxU]
   try dsimp only

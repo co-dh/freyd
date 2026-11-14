@@ -40,9 +40,12 @@ end DivN
 
 open DivN OpsN
 
-/-- `divJoinC`'s relation is `yJ`: each pick twin's `.1` its pick (`pickC_fst`), `fit` read as `pickN` reads it. -/
-theorem divJoinC_fst (r : Rel A B) (s : Rel A C) (l k : Code) : (divJoinC r s l k).1 = yJ(B, C, r, s, l, k) := by
-  unfold divJoinC longCount; dsimp only; rw [need_fst]; simp only [pickC_fst]; rfl
+/-- `joinC`'s relation: each pick twin's `.1` its pick (`pickC_fst`), `fit` read as `pickN` reads it; at
+    `\`'s value parts it is `yJ`. -/
+theorem joinC_fst (op : String) (x : Part A) (z : Part C) (l k : Code) :
+    (joinC op x z l k).1 = longCount op (join l k).2 fun m h =>
+      (⟨m, Vals.pickN A x.2 (join l k).1 m (h ▸ join_len l k), Vals.pick C z.2 (join l k).2 m h⟩ : Rel A C) := by
+  unfold joinC longCount; dsimp only; rw [need_fst]; simp only [pickC_fst]; rfl
 
 /-- **`leftDiv`'s joined rows, read back**: one row per pair `(i, j)` of `join l r`, in its order, `x`'s row `i`
     beside `z`'s row `j`. Stated over any two codes, not `leftDiv`'s, so the statement holds no `Obj.codes`.
@@ -383,7 +386,7 @@ theorem rep_leftDiv {mb mc : USize} (R : Rel A B) (S : Rel A C) (Ub : Vals B mb)
   have e : leftDiv R S Ub Uc = P ∪ Q := by
     subst hPe hQe hI hzc hycs hy hkc
     -- the arguments first: `divTailC` unfolded before them would put them under its dependent binder
-    simp only [leftDiv, leftDivC, nubC_fst, Obj.codesC_fst, divJoinC_fst]
+    simp only [leftDiv, leftDivC, nubC_fst, Obj.codesC_fst, joinC_fst]
     simp only [divTailC, topC, keyPart, valPart]; rfl
   rw [e, rep_union_full P Q hU hFk hFv (one_ok _ hUK) (one_ok _ hUV) hUk hUv]
   show P.Holds b c ∨ Q.Holds b c ↔ _

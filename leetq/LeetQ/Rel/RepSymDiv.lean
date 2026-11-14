@@ -382,17 +382,11 @@ theorem pickPart_row {n : USize} (x : Vals B n) (I : ByteArray) (hL : len I < US
   rw [pick_row B x I _ _ hfit ⟨q, hq⟩, dif_pos (by rw [← ids_getElem hq']; exact ht)]
   exact congrArg x.row (Fin.ext (ids_getElem hq').symm)
 
-/-- `symHitC`'s relation: each pick twin's `.1` its pick (`pickC_fst`), `fit` read as `pickN` reads it. -/
-theorem symHitC_fst (rf : Part A) (sf : Part B) (lc rc : Code) :
-    (symHitC rf sf lc rc).1 = longCount "/ₛ" (join lc rc).2 fun m h => (⟨m, Vals.pickN A rf.2 (join lc rc).1 m
-      (Nat.le_trans (Nat.le_of_eq h.symm) (join_len lc rc)), Vals.pick B sf.2 (join lc rc).2 m h⟩ : Rel A B) := by
-  unfold symHitC longCount; dsimp only; rw [need_fst]; simp only [pickC_fst]; rfl
-
 /-- **`symDiv`'s joined part, read back**: `hit`, the pairs of `join lc rc` (`sym_pairs`) read at the first rows
     of the key classes, holds `(x, y)` exactly when `R` takes `x` somewhere and `R`'s fibre at `x` is `S`'s at
     `y`. Hypotheses: `sym_pairs`'; `rk`, `sk` code `R.key`, `S.key` faithfully, `v0`, `v1` code `R.val`, `S.val`
     jointly faithfully; `rf`, `sf`, `hit` by their defining equations; `R.key`, `S.key` pick back at all their
-    rows, the product of `R`'s and `S`'s counts fits; the join picks' bit (`symHitC`), which gives the sides
+    rows, the product of `R`'s and `S`'s counts fits; the join picks' bit (`joinC`), which gives the sides
     picking back at the join's pairs. -/
 theorem sym_hit_holds (R : Rel A C) (S : Rel B C) (rk sk v0 v1 : Code)
     (rkw : laneOK(rk.w))
@@ -426,7 +420,7 @@ theorem sym_hit_holds (R : Rel A C) (S : Rel B C) (rk sk v0 v1 : Code)
     (hRk : Vals.PickFits A R.key (List.range R.n.toNat)) (hSk : Vals.PickFits B S.key (List.range S.n.toNat))
     (hRS : R.n.toNat * S.n.toNat < min (2 ^ 63) USize.size)
     -- output size: the join repeats a class's first row once per matching class, so an `.arr` key copies its window
-    (hh : (symHitC rf sf lc rc).2 = true)
+    (hh : (joinC "/ₛ" rf sf lc rc).2 = true)
     (hit : Rel A B)
     (hhit : hit = longCount "/ₛ" (join lc rc).2 fun m h => (⟨m, Vals.pickN A rf.2 (join lc rc).1 m
       (Nat.le_trans (Nat.le_of_eq h.symm) (join_len lc rc)), Vals.pick B sf.2 (join lc rc).2 m h⟩ : Rel A B))
@@ -501,7 +495,7 @@ theorem sym_hit_holds (R : Rel A C) (S : Rel B C) (rk sk v0 v1 : Code)
   obtain ⟨hlt, hZ⟩ := join_rows lc rc hlw ls hrw rs hrc' hrn63 hM
   -- the picks' bits, read at the join's rows, as `rep_leftDivC`
   have e := hZ _ (USize.toNat_ofNat_of_lt' hlt).symm
-  unfold symHitC longCount need at hh; dsimp only at hh
+  unfold joinC longCount need at hh; dsimp only at hh
   rw [dif_pos hlt] at hh
   simp only [Bool.and_eq_true] at hh
   have hB : Vals.PickFits A rf.2 ((jp(lc, rc)).map Prod.fst) := by
@@ -662,7 +656,7 @@ open OpsN
     somewhere, or `x` and `y` are elements of the universes `Ua`, `Ub`. `symDiv`'s intermediate values are bound
     to variables by their defining equations. Hypotheses: `Obj.CodesFit` of every coded part; the input counts
     fit (`R`'s and `S`'s summed and multiplied, `Ua`'s and `Ub`'s multiplied); `Vals.PickFits` of the inputs at
-    all their rows; the join picks' bit (`symHitC`); the output-size facts: `Vals.PickFits` at the rows `⊤`
+    all their rows; the join picks' bit (`joinC`); the output-size facts: `Vals.PickFits` at the rows `⊤`
     repeats, the result's row count, `Vals.RazeFits` and `Obj.CodesFit` of `∪`'s raze. -/
 theorem rep_symDiv {ma mb : USize} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma) (Ub : Vals B mb)
     (vc : Vector Code 2) (hvc : vc = C.codes #v[⟨R.n, R.val⟩, ⟨S.n, S.val⟩])
@@ -685,7 +679,7 @@ theorem rep_symDiv {ma mb : USize} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma) 
     (hRk : Vals.PickFits A R.key (List.range R.n.toNat)) (hSk : Vals.PickFits B S.key (List.range S.n.toNat))
     (hRS : R.n.toNat * S.n.toNat < min (2 ^ 63) USize.size)
     -- output size: the join repeats a class's first row once per matching class, so an `.arr` key copies its window
-    (hh : (symHitC rf sf lc rc).2 = true)
+    (hh : (joinC "/ₛ" rf sf lc rc).2 = true)
     (hPa : Vals.PickFits A Ua (List.range ma.toNat)) (hPb : Vals.PickFits B Ub (List.range mb.toNat))
     (hUab : ma.toNat * mb.toNat < min (2 ^ 63) USize.size)
     -- output size: `⊤` repeats each side's row once per row of the other, so an `.arr` side copies its window
@@ -712,7 +706,7 @@ theorem rep_symDiv {ma mb : USize} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma) 
   have e : symDiv R S Ua Ub = P ∪ Q := by
     subst hPe hQe hrf hsf hlc hrc hsid hss epr eorr efr eps eos efs ev0 ev1 erk euac esk eubc hvc hac hbc
     simp only [symDiv, symDivC, Obj.codesC_fst]
-    simp only [symDivTailC, topC, symHitC_fst, keyPart, valPart, symDivIds]; rfl
+    simp only [symDivTailC, topC, joinC_fst, keyPart, valPart, symDivIds]; rfl
   rw [e, rep_union_full P Q hU hFk hFv (one_ok _ hUK) (one_ok _ hUV) hUk hUv]
   show P.Holds x y ∨ Q.Holds x y ↔
     (∀ c, R.Holds x c ↔ S.Holds y c) ∧ ((∃ c, R.Holds x c) ∨ ((∃ p, Ua.row p = x) ∧ ∃ j, Ub.row j = y))

@@ -20,23 +20,25 @@ private def le (R S : Rel A B) : Bool :=
   let c := pairs #v[R, S]
   len (whereBits R.n (c[0].member c[1])) == R.n.toNat
 
-/-- `R ∩ S`: the semi-join on pairs — `member`, `whereBits`, `gatherColumn`. -/
-private def inter (R S : Rel A B) : Rel A B :=
-  let c := pairs #v[R, S]
-  R.rows (whereBits R.n (c[0].member c[1]))
+/-- A relation's keys as a part. A function of the relation, not `⟨R.n, R.key⟩`: there `simp` cannot rewrite `R`,
+    the `Vals`' count depending on it, so a twin's `_fst` would not reach a part a body codes. -/
+def keyPart {k v : Obj} (R : Rel k v) : Part k := ⟨R.n, R.key⟩
 
-/-- `∩` and whether it ran within capacity: the pair codes' bit (`codesC` of the product side, which `pairs` is)
-    `&&` `R`'s two sides fitting at all its rows (`fitsN`), the picks `rows` makes being among them. -/
+/-- A relation's values as a part, as `keyPart`. -/
+def valPart {k v : Obj} (R : Rel k v) : Part v := ⟨R.n, R.val⟩
+
+/-- A relation's pairs as a part of the product side, as `keyPart`: what `pairs` codes. -/
+def pairPart {k v : Obj} (R : Rel k v) : Part (.prod k v) := ⟨R.n, (R.key, R.val)⟩
+
+/-- `R ∩ S`, the semi-join on pairs — `member` of the joint pair codes (`codesC` of the product side, which `pairs`
+    is), `whereBits`, `gatherColumn` — and whether it ran within capacity: the codes' bit `&&` `R`'s two sides
+    fitting at all its rows (`fitsN`), the picks `rows` makes being among them. -/
 def interC (R S : Rel A B) : Rel A B × Bool :=
-  let c := (Obj.prod A B).codesC #v[⟨R.n, (R.key, R.val)⟩, ⟨S.n, (S.key, S.val)⟩]
-  (R.rows (whereBits R.n (c.1[0].member c.1[1])),
-    c.2 && Vals.fitsN A R.key R.n.toNat && Vals.fitsN B R.val R.n.toNat)
+  let c := (Obj.prod A B).codesC #v[pairPart R, pairPart S]
+  (R.rows (whereBits R.n (c.1[0].member c.1[1])), c.2 && Vals.fitsN A R.key R.n.toNat && Vals.fitsN B R.val R.n.toNat)
 
-theorem interC_fst (R S : Rel A B) : (interC R S).1 = inter R S := by
-  have e : ∀ {α β : Type} (f : α → β) (a b : α), #v[a, b].map f = #v[f a, f b] := fun _ _ _ => by simp
-  show R.rows (whereBits R.n ((Obj.codes (.prod A B) #v[⟨R.n, (R.key, R.val)⟩, ⟨S.n, (S.key, S.val)⟩])[0].member
-    (Obj.codes (.prod A B) #v[⟨R.n, (R.key, R.val)⟩, ⟨S.n, (S.key, S.val)⟩])[1])) = R.rows _
-  unfold pairs; simp only [Obj.codes, e]
+/-- `R ∩ S`: `interC`'s relation. -/
+private def inter (R S : Rel A B) : Rel A B := (interC R S).1
 
 /-- `𝟘`: no pair. -/
 def zero : Rel A B := ⟨0, Vals.empty A, Vals.empty B⟩
@@ -91,22 +93,21 @@ theorem convArr_holds {k v : Obj} {n : USize} (key : Vals k n) (val : Vals v n) 
 /-- `R°`: `convArr`. -/
 private def conv (R : Rel A B) : Rel B A := convArr R.key R.val
 
-/-- `≫`'s joined rows over the codes `l` of `R`'s values and `k` of `S`'s keys: `join`, the left index column read
-    at the right's count (`fit`, `join_len`), `R`'s keys beside `S`'s values; the bit is the two picks' (`pickC`).
-    On the codes as arguments, as `divJoinC`: inside the picks' proofs a twin's `.1` is rewritten by neither `simp`
-    nor `rw`. -/
-def compJoinC (R : Rel A B) (S : Rel B C) (l k : Code) : Rel A C × Bool :=
+/-- The joined rows of `op` (`≫`, `\`, `/ₛ`) over the codes `l`, `k`: `join`, the left index column read at the
+    right's count (`fit`, `join_len`), `x`'s rows beside `z`'s; the bit is the two picks' (`pickC`). On the codes
+    as arguments: inside the picks' proofs a twin's `.1` is rewritten by neither `simp` nor `rw`. -/
+def joinC (op : String) (x : Part A) (z : Part C) (l k : Code) : Rel A C × Bool :=
   let ij := join l k
-  longCount "≫" ij.2 fun m h =>
-    let x := Vals.pickC A R.key (fit m.toNat ij.1) m (fit_len (h ▸ join_len l k))
-    let z := Vals.pickC C S.val ij.2 m h
-    ((⟨m, x.1, z.1⟩ : Rel A C), x.2 && z.2)
+  longCount op ij.2 fun m h =>
+    let a := Vals.pickC A x.2 (fit m.toNat ij.1) m (fit_len (h ▸ join_len l k))
+    let c := Vals.pickC C z.2 ij.2 m h
+    ((⟨m, a.1, c.1⟩ : Rel A C), a.2 && c.2)
 
-/-- `R ≫ S`, `join` on `R.val = S.key` (`compJoinC`), and whether it ran within capacity: `rep_comp`'s count bounds
-    decided, `&&` the bits of the codes and of the two picks (`codesC`, `compJoinC`). -/
+/-- `R ≫ S`, `join` on `R.val = S.key` (`joinC`, `R`'s keys beside `S`'s values), and whether it ran within
+    capacity: `rep_comp`'s count bounds decided, `&&` the bits of the codes and of the two picks (`codesC`, `joinC`). -/
 def compC (R : Rel A B) (S : Rel B C) : Rel A C × Bool :=
   let c := B.codesC #v[⟨_, R.val⟩, ⟨_, S.key⟩]
-  let r := compJoinC R S c.1[0] c.1[1]
+  let r := joinC "≫" (keyPart R) (valPart S) c.1[0] c.1[1]
   (r.1, c.2 && decide (S.n.toNat < 2 ^ 63) && decide (R.n.toNat * S.n.toNat < min (2 ^ 63) USize.size) && r.2)
 
 /-- `R ≫ S`: `compC`'s relation. -/
@@ -154,10 +155,14 @@ def antiJoinC (R : Rel A B) (C : Rel B B) : Rel A B × Bool :=
 /-- `R ≫ corNeg(C)`: `antiJoinC`'s relation. -/
 def antiJoin (R : Rel A B) (C : Rel B B) : Rel A B := (antiJoinC R C).1
 
-/-- `R − S`: the rows of `R` whose pair is no pair of `S` — `inter`'s joint pair codes, `anti` in place of `member`. -/
-private def diff (R S : Rel A B) : Rel A B :=
-  let c := pairs #v[R, S]
-  R.rows (anti c[0] c[1])
+/-- `R − S`, the rows of `R` whose pair is no pair of `S` — `interC`'s joint pair codes, `anti` in place of
+    `member` — and whether it ran within capacity, as `interC`. -/
+def diffC (R S : Rel A B) : Rel A B × Bool :=
+  let c := (Obj.prod A B).codesC #v[pairPart R, pairPart S]
+  (R.rows (anti c.1[0] c.1[1]), c.2 && Vals.fitsN A R.key R.n.toNat && Vals.fitsN B R.val R.n.toNat)
+
+/-- `R − S`: `diffC`'s relation. -/
+private def diff (R S : Rel A B) : Rel A B := (diffC R S).1
 
 /-! ## The ops as binary operators: the only way a program writes them -/
 
@@ -192,25 +197,9 @@ def nubC {k v : Obj} (R : Rel k v) : Rel k v × Bool :=
   (R.rows (tuples.tupleIds kc.1[0] #[vc.1[0]]).2,
     kc.2 && vc.2 && Vals.fitsN k R.key R.n.toNat && Vals.fitsN v R.val R.n.toNat)
 
-/-- A relation's keys as a part. A function of the relation, not `⟨R.n, R.key⟩`: there `simp` cannot rewrite `R`,
-    the `Vals`' count depending on it, so a twin's `_fst` would not reach a part a body codes. -/
-def keyPart {k v : Obj} (R : Rel k v) : Part k := ⟨R.n, R.key⟩
-
-/-- A relation's values as a part, as `keyPart`. -/
-def valPart {k v : Obj} (R : Rel k v) : Part v := ⟨R.n, R.val⟩
-
 theorem nubC_fst {k v : Obj} (R : Rel k v) : (nubC R).1 = R.nub := by
   show R.rows (tuples.tupleIds (k.codesC _).1[0] #[(v.codesC _).1[0]]).2 = _
   rw [Obj.codesC_fst, Obj.codesC_fst]; rfl
-
-/-- `\`'s joined rows over the key codes `l`, `k`: `join`, the left index column read at the right's count (`fit`,
-    `join_len`), `r`'s values beside `s`'s, as `compC`; the bit is the two picks' (`pickC`). -/
-def divJoinC (r : Rel A B) (s : Rel A C) (l k : Code) : Rel B C × Bool :=
-  let ij := join l k
-  longCount "\\" ij.2 fun m h =>
-    let x := Vals.pickC B r.val (fit m.toNat ij.1) m (fit_len (h ▸ join_len l k))
-    let z := Vals.pickC C s.val ij.2 m h
-    ((⟨m, x.1, z.1⟩ : Rel B C), x.2 && z.2)
 
 /-- `\`'s rows from the joined rows `y` on: those whose pair count equals `y`'s count among `R`'s values (`ycs`, the
     codes of `y`'s keys, `R.nub`'s values and `Ub`; `zc`, of `y`'s values), `∪` the vacuous `⊤`; the bit is `⊤`'s and
@@ -234,7 +223,7 @@ def divTailC {mb mc : USize} (Ub : Vals B mb) (Uc : Vals C mc) (y : Rel B C) (yc
 def leftDivC {mb mc : USize} (R : Rel A B) (S : Rel A C) (Ub : Vals B mb) (Uc : Vals C mc) : Rel B C × Bool :=
   let r := nubC R; let s := nubC S
   let kc := A.codesC #v[keyPart r.1, keyPart s.1]
-  let y := divJoinC r.1 s.1 kc.1[0] kc.1[1]
+  let y := joinC "\\" (valPart r.1) (valPart s.1) kc.1[0] kc.1[1]
   let ycs := B.codesC #v[keyPart y.1, valPart r.1, ⟨_, Ub⟩]
   let zc := C.codesC #v[valPart y.1]
   let u := divTailC Ub Uc y.1 ycs.1 zc.1
@@ -269,15 +258,6 @@ def symDivIds (v0 v1 : Code) (pr orr ps os : ByteArray) (nR : Nat) : ByteArray :
   longCount "/ₛ" ss fun c _ =>
     setIds (Code.cat #[v0.gather pr, v1.gather ps]) (concatBytes #[orr.extract 0 (orr.size - 8), addc c ss nR])
 
-/-- `/ₛ`'s joined rows over the class codes `lc`, `rc`: `join`, the left index column read at the right's count
-    (`fit`, `join_len`), `rf`'s rows beside `sf`'s, as `divJoinC`; the bit is the two picks' (`pickC`). -/
-def symHitC (rf : Part A) (sf : Part B) (lc rc : Code) : Rel A B × Bool :=
-  let ij := join lc rc
-  longCount "/ₛ" ij.2 fun m h =>
-    let x := Vals.pickC A rf.2 (fit m.toNat ij.1) m (fit_len (h ▸ join_len lc rc))
-    let z := Vals.pickC B sf.2 ij.2 m h
-    ((⟨m, x.1, z.1⟩ : Rel A B), x.2 && z.2)
-
 /-- `/ₛ`'s rows from the joined rows `hit` on: `∪` the vacuous `⊤` on `anti(Ua, dom R)` and `anti(Ub, dom S)` (`uac`,
     `rk` the codes of `Ua`, `R.key`; `ubc`, `sk` of `Ub`, `S.key`); the bit is `⊤`'s and `∪`'s. A def on the codes as
     arguments, as `divTailC`: the picked parts' counts are types of `⊤`'s arguments. -/
@@ -288,14 +268,14 @@ def symDivTailC {ma mb : USize} (Ua : Vals A ma) (Ub : Vals B mb) (rk uac sk ubc
   (u.1, q.2 && u.2)
 
 /-- `/ₛ` and whether it ran within capacity: the codes' bits (`codesC`), `rep_symDiv`'s count bounds decided, the
-    keys and universes fitting at all their rows (`fitsN`), the join picks' bit (`symHitC`), `⊤`'s and `∪`'s. -/
+    keys and universes fitting at all their rows (`fitsN`), the join picks' bit (`joinC`), `⊤`'s and `∪`'s. -/
 def symDivC {ma mb : USize} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma) (Ub : Vals B mb) : Rel A B × Bool :=
   let vc := C.codesC #v[valPart R, valPart S]
   let ac := A.codesC #v[keyPart R, ⟨_, Ua⟩]; let bc := B.codesC #v[keyPart S, ⟨_, Ub⟩]
   let sr := segments ac.1[0]; let sq := segments bc.1[0]
   let ids := symDivIds vc.1[0] vc.1[1] sr.1 sr.2.1 sq.1 sq.2.1 R.n.toNat
   let lc := Code.ofLongs (ids.extract 0 (8 * len sr.2.2)); let rc := Code.ofLongs (ids.extract (8 * len sr.2.2) ids.size)
-  let h := symHitC (Vals.pickPart A R.key sr.2.2) (Vals.pickPart B S.key sq.2.2) lc rc
+  let h := joinC "/ₛ" (Vals.pickPart A R.key sr.2.2) (Vals.pickPart B S.key sq.2.2) lc rc
   let u := symDivTailC Ua Ub ac.1[0] ac.1[1] bc.1[0] bc.1[1] h.1
   (u.1, vc.2 && ac.2 && bc.2 && decide (R.n.toNat + S.n.toNat < USize.size) &&
     decide (R.n.toNat + S.n.toNat + 1 < 2 ^ 63) && Vals.fitsN A R.key R.n.toNat && Vals.fitsN B S.key S.n.toNat &&
@@ -359,7 +339,7 @@ end Gen
 
 variable {A B C : QAtomicType}
 
-/-- `⟨R, S⟩`'s joined rows over the key codes `l`, `k`, as `compJoinC`: rows `(x, (y, z))`, `R`'s keys and values
+/-- `⟨R, S⟩`'s joined rows over the key codes `l`, `k`, as `joinC`: rows `(x, (y, z))`, `R`'s keys and values
     picked at the left rows, `S`'s values at the right ones; the bit is the three picks' (`pickC`). -/
 def pairJoinC {A B C : Obj} (R : Rel A B) (S : Rel A C) (l k : Code) : Rel A (.prod B C) × Bool :=
   let ij := join l k
@@ -650,50 +630,40 @@ def map {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) : Rel (.arr 
 
 /-! ## Order on numbers, the power side, and the note's list functions -/
 
-/-- `<` on the elements of `U` (`leRel`, AOP/A7_2_RelSet.lean:160, strict): the pairs `(U[i], U[j])` with
-    `U[i] < U[j]`. `rank` of `U` (`gradeColumn`, ties in position order), `cross` of the positions, `Ew.cmp <`
-    of their ranks, less the pairs of one value the ties' order put apart. The domain is the types
-    `gradeColumn` orders by value: every atom but a general list, whose witness `decide` discharges. -/
-def lt {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (_h : t ≠ .general := by decide) : Rel (.atom t) (.atom t) :=
+/-- The rows `<` keeps the pairs of one value from (`ltC`): `rank` of `U` (`gradeColumn`, ties in position order),
+    `cross` of the positions, `Ew.cmp <` of their ranks. The domain is the types `gradeColumn` orders by value:
+    every atom but a general list, whose witness `decide` discharges. -/
+def ltRows {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (_h : t ≠ .general := by decide) :
+    Rel (.atom t) (.atom t) :=
   let r := longsOf (Ops.rank (t := t) U _h)
   let c := cross n n
-  let L : Rel (.atom t) (.atom t) := longCount "<" c.1 fun nn _ =>
+  longCount "<" c.1 fun nn _ =>
     let i := whereBits nn (Ew.cmp Ew.lt Ew.i64 Ew.vv (gather 8 r c.1) (gather 8 r c.2) nn)
     longCount "<" i fun k hk =>
       ⟨k, Vals.pick _ U (gather 8 c.1 i) k ((gather_len _ _).trans hk), Vals.pick _ U (gather 8 c.2 i) k ((gather_len _ _).trans hk)⟩
-  L \ idU U
 
-/-- `<` and whether it ran within capacity: `rep_lt`'s two count bounds decided, `&&` the bit of the diff's pair
-    codes (`codesC` of the product side) and `L`'s two sides fitting at all its rows (`fitsN`), as `interC`. The
-    picks of `U` stay plain: an atom's rows read back with no fit (`pick_row_atom`). -/
-def ltC {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (_h : t ≠ .general := by decide) :
+/-- `<` on the elements of `U` (`leRel`, AOP/A7_2_RelSet.lean:160, strict), the pairs `(U[i], U[j])` with
+    `U[i] < U[j]`: `ltRows` less the pairs of one value the ties' order put apart (`diffC` at `idU U`). Whether it
+    ran within capacity: `diffC`'s bit `&&` `rep_lt`'s two count bounds decided. The picks of `U` stay plain: an
+    atom's rows read back with no fit (`pick_row_atom`). -/
+def ltC {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (h : t ≠ .general := by decide) :
     Rel (.atom t) (.atom t) × Bool :=
-  let r := longsOf (Ops.rank (t := t) U _h)
-  let c := cross n n
-  let L : Rel (.atom t) (.atom t) := longCount "<" c.1 fun nn _ =>
-    let i := whereBits nn (Ew.cmp Ew.lt Ew.i64 Ew.vv (gather 8 r c.1) (gather 8 r c.2) nn)
-    longCount "<" i fun k hk =>
-      ⟨k, Vals.pick _ U (gather 8 c.1 i) k ((gather_len _ _).trans hk), Vals.pick _ U (gather 8 c.2 i) k ((gather_len _ _).trans hk)⟩
-  let d := (Obj.prod (.atom t) (.atom t)).codesC #v[⟨L.n, (L.key, L.val)⟩, ⟨n, (U, U)⟩]
-  (L.rows (anti d.1[0] d.1[1]), d.2 && Vals.fitsN _ L.key L.n.toNat && Vals.fitsN _ L.val L.n.toNat &&
-    decide (n.toNat * n.toNat < USize.size) && decide (n.toNat * n.toNat < 2 ^ 63))
+  let d := diffC (ltRows U h) (idU U)
+  (d.1, d.2 && decide (n.toNat * n.toNat < USize.size) && decide (n.toNat * n.toNat < 2 ^ 63))
 
-theorem ltC_fst {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (h : t ≠ .general) : (ltC U h).1 = lt U h := by
-  have e : ∀ {α β : Type} (f : α → β) (a b : α), #v[a, b].map f = #v[f a, f b] := fun _ _ _ => by simp
-  -- the twin's codes are `Obj.codes` of the pair parts `pairs` maps the two relations to
-  unfold ltC lt; dsimp only; show _ = diff _ _; unfold diff pairs; simp only [Obj.codesC, Obj.codes, e, idU]
+/-- `<` on the elements of `U`: `ltC`'s relation. -/
+def lt {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (h : t ≠ .general := by decide) : Rel (.atom t) (.atom t) :=
+  (ltC U h).1
 
-/-- `≤` on the elements of `U` (`leRel`, AOP/A7_2_RelSet.lean:160): `lt U ∪ 𝟙`. -/
-def leq {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (h : t ≠ .general := by decide) : Rel (.atom t) (.atom t) :=
-  lt U h ∪ idU U
-
-/-- `≤` and whether it ran within capacity: `ltC`'s bit `&&` `unionC`'s. -/
+/-- `≤` on the elements of `U` (`leRel`, AOP/A7_2_RelSet.lean:160), `lt U ∪ 𝟙`, and whether it ran within
+    capacity: `ltC`'s bit `&&` `unionC`'s. -/
 def leqC {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (h : t ≠ .general := by decide) :
     Rel (.atom t) (.atom t) × Bool :=
   let l := ltC U h; let u := unionC l.1 (idU U); (u.1, l.2 && u.2)
 
-theorem leqC_fst {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (h : t ≠ .general) : (leqC U h).1 = leq U h := by
-  show (unionC (ltC U h).1 (idU U)).1 = _; rw [ltC_fst]; rfl
+/-- `≤` on the elements of `U`: `leqC`'s relation. -/
+def leq {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (h : t ≠ .general := by decide) : Rel (.atom t) (.atom t) :=
+  (leqC U h).1
 
 /-- `succ : long ⟶ long` on `U` (`succ`, AOP/A5_6_ListCombinators.lean:343): each `u` to `u + 1` where `u + 1`
     is in `U`, so the range stays in `U` and the top of `U` goes to nothing. `Ew.val` add, then the rows whose
@@ -983,24 +953,24 @@ def setify {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) :
     `perm`). A bag is the `arr` of its elements ascending in `Obj.sortBy`'s order, repeats kept: the one member
     of its `perm` class no type records. Each row's cells gathered contiguous (`expand` of the clamped counts),
     graded by value, then stably by row, so the rows keep their `lo`/`hi`. A per-row grade, not `sort`:
-    `sort ≜ perm ordered` enumerates the permutations. -/
-def bagify {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) :=
+    `sort ≜ perm ordered` enumerates the permutations. Whether it ran within capacity: `rep_bagify`'s count bounds
+    decided — the payload, the rows, and, out of `expand` in the pair, the copies' count `m` (the windows' counts
+    summed, `len_expand_slicesOf`; `need` already bounds it by a `USize`); the picks' fits follow from those counts,
+    so no helper twin is called. -/
+def bagifyC {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) × Bool :=
   let s := slicesOf X
   let hi := sums n s.2
-  expand n s.2 (fun _ => default) fun m i r _ _ =>
-  let cells := Vals.pick B X.2.2.2 (add m (gather 8 s.1 i) r) m (len_val ..)
-  let v := Obj.sortBy B cells (tilLongs m)
-  let p := gather 8 v (Code.ofLongs (gather 8 i v)).grade
-  longCount "bagify" p fun q hq =>
-  ⟨n, Vals.compact (.arr B) X,
-    ⟨q, valCol Ew.sub Ew.vv hi s.2, longsN n hi (sums_le (len_slices ..).2), Vals.pick B cells p q hq⟩⟩
+  let e := expand n s.2 (fun _ => default) fun m i r _ _ =>
+    let cells := Vals.pick B X.2.2.2 (add m (gather 8 s.1 i) r) m (len_val ..)
+    let v := Obj.sortBy B cells (tilLongs m)
+    let p := gather 8 v (Code.ofLongs (gather 8 i v)).grade
+    ((longCount "bagify" p fun q hq => (⟨n, Vals.compact (.arr B) X,
+      ⟨q, valCol Ew.sub Ew.vv hi s.2, longsN n hi (sums_le (len_slices ..).2), Vals.pick B cells p q hq⟩⟩ :
+        Rel (.arr B) (.arr B))), decide (m.toNat < 2 ^ 63))
+  (e.1, decide (X.1.toNat < 2 ^ 63) && decide (n.toNat < 2 ^ 63) && e.2)
 
-/-- `bagify` and whether it ran within capacity: `rep_bagify`'s four count bounds decided — the payload, the rows,
-    and the windows' summed counts; the picks' fits follow from those counts, so no helper twin is called. -/
-def bagifyC {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) × Bool :=
-  let pc := ((List.range n.toNat).map fun u => (Column.bitsAt (slicesOf X).2 (u * 8) 8).toNat).sum
-  (bagify X, decide (X.1.toNat < 2 ^ 63) && decide (n.toNat < 2 ^ 63) && decide (pc < 2 ^ 63) &&
-    decide (pc < USize.size))
+/-- `bagify : arr B ⟶ bag(B)` on the arrays `X`: `bagifyC`'s relation. -/
+def bagify {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) := (bagifyC X).1
 
 /-- `ordered(Q)`, the coreflexive on the arrays `X` that are `Q`-ordered, each element `Q`-below every later
     one (`orderedP`, AOP/A5_6_ListCombinators.lean:162): the arrays with no non-empty suffix `y :: ys` and `z`

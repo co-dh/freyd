@@ -485,6 +485,19 @@ scoped notation "misses(" R ", " S ")" =>
 end OpsN
 open OpsN
 
+/-- `pairs` is the product side's codes (`Obj.codes`) of the relations' pairs. -/
+theorem pairs_eq_codes {p : Nat} (ds : Vector (Rel A B) p) :
+    pairs ds = Obj.codes (.prod A B) (ds.map fun R => (⟨R.n, (R.key, R.val)⟩ : Part (.prod A B))) := by
+  simp only [pairs, Obj.codes, Vector.map_map]; rfl
+
+/-- The joint pair codes `interC`, `diffC` take (`codesC` of the `pairPart`s) are `pairs`. -/
+theorem pairs_codesC (R S : Rel A B) : ((Obj.prod A B).codesC #v[pairPart R, pairPart S]).1 = pairs #v[R, S] := by
+  rw [Obj.codesC_fst, pairs_eq_codes]; simp [pairPart]
+
+/-- `R − S` is the rows `misses(R, S)` of `R`: `diffC`'s codes read as `pairs` (`pairs_codesC`). -/
+theorem diff_eq_misses (R S : Rel A B) : R \ S = R.rows (misses(R, S)) :=
+  congrArg (fun c : Vector Code 2 => R.rows (anti c[0] c[1])) (pairs_codesC R S)
+
 -- the rows of `R` whose pair is a pair of `S`, as `∩` and `⊑` compute them
 set_option hygiene false in
 local notation "hits" => whereBits R.n (((pairs #v[R, S])[0]'Nat.zero_lt_two).member ((pairs #v[R, S])[1]'Nat.one_lt_two))
@@ -550,6 +563,8 @@ theorem rows_keep (R : Rel A B) (I : ByteArray) (f : Nat → Bool) (hI : ids I =
 theorem rep_inter (R S : Rel A B) (hc : pairsOK(R, S)) (hk : Vals.PickFits A R.key (List.range R.n.toNat))
     (hv : Vals.PickFits B R.val (List.range R.n.toNat)) : rep (R ∩ S) = rep R ∩ rep S :=
   hom_ext fun a b => by
+    rw [show R ∩ S = R.rows (hits) from
+      congrArg (fun c : Vector Code 2 => R.rows (whereBits R.n (c[0].member c[1]))) (pairs_codesC R S)]
     show (R.rows (hits)).Holds a b ↔ R.Holds a b ∧ S.Holds a b
     rw [rows_keep R _ _ (whereBits_ids R.n _).1 hk hv]
     constructor
@@ -570,6 +585,7 @@ theorem rep_diff (R S : Rel A B) (hc : pairsOK(R, S)) (hk : Vals.PickFits A R.ke
   have hI := (anti_ids _ _ hw0 hw1 hs0 hs1).1
   replace hn0 : ((pairs #v[R, S])[0]'Nat.zero_lt_two).n = R.n := hn0
   rw [hn0] at hI
+  rw [diff_eq_misses]
   show (R.rows (misses(R, S))).Holds a b ↔ R.Holds a b ∧ ¬ S.Holds a b
   rw [rows_keep R _ _ hI hk hv]
   have hnot : ∀ x : Bool, (!x) = true ↔ ¬ x = true := by decide
@@ -590,6 +606,7 @@ theorem diff_pickFits (R S : Rel A B) (hc : pairsOK(R, S)) (hk : Vals.PickFits A
       Vals.PickFits B (R \ S).val (List.range (R \ S).n.toNat) := by
   obtain ⟨-, hn0, -⟩ := hc.2 (k := 0) (by decide)
   replace hn0 : ((pairs #v[R, S])[0]'Nat.zero_lt_two).n = R.n := hn0
+  rw [diff_eq_misses]
   show Vals.PickFits A (R.rows (misses(R, S))).key _ ∧ Vals.PickFits B (R.rows (misses(R, S))).val _
   exact rows_pickFits R _ (by rw [← hn0]; exact anti_sublist _ _) hk hv
 
@@ -635,13 +652,6 @@ theorem rep_eq (R S : Rel A B) (hc : pairsOK(R, S)) (hc' : pairsOK(S, R)) : (R =
   rw [Bool.and_eq_true, rep_le R S hc, rep_le S R hc', le_iff, le_iff]
   exact ⟨fun ⟨h1, h2⟩ => hom_ext fun a b => ⟨h1 a b, h2 a b⟩,
     fun h => by rw [h]; exact ⟨fun _ _ x => x, fun _ _ x => x⟩⟩
-
-/-! ### The joint pair codes from the keys' and the values' codes -/
-
-/-- `pairs` is the product side's codes (`Obj.codes`) of the relations' pairs. -/
-theorem pairs_eq_codes {p : Nat} (ds : Vector (Rel A B) p) :
-    pairs ds = Obj.codes (.prod A B) (ds.map fun R => (⟨R.n, (R.key, R.val)⟩ : Part (.prod A B))) := by
-  simp only [pairs, Obj.codes, Vector.map_map]; rfl
 
 /-! ### `⟨R, S⟩`: the join on the keys -/
 

@@ -176,7 +176,7 @@ theorem rep_transposeC (R : Rel A B) (hb : (transposeC R).2 = true) :
   exact rep_transpose R hK hV hk hv hWk hW h63
 
 /-- **`rep (R /ₛ S)` under `symDivC`'s bit**: `rep_symDiv` at the intermediates `symDivC` builds (the codes twins'
-    `.1` read as `Obj.codes` by `simp`, sitting as arguments of `segments`/`symDivIds`/`symDivTailC`; then `symHitC`'s
+    `.1` read as `Obj.codes` by `simp`, sitting as arguments of `segments`/`symDivIds`/`symDivTailC`; then `joinC`'s
     and `⊤`'s). The codes' bits give `hfv`, `hfa`, `hfb` (`codesC_fits`), the decided counts `hNU`, `hN63`, `hRS`,
     `hUab`, the `fitsN` bits `hRk`, `hSk`, `hPa`, `hPb`, `topC`'s `hA`, `hBv`, `unionC`'s `hU`…`hUv` (as
     `rep_leftDivC`); the join picks' bit is `rep_symDiv`'s own. -/
@@ -187,7 +187,7 @@ theorem rep_symDivC {ma mb : USize} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma)
   simp only [symDivC, Obj.codesC_fst] at hb
   simp only [keyPart, valPart, symDivIds, Bool.and_eq_true, decide_eq_true_eq] at hb
   obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨hfv, hfa⟩, hfb⟩, hNU⟩, hN63⟩, hRk⟩, hSk⟩, hRS⟩, hh⟩, hPa⟩, hPb⟩, hUab⟩, hu⟩ := hb
-  simp only [symDivTailC, topC, symHitC_fst, Bool.and_eq_true] at hu
+  simp only [symDivTailC, topC, joinC_fst, Bool.and_eq_true] at hu
   obtain ⟨⟨⟨⟨-, -⟩, ha⟩, hbc⟩, hu⟩ := hu
   unfold unionC need at hu
   split at hu
@@ -215,14 +215,14 @@ set_option hygiene false in
 local notation "dks" => (#v[⟨(Rel.nub R).n, (Rel.nub R).key⟩, ⟨(Rel.nub S).n, (Rel.nub S).key⟩] : Vector (Part A) 2)
 
 /-- **`rep (R \ S)` under `leftDivC`'s bit**: `rep_leftDiv` at the intermediates `leftDivC` builds (each twin's `.1`
-    read as its op by `simp`, the twins sitting as arguments of `divTailC`/`keyPart`: `nubC_fst`, `codesC_fst`, `divJoinC_fst`). `nubC`'s bits give `hRK`…`hSv`
+    read as its op by `simp`, the twins sitting as arguments of `divTailC`/`keyPart`: `nubC_fst`, `codesC_fst`, `joinC_fst`). `nubC`'s bits give `hRK`…`hSv`
     (`codesC_fits`, `pickFits_of_fitsN`), the codes' bits `hfk`, `hfy`, `hfz`, the join picks' bits, read at the
     join's rows (`join_rows`), `hB`, `hC`, `topC`'s `hA`, `hBc`, `unionC`'s `hU`…`hUv` (as `rep_unionC`). -/
 theorem rep_leftDivC {mb mc : USize} (R : Rel A B) (S : Rel A C) (Ub : Vals B mb) (Uc : Vals C mc)
     (hb : (leftDivC R S Ub Uc).2 = true) (b : B.El) (c : C.El) :
     rep (leftDivC R S Ub Uc).1 b c ↔
       (∀ a, rep R a b → rep S a c) ∧ ((∃ a, rep R a b) ∨ ((∃ p, Ub.row p = b) ∧ ∃ j, Uc.row j = c)) := by
-  simp only [leftDivC, nubC_fst, Obj.codesC_fst, divJoinC_fst] at hb
+  simp only [leftDivC, nubC_fst, Obj.codesC_fst, joinC_fst] at hb
   simp only [keyPart, valPart, Bool.and_eq_true, decide_eq_true_eq] at hb
   obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨hr, hs⟩, hk⟩, hSn⟩, hRS⟩, hy⟩, hycs⟩, hzc⟩, hP⟩, hUbc⟩, hu⟩ := hb
   simp only [divTailC, Bool.and_eq_true] at hu
@@ -249,7 +249,7 @@ theorem rep_leftDivC {mb mc : USize} (R : Rel A B) (S : Rel A C) (Ub : Vals B mb
   replace hrn' : ((A.codes dks)[1]'Nat.one_lt_two).n = (Rel.nub S).n := hrn'
   obtain ⟨-, hZ⟩ := join_rows _ _ hlw hls hrw hrs hrc (by rw [hrn']; exact Nat.lt_of_le_of_lt nS hSn)
     (by rw [hln, hrn']; exact hM)
-  unfold divJoinC longCount need at hy; dsimp only at hy
+  unfold joinC longCount need at hy; dsimp only at hy
   split at hy
   · rename_i hlt
     simp only [Bool.and_eq_true] at hy

@@ -5,6 +5,7 @@
   pieces' bits, each piece's `_ok` lemma reading it as that piece's premises.
 -/
 import LeetQ.Rel.CRelRel
+import LeetQ.Rel.CRelArith
 import LeetQ.Rel.RepPerm
 
 namespace LeetQ.Rel
@@ -13,21 +14,6 @@ namespace Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
 open FoldN OpsN Prim Pow ListN
-
-/-- **`expand`'s copies' count is the counts summed**, each count below `2^63` (`expand_idx`): the `O(1)` length a
-    twin decides a count bound on, in place of folding the counts. -/
-theorem len_expand_sum {n : USize} {cnt : ByteArray} (hl : len cnt = n.toNat)
-    (hc : ∀ t < n.toNat, (Column.bitsAt cnt (t * 8) 8).toNat < 2 ^ 63) :
-    len (expandBytes 8 0 (tilLongs n) cnt) =
-      ((List.range n.toNat).map fun r => (Column.bitsAt cnt (r * 8) 8).toNat).sum := by
-  rw [len_eq_ids, expand_idx (Nat.le_of_eq hl) (fun t ht => hc t (hl ▸ ht)), List.length_flatMap, hl]
-  simp only [List.length_replicate]
-
-/-- `expand` of an array side's counts copies their sum, the payload count below `2^63` (`slicesOf_row`). -/
-theorem len_expand_slicesOf {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 2 ^ 63) :
-    len (expandBytes 8 0 (tilLongs n) (slicesOf X).2) =
-      ((List.range n.toNat).map fun r => (Column.bitsAt (slicesOf X).2 (r * 8) 8).toNat).sum :=
-  len_expand_sum (len_slices _ _ _ _).2 fun t ht => by have := (slicesOf_row X hp ht).1; omega
 
 /-- Counts each one more than `g`'s sum to `g`'s sum plus their number. -/
 theorem sum_range_add_one {f g : Nat → Nat} {N : Nat} (h : ∀ r < N, f r = g r + 1) :

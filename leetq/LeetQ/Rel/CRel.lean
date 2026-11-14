@@ -39,8 +39,8 @@ theorem compC_ok (R : Rel A B) (S : Rel B C) (hb : (compC R S).2 = true) :
   -- `join_rows` on the codes `compC` joins, named as `compC` names them: a defeq check through them evaluates `join`
   rw [← hcf] at hlw hls hrw hrs hrc hln hrn'
   obtain ⟨-, hZ⟩ := join_rows _ _ hlw hls hrw hrs hrc (by rw [hrn']; exact hrn) (by rw [hln, hrn']; exact hM)
-  unfold compJoinC longCount need at hp
-  dsimp only at hp
+  unfold joinC longCount need at hp
+  dsimp only [keyPart, valPart] at hp
   split at hp
   · rename_i hlt
     simp only [Bool.and_eq_true] at hp
@@ -65,7 +65,6 @@ theorem rep_compC (R : Rel A B) (S : Rel B C) (hb : (compC R S).2 = true) :
 /-- **`rep (R ∩ S) = rep R ∩ rep S` under `interC`'s bit**: the product codes' bit gives `rep_inter`'s `hc`
     (`codesC_fits`, `codes_faithful_wf`, `pairs_eq_codes`), the `fitsN` bits its `hk`, `hv` (`pickFits_of_fitsN`). -/
 theorem rep_interC (R S : Rel A B) (hb : (interC R S).2 = true) : rep (interC R S).1 = rep R ∩ rep S := by
-  rw [interC_fst]
   simp only [interC, Bool.and_eq_true] at hb
   obtain ⟨⟨hcb, hk⟩, hv⟩ := hb
   have hc := (codes_faithful_wf (.prod A B) _ (Obj.codesC_fits (.prod A B) _ hcb)).1

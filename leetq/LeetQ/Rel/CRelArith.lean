@@ -52,8 +52,7 @@ theorem rep_sumC (R : Rel A C) (S : Rel B D) (hb : (sumC R S).2 = true) :
 theorem rep_ltC {n : USize} (U : Vals (.atom .long) n) (h : QAtomicType.long ≠ .general)
     (hb : (ltC U h).2 = true) (a b : Int64) :
     rep (ltC U h).1 a b ↔ (∃ i, U.row i = a) ∧ (∃ j, U.row j = b) ∧ a < b := by
-  rw [ltC_fst]
-  simp only [ltC, Bool.and_eq_true, decide_eq_true_eq] at hb
+  simp only [ltC, diffC, Bool.and_eq_true, decide_eq_true_eq] at hb
   obtain ⟨⟨⟨⟨hcb, hk⟩, hv⟩, hN⟩, h63⟩ := hb
   have hc := (codes_faithful_wf (.prod _ _) _ (Obj.codesC_fits (.prod _ _) _ hcb)).1
   have e : ∀ {α β : Type} (f : α → β) (a b : α), #v[a, b].map f = #v[f a, f b] := fun _ _ _ => by simp
@@ -66,12 +65,10 @@ theorem rep_ltC {n : USize} (U : Vals (.atom .long) n) (h : QAtomicType.long ≠
 theorem rep_leqC {n : USize} (U : Vals (.atom .long) n) (h : QAtomicType.long ≠ .general)
     (hb : (leqC U h).2 = true) (a b : Int64) :
     rep (leqC U h).1 a b ↔ (∃ i, U.row i = a) ∧ (∃ j, U.row j = b) ∧ a ≤ b := by
-  rw [leqC_fst]
-  change ((ltC U h).2 && (unionC (ltC U h).1 (idU U)).2) = true at hb
-  rw [ltC_fst] at hb
+  change ((ltC U h).2 && (unionC (lt U h) (idU U)).2) = true at hb
   simp only [Bool.and_eq_true] at hb
   obtain ⟨hl, hu⟩ := hb
-  simp only [ltC, Bool.and_eq_true, decide_eq_true_eq] at hl
+  simp only [ltC, diffC, Bool.and_eq_true, decide_eq_true_eq] at hl
   obtain ⟨⟨⟨⟨hcb, hk⟩, hv⟩, hN⟩, h63⟩ := hl
   have hc := (codes_faithful_wf (.prod _ _) _ (Obj.codesC_fits (.prod _ _) _ hcb)).1
   have e : ∀ {α β : Type} (f : α → β) (a b : α), #v[a, b].map f = #v[f a, f b] := fun _ _ _ => by simp
@@ -102,11 +99,34 @@ theorem rep_succC {n : USize} (U : Vals (.atom .long) n) (hb : (succC U).2 = tru
   exact rep_succ U _ rfl _ rfl
     ⟨@fun _ _ hk hl _ _ hi hj => hc.1 hk hl hi hj, fun hk => ⟨(hc.2 hk).1, (hc.2 hk).2.1, (hc.2 hk).2.2.1⟩⟩ u w
 
-/-- **`rep (bagify X)` under `bagifyC`'s bit**: the bit is `rep_bagify`'s `hp`, `hn`, `hS`, `hU`. -/
+/-- **`expand`'s copies' count is the counts summed**, each count below `2^63` (`expand_idx`): the `O(1)` length a
+    twin decides a count bound on, in place of folding the counts. -/
+theorem len_expand_sum {n : USize} {cnt : ByteArray} (hl : len cnt = n.toNat)
+    (hc : ∀ t < n.toNat, (Column.bitsAt cnt (t * 8) 8).toNat < 2 ^ 63) :
+    len (expandBytes 8 0 (tilLongs n) cnt) =
+      ((List.range n.toNat).map fun r => (Column.bitsAt cnt (r * 8) 8).toNat).sum := by
+  rw [len_eq_ids, expand_idx (Nat.le_of_eq hl) (fun t ht => hc t (hl ▸ ht)), List.length_flatMap, hl]
+  simp only [List.length_replicate]
+
+/-- `expand` of an array side's counts copies their sum, the payload count below `2^63` (`slicesOf_row`). -/
+theorem len_expand_slicesOf {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 2 ^ 63) :
+    len (expandBytes 8 0 (tilLongs n) (slicesOf X).2) =
+      ((List.range n.toNat).map fun r => (Column.bitsAt (slicesOf X).2 (r * 8) 8).toNat).sum :=
+  len_expand_sum (len_slices _ _ _ _).2 fun t ht => by have := (slicesOf_row X hp ht).1; omega
+
+/-- **`rep (bagify X)` under `bagifyC`'s bit**: the decided bounds are `rep_bagify`'s `hp`, `hn`; inside `expand`
+    the copies' count decided its `hS`, `expand`'s guard its `hU`, both through `len_expand_slicesOf`. -/
 theorem rep_bagifyC {n : USize} (X : Vals (.arr (.atom .long)) n) (hb : (bagifyC X).2 = true) :
     ∀ xs ys, rep (bagifyC X).1 xs ys ↔ (∃ j, X.row j = xs) ∧ ys.Perm xs ∧ ys.Pairwise (· ≤ ·) := by
-  simp only [bagifyC, Bool.and_eq_true, decide_eq_true_eq] at hb
-  exact rep_bagify X hb.1.1.1 hb.1.1.2 hb.1.2 hb.2
+  simp only [bagifyC, expand, need, Bool.and_eq_true, decide_eq_true_eq] at hb
+  obtain ⟨⟨hp, hn⟩, hb⟩ := hb
+  split at hb
+  · rename_i hx
+    simp only [decide_eq_true_eq] at hb
+    rw [USize.toNat_ofNat_of_lt' hx, len_expand_slicesOf X hp] at hb
+    rw [len_expand_slicesOf X hp] at hx
+    exact rep_bagify X hp hn hb hx
+  · exact absurd hb Bool.false_ne_true
 
 #print axioms rep_juncC
 #print axioms rep_ltC
