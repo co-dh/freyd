@@ -34,7 +34,7 @@ theorem rep_juncC (R : Rel A C) (S : Rel B C) (hb : (juncC R S).2 = true) :
   unfold juncC need at hb
   split at hb
   · rename_i hN
-    simp only [Bool.and_eq_true, decide_eq_true_eq] at hb
+    simp only [okbit] at hb
     exact rep_junc_full R S hN hb.1 (Obj.razeC_fits C R.val S.val _ rfl _ hb.2)
   · exact absurd hb Bool.false_ne_true
 
@@ -43,8 +43,7 @@ theorem rep_sumC (R : Rel A C) (S : Rel B D) (hb : (sumC R S).2 = true) :
     rep (sumC R S).1 =
       ((sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩).u₁° ≫ rep R ≫ (sumCop (⟨C.El⟩ : RelSet.{0}) ⟨D.El⟩).u₁) ∪
       ((sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩).u₂° ≫ rep S ≫ (sumCop (⟨C.El⟩ : RelSet.{0}) ⟨D.El⟩).u₂) := by
-  simp only [sumC, Bool.and_eq_true, decide_eq_true_eq] at hb
-  exact rep_sum R S hb.1 hb.2
+  simp only [sumC, okbit] at hb; exact rep_sum R S hb.1 hb.2
 
 /-- **`rep (lt U)` under `ltC`'s bit**: the decided bounds are `rep_lt`'s `hN`, `h63`, the diff's pair codes' bit
     its `hc` (`codesC_fits`, `codes_faithful_wf`, `pairs_eq_codes`), the `fitsN` bits its `hk`, `hv`
@@ -52,12 +51,11 @@ theorem rep_sumC (R : Rel A C) (S : Rel B D) (hb : (sumC R S).2 = true) :
 theorem rep_ltC {n : USize} (U : Vals (.atom .long) n) (h : QAtomicType.long ≠ .general)
     (hb : (ltC U h).2 = true) (a b : Int64) :
     rep (ltC U h).1 a b ↔ (∃ i, U.row i = a) ∧ (∃ j, U.row j = b) ∧ a < b := by
-  simp only [ltC, diffC, Bool.and_eq_true, decide_eq_true_eq] at hb
+  simp only [ltC, diffC, okbit] at hb
   obtain ⟨⟨⟨⟨hcb, hk⟩, hv⟩, hN⟩, h63⟩ := hb
-  have hc := (codes_faithful_wf (.prod _ _) _ (Obj.codesC_fits (.prod _ _) _ hcb)).1
-  have e : ∀ {α β : Type} (f : α → β) (a b : α), #v[a, b].map f = #v[f a, f b] := fun _ _ _ => by simp
-  exact rep_lt U h hN h63 (ltRows U h) rfl (by rw [pairs_eq_codes, e]; exact hc)
-    (pickFits_of_fitsN _ _ _ hk _ (by simp)) (pickFits_of_fitsN _ _ _ hv _ (by simp)) a b
+  exact rep_lt U h hN h63 (ltRows U h) rfl
+    (by rw [pairs_eq_codes, map_pair]; exact (codes_faithful_wf _ _ (Obj.codesC_fits _ _ hcb)).1)
+    (pickFits_range _ _ hk) (pickFits_range _ _ hv) a b
 
 /-- **`rep (leq U)` under `leqC`'s bit**: `ltC`'s bit gives `rep_leq`'s `rep_lt` hypotheses as in `rep_ltC`;
     `unionC`'s guard its `hNU`, its codes' bits `huK`, `huV` (`codesC_fits`, `codes_faithful_wf`), its `fitsN`
@@ -66,28 +64,21 @@ theorem rep_leqC {n : USize} (U : Vals (.atom .long) n) (h : QAtomicType.long �
     (hb : (leqC U h).2 = true) (a b : Int64) :
     rep (leqC U h).1 a b ↔ (∃ i, U.row i = a) ∧ (∃ j, U.row j = b) ∧ a ≤ b := by
   change ((ltC U h).2 && (unionC (lt U h) (idU U)).2) = true at hb
-  simp only [Bool.and_eq_true] at hb
-  obtain ⟨hl, hu⟩ := hb
-  simp only [ltC, diffC, Bool.and_eq_true, decide_eq_true_eq] at hl
-  obtain ⟨⟨⟨⟨hcb, hk⟩, hv⟩, hN⟩, h63⟩ := hl
-  have hc := (codes_faithful_wf (.prod _ _) _ (Obj.codesC_fits (.prod _ _) _ hcb)).1
-  have e : ∀ {α β : Type} (f : α → β) (a b : α), #v[a, b].map f = #v[f a, f b] := fun _ _ _ => by simp
+  simp only [ltC, diffC, okbit] at hb
+  obtain ⟨⟨⟨⟨⟨hcb, hk⟩, hv⟩, hN⟩, h63⟩, hu⟩ := hb
   unfold unionC need at hu
   split at hu
   · rename_i hNU
-    simp only [Bool.and_eq_true] at hu
+    simp only [okbit] at hu
     obtain ⟨⟨⟨⟨⟨-, -⟩, hkc⟩, hvc⟩, hkf⟩, hvf⟩ := hu
     -- a raze twin's `.1` is `raze` at each constructor of the side
     have hr : ∀ (X : Obj) (cs : Array (Part X)) h, (X.razeC cs h).1 = X.raze cs h := by
       intro X; cases X <;> intros <;> rfl
     simp only [hr] at hkc hvc hkf hvf
-    have hK := (codes_faithful_wf _ _ (Obj.codesC_fits _ _ hkc)).1
-    have hV := (codes_faithful_wf _ _ (Obj.codesC_fits _ _ hvc)).1
-    exact rep_leq U h hN h63 (ltRows U h) rfl (by rw [pairs_eq_codes, e]; exact hc)
-      (pickFits_of_fitsN _ _ _ hk _ (by simp)) (pickFits_of_fitsN _ _ _ hv _ (by simp)) hNU _ rfl
-      ⟨fun hi hj => hK.1 (k := 0) (l := 0) Nat.zero_lt_one Nat.zero_lt_one hi hj, hK.2 (k := 0) Nat.zero_lt_one⟩
-      ⟨fun hi hj => hV.1 (k := 0) (l := 0) Nat.zero_lt_one Nat.zero_lt_one hi hj, hV.2 (k := 0) Nat.zero_lt_one⟩
-      (pickFits_of_fitsN _ _ _ hkf _ (by simp)) (pickFits_of_fitsN _ _ _ hvf _ (by simp)) a b
+    exact rep_leq U h hN h63 (ltRows U h) rfl
+      (by rw [pairs_eq_codes, map_pair]; exact (codes_faithful_wf _ _ (Obj.codesC_fits _ _ hcb)).1)
+      (pickFits_range _ _ hk) (pickFits_range _ _ hv) hNU _ rfl (oneOK_of_codesC _ _ hkc) (oneOK_of_codesC _ _ hvc)
+      (pickFits_range _ _ hkf) (pickFits_range _ _ hvf) a b
   · exact absurd hu Bool.false_ne_true
 
 /-- **`rep (succ U)` under `succC`'s bit**: the codes' bit gives `rep_succ`'s `hc` (`codesC_fits`,
@@ -118,11 +109,11 @@ theorem len_expand_slicesOf {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.
     the copies' count decided its `hS`, `expand`'s guard its `hU`, both through `len_expand_slicesOf`. -/
 theorem rep_bagifyC {n : USize} (X : Vals (.arr (.atom .long)) n) (hb : (bagifyC X).2 = true) :
     ∀ xs ys, rep (bagifyC X).1 xs ys ↔ (∃ j, X.row j = xs) ∧ ys.Perm xs ∧ ys.Pairwise (· ≤ ·) := by
-  simp only [bagifyC, expand, need, Bool.and_eq_true, decide_eq_true_eq] at hb
+  simp only [bagifyC, expand, need, okbit] at hb
   obtain ⟨⟨hp, hn⟩, hb⟩ := hb
   split at hb
   · rename_i hx
-    simp only [decide_eq_true_eq] at hb
+    simp only [okbit] at hb
     rw [USize.toNat_ofNat_of_lt' hx, len_expand_slicesOf X hp] at hb
     rw [len_expand_slicesOf X hp] at hx
     exact rep_bagify X hp hn hb hx

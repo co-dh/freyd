@@ -47,12 +47,11 @@ theorem rep_tailC {B : Obj} {n : USize} (X : Vals (.arr B) n) (hb : (tailC X).2 
 
 theorem rep_atPosC {B : Obj} {n : USize} (k : Nat) (X : Vals (.arr B) n) (hb : (atPosC k X).2 = true) :
     ∀ (xs : List B.El) x, rep (atPosC k X).1 xs x ↔ (∃ j, X.row j = xs) ∧ ∃ h : k < xs.length, x = xs[k]'h := by
-  simp only [atPosC, Bool.and_eq_true, decide_eq_true_eq] at hb
-  exact rep_atPos k X hb.1 _ rfl _ rfl (pickFits_of_fitsN _ X _ hb.2 _ (by simp))
+  simp only [atPosC, okbit] at hb; exact rep_atPos k X hb.1 _ rfl _ rfl (pickFits_range _ X hb.2)
 
 theorem rep_unsnocC {B : Obj} {n : USize} (X : Vals (.arr B) n) (hb : (unsnocC X).2 = true) :
     ∀ (xs : List B.El) bs b, rep (unsnocC X).1 xs (bs, b) ↔ (∃ j, X.row j = xs) ∧ xs = bs ++ [b] :=
-  rep_unsnoc X _ rfl _ rfl _ rfl (pickFits_of_fitsN _ X _ hb _ (by simp))
+  rep_unsnoc X _ rfl _ rfl _ rfl (pickFits_range _ X hb)
 
 /-- **`zipC`'s bit is `rep_zip`'s premises**: the `fitsN` bits its `hPa`, `hPb`, `hKf`; the copies' count decided
     inside `expand` its `hS`, `expand`'s guard its `hU`, both through `len_expand_sum` (each lesser count below a
@@ -64,10 +63,9 @@ theorem zipC_ok {K A B : Obj} (P : Rel K (.prod (.arr A) (.arr B))) (hb : (zipC 
     ((List.range P.n.toNat).map fun r => (Column.bitsAt (Kernel.Ew.val Ew.lesser Ew.i64 Ew.vv nul
       (slicesOf P.val.1).2 (slicesOf P.val.2).2 P.n) (r * 8) 8).toNat).sum < USize.size ∧
     Vals.PickFits K P.key ((List.range P.n.toNat).map fun q => (Column.bitsAt (tilLongs P.n) (q * 8) 8).toNat) := by
-  simp only [zipC, expand, need, Bool.and_eq_true] at hb
+  simp only [zipC, expand, need, okbit] at hb
   obtain ⟨⟨⟨ha, hb'⟩, hk⟩, hb⟩ := hb
-  have hPa := pickFits_of_fitsN _ _ _ ha (List.range P.n.toNat) (by simp)
-  have hPb := pickFits_of_fitsN _ _ _ hb' (List.range P.n.toNat) (by simp)
+  have hPa := pickFits_range _ _ ha; have hPb := pickFits_range _ _ hb'
   have hpa := (pickFits_payload _ hPa).1
   have hpb := (pickFits_payload _ hPb).1
   have hsum := len_expand_sum (n := P.n)
@@ -77,10 +75,10 @@ theorem zipC_ok {K A B : Obj} (P : Rel K (.prod (.arr A) (.arr B))) (hb : (zipC 
       rw [lesser_get ht (by omega) (by omega)]; omega
   split at hb
   · rename_i hx
-    simp only [decide_eq_true_eq] at hb
+    simp only [okbit] at hb
     rw [USize.toNat_ofNat_of_lt' hx, hsum] at hb
     rw [hsum] at hx
-    exact ⟨hPa, hPb, hb, hx, pickFits_of_fitsN _ _ _ hk _ (by simp)⟩
+    exact ⟨hPa, hPb, hb, hx, pickFits_map_range _ _ _ hk⟩
   · exact absurd hb Bool.false_ne_true
 
 theorem rep_zipC {K A B : Obj} (P : Rel K (.prod (.arr A) (.arr B))) (hb : (zipC P).2 = true) :
@@ -92,9 +90,9 @@ theorem rep_zipC {K A B : Obj} (P : Rel K (.prod (.arr A) (.arr B))) (hb : (zipC
     copies' count `k` plus the rows decided its `hS`, `need`'s guard its `hU` (`len_expand_slicesOf`), the raze's
     bit its `hRf` (`razeC_fits`), the last pick's its `hFf` (`pickC_fits`). -/
 theorem consC_ok {K B : Obj} (P : Rel K (.prod B (.arr B))) (hb : (consC P).2 = true) : consOK(K, B, P) := by
-  simp only [consC, expand, longCount, need, Bool.and_eq_true] at hb
+  simp only [consC, expand, longCount, need, okbit] at hb
   obtain ⟨⟨hV, hK⟩, hb⟩ := hb
-  have hVf := pickFits_of_fitsN _ _ _ hV (List.range P.n.toNat) (by simp)
+  have hVf := pickFits_range _ _ hV
   refine ⟨hVf, ?_⟩
   rintro s rfl
   split at hb
@@ -103,7 +101,7 @@ theorem consC_ok {K B : Obj} (P : Rel K (.prod B (.arr B))) (hb : (consC P).2 = 
     · rename_i hN
       split at hb
       · rename_i hp
-        simp only [Bool.and_eq_true, decide_eq_true_eq] at hb
+        simp only [okbit] at hb
         obtain ⟨⟨h63, hR⟩, hF⟩ := hb
         rw [USize.toNat_ofNat_of_lt' hx, len_expand_slicesOf _ (pickFits_payload _ hVf).1] at h63 hN
         refine ⟨h63, hN, ?_⟩
@@ -129,22 +127,21 @@ theorem rep_alphaC {K B : Obj} {n : USize} (I : Vals K 1) (P : Vals (.prod B (.a
         (graph (fun _ => []) :(⟨K.El⟩ : RelSet.{0}) ⟶ ⟨List B.El⟩))
       (corefl (A := (⟨B.El × List B.El⟩ : RelSet.{0})) (fun p => ∃ i, P.row i = p) ≫
         (graph (fun p => p.1 :: p.2) :(⟨B.El × List B.El⟩ : RelSet.{0}) ⟶ ⟨List B.El⟩)) := by
-  simp only [alphaC, Bool.and_eq_true] at hb
+  simp only [alphaC, okbit] at hb
   obtain ⟨hj, hcb⟩ := hb
   simp only [juncC, need] at hj
   split at hj
   · rename_i hN
-    simp only [Bool.and_eq_true, decide_eq_true_eq] at hj
+    simp only [okbit] at hj
     exact rep_alpha I P hN hj.1 (Obj.razeC_fits (.arr B) _ _ _ (by rfl) _ hj.2) (consC_ok _ hcb)
   · exact absurd hj Bool.false_ne_true
 
 /-- **`catC`'s bit is `rep_cat`'s premises** (`catOK`), as `consC_ok`: the two copies' counts `ka + kb` decided its
     `hS`, `need`'s guard its `hU`, each a side's counts summed (`len_expand_slicesOf`). -/
 theorem catC_ok {K B : Obj} (P : Rel K (.prod (.arr B) (.arr B))) (hb : (catC P).2 = true) : catOK(K, B, P) := by
-  simp only [catC, expand, longCount, need, Bool.and_eq_true] at hb
+  simp only [catC, expand, longCount, need, okbit] at hb
   obtain ⟨⟨⟨ha, hb'⟩, hK⟩, hb⟩ := hb
-  have hPa := pickFits_of_fitsN _ _ _ ha (List.range P.n.toNat) (by simp)
-  have hPb := pickFits_of_fitsN _ _ _ hb' (List.range P.n.toNat) (by simp)
+  have hPa := pickFits_range _ _ ha; have hPb := pickFits_range _ _ hb'
   refine ⟨hPa, hPb, ?_⟩
   rintro sa rfl sb rfl
   split at hb
@@ -155,7 +152,7 @@ theorem catC_ok {K B : Obj} (P : Rel K (.prod (.arr B) (.arr B))) (hb : (catC P)
       · rename_i hN
         split at hb
         · rename_i hp
-          simp only [Bool.and_eq_true, decide_eq_true_eq] at hb
+          simp only [okbit] at hb
           obtain ⟨⟨h63, hR⟩, hF⟩ := hb
           rw [USize.toNat_ofNat_of_lt' hxa, USize.toNat_ofNat_of_lt' hxb,
             len_expand_slicesOf _ (pickFits_payload _ hPa).1, len_expand_slicesOf _ (pickFits_payload _ hPb).1]
@@ -203,11 +200,11 @@ theorem nestC_bits {B : Obj} {n : USize} (X : Vals (.arr B) n)
         ((List.range (len (expandBytes 8 0 (tilLongs n) (addc n (slicesOf X).2 1))).toUSize.toNat).map fun q =>
           (Column.bitsAt (tilLongs (len (expandBytes 8 0 (tilLongs n) (addc n (slicesOf X).2 1))).toUSize)
             (q * 8) 8).toNat) := by
-  simp only [nestC, expand, need, Bool.and_eq_true, decide_eq_true_eq] at hb
+  simp only [nestC, expand, need, okbit] at hb
   obtain ⟨⟨hp1, hK⟩, hb⟩ := hb
   split at hb
   · rename_i hx
-    simp only [Bool.and_eq_true, decide_eq_true_eq] at hb
+    simp only [okbit] at hb
     obtain ⟨h63, hv⟩ := hb
     have hc : ∀ r < n.toNat, (Column.bitsAt (addc n (slicesOf X).2 1) (r * 8) 8).toNat =
         (Column.bitsAt (slicesOf X).2 (r * 8) 8).toNat + 1 := fun r hr => by
@@ -220,7 +217,7 @@ theorem nestC_bits {B : Obj} {n : USize} (X : Vals (.arr B) n)
       exact sum_range_add_one hc
     rw [USize.toNat_ofNat_of_lt' hx, hsum] at h63
     rw [hsum] at hx
-    exact ⟨h63, hx, pickFits_of_fitsN _ X _ hK _ (by simp), fun _ => Vals.pickC_fits (.arr B) _ _ _ _ hv⟩
+    exact ⟨h63, hx, pickFits_map_range _ X _ hK, fun _ => Vals.pickC_fits (.arr B) _ _ _ _ hv⟩
   · exact absurd hb Bool.false_ne_true
 
 theorem rep_initsC {B : Obj} {n : USize} (X : Vals (.arr B) n) (hb : (initsC X).2 = true) :
@@ -244,7 +241,7 @@ theorem compC_cmpOK {A B C : Obj} (R : Rel A B) (S : Rel B C) (hb : (compC R S).
     `nestC_bits` at `inits`, `tails`, `pairC_ok`, `zipC_ok`, `memC_ok`, `compC_ok`. -/
 theorem rep_uncatC {B : Obj} {n : USize} (X : Vals (.arr B) n) (hb : (uncatC X).2 = true) :
     ∀ xs ys zs, rep (uncatC X).1 xs (ys, zs) ↔ (∃ j, X.row j = xs) ∧ xs = ys ++ zs := by
-  simp only [uncatC, Bool.and_eq_true] at hb
+  simp only [uncatC, okbit] at hb
   obtain ⟨⟨⟨⟨⟨hi, ht⟩, hp⟩, hz⟩, hv⟩, hc⟩ := hb
   obtain ⟨hS, hU, hK, hVi⟩ := nestC_bits X _ hi
   obtain ⟨-, -, -, hVt⟩ := nestC_bits X _ ht
@@ -262,14 +259,14 @@ theorem rep_uncatC {B : Obj} {n : USize} (X : Vals (.arr B) n) (hb : (uncatC X).
     `catC_ok`. -/
 theorem rep_snocC {K B : Obj} (P : Rel K (.prod (.arr B) B)) (hb : (snocC P).2 = true) :
     ∀ k ys, rep (snocC P).1 k ys ↔ ∃ bs b, rep P k (bs, b) ∧ ys = bs ++ [b] := by
-  simp only [snocC, Bool.and_eq_true] at hb
+  simp only [snocC, okbit] at hb
   obtain ⟨⟨⟨⟨⟨hD, ht⟩, hT⟩, hQ⟩, hM⟩, hr⟩ := hb
   have eD : (ranC P).1 = ran P := rfl
   rw [eD] at ht hT hQ hM hr
-  simp only [ranC, distinctCoreflC, Bool.and_eq_true] at hD
+  simp only [ranC, distinctCoreflC, okbit] at hD
   obtain ⟨hK1, -, hk1, -, hWk, hW, h63⟩ := transposeC_ok _ ht
   apply rep_snoc P
-  refine ⟨⟨Obj.codesC_fits _ _ hD.1, pickFits_of_fitsN _ _ _ hD.2 _ (by simp)⟩, ?_⟩
+  refine ⟨⟨Obj.codesC_fits _ _ hD.1, pickFits_range _ _ hD.2⟩, ?_⟩
   rintro D rfl X rfl
   refine ⟨⟨hK1, hk1, hWk, hW, h63⟩, compC_cmpOK _ _ hT, ?_⟩
   rintro T rfl

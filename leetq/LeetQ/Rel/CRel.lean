@@ -6,6 +6,7 @@
 -/
 import LeetQ.Rel.KernelWF.CodesAll
 import LeetQ.Rel.KernelWF.RazeRowAll
+import LeetQ.Rel.OkBit
 
 namespace LeetQ.Rel
 
@@ -21,13 +22,31 @@ open CompN OpsN
 
 variable {A B C : Obj}
 
+/-- A `fitsN` bit at `N` fits any `N` picks: `pickFits_of_fitsN` at the lists a twin reads, for `okbit`. -/
+@[okbit] theorem pickFits_range (X : Obj) {n : USize} (x : Vals X n) {N : Nat} (h : Vals.fitsN X x N = true) :
+    Vals.PickFits X x (List.range N) := pickFits_of_fitsN X x N h _ (by simp)
+
+@[okbit] theorem pickFits_map_range (X : Obj) {n : USize} (x : Vals X n) {N : Nat} (f : Nat → Nat)
+    (h : Vals.fitsN X x N = true) : Vals.PickFits X x ((List.range N).map f) := pickFits_of_fitsN X x N h _ (by simp)
+
+/-- A one-part codes bit gives the one-part code faithful and well formed, in `oneOK`'s form. -/
+theorem oneOK_of_codesC (X : Obj) {n : USize} (x : Vals X n) (hb : (X.codesC #v[⟨n, x⟩]).2 = true) :
+    oneOK(X, n, x) := by
+  have hK := (codes_faithful_wf X _ (Obj.codesC_fits X _ hb)).1
+  exact ⟨fun hi hj => hK.1 (k := 0) (l := 0) Nat.zero_lt_one Nat.zero_lt_one hi hj, hK.2 (k := 0) Nat.zero_lt_one⟩
+
+/-- Two parts' codes, mapped: the form `pairs_eq_codes` leaves at a pair. -/
+theorem map_pair {α β : Type} (f : α → β) (a b : α) : #v[a, b].map f = #v[f a, f b] := by simp
+
+attribute [okbit] Bool.and_eq_true decide_eq_true_eq Obj.codesC_fits and_self and_true true_and
+
 /-- **`compC`'s bit is `rep_comp`'s premises**: the codes' bit gives the middle side's codes fitting (`codesC_fits`,
     whence `rep_comp`'s `hc` by `codes_faithful_wf`), the decided bounds its `hrn`, `hM`, and the picks' bits, read
     at the join's rows (`join_rows`), its `hA`, `hC` (`pickC_fits`). -/
 theorem compC_ok (R : Rel A B) (S : Rel B C) (hb : (compC R S).2 = true) :
     Obj.CodesFit B jcs ∧ S.n.toNat < 2 ^ 63 ∧ R.n.toNat * S.n.toNat < min (2 ^ 63) USize.size ∧
       Vals.PickFits A R.key ((jpairs).map Prod.fst) ∧ Vals.PickFits C S.val ((jpairs).map Prod.snd) := by
-  simp only [compC, Bool.and_eq_true, decide_eq_true_eq] at hb
+  simp only [compC, okbit] at hb
   obtain ⟨⟨⟨hcb, hrn⟩, hM⟩, hp⟩ := hb
   have hcf' := Obj.codesC_fits B _ hcb
   have hc := (codes_faithful_wf B _ hcf').1
@@ -56,21 +75,17 @@ theorem compC_ok (R : Rel A B) (S : Rel B C) (hb : (compC R S).2 = true) :
 
 /-- **`rep (R ≫ S) = rep R ≫ rep S` under `compC`'s bit**: `rep_comp` at `compC_ok`'s premises. -/
 theorem rep_compC (R : Rel A B) (S : Rel B C) (hb : (compC R S).2 = true) :
-    rep (compC R S).1 = rep R ≫ rep S := by
-  obtain ⟨hcf, hrn, hM, hA, hC⟩ := compC_ok R S hb
-  exact rep_comp R S (codes_faithful_wf B _ hcf).1 hrn hM hA hC
+    rep (compC R S).1 = rep R ≫ rep S :=
+  let ⟨hcf, hrn, hM, hA, hC⟩ := compC_ok R S hb; rep_comp R S (codes_faithful_wf B _ hcf).1 hrn hM hA hC
 
 #print axioms rep_compC
 
 /-- **`rep (R ∩ S) = rep R ∩ rep S` under `interC`'s bit**: the product codes' bit gives `rep_inter`'s `hc`
     (`codesC_fits`, `codes_faithful_wf`, `pairs_eq_codes`), the `fitsN` bits its `hk`, `hv` (`pickFits_of_fitsN`). -/
 theorem rep_interC (R S : Rel A B) (hb : (interC R S).2 = true) : rep (interC R S).1 = rep R ∩ rep S := by
-  simp only [interC, Bool.and_eq_true] at hb
-  obtain ⟨⟨hcb, hk⟩, hv⟩ := hb
-  have hc := (codes_faithful_wf (.prod A B) _ (Obj.codesC_fits (.prod A B) _ hcb)).1
-  have e : ∀ {α β : Type} (f : α → β) (a b : α), #v[a, b].map f = #v[f a, f b] := fun _ _ _ => by simp
-  have hp : pairsOK(R, S) := by rw [pairs_eq_codes, e]; exact hc
-  exact rep_inter R S hp (pickFits_of_fitsN A R.key _ hk _ (by simp)) (pickFits_of_fitsN B R.val _ hv _ (by simp))
+  simp only [interC, okbit] at hb
+  exact rep_inter R S (by rw [pairs_eq_codes, map_pair]; exact (codes_faithful_wf _ _ (Obj.codesC_fits _ _ hb.1.1)).1)
+    (by simp only [okbit, hb]) (by simp only [okbit, hb])
 
 #print axioms rep_interC
 
@@ -87,21 +102,15 @@ theorem rep_unionC
   unfold unionC need at hb
   split at hb
   · rename_i hN
-    simp only [Bool.and_eq_true] at hb
+    simp only [okbit] at hb
     obtain ⟨⟨⟨⟨⟨hka, hvb⟩, hkc⟩, hvc⟩, hkf⟩, hvf⟩ := hb
-    have hFa := Obj.razeC_fits A R.key S.key _ rfl _ hka
-    have hFb := Obj.razeC_fits B R.val S.val _ rfl _ hvb
     -- a raze twin's `.1` is `raze` at each constructor of the side
     have hr : ∀ (X : Obj) (cs : Array (Part X)) h, (X.razeC cs h).1 = X.raze cs h := by
       intro X; cases X <;> intros <;> rfl
     simp only [hr] at hkc hvc hkf hvf
-    have hK := (codes_faithful_wf A _ (Obj.codesC_fits A _ hkc)).1
-    have hV := (codes_faithful_wf B _ (Obj.codesC_fits B _ hvc)).1
-    exact rep_union R S hN (fun k hk => raze_row hat A R.key S.key hFa _ k hk)
-      (fun k hk => raze_row hat B R.val S.val hFb _ k hk)
-      ⟨fun hi hj => hK.1 (k := 0) (l := 0) Nat.zero_lt_one Nat.zero_lt_one hi hj, hK.2 (k := 0) Nat.zero_lt_one⟩
-      ⟨fun hi hj => hV.1 (k := 0) (l := 0) Nat.zero_lt_one Nat.zero_lt_one hi hj, hV.2 (k := 0) Nat.zero_lt_one⟩
-      (pickFits_of_fitsN A _ _ hkf _ (by simp)) (pickFits_of_fitsN B _ _ hvf _ (by simp))
+    exact rep_union R S hN (fun k hk => raze_row hat A R.key S.key (Obj.razeC_fits A _ _ _ rfl _ hka) _ k hk)
+      (fun k hk => raze_row hat B R.val S.val (Obj.razeC_fits B _ _ _ rfl _ hvb) _ k hk)
+      (oneOK_of_codesC A _ hkc) (oneOK_of_codesC B _ hvc) (pickFits_range A _ hkf) (pickFits_range B _ hvf)
   · exact absurd hb Bool.false_ne_true
 
 #print axioms rep_unionC
