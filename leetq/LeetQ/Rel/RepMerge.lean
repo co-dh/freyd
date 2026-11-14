@@ -459,7 +459,7 @@ theorem merge_round_rep {K B : Obj} (le : B.El → B.El → Bool) (out : Rel K (
       (le a b = true ∧ s' = ((x, b :: y), acc ++ [a]) ∨ le a b = false ∧ s' = ((a :: x, y), acc ++ [b]))) ∧
     ∀ k z, rep mU k z ↔
       rep out k z ∨ ∃ x y acc, rep St k ((x, y), acc) ∧ (x = [] ∨ y = []) ∧ z = acc ++ x ++ y := by
-  obtain ⟨⟨Df, Dp⟩, ⟨x63, xU⟩, ⟨xcf, xc⟩, ⟨y63, yU⟩, ⟨ycf, yc⟩, ⟨puf, pup⟩, ⟨bf, bp⟩, ⟨hhf, hhp⟩, ⟨rf, rp⟩,
+  obtain ⟨⟨Df, Dp⟩, xU, ⟨xcf, xc⟩, yU, ⟨ycf, yc⟩, ⟨puf, pup⟩, ⟨bf, bp⟩, ⟨hhf, hhp⟩, ⟨rf, rp⟩,
     ⟨qf, qc⟩, ⟨lf, lp⟩, ⟨a1f, a1p⟩, ⟨s1f, s1p⟩, sn1, ⟨p1f, p1p⟩, ⟨l1f, l1c⟩, ⟨nbf, nbp⟩, ⟨a2f, a2p⟩,
     ⟨s2f, s2p⟩, sn2, ⟨p2f, p2p⟩, ⟨l2f, l2c⟩, ⟨tN, tFk, tFv, tK, tV, tk, tv⟩, ⟨Tf, Tc⟩, ⟨flf, flp⟩,
     ⟨sff, sfc⟩, ⟨c1f, c1p⟩, ct1, ⟨c2f, c2p⟩, ct2, ⟨Of, Oc⟩, ⟨uN, uFk, uFv, uK, uV, uk, uv⟩⟩ := h
@@ -488,9 +488,9 @@ theorem merge_round_rep {K B : Obj} (le : B.El → B.El → Bool) (out : Rel K (
   refine merge_round_set le out St mD mx my macc mux muy mpu mboth mh mrh G mhq ml mA1 mA2 mS1 mS2 mN1 mN2
     mP1 mP2 mL1 mL2 mnb mtk mfl mT mSf mc1 mc2 mC1 mC2 mO mU
     (by rw [hD]; exact rep_ran_corefl St (one_ok _ Df) (Dp)) hx hy hacc
-    (rep_uncons (Rel.val mx) x63 _ rfl _ rfl _ rfl xk)
+    (rep_uncons (Rel.val mx) _ rfl _ rfl _ rfl xk)
     (by rw [hux]; exact rep_comp _ _ (codes_faithful_wf _ _ xcf).1 xc1 xc2 xc3 xc4)
-    (rep_uncons (Rel.val my) y63 _ rfl _ rfl _ rfl yk)
+    (rep_uncons (Rel.val my) _ rfl _ rfl _ rfl yk)
     (by rw [huy]; exact rep_comp _ _ (codes_faithful_wf _ _ ycf).1 yc1 yc2 yc3 yc4)
     (by rw [hpu]; exact rep_pair _ _ (codes_faithful_wf _ _ puf).1 pu1 pu2 pu3 pu4 pu5)
     (by rw [hboth]; exact rep_dom_corefl mpu (one_ok _ bf) (bp))

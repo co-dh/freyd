@@ -313,7 +313,7 @@ theorem thin_body_rep {B : Obj} (le : B.El → B.El → Bool) (D : Rel SP SP) (D
     (b1 : Rel SP (.arr B)) (hb1 : b1 = c1 ∪ c2) (body : Rel SP (.arr B)) (hbody : body = b1 ∪ dy) (h : thinOK) :
     ∀ a (y v : List B.El), rep body (a, y) v ↔ Dm (a, y) ∧ ((y = [] ∧ v = [a]) ∨ ∃ b bs, y = b :: bs ∧
       ((le a b = true ∧ v = a :: bs) ∨ (le b a = true ∧ v = y) ∨ (le a b = false ∧ le b a = false ∧ v = a :: y))) := by
-  obtain ⟨⟨u63, uU⟩, ⟨uf, uc⟩, ⟨abf, abp⟩, ⟨rabf, rabp⟩, ⟨q1f, q1c⟩, ⟨upf, upp⟩, ⟨ssf, ssp⟩, ⟨rsf, rsp⟩,
+  obtain ⟨uU, ⟨uf, uc⟩, ⟨abf, abp⟩, ⟨rabf, rabp⟩, ⟨q1f, q1c⟩, ⟨upf, upp⟩, ⟨ssf, ssp⟩, ⟨rsf, rsp⟩,
     ⟨q2f, q2c⟩, ⟨swf, swp⟩, ⟨q3f, q3c⟩, ⟨dnf, dnp⟩, ⟨duf, dup⟩, d1, d2, d3, ⟨oN, oFk, oFv, oK, oV, ok, ov⟩,
     cs1, ⟨uaf, uac⟩, ⟨uuf, uuc⟩, ⟨ruf, rup⟩, ⟨utf, utc⟩, ⟨puf, pup⟩, cs2, ⟨dyf, dyc⟩,
     ⟨bN, bFk, bFv, bK, bV, bk, bv⟩, ⟨yN, yFk, yFv, yK, yV, yk, yv⟩⟩ := h
@@ -336,7 +336,7 @@ theorem thin_body_rep {B : Obj} (le : B.El → B.El → Bool) (D : Rel SP SP) (D
   obtain ⟨p1, p2, p3, p4, p5⟩ := pup _ rfl
   obtain ⟨y1, y2, y3, y4⟩ := dyc _ rfl
   refine thin_body_set le D Dm hD ta hta ty hty tu
-    (rep_uncons (Rel.val ty) u63 _ rfl _ rfl _ rfl uk)
+    (rep_uncons (Rel.val ty) _ rfl _ rfl _ rfl uk)
     (by rw [htu]; exact rep_comp _ _ (codes_faithful_wf _ _ uf).1 u1 u2 u3 u4)
     tab (by rw [htab]; exact rep_pair _ _ (codes_faithful_wf _ _ abf).1 ab1 ab2 ab3 ab4 ab5)
     rab (by rw [hrab]; exact rep_ran_corefl tab (one_ok _ rabf) (rabp)) G1 ht1

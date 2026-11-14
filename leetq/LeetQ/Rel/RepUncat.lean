@@ -27,9 +27,8 @@ local notation "rk(" d ")" => (Column.bitsAt xr (d * 8) 8).toNat
 /-- **`nest`'s body, read back**: an array `xs` of `X` (row `r`) goes to the `cn(r) + 1` slices of `X`'s payload
     `[L r t, H r t)`, `t = 0 … cn(r)`, where the slice kernel `f` puts copy `d`'s start and end at
     `L ix(d) rk(d)` and `H ix(d) rk(d)` (`hL`, `hH`). The counts plus one `c`, `expand`'s index and rank columns
-    `xi`, `xr` (at `m` copies) are bound by their equations. Hypotheses: the payload count below `2^63`; the counts
-    plus one summed below `2^63` and a `USize`; `Vals.PickFits` where `X` and the slices are picked. -/
-theorem nest_rep {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 2 ^ 63)
+    `xi`, `xr` (at `m` copies) are bound by their equations. Hypotheses: the counts plus one summed below `2^63` and a `USize`; `Vals.PickFits` where `X` and the slices are picked. -/
+theorem nest_rep {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (f : (m : USize) → ByteArray × ByteArray → (i r : ByteArray) → len i = m.toNat → Arr .long m × Arr .long m)
     (c : ByteArray) (hc : c = addc n (slicesOf X).2 1)
     (hS : pn(n.toNat) + n.toNat < 2 ^ 63) (hU : pn(n.toNat) + n.toNat < USize.size)
@@ -59,6 +58,7 @@ theorem nest_rep {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 2
         if h : L r t + j < X.1.toNat then Vals.row X.2.2.2 ⟨_, h⟩ else B.dflt := by
   intro xs yss
   subst hm
+  have hp := (pickFits_payload _ hK).1
   have hcl : len c = n.toNat := by rw [hc, addc, len_val]
   have hRw := fun r (hr : r < n.toNat) => slicesOf_row X hp hr
   have hpre_le : ∀ a b, a ≤ b → pc(a) ≤ pc(b) := fun a b h => sum_range_le _ h
@@ -160,9 +160,9 @@ theorem nest_rep {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 2
 
 /-- **`inits`, read back**: an array `xs` of `X` goes to its prefixes by increasing length, `[]` first. The counts
     plus one `c`, `expand`'s index and rank columns `xi`, `xr` (at `m` copies) are bound by their equations.
-    Hypotheses: the payload count below `2^63`; the counts plus one summed below `2^63` and a `USize`;
-    `Vals.PickFits` where `X` and the prefixes are picked. -/
-theorem rep_inits {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 2 ^ 63)
+    Hypotheses: the counts plus one summed below `2^63` and a `USize`; `Vals.PickFits` where `X` and the
+    prefixes are picked. -/
+theorem rep_inits {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (c : ByteArray) (hc : c = addc n (slicesOf X).2 1)
     (hS : pn(n.toNat) + n.toNat < 2 ^ 63) (hU : pn(n.toNat) + n.toNat < USize.size)
     (xi : ByteArray) (hxi : xi = expandBytes 8 0 (tilLongs n) c)
@@ -177,10 +177,11 @@ theorem rep_inits {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 
       ((List.range m.toNat).map fun q => (Column.bitsAt (tilLongs m) (q * 8) 8).toNat)) :
     ∀ xs yss, rep (inits X) xs yss ↔ (∃ j, X.row j = xs) ∧
       yss = (List.range (xs.length + 1)).map fun k => xs.take k := by
+  have hp := (pickFits_payload _ hK).1
   have hb := fun r (hr : r < n.toNat) => slicesOf_row X hp hr
   have hsl : len (slicesOf X).1 = n.toNat := (len_slices _ _ _ _).1
   intro xs yss
-  rw [nest_rep X hp (fun m s i r h => (longsN m (gather 8 s.1 i) (Nat.le_of_eq ((gather_len _ _).trans h).symm),
+  rw [nest_rep X (fun m s i r h => (longsN m (gather 8 s.1 i) (Nat.le_of_eq ((gather_len _ _).trans h).symm),
       valCol Ew.add Ew.vv (gather 8 s.1 i) r)) c hc hS hU xi hxi m hm xr hxr (fun r _ => st(r))
     (fun r t => st(r) + t) (fun r t hr ht => by dsimp only; have := (hb r hr).1; omega)
     (fun h d hd hx _ => by
@@ -211,9 +212,9 @@ theorem rep_inits {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 
 
 /-- **`tails`, read back**: an array `xs` of `X` goes to its suffixes by decreasing length, `[]` last. The counts
     plus one `c`, `expand`'s index and rank columns `xi`, `xr` (at `m` copies) are bound by their equations.
-    Hypotheses: the payload count below `2^63`; the counts plus one summed below `2^63` and a `USize`;
-    `Vals.PickFits` where `X` and the suffixes are picked. -/
-theorem rep_tails {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 2 ^ 63)
+    Hypotheses: the counts plus one summed below `2^63` and a `USize`; `Vals.PickFits` where `X` and the
+    suffixes are picked. -/
+theorem rep_tails {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (c : ByteArray) (hc : c = addc n (slicesOf X).2 1)
     (hS : pn(n.toNat) + n.toNat < 2 ^ 63) (hU : pn(n.toNat) + n.toNat < USize.size)
     (xi : ByteArray) (hxi : xi = expandBytes 8 0 (tilLongs n) c)
@@ -229,6 +230,7 @@ theorem rep_tails {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 
       ((List.range m.toNat).map fun q => (Column.bitsAt (tilLongs m) (q * 8) 8).toNat)) :
     ∀ xs yss, rep (tails X) xs yss ↔ (∃ j, X.row j = xs) ∧
       yss = (List.range (xs.length + 1)).map fun k => xs.drop k := by
+  have hp := (pickFits_payload _ hK).1
   have hb := fun r (hr : r < n.toNat) => slicesOf_row X hp hr
   have hsl : len (slicesOf X).1 = n.toNat := (len_slices _ _ _ _).1
   have hal : len (add n (slicesOf X).1 (slicesOf X).2) = n.toNat := len_val ..
@@ -236,7 +238,7 @@ theorem rep_tails {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 
       st(r) + cn(r) := fun r hr => by
     have := (hb r hr).1; exact add_get hr (by omega)
   intro xs yss
-  rw [nest_rep X hp (fun m s i r h => (valCol Ew.add Ew.vv (gather 8 s.1 i) r,
+  rw [nest_rep X (fun m s i r h => (valCol Ew.add Ew.vv (gather 8 s.1 i) r,
       longsN m (gather 8 (add n s.1 s.2) i) (Nat.le_of_eq ((gather_len _ _).trans h).symm))) c hc hS hU xi hxi m hm
     xr hxr (fun r t => st(r) + t) (fun r _ => st(r) + cn(r))
     (fun r t hr ht => by dsimp only; exact ⟨by omega, (hb r hr).1⟩)
@@ -278,7 +280,7 @@ open FoldN OpsN
     `rep_inits`, `rep_tails`; `P = pair (inits X) (tails X)` and `Z = zip P` are bound by their equations, and
     each theorem's pieces (`kc`, `c'`, `xi'`, `m'`, `xr'`, `ja`, `jb`, `jc`) by theirs. Hypotheses: each theorem's,
     at its relation — size bounds, the codes faithful and well formed (`hkO`, `hjO`), `Vals.PickFits`. -/
-theorem rep_uncat {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 2 ^ 63)
+theorem rep_uncat {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (c : ByteArray) (hc : c = addc n (slicesOf X).2 1)
     (hS : pn(n.toNat) + n.toNat < 2 ^ 63) (hU : pn(n.toNat) + n.toNat < USize.size)
     (xi : ByteArray) (hxi : xi = expandBytes 8 0 (tilLongs n) c)
@@ -330,8 +332,8 @@ theorem rep_uncat {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 
       if h : r < Z.n.toNat then List.replicate (Z.val.row ⟨r, h⟩).length r else [])) :
     ∀ xs ys zs, rep (uncat X) xs (ys, zs) ↔ (∃ j, X.row j = xs) ∧ xs = ys ++ zs := by
   intro xs ys zs
-  have hI := rep_inits X hp c hc hS hU xi hxi m hm xr hxr hK hVi
-  have hT := rep_tails X hp c hc hS hU xi hxi m hm xr hxr hK hVt
+  have hI := rep_inits X c hc hS hU xi hxi m hm xr hxr hK hVi
+  have hT := rep_tails X c hc hS hU xi hxi m hm xr hxr hK hVt
   subst hkc
   have h1 := rep_pair (inits X) (tails X) hkO hkn hkM hkA hkB hkC
   -- `P`'s key and sides are the inputs picked at the join's hits (`pair_pickFits`)

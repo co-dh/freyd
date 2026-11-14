@@ -65,7 +65,7 @@ theorem rep_orderedOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) →
     (∀ xs y zs z, (∃ i, X.row i = xs) → (y :: zs) <:+ xs → z ∈ zs → rep E (y, z) (y, z)) ∧
     ∀ xs ys, rep (orderedOn q X) xs ys ↔ (∃ i, X.row i = xs) ∧ ys = xs ∧
       ∀ y zs, (y :: zs) <:+ xs → ∀ z ∈ zs, ∃ w, rep (q E) w (y, z) := by
-  obtain ⟨⟨hSf, hSp⟩, ⟨h63, hUn⟩, ⟨hcf, hc'⟩, ⟨hTf, hTp⟩, ⟨hOf, hOp⟩, hVv, hVk, ⟨hmf, hm'⟩, ⟨hpf, hp'⟩,
+  obtain ⟨⟨hSf, hSp⟩, hUn, ⟨hcf, hc'⟩, ⟨hTf, hTp⟩, ⟨hOf, hOp⟩, hVv, hVk, ⟨hmf, hm'⟩, ⟨hpf, hp'⟩,
     ⟨hyf, hyp⟩, ⟨hbf, hb'⟩, ⟨hdf, hdp⟩, ⟨hCf, hC'⟩, ⟨hDf, hDp⟩, ⟨hAf, hA'⟩⟩ := h
   have u1 := hUn _ rfl _ rfl _ rfl
   obtain ⟨c1, c2, c3, c4⟩ := hc' _ rfl
@@ -78,7 +78,7 @@ theorem rep_orderedOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) →
     rw [hSu]; exact rep_suffix X g hg hR
   have eW : ∀ a a', rep Wu a a' ↔ a = a' ∧ ∃ k, rep Su k a := fun a a' => by
     rw [hWu, rep_ran_corefl Su (one_ok _ hSf) (hSp)]; exact Iff.rfl
-  have eU := rep_uncons (Rel.val Wu) h63 _ rfl _ rfl _ rfl u1
+  have eU := rep_uncons (Rel.val Wu) _ rfl _ rfl _ rfl u1
   -- `T`: an array to the head and tail of each of its non-empty suffixes
   have eT : ∀ xs (p : (Obj.prod B (.arr B)).El), rep T xs p ↔ rep Su xs (p.1 :: p.2) := fun xs p => by
     rw [hT, rep_comp _ _ (codes_faithful_wf _ _ hcf).1 c1 c2 c3 c4, Freyd.Alg.RelSet.comp_apply]

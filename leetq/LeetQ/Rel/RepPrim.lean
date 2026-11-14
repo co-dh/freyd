@@ -28,15 +28,16 @@ theorem rep_nil {K B : Obj} (I : Vals K 1) :
 
 /-- **`at(k)`, read back**: an array of `X` goes to `x` exactly when it is longer than `k` and `x` is its cell
     `k`. The rows longer than `k` (`i`) and the cells' payload places (`e`) are bound by their equations.
-    Hypotheses: the payload count and `k` below `2^63` (`k.toUInt64` wraps past it), `Vals.PickFits` where `X`
-    and its payload are picked. -/
-theorem rep_atPos {B : Obj} {n : USize} (k : Nat) (X : Vals (.arr B) n) (hp : X.1.toNat < 2 ^ 63)
+    Hypotheses: `k` below `2^63` (`k.toUInt64` wraps past it), `Vals.PickFits` where `X` and its payload are
+    picked. -/
+theorem rep_atPos {B : Obj} {n : USize} (k : Nat) (X : Vals (.arr B) n)
     (hk : k < 2 ^ 63)
     (i : ByteArray) (hi : i = whereBits n (Ew.cmp Ew.gt Ew.i64 Ew.va (slicesOf X).2 (one k.toUInt64) n))
     (e : ByteArray) (he : e = addc (len i).toUSize (gather 8 (slicesOf X).1 i) k)
     (hX : Vals.PickFits (.arr B) X (List.range n.toNat)) :
     ∀ (xs : List B.El) x, rep (atPos k X) xs x ↔ (∃ j, X.row j = xs) ∧ ∃ h : k < xs.length, x = xs[k]'h := by
   intro xs x
+  have hp := (pickFits_payload _ hX).1
   have hlen : len i < USize.size := by
     rw [hi]; exact Nat.lt_of_le_of_lt (len_whereBits_le _ _) n.toNat_lt_size
   have hm : ((len i).toUSize).toNat = len i := USize.toNat_ofNat_of_lt' hlen
@@ -121,9 +122,9 @@ theorem rep_atPos {B : Obj} {n : USize} (k : Nat) (X : Vals (.arr B) n) (hp : X.
 
 /-- **`snoc°`, read back**: an array of `X` goes to `(bs, b)` exactly when it is `bs ++ [b]`. The non-empty
     rows (`i`), their starts (`l`) and their last cells' payload places (`e`) are bound by their equations.
-    Hypotheses: the payload count below `2^63`, `Vals.PickFits` where `X`, its payload and the fronts (`[l, e)`,
-    before `Vals.compact`, at whatever count proofs) are picked. -/
-theorem rep_unsnoc {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 2 ^ 63)
+    Hypotheses: `Vals.PickFits` where `X`, its payload and the fronts (`[l, e)`, before `Vals.compact`, at
+    whatever count proofs) are picked. -/
+theorem rep_unsnoc {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (i : ByteArray) (hi : i = whereBits n (Ew.cmp Ew.gt Ew.i64 Ew.va (slicesOf X).2 (one 0) n))
     (l : ByteArray) (hl : l = gather 8 (slicesOf X).1 i)
     (e : ByteArray) (he : e = Kernel.Ew.val Ew.sub Ew.i64 Ew.va nul
@@ -131,6 +132,7 @@ theorem rep_unsnoc {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat <
     (hX : Vals.PickFits (.arr B) X (List.range n.toNat)) :
     ∀ (xs : List B.El) bs b, rep (unsnoc X) xs (bs, b) ↔ (∃ j, X.row j = xs) ∧ xs = bs ++ [b] := by
   intro xs bs b
+  have hp := (pickFits_payload _ hX).1
   have hlen : len i < USize.size := by
     rw [hi]; exact Nat.lt_of_le_of_lt (len_whereBits_le _ _) n.toNat_lt_size
   have hm : ((len i).toUSize).toNat = len i := USize.toNat_ofNat_of_lt' hlen

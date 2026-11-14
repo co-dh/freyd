@@ -26,9 +26,9 @@ local notation "Cq" => (Column.bitsAt (slicesOf X).2 ((Column.bitsAt i (q * 8) 8
 
 /-- **`cons°`, read back**: an array of `X` goes to `(b, bs)` exactly when it is `b :: bs`. The non-empty rows
     (`i`), their starts (`l`) and the tails before `Vals.compact` (`T`) are bound by their equations.
-    Hypotheses: the payload count below `2^63`, `Vals.PickFits` of `X` at the non-empty rows (the heads and the
-    tails are inside their windows). -/
-theorem rep_uncons {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 2 ^ 63)
+    Hypotheses: `Vals.PickFits` of `X` at the non-empty rows (the heads and the tails are inside their windows;
+    the payload count below `2^63` follows, `pickFits_payload`). -/
+theorem rep_uncons {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (i : ByteArray) (hi : i = whereBits n (Ew.cmp Ew.gt Ew.i64 Ew.va (slicesOf X).2 (one 0) n))
     (l : ByteArray) (hl : l = gather 8 (slicesOf X).1 i)
     (T : Vals (.arr B) (len i).toUSize)
@@ -36,6 +36,7 @@ theorem rep_uncons {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat <
     (hKf : Vals.PickFits (.arr B) X ((List.range (len i)).map fun q => (Column.bitsAt i (q * 8) 8).toNat)) :
     ∀ (xs : List B.El) b bs, rep (uncons X) xs (b, bs) ↔ (∃ j, X.row j = xs) ∧ xs = b :: bs := by
   intro xs b bs
+  have hp := (pickFits_payload _ hKf).1
   have hlen : len i < USize.size := by
     rw [hi]; exact Nat.lt_of_le_of_lt (len_whereBits_le _ _) n.toNat_lt_size
   have hm : ((len i).toUSize).toNat = len i := USize.toNat_ofNat_of_lt' hlen

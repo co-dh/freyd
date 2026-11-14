@@ -77,7 +77,7 @@ open ListN
 -- `rep_inits`'s hypotheses at the arrays `X` (`n` rows), its pieces bound by their equations
 set_option hygiene false in
 local notation "initsOK(" B ", " n ", " X ")" =>
-  ((X).1.toNat < 2 ^ 63 ∧ ∀ c : ByteArray, c = addc n (slicesOf X).2 1 →
+  (∀ c : ByteArray, c = addc n (slicesOf X).2 1 →
     ((List.range (n).toNat).map fun u => (Column.bitsAt (slicesOf X).2 (u * 8) 8).toNat).sum + (n).toNat < 2 ^ 63 ∧
     ((List.range (n).toNat).map fun u => (Column.bitsAt (slicesOf X).2 (u * 8) 8).toNat).sum + (n).toNat <
       USize.size ∧
@@ -92,7 +92,7 @@ local notation "initsOK(" B ", " n ", " X ")" =>
 -- `rep_uncat`'s hypotheses at the arrays `X` (`n` rows), its pieces bound by their equations
 set_option hygiene false in
 local notation "uncatOK(" B ", " n ", " X ")" =>
-  ((X).1.toNat < 2 ^ 63 ∧ ∀ c : ByteArray, c = addc n (slicesOf X).2 1 →
+  (∀ c : ByteArray, c = addc n (slicesOf X).2 1 →
     ((List.range (n).toNat).map fun u => (Column.bitsAt (slicesOf X).2 (u * 8) 8).toNat).sum + (n).toNat < 2 ^ 63 ∧
     ((List.range (n).toNat).map fun u => (Column.bitsAt (slicesOf X).2 (u * 8) 8).toNat).sum + (n).toNat <
       USize.size ∧
@@ -161,13 +161,12 @@ theorem rep_cat_ok {K B : Obj} (P : Rel K (.prod (.arr B) (.arr B))) (h : catOK(
 /-- `rep_uncat` with its hypotheses as the bundle `uncatOK`. -/
 theorem rep_uncat_ok {B : Obj} {n : USize} (X : Vals (.arr B) n) (h : uncatOK(B, n, X)) :
     ∀ xs ys zs, rep (uncat X) xs (ys, zs) ↔ (∃ j, X.row j = xs) ∧ xs = ys ++ zs := by
-  obtain ⟨hp, h1⟩ := h
-  obtain ⟨hS, hU, h2⟩ := h1 _ rfl
+  obtain ⟨hS, hU, h2⟩ := h _ rfl
   obtain ⟨hK, hVi, hVt, h3⟩ := h2 _ rfl _ rfl _ rfl
   obtain ⟨hkO, hkn, hkM, hkA, hkB, hkC, h4⟩ := h3 _ rfl
   obtain ⟨hS', hU', h6⟩ := h4 _ rfl _ rfl
   obtain ⟨hjO, hjn, hjM, hjA, hjC, hv, hk⟩ := h6 _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
-  exact rep_uncat X hp _ rfl hS hU _ rfl _ rfl _ rfl hK hVi hVt _ rfl hkO hkn hkM hkA hkB hkC _ rfl
+  exact rep_uncat X _ rfl hS hU _ rfl _ rfl _ rfl hK hVi hVt _ rfl hkO hkn hkM hkA hkB hkC _ rfl
     _ rfl hS' hU' _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl hjO hjn hjM hjA hjC hv hk
 
 open Freyd Freyd.Alg Freyd.Alg.RelSet in
@@ -209,15 +208,13 @@ theorem rep_tic {K B : Obj} (P : Rel K (.prod B (.arr B))) (C : Rel K (.arr B)) 
   obtain ⟨h1f, h1'⟩ := h1
   obtain ⟨c1, c2, c3, c4⟩ := h1' _ rfl
   have e1 := rep_comp _ _ (codes_faithful_wf _ _ h1f).1 c1 c2 c3 c4
-  obtain ⟨i63, hi'⟩ := hi
-  obtain ⟨iS, iU, hx⟩ := hi' _ rfl
+  obtain ⟨iS, iU, hx⟩ := hi _ rfl
   obtain ⟨iK, iV⟩ := hx _ rfl _ rfl _ rfl
-  have eN := rep_inits (Rel.val C) i63 _ rfl iS iU _ rfl _ rfl _ rfl iK iV
+  have eN := rep_inits (Rel.val C) _ rfl iS iU _ rfl _ rfl _ rfl iK iV
   obtain ⟨h2f, h2'⟩ := h2
   obtain ⟨d1, d2, d3, d4⟩ := h2' _ rfl
   have e2 := rep_comp _ _ (codes_faithful_wf _ _ h2f).1 d1 d2 d3 d4
-  obtain ⟨t63, ht'⟩ := ht
-  have eT := rep_tail (Rel.val I) t63 _ rfl _ rfl _ rfl (ht' _ rfl _ rfl _ rfl)
+  have eT := rep_tail (Rel.val I) _ rfl _ rfl _ rfl (ht _ rfl _ rfl _ rfl)
   -- `I`: a row `(b, bs)` to every prefix of `b :: bs`
   have eI : ∀ k yss, rep I k yss ↔ ∃ b bs, rep P k (b, bs) ∧
       yss = (List.range ((b :: bs).length + 1)).map fun j => (b :: bs).take j := by
@@ -485,8 +482,8 @@ open ListN
 theorem suffix_round {B : Obj} (S F : Rel (.arr B) (.arr B)) (h : sufOK) :
     (∀ xs ys, rep (F ≫ tail (ran F).val) xs ys ↔ ∃ c, rep F xs (c :: ys)) ∧
     ∀ xs ys, rep (S ∪ F ≫ tail (ran F).val) xs ys ↔ rep S xs ys ∨ ∃ c, rep F xs (c :: ys) := by
-  obtain ⟨⟨hDf, hDp⟩, ⟨t63, ht⟩, ⟨hcf, hc⟩, hU⟩ := h _ rfl
-  have eT := rep_tail (Rel.val (ran F)) t63 _ rfl _ rfl _ rfl (ht _ rfl _ rfl _ rfl)
+  obtain ⟨⟨hDf, hDp⟩, ht, ⟨hcf, hc⟩, hU⟩ := h _ rfl
+  have eT := rep_tail (Rel.val (ran F)) _ rfl _ rfl _ rfl (ht _ rfl _ rfl _ rfl)
   obtain ⟨c1, c2, c3, c4⟩ := hc _ rfl
   have eC := rep_comp _ _ (codes_faithful_wf _ _ hcf).1 c1 c2 c3 c4
   have eD := rep_ran_corefl F (one_ok _ hDf) (hDp)
