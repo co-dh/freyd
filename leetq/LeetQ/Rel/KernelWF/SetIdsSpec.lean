@@ -119,6 +119,79 @@ theorem gradeBy_lex (seg : ByteArray) (vc : Code)
       have hab := h2 (UInt64.le_iff_toNat_le.2 (by rw [key a ha', key b hb', heq]; exact Nat.le_refl _))
       exact List.pairwise_iff_getElem.1 hsrt a b (by rw [hPl]; exact ha') (by rw [hPl]; exact hb') hab
 
+-- the long `j` of the offsets `o`, and the slice `groupOf o n` puts row `i` in
+set_option hygiene false in
+local notation "O(" j ")" => UInt64.toNat (Column.bitsAt o (j * 8) 8)
+set_option hygiene false in
+local notation "G(" i ")" => UInt64.toNat (Column.bitsAt (groupOf o n) (i * 8) 8)
+
+/-- A word whose signed reading is a natural number `k` is `k`. -/
+theorem toNat_of_toInt64 {x : UInt64} {k : Nat} (h : x.toInt64.toInt = (k : Int)) : x.toNat = k := by
+  have e : x.toInt64.toInt = x.toBitVec.toInt := rfl
+  have e2 : x.toNat = x.toBitVec.toNat := rfl
+  have hl := x.toBitVec.isLt
+  rw [e, BitVec.toInt_eq_toNat_cond] at h
+  split at h <;> omega
+
+/-- A long below `2⁶³` keyed as `bin` keys a signed 8-byte element: shifted up by `2⁶³`. -/
+theorem ordKey_long {b : ByteArray} {i : Nat} (h : (Column.bitsAt b (i * 8) 8).toNat < 2 ^ 63) :
+    (ordKey 8 false true (Column.bitsAt b (i * 8) 8)).toNat = 2 ^ 63 + (Column.bitsAt b (i * 8) 8).toNat :=
+  (congrArg UInt64.toNat (ordKey_keyAt (k := .i64) (s := true) (Or.inr ⟨Or.inr (Or.inr rfl), rfl⟩) b i)).trans
+    (rank_i64_toNat h)
+
+/-- **`groupOf o n` puts each row in its slice**: over `m + 1` ascending offsets from `0` to `n`, row `i < n`
+    goes to the slice `j < m` with `o[j] ≤ i < o[j+1]`, one long per row. Hypotheses: true size bounds and the
+    shape of the offsets (`0` first, ascending, `n` last). -/
+theorem groupOf_spec (o : ByteArray) (n : USize) {m : Nat} (ho : o.size = 8 * (m + 1)) (hn : n.toNat < 2 ^ 63)
+    (hm : m + 1 < 2 ^ 63) (h0 : O(0) = 0) (hasc : ∀ j < m, O(j) ≤ O(j + 1)) (hlast : O(m) = n.toNat) :
+    (groupOf o n).size = 8 * n.toNat ∧ ∀ i < n.toNat, G(i) < m ∧ O(G(i)) ≤ i ∧ i < O(G(i) + 1) := by
+  have h8 : (8 : USize).toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
+  have hid : ids (tilLongs n) = List.range n.toNat := by
+    rw [← tilLongs_spec n]; simp only [ids, elemsW, List.map_map, Function.comp_def]
+  have htl : (tilLongs n).size / 8 = n.toNat := by
+    show len (tilLongs n) = _; rw [len_eq_ids, hid, List.length_range]
+  have hmono : ∀ a b, a ≤ b → b ≤ m → O(a) ≤ O(b) := by
+    intro a b hab hb
+    induction b with
+    | zero => cases Nat.le_zero.1 hab; exact Nat.le_refl _
+    | succ b ih =>
+      rcases Nat.lt_or_eq_of_le hab with h | rfl
+      · exact Nat.le_trans (ih (by omega) (by omega)) (hasc b (by omega))
+      · exact Nat.le_refl _
+  have hO : ∀ j ≤ m, O(j) < 2 ^ 63 := fun j hj => by have := hmono j m hj (Nat.le_refl _); omega
+  have hsize : (groupOf o n).size = 8 * n.toNat := by
+    simp only [groupOf, binBytes, h8]
+    rw [(foldl_pushBits _ 8 (by decide) _ _).1, List.length_range, htl]; simp
+  refine ⟨hsize, fun i hi => ?_⟩
+  have hb := binBytes_last 8 false true o (tilLongs n)
+  rw [h8] at hb
+  rw [show o.size / 8 = m + 1 by omega] at hb
+  obtain ⟨r, hr, hv, hlo, hhi⟩ := hb (by omega)
+    (fun a b hab hb' => UInt64.le_iff_toNat_le.2 (by
+      rw [ordKey_long (hO a (by omega)), ordKey_long (hO b (by omega))]
+      have := hmono a b hab (by omega); omega)) i (by rw [htl]; exact hi)
+  have hk : (Column.bitsAt (tilLongs n) (i * 8) 8).toNat = i := tilLongs_get hi
+  have hkey : (ordKey 8 false true (Column.bitsAt (tilLongs n) (i * 8) 8)).toNat = 2 ^ 63 + i := by
+    rw [ordKey_long (by rw [hk]; omega), hk]
+  have hr1 : 1 ≤ r := by
+    rcases Nat.eq_zero_or_pos r with h | h
+    · have := UInt64.lt_iff_toNat_lt.1 (hhi 0 (by omega) (by omega))
+      rw [hkey, ordKey_long (hO 0 (by omega)), h0] at this; omega
+    · exact h
+  have hrm : r ≤ m := by
+    rcases Nat.lt_or_eq_of_le hr with h | h
+    · omega
+    · have := UInt64.le_iff_toNat_le.1 (hlo m (by omega))
+      rw [hkey, ordKey_long (hO m (Nat.le_refl _)), hlast] at this; omega
+  have hG : G(i) = r - 1 := toNat_of_toInt64 (by unfold groupOf; rw [Nat.mul_comm i 8, hv]; omega)
+  rw [hG]
+  refine ⟨by omega, ?_, ?_⟩
+  · have := UInt64.le_iff_toNat_le.1 (hlo (r - 1) (by omega))
+    rw [hkey, ordKey_long (hO _ (by omega))] at this; omega
+  · have := UInt64.lt_iff_toNat_lt.1 (hhi (r - 1 + 1) (by omega) (by omega))
+    rw [hkey, ordKey_long (hO _ (by omega))] at this; omega
+
 #print axioms gradeBy_lex
+#print axioms groupOf_spec
 
 end LeetQ.Rel.Alg
