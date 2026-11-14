@@ -300,6 +300,43 @@ theorem cross_at {i j : Nat} (hi : i < ma.toNat) (hj : j < mb.toNat) :
   · rw [Nat.add_comm, Nat.add_mul_div_right _ _ (by omega), Nat.div_eq_of_lt hj, Nat.zero_add]
   · rw [Nat.add_comm, Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt hj]
 
+/-- **`cross`'s pairs are a join's pairs that keep every pair**: row `q` is `(q / b, q % b)`, the left row `i`
+    followed by each right row. -/
+theorem cross_pairs (a b : Nat) :
+    (List.range (a * b)).map (fun q => (q / b, q % b)) =
+      (List.range a).flatMap fun i => ((List.range b).filter fun _ => true).map (i, ·) := by
+  induction a with
+  | zero => simp
+  | succ a ih =>
+    rw [Nat.succ_mul, List.range_add, List.map_append, ih, List.range_succ, List.flatMap_append,
+      List.flatMap_singleton, List.map_map]
+    congr 1
+    rw [List.filter_eq_self.2 fun _ _ => rfl]
+    refine List.map_congr_left fun j hj => ?_
+    have hj := List.mem_range.1 hj
+    simp only [Function.comp_apply]
+    rw [Nat.add_comm, Nat.add_mul_div_right _ _ (by omega), Nat.div_eq_of_lt hj, Nat.zero_add,
+      Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt hj]
+
+/-- **A side of `ma` rows fits at `cross`'s left column** where its reading at all rows, once per right row and
+    once more, fits (`cross_pairs`, `pickFits_join_fst`). -/
+theorem pickFits_cross_left {X : Obj} (x : Vals X ma)
+    (h : (mb.toNat + 1) * Vals.reads X x (List.range ma.toNat) < min (2 ^ 63) USize.size) :
+    Vals.PickFits X x ((List.range (ma.toNat * mb.toNat)).map (· / mb.toNat)) := by
+  rw [show (List.range (ma.toNat * mb.toNat)).map (· / mb.toNat) =
+    ((List.range (ma.toNat * mb.toNat)).map fun q => (q / mb.toNat, q % mb.toNat)).map Prod.fst by
+      rw [List.map_map]; rfl, cross_pairs]
+  exact pickFits_join_fst x h
+
+/-- **A side of `mb` rows fits at `cross`'s right column**, as `pickFits_cross_left` (`pickFits_join_snd`). -/
+theorem pickFits_cross_right {X : Obj} (y : Vals X mb)
+    (h : (ma.toNat + 1) * Vals.reads X y (List.range mb.toNat) < min (2 ^ 63) USize.size) :
+    Vals.PickFits X y ((List.range (ma.toNat * mb.toNat)).map (· % mb.toNat)) := by
+  rw [show (List.range (ma.toNat * mb.toNat)).map (· % mb.toNat) =
+    ((List.range (ma.toNat * mb.toNat)).map fun q => (q / mb.toNat, q % mb.toNat)).map Prod.snd by
+      rw [List.map_map]; rfl, cross_pairs]
+  exact pickFits_join_snd y h
+
 end Cross
 
 /-- **`rep (top Ua Ub) = Ua? ⊤ Ub?`**: every pair of an element `Ua` lists with one `Ub` lists — `⊤` itself when the
@@ -308,6 +345,8 @@ end Cross
     and is below `2^63` (`cross_elems`'s), and each side picks back at its rows (`Vals.PickFits`). -/
 theorem rep_top {ma mb : USize} (Ua : Vals A ma) (Ub : Vals B mb) (hN : ma.toNat * mb.toNat < USize.size)
     (h63 : ma.toNat * mb.toNat < 2 ^ 63)
+    -- fits, not reads bounds: a callers' atom or `div` side fits outright (`pickFits_div`); an input side
+    -- discharges them by `pickFits_cross_left`/`_right`
     (hA : Vals.PickFits A Ua ((List.range (ma.toNat * mb.toNat)).map (· / mb.toNat)))
     (hB : Vals.PickFits B Ub ((List.range (ma.toNat * mb.toNat)).map (· % mb.toNat))) :
     rep (LeetQ.Rel.Alg.top Ua Ub) = corefl (A := (⟨A.El⟩ : RelSet.{0})) (fun a => ∃ i, Ua.row i = a) ≫
@@ -339,15 +378,20 @@ theorem rep_top {ma mb : USize} (Ua : Vals A ma) (Ub : Vals B mb) (hN : ma.toNat
     exact ⟨⟨_, hq⟩, hr1.trans (congrArg Ua.row (Fin.ext hdiv)), hr2.trans (congrArg Ub.row (Fin.ext hmod))⟩
 
 /-- **`rep (R × S) = rep R × rep S`** (`rprodMap`): `prod` answers each pair of a row of `R` with a row of `S`, row
-    `k` of `cross R.n S.n` the pair `(k / S.n, k % S.n)`. Hypotheses: `rep_top`'s at the counts `R.n`, `S.n`, each
-    of the four columns picking back at its rows. -/
+    `k` of `cross R.n S.n` the pair `(k / S.n, k % S.n)`. Hypotheses: `rep_top`'s counts at `R.n`, `S.n`, and each
+    of the four columns read at all its rows, once per row of the other side and once more, below `2^63` and a
+    `USize` (`pickFits_cross_left`, `pickFits_cross_right`). -/
 theorem rep_prod (R : Rel A B) (S : Rel C D) (hN : R.n.toNat * S.n.toNat < USize.size)
     (h63 : R.n.toNat * S.n.toNat < 2 ^ 63)
-    (hA : Vals.PickFits A R.key ((List.range (R.n.toNat * S.n.toNat)).map (· / S.n.toNat)))
-    (hB : Vals.PickFits B R.val ((List.range (R.n.toNat * S.n.toNat)).map (· / S.n.toNat)))
-    (hC : Vals.PickFits C S.key ((List.range (R.n.toNat * S.n.toNat)).map (· % S.n.toNat)))
-    (hD : Vals.PickFits D S.val ((List.range (R.n.toNat * S.n.toNat)).map (· % S.n.toNat))) :
+    (hA : (S.n.toNat + 1) * Vals.reads A R.key (List.range R.n.toNat) < min (2 ^ 63) USize.size)
+    (hB : (S.n.toNat + 1) * Vals.reads B R.val (List.range R.n.toNat) < min (2 ^ 63) USize.size)
+    (hC : (R.n.toNat + 1) * Vals.reads C S.key (List.range S.n.toNat) < min (2 ^ 63) USize.size)
+    (hD : (R.n.toNat + 1) * Vals.reads D S.val (List.range S.n.toNat) < min (2 ^ 63) USize.size) :
     rep (LeetQ.Rel.Alg.prod R S) = rprodMap (rep R) (rep S) := by
+  replace hA := pickFits_cross_left (mb := S.n) R.key hA
+  replace hB := pickFits_cross_left (mb := S.n) R.val hB
+  replace hC := pickFits_cross_right (ma := R.n) S.key hC
+  replace hD := pickFits_cross_right (ma := R.n) S.val hD
   have hlen : len (cross R.n S.n).1 < USize.size := by rw [len_eq_ids, (cross_ids hN h63).1]; simpa using hN
   refine hom_ext fun p p' => ?_
   show (longCount "×" (cross R.n S.n).1 fun m h => (⟨m,
@@ -578,6 +622,8 @@ local notation "kpairs" => ((List.range R.n.toNat).flatMap fun i => ((List.range
     three picked columns. -/
 theorem rep_pair (R : Rel A B) (S : Rel A C) (hc : codesOK(kc, kp(R, S))) (hrn : S.n.toNat < 2 ^ 63)
     (hM : R.n.toNat * S.n.toNat < min (2 ^ 63) USize.size)
+    -- fits, not reads bounds: an atom side fits outright (`pickFits_atom_fst`); an input side discharges them by
+    -- `pickFits_join_fst`/`_snd`
     (hA : Vals.PickFits A R.key ((kpairs).map Prod.fst)) (hB : Vals.PickFits B R.val ((kpairs).map Prod.fst))
     (hC : Vals.PickFits C S.val ((kpairs).map Prod.snd)) :
     rep (LeetQ.Rel.Alg.pair R S) = rpair (rep R) (rep S) := by
@@ -666,6 +712,7 @@ theorem rep_pair (R : Rel A B) (S : Rel A C) (hc : codesOK(kc, kp(R, S))) (hrn :
     picked at the join's hits (`pickFits_pick`). Hypotheses: `rep_pair`'s. -/
 theorem pair_pickFits (R : Rel A B) (S : Rel A C) (hc : codesOK(kc, kp(R, S))) (hrn : S.n.toNat < 2 ^ 63)
     (hM : R.n.toNat * S.n.toNat < min (2 ^ 63) USize.size)
+    -- `rep_pair`'s fits, kept for its atom callers; an input side discharges them by `pickFits_join_fst`/`_snd`
     (hA : Vals.PickFits A R.key ((kpairs).map Prod.fst)) (hB : Vals.PickFits B R.val ((kpairs).map Prod.fst))
     (hC : Vals.PickFits C S.val ((kpairs).map Prod.snd)) :
     Vals.PickFits A (Rel.key (LeetQ.Rel.Alg.pair R S)) (List.range (Rel.n (LeetQ.Rel.Alg.pair R S)).toNat) ∧

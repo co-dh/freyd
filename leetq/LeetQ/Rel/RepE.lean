@@ -16,15 +16,20 @@ variable {A : Obj}
 theorem rep_memComp {B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n)
     -- `rep_mem` at `X`
     (hmv : Vals.PickFits (.arr A) X (List.range n.toNat))
+    -- each row repeated once per element: a repeat count is a row's length, which no input count here bounds
     (hmk : Vals.PickFits (.arr A) X ((List.range n.toNat).flatMap fun r =>
       if h : r < n.toNat then List.replicate (X.row ⟨r, h⟩).length r else []))
     -- `rep_comp` at `mS(X)`, `R`
+    -- `mS(X)`'s values are coded jointly with `R`'s keys: a `CodesFit` of the computed `mS(X)`, kept
     (hcc : codesOK(jc(mS(X), R), jcs(mS(X), R)))
+    -- `mS(X)`'s count is `X`'s element total, a computed count
     (hcrn : (Rel.n R).toNat < 2 ^ 63) (hcM : (Rel.n (mS(X))).toNat * (Rel.n R).toNat < min (2 ^ 63) USize.size)
+    -- `mS(X)`'s key is `X` picked once per element, not an input: its fit at the join's rows needs `mem`'s output reads
     (hcA : Vals.PickFits (.arr A) (Rel.key mS(X)) ((jpairs(mS(X), R)).map Prod.fst))
-    (hcC : Vals.PickFits B (Rel.val R) ((jpairs(mS(X), R)).map Prod.snd)) (xs : (Obj.arr A).El) (y : B.El) :
+    (hcC : ((Rel.n (mS(X))).toNat + 1) * Vals.reads B (Rel.val R) (List.range (Rel.n R).toNat) <
+      min (2 ^ 63) USize.size) (xs : (Obj.arr A).El) (y : B.El) :
     rep (LeetQ.Rel.Alg.mem X ≫ R) xs y ↔ (∃ i, Vals.row X i = xs) ∧ ∃ x ∈ xs, rep R x y := by
-  rw [rep_comp (LeetQ.Rel.Alg.mem X) R hcc hcrn hcM hcA hcC]
+  rw [rep_comp (LeetQ.Rel.Alg.mem X) R hcc hcrn hcM hcA (pickFits_join_snd _ hcC)]
   show (∃ x, rep mS(X) xs x ∧ rep R x y) ↔ _
   simp only [rep_mem X hmv hmk]
   exact ⟨fun ⟨x, ⟨hi, hx⟩, hr⟩ => ⟨hi, x, hx, hr⟩, fun ⟨hi, x, hx, hr⟩ => ⟨x, ⟨hi, hx⟩, hr⟩⟩
@@ -38,6 +43,7 @@ theorem rep_memComp {B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n)
 theorem rep_E {B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) (M : Rel (.arr A) B)
     -- `rep_lamOn` at `M`, `X`
     (kc vc : Code) (hkc : kc = kcR(M)) (hvc : vc = vcR(M))
+    -- `M = mem X ≫ R` is a join of the computed `mS(X)`: its codes and fits need `mem`'s output reads, kept
     (hK : cOK(kc, Rel.n M, Rel.key M)) (hV : cOK(vc, Rel.n M, Rel.val M))
     (hk : Vals.PickFits (.arr A) (Rel.key M) (List.range (Rel.n M).toNat))
     (hv : Vals.PickFits B (Rel.val M) (List.range (Rel.n M).toNat))
@@ -63,12 +69,17 @@ theorem rep_E {B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) (M : Rel
     (hM : M = LeetQ.Rel.Alg.mem X ≫ R)
     -- `rep_memComp` at `R`, `X`
     (hmv : Vals.PickFits (.arr A) X (List.range n.toNat))
+    -- each row repeated once per element: a repeat count is a row's length, which no input count here bounds
     (hmk : Vals.PickFits (.arr A) X ((List.range n.toNat).flatMap fun r =>
       if h : r < n.toNat then List.replicate (X.row ⟨r, h⟩).length r else []))
+    -- `mS(X)`'s values are coded jointly with `R`'s keys: a `CodesFit` of the computed `mS(X)`, kept
     (hcc : codesOK(jc(mS(X), R), jcs(mS(X), R)))
+    -- `mS(X)`'s count is `X`'s element total, a computed count
     (hcrn : (Rel.n R).toNat < 2 ^ 63) (hcM : (Rel.n (mS(X))).toNat * (Rel.n R).toNat < min (2 ^ 63) USize.size)
+    -- `mS(X)`'s key is `X` picked once per element, not an input: its fit at the join's rows needs `mem`'s output reads
     (hcA : Vals.PickFits (.arr A) (Rel.key mS(X)) ((jpairs(mS(X), R)).map Prod.fst))
-    (hcC : Vals.PickFits B (Rel.val R) ((jpairs(mS(X), R)).map Prod.snd)) :
+    (hcC : ((Rel.n (mS(X))).toNat + 1) * Vals.reads B (Rel.val R) (List.range (Rel.n R).toNat) <
+      min (2 ^ 63) USize.size) :
     (∀ xs Y, rep (LeetQ.Rel.Alg.E R X) xs Y → (∃ i, Vals.row X i = xs) ∧ ∀ y, y ∈ Y ↔ ∃ x ∈ xs, rep R x y) ∧
       (∀ xs, (∃ Y, rep (LeetQ.Rel.Alg.E R X) xs Y) ↔ ∃ i, Vals.row X i = xs) := by
   have hm : ∀ xs y, rep M xs y ↔ (∃ i, Vals.row X i = xs) ∧ ∃ x ∈ xs, rep R x y := fun xs y => by
@@ -88,6 +99,7 @@ theorem rep_E {B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) (M : Rel
 theorem rep_E_list {B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) (M : Rel (.arr A) B)
     -- `rep_lamOn` at `M`, `X`
     (kc vc : Code) (hkc : kc = kcR(M)) (hvc : vc = vcR(M))
+    -- `M = mem X ≫ R` is a join of the computed `mS(X)`: its codes and fits need `mem`'s output reads, kept
     (hK : cOK(kc, Rel.n M, Rel.key M)) (hV : cOK(vc, Rel.n M, Rel.val M))
     (hk : Vals.PickFits (.arr A) (Rel.key M) (List.range (Rel.n M).toNat))
     (hv : Vals.PickFits B (Rel.val M) (List.range (Rel.n M).toNat))
@@ -113,12 +125,17 @@ theorem rep_E_list {B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) (M 
     (hM : M = LeetQ.Rel.Alg.mem X ≫ R)
     -- `rep_memComp` at `R`, `X`
     (hmv : Vals.PickFits (.arr A) X (List.range n.toNat))
+    -- each row repeated once per element: a repeat count is a row's length, which no input count here bounds
     (hmk : Vals.PickFits (.arr A) X ((List.range n.toNat).flatMap fun r =>
       if h : r < n.toNat then List.replicate (X.row ⟨r, h⟩).length r else []))
+    -- `mS(X)`'s values are coded jointly with `R`'s keys: a `CodesFit` of the computed `mS(X)`, kept
     (hcc : codesOK(jc(mS(X), R), jcs(mS(X), R)))
+    -- `mS(X)`'s count is `X`'s element total, a computed count
     (hcrn : (Rel.n R).toNat < 2 ^ 63) (hcM : (Rel.n (mS(X))).toNat * (Rel.n R).toNat < min (2 ^ 63) USize.size)
+    -- `mS(X)`'s key is `X` picked once per element, not an input: its fit at the join's rows needs `mem`'s output reads
     (hcA : Vals.PickFits (.arr A) (Rel.key mS(X)) ((jpairs(mS(X), R)).map Prod.fst))
-    (hcC : Vals.PickFits B (Rel.val R) ((jpairs(mS(X), R)).map Prod.snd)) :
+    (hcC : ((Rel.n (mS(X))).toNat + 1) * Vals.reads B (Rel.val R) (List.range (Rel.n R).toNat) <
+      min (2 ^ 63) USize.size) :
     (∀ xs Y, rep (LeetQ.Rel.Alg.E R X) xs Y →
         (∃ i, Vals.row X i = xs) ∧ Y.Nodup ∧ ∀ y, y ∈ Y ↔ ∃ x ∈ xs, rep R x y) ∧
       (∀ xs, (∃ Y, rep (LeetQ.Rel.Alg.E R X) xs Y) ↔ ∃ i, Vals.row X i = xs) := by

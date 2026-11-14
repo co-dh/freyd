@@ -22,7 +22,8 @@ open Alg.SliceN
     Hypotheses: `Vals.PickFits` of `X` at every row (the values `mem` picks) and at each row repeated once per
     element (the keys `mem` picks, each a copy of its cell). -/
 theorem rep_mem {n : USize} (X : Vals (.arr B) n) (hv : Vals.PickFits (.arr B) X (List.range n.toNat))
-    (hk : Vals.PickFits (.arr B) X ((List.range n.toNat).flatMap fun r =>
+    -- each row repeated once per element: a repeat count is a row's length, which no input count here bounds
+    (hk :Vals.PickFits (.arr B) X ((List.range n.toNat).flatMap fun r =>
       if h : r < n.toNat then List.replicate (X.row ⟨r, h⟩).length r else []))
     (xs : (Obj.arr B).El) (x : B.El) :
     rep (Alg.mem X) xs x ↔ (∃ i, X.row i = xs) ∧ x ∈ xs := by
