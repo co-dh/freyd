@@ -319,45 +319,4 @@ theorem rep_lamOn_list {B : Obj} {m : USize} (R : Rel A B) (U : Vals A m)
 
 #print axioms rep_lamOn_list
 
-/-- **`rep (setify X)`, as lists**: `rep_setify`, and the array `setify X` gives `xs` holds each element of `xs`
-    once (`rep_lamOn_list`). Hypotheses: `rep_setify`'s. -/
-theorem rep_setify_list {B : Obj} {n : USize} (X : Vals (.arr B) n)
-    -- `rep_mem` at `X`
-    (hmv : Vals.PickFits (.arr B) X (List.range n.toNat))
-    -- each row repeated once per element: a repeat count is a row's length, which no input count here bounds
-    (hmk : Vals.PickFits (.arr B) X ((List.range n.toNat).flatMap fun r =>
-      if h : r < n.toNat then List.replicate (X.row ⟨r, h⟩).length r else []))
-    -- `rep_lamOn` at `mS(X)`, `X`
-    (kc vc : Code) (hkc : kc = kcR(mS(X))) (hvc : vc = vcR(mS(X)))
-    -- `mS(X)` is computed (`X` picked once per element): its codes and fits need `mem`'s output reads, kept
-    (hK : cOK(kc, Rel.n mS(X), Rel.key mS(X))) (hV : cOK(vc, Rel.n mS(X), Rel.val mS(X)))
-    (hk : Vals.PickFits (.arr B) (Rel.key mS(X)) (List.range (Rel.n mS(X)).toNat))
-    (hv : Vals.PickFits B (Rel.val mS(X)) (List.range (Rel.n mS(X)).toNat))
-    -- the nub copies `X`'s arrays: their nested payloads and `B`'s dictionaries, general cells no `X` fact bounds
-    (hWk : (Obj.arr B).CodesFit (#v[⟨(Rel.nub mS(X)).n, (Rel.nub mS(X)).key⟩] : Vector (Part (.arr B)) 1))
-    (hW : B.CodesFit (#v[⟨(Rel.nub mS(X)).n, (Rel.nub mS(X)).val⟩] : Vector (Part B) 1))
-    (h63 : (Rel.n mS(X)).toNat < 2 ^ 63)
-    -- two parts coded jointly: a generic `B`'s ALP sum and dictionaries are unbounded by `X`
-    (pc : Vector Code 2) (hpc : pc = pairs #v[LeetQ.Rel.Alg.idU X, LeetQ.Rel.Alg.dom mS(X)])
-    (hc : codesOK(pc, pcs(LeetQ.Rel.Alg.idU X, LeetQ.Rel.Alg.dom mS(X))))    (D : Rel (.arr B) (.arr B)) (hD : D = lD(mS(X), X))
-    -- `D`'s count is bounded only by `X`'s, a `USize`; `top`'s `cross` needs it below `2^63`
-    (ht63 : (Rel.n D).toNat * USize.toNat 1 < 2 ^ 63)
-    (T N : Rel (.arr B) (.arr B)) (hT : T = lT(mS(X)))
-    (hN0 : N = LeetQ.Rel.Alg.top (Rel.key D) (LeetQ.Rel.Alg.nilVal B))
-    (hN : (Rel.n T).toNat + (Rel.n N).toNat < USize.size)
-    (hFk : Vals.RazeFits (.arr B) (Rel.key T) (Rel.key N)) (hFv : Vals.RazeFits (.arr B) (Rel.val T) (Rel.val N))
-    (L : Rel (.arr B) (.arr B)) (hL : L = Uc(T, N, hN)) (ku vu : Code) (hku : ku = kcR(L)) (hvu : vu = vcR(L))
-    (huK : cOK(ku, Rel.n L, Rel.key L)) (huV : cOK(vu, Rel.n L, Rel.val L))
-    (huk : Vals.PickFits (.arr B) (Rel.key L) (List.range (Rel.n L).toNat))
-    (huv : Vals.PickFits (.arr B) (Rel.val L) (List.range (Rel.n L).toNat)) :
-    (∀ xs Y, rep (LeetQ.Rel.Alg.setify X) xs Y → (∃ i, Vals.row X i = xs) ∧ Y.Nodup ∧ ∀ y, y ∈ Y ↔ y ∈ xs) ∧
-      (∀ xs, (∃ Y, rep (LeetQ.Rel.Alg.setify X) xs Y) ↔ ∃ i, Vals.row X i = xs) := by
-  obtain ⟨h1, h2⟩ := rep_setify X hmv hmk kc vc hkc hvc hK hV hk hv hWk hW h63
-    pc hpc hc D hD ht63 T N hT hN0 hN hFk hFv L hL ku vu hku hvu huK huV huk huv
-  have hl := (rep_lamOn_list mS(X) X kc vc hkc hvc hK hV hk hv hWk hW h63
-    pc hpc hc hmv D hD ht63 T N hT hN0 hN hFk hFv L hL ku vu hku hvu huK huV huk huv).1
-  exact ⟨fun xs Y h => ⟨(h1 xs Y h).1, (hl xs Y h).1, (h1 xs Y h).2⟩, h2⟩
-
-#print axioms rep_setify_list
-
 end LeetQ.Rel.Rep

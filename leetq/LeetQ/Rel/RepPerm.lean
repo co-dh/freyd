@@ -89,57 +89,6 @@ local notation "initsOK(" B ", " n ", " X ")" =>
         valCol Ew.add Ew.vv (gather 8 (slicesOf X).1 xi) xr, (X).2.2.2⟩ : Vals (.arr B) m)
       ((List.range m.toNat).map fun q => (Column.bitsAt (tilLongs m) (q * 8) 8).toNat))
 
--- `rep_uncat`'s hypotheses at the arrays `X` (`n` rows), its pieces bound by their equations
-set_option hygiene false in
-local notation "uncatOK(" B ", " n ", " X ")" =>
-  (∀ c : ByteArray, c = addc n (slicesOf X).2 1 →
-    ((List.range (n).toNat).map fun u => (Column.bitsAt (slicesOf X).2 (u * 8) 8).toNat).sum + (n).toNat < 2 ^ 63 ∧
-    ((List.range (n).toNat).map fun u => (Column.bitsAt (slicesOf X).2 (u * 8) 8).toNat).sum + (n).toNat <
-      USize.size ∧
-    ∀ xi : ByteArray, xi = expandBytes 8 0 (tilLongs n) c → ∀ m : USize, m = (len xi).toUSize →
-    ∀ xr : ByteArray, xr = sub m (tilLongs m) (gather 8 (sub n (sums n c) c) xi) →
-    Vals.PickFits (.arr B) X ((List.range (n).toNat).map fun q => (Column.bitsAt (tilLongs n) (q * 8) 8).toNat) ∧
-    (∀ h : len xi = m.toNat, Vals.PickFits (.arr B)
-      (⟨(X).1, longsN m (gather 8 (slicesOf X).1 xi) (Nat.le_of_eq ((gather_len _ _).trans h).symm),
-        valCol Ew.add Ew.vv (gather 8 (slicesOf X).1 xi) xr, (X).2.2.2⟩ : Vals (.arr B) m)
-      ((List.range m.toNat).map fun q => (Column.bitsAt (tilLongs m) (q * 8) 8).toNat)) ∧
-    (∀ h : len xi = m.toNat, Vals.PickFits (.arr B)
-      (⟨(X).1, valCol Ew.add Ew.vv (gather 8 (slicesOf X).1 xi) xr,
-        longsN m (gather 8 (add n (slicesOf X).1 (slicesOf X).2) xi) (Nat.le_of_eq ((gather_len _ _).trans h).symm),
-        (X).2.2.2⟩ : Vals (.arr B) m)
-      ((List.range m.toNat).map fun q => (Column.bitsAt (tilLongs m) (q * 8) 8).toNat)) ∧
-    ∀ kc : Vector Code 2, kc = Obj.codes (.arr B)
-      (#v[⟨Rel.n (inits X), Rel.key (inits X)⟩, ⟨Rel.n (tails X), Rel.key (tails X)⟩] : Vector (Part (.arr B)) 2) →
-    codesOK(kc,
-      (#v[⟨Rel.n (inits X), Rel.key (inits X)⟩, ⟨Rel.n (tails X), Rel.key (tails X)⟩] : Vector (Part (.arr B)) 2)) ∧
-    (Rel.n (tails X)).toNat < 2 ^ 63 ∧
-    (Rel.n (inits X)).toNat * (Rel.n (tails X)).toNat < min (2 ^ 63) USize.size ∧
-    Vals.PickFits (.arr B) (Rel.key (inits X)) ((mpairs(kc, inits X, tails X)).map Prod.fst) ∧
-    Vals.PickFits (.arr (.arr B)) (Rel.val (inits X)) ((mpairs(kc, inits X, tails X)).map Prod.fst) ∧
-    Vals.PickFits (.arr (.arr B)) (Rel.val (tails X)) ((mpairs(kc, inits X, tails X)).map Prod.snd) ∧
-    ∀ P : Rel (.arr B) (.prod (.arr (.arr B)) (.arr (.arr B))), P = pair (inits X) (tails X) →
-    ∀ c' : ByteArray, c' = Kernel.Ew.val Ew.lesser Ew.i64 Ew.vv nul (slicesOf (Rel.val P).1).2
-      (slicesOf (Rel.val P).2).2 (Rel.n P) →
-    ((List.range (Rel.n P).toNat).map fun r => (Column.bitsAt c' (r * 8) 8).toNat).sum < 2 ^ 63 ∧
-    ((List.range (Rel.n P).toNat).map fun r => (Column.bitsAt c' (r * 8) 8).toNat).sum < USize.size ∧
-    ∀ xi' : ByteArray, xi' = expandBytes 8 0 (tilLongs (Rel.n P)) c' →
-    ∀ m' : USize, m' = (len xi').toUSize →
-    ∀ xr' : ByteArray, xr' = sub m' (tilLongs m') (gather 8 (sub (Rel.n P) (sums (Rel.n P) c') c') xi') →
-    ∀ ja : ByteArray, ja = add m' (gather 8 (slicesOf (Rel.val P).1).1 xi') xr' →
-    ∀ jb : ByteArray, jb = add m' (gather 8 (slicesOf (Rel.val P).2).1 xi') xr' →
-    ∀ Z : Rel (.arr B) (.arr (.prod (.arr B) (.arr B))), Z = zip P →
-    ∀ jc : Vector Code 2, jc = Obj.codes (.arr (.prod (.arr B) (.arr B)))
-      (#v[⟨Rel.n Z, Rel.val Z⟩, ⟨Rel.n (mem Z.val), Rel.key (mem Z.val)⟩] :
-        Vector (Part (.arr (.prod (.arr B) (.arr B)))) 2) →
-    codesOK(jc, (#v[⟨Rel.n Z, Rel.val Z⟩, ⟨Rel.n (mem Z.val), Rel.key (mem Z.val)⟩] :
-        Vector (Part (.arr (.prod (.arr B) (.arr B)))) 2)) ∧
-    (Rel.n (mem Z.val)).toNat < 2 ^ 63 ∧ (Rel.n Z).toNat * (Rel.n (mem Z.val)).toNat < min (2 ^ 63) USize.size ∧
-    Vals.PickFits (.arr B) (Rel.key Z) ((mpairs(jc, Z, mem Z.val)).map Prod.fst) ∧
-    Vals.PickFits (.prod (.arr B) (.arr B)) (Rel.val (mem Z.val)) ((mpairs(jc, Z, mem Z.val)).map Prod.snd) ∧
-    Vals.PickFits (.arr (.prod (.arr B) (.arr B))) Z.val (List.range Z.n.toNat) ∧
-    Vals.PickFits (.arr (.prod (.arr B) (.arr B))) Z.val ((List.range Z.n.toNat).flatMap fun r =>
-      if h : r < Z.n.toNat then List.replicate (Z.val.row ⟨r, h⟩).length r else []))
-
 /-- `rep_cons` with its hypotheses as the bundle `consOK`. -/
 theorem rep_cons_ok {K B : Obj} (P : Rel K (.prod B (.arr B))) (h : consOK(K, B, P)) :
     ∀ k ys, rep (cons P) k ys ↔ ∃ b bs, rep P k (b, bs) ∧ ys = b :: bs := by
@@ -157,17 +106,6 @@ theorem rep_cat_ok {K B : Obj} (P : Rel K (.prod (.arr B) (.arr B))) (h : catOK(
     h2 _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
   exact rep_cat P hVa hVb _ rfl _ rfl hS hU _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
     _ rfl _ rfl _ rfl _ rfl hKf hRf hFf
-
-/-- `rep_uncat` with its hypotheses as the bundle `uncatOK`. -/
-theorem rep_uncat_ok {B : Obj} {n : USize} (X : Vals (.arr B) n) (h : uncatOK(B, n, X)) :
-    ∀ xs ys zs, rep (uncat X) xs (ys, zs) ↔ (∃ j, X.row j = xs) ∧ xs = ys ++ zs := by
-  obtain ⟨hS, hU, h2⟩ := h _ rfl
-  obtain ⟨hK, hVi, hVt, h3⟩ := h2 _ rfl _ rfl _ rfl
-  obtain ⟨hkO, hkn, hkM, hkA, hkB, hkC, h4⟩ := h3 _ rfl
-  obtain ⟨hS', hU', h6⟩ := h4 _ rfl _ rfl
-  obtain ⟨hjO, hjn, hjM, hjA, hjC, hv, hk⟩ := h6 _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
-  exact rep_uncat X _ rfl hS hU _ rfl _ rfl _ rfl hK hVi hVt _ rfl hkO hkn hkM hkA hkB hkC _ rfl
-    _ rfl hS' hU' _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl hjO hjn hjM hjA hjC hv hk
 
 open Freyd Freyd.Alg Freyd.Alg.RelSet in
 /-- **`α ≜ [nil, cons]`, read back**: the copairing, out of the sum, of `nil` on the elements `I` lists (each to
@@ -326,69 +264,6 @@ theorem perm_step_set {B : Obj} (el : Rel .long B) (pend : Rel .long (.arr B))
     have ht : rep q r (e, ys, zs) := (hq _ _ _).2 ⟨he, (hU _ _ _).2 ⟨_, hu, rfl⟩⟩
     exact ⟨_, ht, (hCt' _ _ ⟨r, ht⟩).2 rfl⟩
 
--- every primitive's hypotheses at one round of `perm`, at the round's element `el` and state `pend`, each piece
--- bound by its equation as `perm`'s step builds it
-set_option hygiene false in
-local notation "permOK" =>
-  (oneFit(.arr B, Rel.n pend, Rel.val pend) ∧
-    ∀ Dp : Rel (.arr B) (.arr B), Dp = ran pend →
-    uncatOK(B, Rel.n Dp, Rel.val Dp) ∧ cmpOK(.arr B, pend, uncat (Rel.val Dp)) ∧
-    ∀ U : Rel .long (.prod (.arr B) (.arr B)), U = pend ≫ uncat (Rel.val Dp) →
-    pairOK(.long, el, U) ∧
-    ∀ q : Rel .long (.prod B (.prod (.arr B) (.arr B))), q = pair el U →
-    oneFit(.prod B (.prod (.arr B) (.arr B)), Rel.n q, Rel.val q) ∧
-    ∀ D : Rel (.prod B (.prod (.arr B) (.arr B))) (.prod B (.prod (.arr B) (.arr B))), D = ran q →
-    pairOK(.prod B (.prod (.arr B) (.arr B)), outl D, outr (outr D)) ∧
-    ∀ W : Rel (.prod B (.prod (.arr B) (.arr B))) (.prod B (.arr B)), W = pair (outl D) (outr (outr D)) →
-    consOK(.prod B (.prod (.arr B) (.arr B)), B, W) ∧
-    ∀ Cn : Rel (.prod B (.prod (.arr B) (.arr B))) (.arr B), Cn = cons W →
-    pairOK(.prod B (.prod (.arr B) (.arr B)), outl (outr D), Cn) ∧
-    ∀ V : Rel (.prod B (.prod (.arr B) (.arr B))) (.prod (.arr B) (.arr B)), V = pair (outl (outr D)) Cn →
-    catOK(.prod B (.prod (.arr B) (.arr B)), B, V) ∧ cmpOK(.prod B (.prod (.arr B) (.arr B)), q, cat V))
-
-/-- **`perm`'s step, read back**: row `r`'s element `e` and list `u` go to `e` inserted at any cut of `u`.
-    Hypotheses: every primitive's at the round's pieces (`permOK`): `rep_ran`'s at `pend` and `q`, `rep_uncat`'s,
-    `rep_comp`'s at `U` and at the result, `rep_pair`'s at `q`, `W`, `V`, `rep_cons`'s at `W`, `rep_cat`'s at
-    `V`. -/
-theorem perm_step_rep {B : Obj} (el : Rel .long B) (pend : Rel .long (.arr B)) (h : permOK) :
-    ∀ r v, rep (let q := pair el (pend ≫ uncat (ran pend).val); let D := ran q;
-        q ≫ cat (pair (outl (outr D)) (cons (pair (outl D) (outr (outr D)))))) r v ↔
-      ∃ e u, rep el r e ∧ rep pend r u ∧ ∃ ys zs, u = ys ++ zs ∧ v = ys ++ e :: zs := by
-  obtain ⟨⟨hDf, hDp⟩, h1⟩ := h
-  obtain ⟨hUn, ⟨huf, hu'⟩, h2⟩ := h1 _ rfl
-  obtain ⟨⟨hqf, hq'⟩, h3⟩ := h2 _ rfl
-  obtain ⟨⟨hdf, hdp⟩, h4⟩ := h3 _ rfl
-  obtain ⟨⟨hwf, hw'⟩, h5⟩ := h4 _ rfl
-  obtain ⟨hCn, h6⟩ := h5 _ rfl
-  obtain ⟨⟨hvf, hv'⟩, h7⟩ := h6 _ rfl
-  obtain ⟨hCt, hrf, hr'⟩ := h7 _ rfl
-  obtain ⟨u1, u2, u3, u4⟩ := hu' _ rfl
-  obtain ⟨p1, p2, p3, p4, p5⟩ := hq' _ rfl
-  obtain ⟨w1, w2, w3, w4, w5⟩ := hw' _ rfl
-  obtain ⟨v1, v2, v3, v4, v5⟩ := hv' _ rfl
-  obtain ⟨r1, r2, r3, r4⟩ := hr' _ rfl
-  have eDp := rep_ran_corefl pend (one_ok _ hDf) (hDp)
-  have eUn := rep_uncat_ok (Rel.val (ran pend)) hUn
-  have eU := rep_comp _ _ (codes_faithful_wf _ _ huf).1 u1 u2 u3 u4
-  have eq := rep_pair _ _ (codes_faithful_wf _ _ hqf).1 p1 p2 p3 p4 p5
-  have eD := rep_ran_corefl _ (one_ok _ hdf) (hdp)
-  have eW := rep_pair _ _ (codes_faithful_wf _ _ hwf).1 w1 w2 w3 w4 w5
-  have eCn := rep_cons_ok _ hCn
-  have eV := rep_pair _ _ (codes_faithful_wf _ _ hvf).1 v1 v2 v3 v4 v5
-  have eCt := rep_cat_ok _ hCt
-  have eR := rep_comp _ _ (codes_faithful_wf _ _ hrf).1 r1 r2 r3 r4
-  refine perm_step_set el pend (pend ≫ uncat (Rel.val (ran pend))) (pair el (pend ≫ uncat (Rel.val (ran pend))))
-    (ran (pair el (pend ≫ uncat (Rel.val (ran pend))))) _ _ _ _ _ (fun r ys zs => ?_)
-    (fun r e p => Iff.of_eq (congrFun (congrFun eq r) (e, p))) (fun t t' => Iff.of_eq (congrFun (congrFun eD t) t'))
-    (fun t a b => Iff.of_eq (congrFun (congrFun eW t) (a, b))) eCn
-    (fun t xs ys => Iff.of_eq (congrFun (congrFun eV t) (xs, ys))) eCt
-    (fun r v => Iff.of_eq (congrFun (congrFun eR r) v))
-  rw [eU, Freyd.Alg.RelSet.comp_apply]
-  refine ⟨fun ⟨u, hu, hx⟩ => ⟨u, hu, ((eUn u ys zs).1 hx).2⟩, fun ⟨u, hu, e⟩ => ⟨u, hu, (eUn u ys zs).2 ⟨?_, e⟩⟩⟩
-  have hr : rep (ran pend) u u := by rw [eDp]; exact ⟨rfl, r, hu⟩
-  obtain ⟨j, -, hj⟩ := hr
-  exact ⟨j, hj⟩
-
 /-- The chain `rep_foldBy` leaves for `perm`: rows `ys[t]` that are `ys[t+1]` with `xs[t]` inserted at some cut,
 ending at `[]`, start at exactly the permutations of `xs`. -/
 theorem perm_chain {β : Type _} (xs w : List β) :
@@ -424,54 +299,6 @@ theorem perm_chain {β : Type _} (xs w : List β) :
       cases t with
       | zero => exact ⟨a, b, hw.symm, rfl⟩
       | succ t => exact hstep t (by simp at ht; omega)
-
-section PermFold
-
-open QLean.Dep
-
-/-- **`perm`, read back**: an array `xs` of `X` goes to exactly its permutations. `rep_foldBy` at `perm`'s step
-    and the seed `nilVal B`, its chain closed by `perm_chain`. Bound values and hypotheses as `rep_foldBy`'s
-    (`step` bound by `hstep`), and `perm_step_rep`'s at every round (`hC`, a per-round bundle `permOK`, each bound
-    value with its equation). -/
-theorem rep_perm {B : Obj} {n : USize} (X : Vals (.arr B) n)
-    (T : Rel .long (.arr B)) (hT : T = num (idU X) 0) (hn : n.toNat < 2 ^ 63)
-    (hv : Vals.PickFits (.arr B) X (List.range n.toNat))
-    (pend₀ : Rel .long (.arr B)) (hpend : pend₀ = top (A := .long) (Rel.key T) (nilVal B))
-    (hN : (Rel.n T).toNat * (1 : USize).toNat < USize.size)
-    (h63 : (Rel.n T).toNat * (1 : USize).toNat < 2 ^ 63)
-    (step : Rel .long B → Rel .long (.arr B) → Rel .long (.arr B))
-    (hstep : step = fun el pend => let q := pair el (pend ≫ uncat (ran pend).val); let D := ran q;
-      q ≫ cat (pair (outl (outr D)) (cons (pair (outl D) (outr (outr D))))))
-    (elK : Nat → Rel .long B) (hE : ∀ k, elK k = elR(T, k))
-    (f : Rel .long (.arr B) × Rel .long (.arr B) × Nat → Rel .long (.arr B) × Rel .long (.arr B) × Nat)
-    (hf : ∀ st, f st = rnd(st))
-    -- kept (hR, hC): each round's state, step output and `P ∪ Q` are intermediates; CodesFit/RazeFits no input bounds
-    (hR : ∀ i (el : Rel .long B) (pend P S : Rel .long (.arr B)), el = elK i →
-      pend = (f^[i] (pend₀, Alg.zero, 0)).1 → P = (f^[i] (pend₀, Alg.zero, 0)).2.1 → S = step el pend →
-      roundAt((.arr B)))
-    (hC : ∀ i, i ≤ (Rel.val T).1.toNat → ∀ (el : Rel .long B) (pend : Rel .long (.arr B)), el = elK i →
-      pend = (f^[i] (pend₀, Alg.zero, 0)).1 → permOK)
-    (F : Rel .long (.arr B)) (hF : F = foldRows T pend₀ step)
-    -- kept (hjO..hjC): `F` is the fold output, its count and fits grow with the rounds; no input bounds them
-    (jc : Vector Code 2) (hjc : jc = Obj.codes .long ck2(T°, F)) (hjO : codesOK(jc, ck2(T°, F)))
-    (hjn : (Rel.n F).toNat < 2 ^ 63) (hjM : (Rel.n (T°)).toNat * (Rel.n F).toNat < min (2 ^ 63) USize.size)
-    (hjA : Vals.PickFits (.arr B) (Rel.key (T°)) ((mpairs(jc, T°, F)).map Prod.fst))
-    (hjC : Vals.PickFits (.arr B) (Rel.val F) ((mpairs(jc, T°, F)).map Prod.snd)) :
-    ∀ (xs : List B.El) ys, rep (Alg.perm X) xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Perm xs := by
-  subst hstep
-  intro xs ys
-  rw [show Alg.perm X = foldBy X (nilVal B) (fun el pend => let q := pair el (pend ≫ uncat (ran pend).val);
-    let D := ran q; q ≫ cat (pair (outl (outr D)) (cons (pair (outl D) (outr (outr D)))))) from foldByC_fst X _ _]
-  refine (rep_foldBy (nilVal B) X T hT hn hv pend₀ hpend hN h63 (pickFits_nilVal B _)
-    (fun el pend => let q := pair el (pend ≫ uncat (ran pend).val); let D := ran q;
-      q ≫ cat (pair (outl (outr D)) (cons (pair (outl D) (outr (outr D))))))
-    (fun _ eu v => ∃ ys zs, eu.2 = ys ++ zs ∧ v = ys ++ eu.1 :: zs) elK hE f hf hR
-    (fun i hi => perm_step_rep _ _ (hC i hi _ _ rfl rfl)) F hF jc hjc hjO hjn hjM hjA hjC xs ys).trans ?_
-  -- `nilVal B`'s one row is `[]`
-  exact and_congr Iff.rfl ((exists_congr fun zs => exists_congr fun _ => and_congr
-    ⟨fun ⟨_, h⟩ => h.symm, fun h => ⟨⟨0, by simp⟩, h.symm⟩⟩ Iff.rfl).trans (perm_chain xs ys))
-
-end PermFold
 
 /-! ## `suffix` -/
 
@@ -734,12 +561,9 @@ end LeetQ.Rel.Rep
 
 #print axioms LeetQ.Rel.Rep.rep_cons_ok
 #print axioms LeetQ.Rel.Rep.rep_cat_ok
-#print axioms LeetQ.Rel.Rep.rep_uncat_ok
 #print axioms LeetQ.Rel.Rep.rep_alpha
 #print axioms LeetQ.Rel.Rep.rep_tic
 #print axioms LeetQ.Rel.Rep.perm_step_set
-#print axioms LeetQ.Rel.Rep.perm_step_rep
 #print axioms LeetQ.Rel.Rep.perm_chain
-#print axioms LeetQ.Rel.Rep.rep_perm
 #print axioms LeetQ.Rel.Rep.suffix_round
 #print axioms LeetQ.Rel.Rep.rep_suffix

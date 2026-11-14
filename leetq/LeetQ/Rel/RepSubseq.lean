@@ -1,6 +1,6 @@
 /-
-  `subseq` read back: `foldBy` at the step `cons (pair el pend) ∪ pend`, whose `∪ pend` keeps a row's state alive
-  past its array's end (`rep_foldBy_keep` at `keep := True`).
+  `subseq`'s chain and its step's `keep` split, which `rep_subseqC` closes its fold with: the step
+  `cons (pair el pend) ∪ pend`, whose `∪ pend` keeps a row's state alive past its array's end.
 -/
 import LeetQ.Rel.RepList
 
@@ -9,65 +9,6 @@ namespace LeetQ.Rel.Rep
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
 
 open FoldN OpsN
-
-/-- **`subseq`'s step, read back**: `cons (pair el pend) ∪ pend` takes row `r`'s element `e` and list `u` to
-    `e :: u`, and keeps every list `pend` holds at `r`, whether or not `r` has an element this round. The codes
-    `kc`, the pair `W`, `cons`' pieces (as `rep_cons`'s), `P = cons W` and `Q = pend` are bound by their equations.
-    Hypotheses: `rep_pair`'s at `el`, `pend` (`hk…`), `rep_cons`'s at `W`, `rep_union_full`'s at `P`, `Q`. -/
-theorem subseq_step_rep {B : Obj} (el : Rel .long B) (pend : Rel .long (.arr B))
-    (kc : Vector Code 2) (hkc : kc = Obj.codes .long kp2(el, pend))
-    (hkO : (Rel.n el).toNat + (Rel.n pend).toNat < USize.size)
-    (hkn : (Rel.n pend).toNat < 2 ^ 63) (hkM : (Rel.n el).toNat * (Rel.n pend).toNat < min (2 ^ 63) USize.size)
-    (hkB : Vals.PickFits B (Rel.val el) ((mpairs(kc, el, pend)).map Prod.fst))
-    (hkC : Vals.PickFits (.arr B) (Rel.val pend) ((mpairs(kc, el, pend)).map Prod.snd))
-    (W : Rel .long (.prod B (.arr B))) (hW : W = pair el pend)
-    (s : ByteArray × ByteArray) (hs : s = slicesOf (Rel.val W).2)
-    (hcS : ((List.range (Rel.n W).toNat).map fun r => (Column.bitsAt s.2 (r * 8) 8).toNat).sum + (Rel.n W).toNat <
-      2 ^ 63)
-    (hcU : ((List.range (Rel.n W).toNat).map fun r => (Column.bitsAt s.2 (r * 8) 8).toNat).sum + (Rel.n W).toNat <
-      USize.size)
-    (xi : ByteArray) (hxi : xi = expandBytes 8 0 (tilLongs (Rel.n W)) s.2)
-    (m : USize) (hm : m = (len xi).toUSize)
-    (xr : ByteArray) (hxr : xr = sub m (tilLongs m) (gather 8 (sub (Rel.n W) (sums (Rel.n W) s.2) s.2) xi))
-    (j : ByteArray) (hj : j = add m (gather 8 s.1 xi) xr)
-    (tl : Vals B m) (htl : tl = Vals.pick B (Rel.val W).2.2.2.2 (add m (gather 8 s.1 xi) xr) m
-      (len_val Ew.add Ew.vv (gather 8 s.1 xi) xr m))
-    (c1 : ByteArray) (hc1 : c1 = addc (Rel.n W) s.2 1) (hi : ByteArray) (hhi : hi = sums (Rel.n W) c1)
-    (lo : ByteArray) (hlo : lo = sub (Rel.n W) hi c1)
-    (dst : ByteArray) (hdst : dst = addc m (add m (gather 8 lo xi) xr) 1)
-    (g : ByteArray) (hg : g = (Code.ofLongs (concatBytes #[dst, lo])).grade)
-    (hRf : Vals.RazeFits B tl (Rel.val W).1)
-    -- stays: at a generic `B` the razed cells' fit bounds the two parts' summed `.arr` windows and `.sum` counts
-    (hFf : ∀ hN, Vals.PickFits B (Obj.raze B #[⟨m, tl⟩, ⟨Rel.n W, (Rel.val W).1⟩] hN)
-      ((List.range (len g)).map fun q => (Column.bitsAt g (q * 8) 8).toNat))
-    (P : Rel .long (.arr B)) (hP : P = cons W) (Q : Rel .long (.arr B)) (hQ : Q = pend)
-    (hU : P.n.toNat + Q.n.toNat < USize.size)
-    (hFv : Vals.RazeFits (.arr B) P.val Q.val)
-    (hUV : Obj.CodesFit (.arr B)
-      (#v[⟨(PQ(.long, (.arr B))).n, (PQ(.long, (.arr B))).val⟩] : Vector (Part (.arr B)) 1))
-    (hUk : Vals.PickFits .long (PQ(.long, (.arr B))).key (List.range (PQ(.long, (.arr B))).n.toNat))
-    (hUv : Vals.PickFits (.arr B) (PQ(.long, (.arr B))).val (List.range (PQ(.long, (.arr B))).n.toNat)) :
-    ∀ r v, rep (cons (pair el pend) ∪ pend) r v ↔
-      (∃ e u, rep el r e ∧ rep pend r u ∧ v = e :: u) ∨ rep pend r v := by
-  subst hkc
-  have h1 := rep_pair el pend (codesOK_long2 _ _ hkO) hkn hkM (pickFits_atom_fst _) hkB hkC
-  have hV := (pair_pickFits el pend (codesOK_long2 _ _ hkO) hkn hkM (pickFits_atom_fst _) hkB hkC).2.2
-  subst hW
-  have h2 := rep_cons (pair el pend) hV s hs hcS hcU xi hxi m hm xr hxr j hj tl htl c1 hc1 hi hhi lo hlo
-    dst hdst g hg (pickFits_tilLongs _) hRf hFf
-  subst P Q
-  intro r v
-  rw [rep_union_full (cons (pair el pend)) _ hU (razeFits_atom_count _ _ hU (by decide) rfl) hFv
-    (one_ok _ (codesFit_atom_one _ (.inl (Option.some_ne_none _)))) (one_ok _ hUV) hUk hUv]
-  show rep (cons (pair el pend)) r v ∨ rep _ r v ↔ _
-  rw [h2]
-  refine or_congr ⟨?_, ?_⟩ Iff.rfl
-  · rintro ⟨b, bs, hb, rfl⟩
-    rw [h1] at hb
-    exact ⟨b, bs, hb.1, hb.2, rfl⟩
-  · rintro ⟨e, u, he, hu, rfl⟩
-    refine ⟨e, u, ?_, rfl⟩
-    rw [h1]; exact ⟨he, hu⟩
 
 /-- The chain `rep_foldBy_keep` leaves for `subseq`: rows `ys[t]` that are `xs[t] :: ys[t+1]` or `ys[t+1]`,
 ending at `[]`, start at exactly the sublists of `xs`. -/
@@ -134,97 +75,6 @@ theorem subseq_keep {β : Type _} (E : β → Prop) (U : List β → Prop) (v : 
     · exact Or.inr hu
     · exact Or.inr hu
 
-section SubseqFold
-
-open QLean.Dep
-
-/-- **`subseq`, read back**: an array `xs` of `X` goes to exactly its sublists. `rep_foldBy_keep` at the step
-    `cons (pair el pend) ∪ pend`, `keep := True`, and the seed `nilVal B`, its chain closed by `subseq_chain`.
-    Bound values and hypotheses as `rep_foldBy`'s (`step` bound by `hstep`), and `subseq_step_rep`'s at every
-    round (`hC`, a per-round bundle, each bound value with its equation). -/
-theorem rep_subseq {B : Obj} {n : USize} (X : Vals (.arr B) n)
-    (T : Rel .long (.arr B)) (hT : T = num (idU X) 0) (hn : n.toNat < 2 ^ 63)
-    (hv : Vals.PickFits (.arr B) X (List.range n.toNat))
-    (pend₀ : Rel .long (.arr B)) (hpend : pend₀ = top (A := .long) (Rel.key T) (nilVal B))
-    (hN : (Rel.n T).toNat * (1 : USize).toNat < USize.size)
-    (h63 : (Rel.n T).toNat * (1 : USize).toNat < 2 ^ 63)
-    (step : Rel .long B → Rel .long (.arr B) → Rel .long (.arr B))
-    (hstep : step = fun el pend => cons (pair el pend) ∪ pend)
-    (elK : Nat → Rel .long B) (hE : ∀ k, elK k = elR(T, k))
-    (f : Rel .long (.arr B) × Rel .long (.arr B) × Nat → Rel .long (.arr B) × Rel .long (.arr B) × Nat)
-    (hf : ∀ st, f st = rnd(st))
-    -- kept (hR, hC): each round's state, step output and `P ∪ Q` are intermediates; CodesFit/RazeFits no input bounds
-    (hR : ∀ i (el : Rel .long B) (pend P S : Rel .long (.arr B)), el = elK i →
-      pend = (f^[i] (pend₀, Alg.zero, 0)).1 → P = (f^[i] (pend₀, Alg.zero, 0)).2.1 → S = step el pend →
-      roundAt((.arr B)))
-    (hC : ∀ i, i ≤ (Rel.val T).1.toNat → ∀ (el : Rel .long B) (pend : Rel .long (.arr B)), el = elK i →
-      pend = (f^[i] (pend₀, Alg.zero, 0)).1 →
-      ∀ kc : Vector Code 2, kc = Obj.codes .long kp2(el, pend) →
-      (Rel.n el).toNat + (Rel.n pend).toNat < USize.size ∧ (Rel.n pend).toNat < 2 ^ 63 ∧
-      (Rel.n el).toNat * (Rel.n pend).toNat < min (2 ^ 63) USize.size ∧
-      Vals.PickFits B (Rel.val el) ((mpairs(kc, el, pend)).map Prod.fst) ∧
-      Vals.PickFits (.arr B) (Rel.val pend) ((mpairs(kc, el, pend)).map Prod.snd) ∧
-      ∀ W : Rel .long (.prod B (.arr B)), W = pair el pend →
-      ∀ s : ByteArray × ByteArray, s = slicesOf (Rel.val W).2 →
-      ((List.range (Rel.n W).toNat).map fun r => (Column.bitsAt s.2 (r * 8) 8).toNat).sum + (Rel.n W).toNat <
-        2 ^ 63 ∧
-      ((List.range (Rel.n W).toNat).map fun r => (Column.bitsAt s.2 (r * 8) 8).toNat).sum + (Rel.n W).toNat <
-        USize.size ∧
-      ∀ xi : ByteArray, xi = expandBytes 8 0 (tilLongs (Rel.n W)) s.2 →
-      ∀ m : USize, m = (len xi).toUSize →
-      ∀ xr : ByteArray, xr = sub m (tilLongs m) (gather 8 (sub (Rel.n W) (sums (Rel.n W) s.2) s.2) xi) →
-      ∀ j : ByteArray, j = add m (gather 8 s.1 xi) xr →
-      ∀ tl : Vals B m, tl = Vals.pick B (Rel.val W).2.2.2.2 (add m (gather 8 s.1 xi) xr) m
-        (len_val Ew.add Ew.vv (gather 8 s.1 xi) xr m) →
-      ∀ c1 : ByteArray, c1 = addc (Rel.n W) s.2 1 → ∀ hi : ByteArray, hi = sums (Rel.n W) c1 →
-      ∀ lo : ByteArray, lo = sub (Rel.n W) hi c1 →
-      ∀ dst : ByteArray, dst = addc m (add m (gather 8 lo xi) xr) 1 →
-      ∀ g : ByteArray, g = (Code.ofLongs (concatBytes #[dst, lo])).grade →
-      Vals.RazeFits B tl (Rel.val W).1 ∧
-      (∀ hN, Vals.PickFits B (Obj.raze B #[⟨m, tl⟩, ⟨Rel.n W, (Rel.val W).1⟩] hN)
-        ((List.range (len g)).map fun q => (Column.bitsAt g (q * 8) 8).toNat)) ∧
-      ∀ P : Rel .long (.arr B), P = cons W → ∀ Q : Rel .long (.arr B), Q = pend →
-      ∃ hU : P.n.toNat + Q.n.toNat < USize.size,
-        Vals.RazeFits (.arr B) P.val Q.val ∧
-        Obj.CodesFit (.arr B)
-          (#v[⟨(PQ(.long, (.arr B))).n, (PQ(.long, (.arr B))).val⟩] : Vector (Part (.arr B)) 1) ∧
-        Vals.PickFits .long (PQ(.long, (.arr B))).key (List.range (PQ(.long, (.arr B))).n.toNat) ∧
-        Vals.PickFits (.arr B) (PQ(.long, (.arr B))).val (List.range (PQ(.long, (.arr B))).n.toNat))
-    (F : Rel .long (.arr B)) (hF : F = foldRows T pend₀ step)
-    -- kept (hjO..hjC): `F` is the fold output, its count and fits grow with the rounds; no input bounds them
-    (jc : Vector Code 2) (hjc : jc = Obj.codes .long ck2(T°, F)) (hjO : codesOK(jc, ck2(T°, F)))
-    (hjn : (Rel.n F).toNat < 2 ^ 63) (hjM : (Rel.n (T°)).toNat * (Rel.n F).toNat < min (2 ^ 63) USize.size)
-    (hjA : Vals.PickFits (.arr B) (Rel.key (T°)) ((mpairs(jc, T°, F)).map Prod.fst))
-    (hjC : Vals.PickFits (.arr B) (Rel.val F) ((mpairs(jc, T°, F)).map Prod.snd)) :
-    ∀ (xs : List B.El) ys, rep (Alg.subseq X) xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Sublist xs := by
-  subst hstep
-  intro xs ys
-  rw [show Alg.subseq X = foldBy X (nilVal B) (fun el pend => cons (pair el pend) ∪ pend) from foldByC_fst X _ _]
-  -- round `i`'s step read back: `subseq_step_rep` at the round's element and state, its kept branch split by
-  -- whether the row has an element this round
-  have hS : ∀ i, i ≤ (Rel.val T).1.toNat → ∀ r v,
-      rep (cons (pair (elK i) (f^[i] (pend₀, Alg.zero, 0)).1) ∪ (f^[i] (pend₀, Alg.zero, 0)).1) r v ↔
-      (∃ e u, rep (elK i) r e ∧ rep (f^[i] (pend₀, Alg.zero, 0)).1 r u ∧ (v = e :: u ∨ v = u)) ∨
-        (True ∧ (¬ ∃ e, rep (elK i) r e) ∧ rep (f^[i] (pend₀, Alg.zero, 0)).1 r v) := by
-    intro i hi r v
-    obtain ⟨hkO, hkn, hkM, hkB, hkC, hW⟩ := hC i hi _ _ rfl rfl _ rfl
-    obtain ⟨hcS, hcU, hx⟩ := hW _ rfl _ rfl
-    obtain ⟨hRf, hFf, hPQ⟩ := hx _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
-    obtain ⟨hU, hFv, hUV, hUk, hUv⟩ := hPQ _ rfl _ rfl
-    exact subseq_keep _ _ v _ (subseq_step_rep _ _ _ rfl hkO hkn hkM hkB hkC _ rfl _ rfl hcS hcU _ rfl _ rfl _ rfl
-      _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl hRf hFf _ rfl _ rfl hU hFv hUV hUk hUv r v)
-  refine (rep_foldBy_keep (nilVal B) X T hT hn hv pend₀ hpend hN h63 (pickFits_nilVal B _)
-    (fun el pend => cons (pair el pend) ∪ pend) (fun _ eu v => v = eu.1 :: eu.2 ∨ v = eu.2) elK hE f hf
-    (fun i _ _ => roundRB_of_ok pend₀ _ elK f hR i) True (fun i hi _ => hS i hi)
-    F hF (by subst hjc; exact rep_comp (T°) F hjO hjn hjM hjA hjC) xs ys).trans ?_
-  -- `nilVal B`'s one row is `[]`
-  exact and_congr Iff.rfl ((exists_congr fun zs => exists_congr fun _ => and_congr
-    ⟨fun ⟨_, h⟩ => h.symm, fun h => ⟨⟨0, by simp⟩, h.symm⟩⟩ Iff.rfl).trans (subseq_chain xs ys))
-
-end SubseqFold
-
 end LeetQ.Rel.Rep
 
-#print axioms LeetQ.Rel.Rep.subseq_step_rep
 #print axioms LeetQ.Rel.Rep.subseq_chain
-#print axioms LeetQ.Rel.Rep.rep_subseq
