@@ -147,8 +147,8 @@ theorem rep_lt {n : USize} (U : Vals (.atom .long) n) (h : QAtomicType.long ≠ 
           Vals.pick _ U (gather 8 (cross n n).2 (whereBits nn (Ew.cmp Ew.lt Ew.i64 Ew.vv
             (gather 8 (longsOf (Ops.rank U h)) (cross n n).1) (gather 8 (longsOf (Ops.rank U h)) (cross n n).2) nn)))
             k ((gather_len _ _).trans hk)⟩)
-    (hc : pairsOK(L, idU U)) (hk : Vals.PickFits (.atom .long) L.key (ids (misses(L, idU U))))
-    (hv : Vals.PickFits (.atom .long) L.val (ids (misses(L, idU U)))) (a b : Int64) :
+    (hc : pairsOK(L, idU U)) (hk : Vals.PickFits (.atom .long) L.key (List.range L.n.toNat))
+    (hv : Vals.PickFits (.atom .long) L.val (List.range L.n.toNat)) (a b : Int64) :
     rep (lt U h) a b ↔ (∃ i, U.row i = a) ∧ (∃ j, U.row j = b) ∧ a < b := by
   have e : lt U h = L \ idU U := by subst hL; rfl
   rw [e, rep_diff L (idU U) hc hk hv, rep_apply, rep_apply, lt_rows_holds U h hN h63 L hL, idU_holds]
@@ -172,8 +172,8 @@ theorem rep_leq {n : USize} (U : Vals (.atom .long) n) (h : QAtomicType.long ≠
           Vals.pick _ U (gather 8 (cross n n).2 (whereBits nn (Ew.cmp Ew.lt Ew.i64 Ew.vv
             (gather 8 (longsOf (Ops.rank U h)) (cross n n).1) (gather 8 (longsOf (Ops.rank U h)) (cross n n).2) nn)))
             k ((gather_len _ _).trans hk)⟩)
-    (hc : pairsOK(L, idU U)) (hk : Vals.PickFits (.atom .long) L.key (ids (misses(L, idU U))))
-    (hv : Vals.PickFits (.atom .long) L.val (ids (misses(L, idU U))))
+    (hc : pairsOK(L, idU U)) (hk : Vals.PickFits (.atom .long) L.key (List.range L.n.toNat))
+    (hv : Vals.PickFits (.atom .long) L.val (List.range L.n.toNat))
     (hNU : (Rel.n (lt U h)).toNat + (Rel.n (idU U)).toNat < USize.size)
     (hNk : ((pk(lt U h, idU U)).toList.map fun c : Part (.atom .long) => c.1.toNat).sum < USize.size)
     (hNv : ((pv(lt U h, idU U)).toList.map fun c : Part (.atom .long) => c.1.toNat).sum < USize.size)
@@ -181,8 +181,8 @@ theorem rep_leq {n : USize} (U : Vals (.atom .long) n) (h : QAtomicType.long ≠
     (hFv : Vals.RazeFits (.atom .long) (Rel.val (lt U h)) (Rel.val (idU U)))
     (V : Rel (.atom .long) (.atom .long)) (hV : V = Uc(lt U h, idU U, hNk, hNv))
     (huK : cOK(kcR(V), Rel.n V, Rel.key V)) (huV : cOK(vcR(V), Rel.n V, Rel.val V))
-    (huk : Vals.PickFits (.atom .long) (Rel.key V) (ids nubR(V)))
-    (huv : Vals.PickFits (.atom .long) (Rel.val V) (ids nubR(V))) (a b : Int64) :
+    (huk : Vals.PickFits (.atom .long) (Rel.key V) (List.range (Rel.n V).toNat))
+    (huv : Vals.PickFits (.atom .long) (Rel.val V) (List.range (Rel.n V).toNat)) (a b : Int64) :
     rep (leq U h) a b ↔ (∃ i, U.row i = a) ∧ (∃ j, U.row j = b) ∧ a ≤ b := by
   subst hV
   have e : leq U h = lt U h ∪ idU U := rfl

@@ -54,8 +54,8 @@ theorem subseq_step_rep {B : Obj} (el : Rel .long B) (pend : Rel .long (.arr B))
     (hUK : Obj.CodesFit .long (#v[⟨(PQ(.long, (.arr B))).n, (PQ(.long, (.arr B))).key⟩] : Vector (Part .long) 1))
     (hUV : Obj.CodesFit (.arr B)
       (#v[⟨(PQ(.long, (.arr B))).n, (PQ(.long, (.arr B))).val⟩] : Vector (Part (.arr B)) 1))
-    (hUk : Vals.PickFits .long (PQ(.long, (.arr B))).key (ids nubI(.long, (.arr B), PQ(.long, (.arr B)))))
-    (hUv : Vals.PickFits (.arr B) (PQ(.long, (.arr B))).val (ids nubI(.long, (.arr B), PQ(.long, (.arr B))))) :
+    (hUk : Vals.PickFits .long (PQ(.long, (.arr B))).key (List.range (PQ(.long, (.arr B))).n.toNat))
+    (hUv : Vals.PickFits (.arr B) (PQ(.long, (.arr B))).val (List.range (PQ(.long, (.arr B))).n.toNat)) :
     ∀ r v, rep (cons (pair el pend) ∪ pend) r v ↔
       (∃ e u, rep el r e ∧ rep pend r u ∧ v = e :: u) ∨ rep pend r v := by
   subst hkc
@@ -196,8 +196,8 @@ theorem rep_subseq {B : Obj} {n : USize} (X : Vals (.arr B) n)
         Obj.CodesFit .long (#v[⟨(PQ(.long, (.arr B))).n, (PQ(.long, (.arr B))).key⟩] : Vector (Part .long) 1) ∧
         Obj.CodesFit (.arr B)
           (#v[⟨(PQ(.long, (.arr B))).n, (PQ(.long, (.arr B))).val⟩] : Vector (Part (.arr B)) 1) ∧
-        Vals.PickFits .long (PQ(.long, (.arr B))).key (ids nubI(.long, (.arr B), PQ(.long, (.arr B)))) ∧
-        Vals.PickFits (.arr B) (PQ(.long, (.arr B))).val (ids nubI(.long, (.arr B), PQ(.long, (.arr B)))))
+        Vals.PickFits .long (PQ(.long, (.arr B))).key (List.range (PQ(.long, (.arr B))).n.toNat) ∧
+        Vals.PickFits (.arr B) (PQ(.long, (.arr B))).val (List.range (PQ(.long, (.arr B))).n.toNat))
     (F : Rel .long (.arr B)) (hF : F = foldRows T pend₀ step)
     (jc : Vector Code 2) (hjc : jc = Obj.codes .long ck2(T°, F)) (hjO : codesOK(jc, ck2(T°, F)))
     (hjn : (Rel.n F).toNat < 2 ^ 63) (hjM : msum(jc, T°, F) < 2 ^ 63) (hjU : msum(jc, T°, F) < USize.size)

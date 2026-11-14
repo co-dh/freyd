@@ -385,7 +385,7 @@ theorem rep_transpose (R : Rel A B)
       laneOK((vcR).w) ∧
         (vcR).n = Rel.n R ∧ (vcR).b.size = ((vcR).n.toNat * (vcR).w + 7) / 8 ∧
         ((vcR).w < 8 → (vcR).card < USize.size ∧ ∀ i < (vcR).n.toNat, Column.idAt (vcR).b (vcR).w i < (vcR).card))
-    (hk : Vals.PickFits A (Rel.key R) (ids nubR)) (hv : Vals.PickFits B (Rel.val R) (ids nubR))
+    (hk : Vals.PickFits A (Rel.key R) (List.range R.n.toNat)) (hv : Vals.PickFits B (Rel.val R) (List.range R.n.toNat))
     (hF : ∀ {i j : Nat} (hi : i < (Rel.nub R).n.toNat) (hj : j < (Rel.nub R).n.toNat),
       Column.idAt (kcT).b (kcT).w i = Column.idAt (kcT).b (kcT).w j ↔
         Vals.row (Rel.nub R).key ⟨i, hi⟩ = Vals.row (Rel.nub R).key ⟨j, hj⟩)
@@ -432,7 +432,7 @@ theorem nub_row_inj (R : Rel A B)
       laneOK((vcR).w) ∧
         (vcR).n = Rel.n R ∧ (vcR).b.size = ((vcR).n.toNat * (vcR).w + 7) / 8 ∧
         ((vcR).w < 8 → (vcR).card < USize.size ∧ ∀ i < (vcR).n.toNat, Column.idAt (vcR).b (vcR).w i < (vcR).card))
-    (hk : Vals.PickFits A (Rel.key R) (ids nubR)) (hv : Vals.PickFits B (Rel.val R) (ids nubR))
+    (hk : Vals.PickFits A (Rel.key R) (List.range R.n.toNat)) (hv : Vals.PickFits B (Rel.val R) (List.range R.n.toNat))
     (t t' : Fin (Rel.nub R).n.toNat) (ek : Vals.row (Rel.nub R).key t = Vals.row (Rel.nub R).key t')
     (ev : Vals.row (Rel.nub R).val t = Vals.row (Rel.nub R).val t') : t = t' := by
   obtain ⟨hn, hrow⟩ := nub_row R hK hV hk hv
@@ -467,7 +467,7 @@ theorem rep_transpose_list (R : Rel A B)
       laneOK((vcR).w) ∧
         (vcR).n = Rel.n R ∧ (vcR).b.size = ((vcR).n.toNat * (vcR).w + 7) / 8 ∧
         ((vcR).w < 8 → (vcR).card < USize.size ∧ ∀ i < (vcR).n.toNat, Column.idAt (vcR).b (vcR).w i < (vcR).card))
-    (hk : Vals.PickFits A (Rel.key R) (ids nubR)) (hv : Vals.PickFits B (Rel.val R) (ids nubR))
+    (hk : Vals.PickFits A (Rel.key R) (List.range R.n.toNat)) (hv : Vals.PickFits B (Rel.val R) (List.range R.n.toNat))
     (hF : ∀ {i j : Nat} (hi : i < (Rel.nub R).n.toNat) (hj : j < (Rel.nub R).n.toNat),
       Column.idAt (kcT).b (kcT).w i = Column.idAt (kcT).b (kcT).w j ↔
         Vals.row (Rel.nub R).key ⟨i, hi⟩ = Vals.row (Rel.nub R).key ⟨j, hj⟩)

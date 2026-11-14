@@ -337,8 +337,8 @@ theorem rep_union_full (R S : Rel A B) (hN : R.n.toNat + S.n.toNat < USize.size)
     (hFk : Vals.RazeFits A R.key S.key) (hFv : Vals.RazeFits B R.val S.val)
     (hK : cOK(kcR(Uc(R, S, hNk, hNv)), Rel.n (Uc(R, S, hNk, hNv)), Rel.key (Uc(R, S, hNk, hNv))))
     (hV : cOK(vcR(Uc(R, S, hNk, hNv)), Rel.n (Uc(R, S, hNk, hNv)), Rel.val (Uc(R, S, hNk, hNv))))
-    (hk : Vals.PickFits A (Rel.key (Uc(R, S, hNk, hNv))) (ids nubR(Uc(R, S, hNk, hNv))))
-    (hv : Vals.PickFits B (Rel.val (Uc(R, S, hNk, hNv))) (ids nubR(Uc(R, S, hNk, hNv)))) :
+    (hk : Vals.PickFits A (Rel.key (Uc(R, S, hNk, hNv))) (List.range (Rel.n (Uc(R, S, hNk, hNv))).toNat))
+    (hv : Vals.PickFits B (Rel.val (Uc(R, S, hNk, hNv))) (List.range (Rel.n (Uc(R, S, hNk, hNv))).toNat)) :
     rep (R ∪ S) = rep R ∪ rep S :=
   rep_union R S hN hNk hNv (raze_row_full A R.key S.key hFk hNk) (raze_row_full B R.val S.val hFv hNv) hK hV hk hv
 

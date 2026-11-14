@@ -185,7 +185,7 @@ theorem rep_union (R S : Rel A B) (hN : R.n.toNat + S.n.toNat < USize.size)
       laneOK((vcU).w) ∧
         (vcU).n = (Uc).n ∧ (vcU).b.size = ((vcU).n.toNat * (vcU).w + 7) / 8 ∧
         ((vcU).w < 8 → (vcU).card < USize.size ∧ ∀ i < (vcU).n.toNat, Column.idAt (vcU).b (vcU).w i < (vcU).card))
-    (hk : Vals.PickFits A (Uc).key (ids nubU)) (hv : Vals.PickFits B (Uc).val (ids nubU)) :
+    (hk : Vals.PickFits A (Uc).key (List.range (Uc).n.toNat)) (hv : Vals.PickFits B (Uc).val (List.range (Uc).n.toNat)) :
     rep (R ∪ S) = rep R ∪ rep S := by
   rw [union_eq_nub R S hN hNk hNv, rep_nub (Uc) hK hV hk hv]
   have hn : (Uc).n.toNat = R.n.toNat + S.n.toNat := raze2_cnt R.key S.key hNk

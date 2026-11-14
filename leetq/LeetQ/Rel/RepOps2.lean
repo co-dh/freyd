@@ -48,7 +48,7 @@ theorem vals_member (R : Rel A B) (T : Rel B B) (hc : codesOK(avc(B, R, T), avp(
     the rows of `R` whose value is no value of `T` (`anti_ids`, `vals_member`), read back by `rows_keep`.
     Hypotheses: the joint value codes faithful and well formed (`hc`), `R`'s columns picking back at the kept rows. -/
 theorem rep_antiJoin (R : Rel A B) (T : Rel B B) (hc : codesOK(avc(B, R, T), avp(B, R, T)))
-    (hk : Vals.PickFits A R.key (ids (amiss(B, R, T)))) (hv : Vals.PickFits B R.val (ids (amiss(B, R, T)))) :
+    (hk : Vals.PickFits A R.key (List.range R.n.toNat)) (hv : Vals.PickFits B R.val (List.range R.n.toNat)) :
     rep (antiJoin R T) = rep R ≫ corefl (A := (⟨B.El⟩ : RelSet.{0})) fun b => ¬ ∃ y, rep T y b :=
   hom_ext fun a b => by
     obtain ⟨hw0, hn0, hs0, -⟩ := hc.2 (k := 0) (by decide)
@@ -100,7 +100,7 @@ theorem corefl_le_dom {X Y : RelSet.{0}} (P : X.carrier → Prop) (S : X ⟶ Y) 
     `dom R`, `rep_dom`'s on `R.key`. -/
 theorem rep_entire (R : Rel A B) {m : USize} (U : Vals A m)
     (hc : codesOK(pairs #v[idU U, dom R], pcs(idU U, dom R))) (hK : oneOK(A, R.n, R.key))
-    (hp : Vals.PickFits A R.key (ids (c1(A, R.n, R.key)).groupIds.2)) :
+    (hp : Vals.PickFits A R.key (List.range R.n.toNat)) :
     entire R U = true ↔ ∀ a, (∃ i, U.row i = a) → ∃ b, rep R a b := by
   show (idU U ⊑ dom R) = true ↔ _
   rw [rep_le _ _ hc, rep_idU, rep_dom_corefl R hK hp]
@@ -110,7 +110,7 @@ theorem rep_entire (R : Rel A B) {m : USize} (U : Vals A m)
     `rep_entire`'s at `R°`, whose keys are `R.val`. -/
 theorem rep_surjective (R : Rel A B) {m : USize} (U : Vals B m)
     (hc : codesOK(pairs #v[idU U, dom (R°)], pcs(idU U, dom (R°)))) (hK : oneOK(B, R.n, R.val))
-    (hp : Vals.PickFits B R.val (ids (c1(B, R.n, R.val)).groupIds.2)) :
+    (hp : Vals.PickFits B R.val (List.range R.n.toNat)) :
     surjective R U = true ↔ ∀ b, (∃ i, U.row i = b) → ∃ a, rep R a b :=
   (rep_entire (R°) U hc hK hp).trans (forall_congr' fun _ => imp_congr_right fun _ => exists_congr fun _ =>
     convArr_holds R.key R.val _ _)
@@ -143,7 +143,7 @@ theorem firsts_length_iff {α : Type} [DecidableEq α] (g : Nat → α) (m : Nat
 /-- Two rows of `R.nub` holding one pair are one row: `nub` keeps the first occurrence of each pair (`nub_row`,
     `nodup_firsts`). Hypotheses: `rep_nub`'s. -/
 theorem nub_rows_inj (R : Rel A B) (hK : oneOK(A, R.n, R.key)) (hV : oneOK(B, R.n, R.val))
-    (hk : Vals.PickFits A R.key (ids nubI(A, B, R))) (hv : Vals.PickFits B R.val (ids nubI(A, B, R)))
+    (hk : Vals.PickFits A R.key (List.range R.n.toNat)) (hv : Vals.PickFits B R.val (List.range R.n.toNat))
     {t t' : Fin R.nub.n.toNat} (h1 : R.nub.key.row t = R.nub.key.row t') (h2 : R.nub.val.row t = R.nub.val.row t') :
     t = t' := by
   obtain ⟨-, hrow⟩ := nub_row R hK hV hk hv
@@ -168,7 +168,7 @@ theorem nub_rows_inj (R : Rel A B) (hK : oneOK(A, R.n, R.key)) (hV : oneOK(B, R.
     (`groupIds_firsts`) against its rows, all distinct exactly when no key holds two values (`firsts_length_iff`,
     `nub_rows_inj`, `rep_nub`). Hypotheses: `rep_nub`'s, and the key code of `R.nub` that `simple` groups. -/
 theorem rep_simple (R : Rel A B) (hK : oneOK(A, R.n, R.key)) (hV : oneOK(B, R.n, R.val))
-    (hk : Vals.PickFits A R.key (ids nubI(A, B, R))) (hv : Vals.PickFits B R.val (ids nubI(A, B, R)))
+    (hk : Vals.PickFits A R.key (List.range R.n.toNat)) (hv : Vals.PickFits B R.val (List.range R.n.toNat))
     (hS : oneOK(A, R.nub.n, R.nub.key)) :
     simple R = true ↔ ∀ a b b', rep R a b → rep R a b' → b = b' := by
   obtain ⟨hF, hw, hn, hs, hcard⟩ := hS
@@ -186,7 +186,7 @@ theorem rep_simple (R : Rel A B) (hK : oneOK(A, R.n, R.key)) (hV : oneOK(B, R.n,
 /-- **`injective R = true ↔ rep R ≫ rep R° ⊑ 𝟙`**, pointwise: `simple R°` (`rep_simple`, `convArr_holds`).
     Hypotheses: `rep_simple`'s at `R°`, whose keys are `R.val`. -/
 theorem rep_injective (R : Rel A B) (hK : oneOK(B, R.n, R.val)) (hV : oneOK(A, R.n, R.key))
-    (hk : Vals.PickFits B R.val (ids nubI(B, A, (R°)))) (hv : Vals.PickFits A R.key (ids nubI(B, A, (R°))))
+    (hk : Vals.PickFits B R.val (List.range R.n.toNat)) (hv : Vals.PickFits A R.key (List.range R.n.toNat))
     (hS : oneOK(B, (Rel.nub (R°)).n, (Rel.nub (R°)).key)) :
     injective R = true ↔ ∀ a a' b, rep R a b → rep R a' b → a = a' := by
   refine (rep_simple (R°) hK hV hk hv hS).trans ⟨fun h a a' b h1 h2 => h b a a' ?_ ?_, fun h b a a' h1 h2 => h a a' b ?_ ?_⟩
@@ -198,13 +198,13 @@ theorem rep_injective (R : Rel A B) (hK : oneOK(B, R.n, R.val)) (hV : oneOK(A, R
 /-- **`isMap R U = true`**: `rep R` entire on `U` and simple — `rep_entire` and `rep_simple`, their hypotheses. -/
 theorem rep_isMap (R : Rel A B) {m : USize} (U : Vals A m)
     (hc : codesOK(pairs #v[idU U, dom R], pcs(idU U, dom R))) (hK : oneOK(A, R.n, R.key))
-    (hp : Vals.PickFits A R.key (ids (c1(A, R.n, R.key)).groupIds.2)) (hV : oneOK(B, R.n, R.val))
-    (hk : Vals.PickFits A R.key (ids nubI(A, B, R))) (hv : Vals.PickFits B R.val (ids nubI(A, B, R)))
+    (hV : oneOK(B, R.n, R.val))
+    (hk : Vals.PickFits A R.key (List.range R.n.toNat)) (hv : Vals.PickFits B R.val (List.range R.n.toNat))
     (hS : oneOK(A, R.nub.n, R.nub.key)) :
     isMap R U = true ↔
       (∀ a, (∃ i, U.row i = a) → ∃ b, rep R a b) ∧ ∀ a b b', rep R a b → rep R a b' → b = b' := by
   show (entire R U && simple R) = true ↔ _
-  rw [Bool.and_eq_true, rep_entire R U hc hK hp, rep_simple R hK hV hk hv hS]
+  rw [Bool.and_eq_true, rep_entire R U hc hK hk, rep_simple R hK hV hk hv hS]
 
 end Entire
 

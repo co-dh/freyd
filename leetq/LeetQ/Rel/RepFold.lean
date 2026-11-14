@@ -48,7 +48,7 @@ set_option hygiene false in
 scoped notation "roundAt(" V ")" =>
   Obj.CodesFit .long (#v[⟨S.n, S.key⟩] : Vector (Part .long) 1) ∧
   Obj.CodesFit V (#v[⟨S.n, S.val⟩] : Vector (Part V) 1) ∧
-  Vals.PickFits .long S.key (ids nubI(.long, V, S)) ∧ Vals.PickFits V S.val (ids nubI(.long, V, S)) ∧
+  Vals.PickFits .long S.key (List.range S.n.toNat) ∧ Vals.PickFits V S.val (List.range S.n.toNat) ∧
   Obj.CodesFit .long jparts ∧
   (∀ jc : Vector Code 2, jc = Obj.codes .long jparts → ∀ I : ByteArray, I = anti (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two) →
     Vals.PickFits V (Rel.key (pend°)) (ids I) ∧ Vals.PickFits .long (Rel.val (pend°)) (ids I)) ∧
@@ -61,8 +61,8 @@ scoped notation "roundAt(" V ")" =>
       Vals.RazeFits .long P.key Q.key ∧ Vals.RazeFits V P.val Q.val ∧
       Obj.CodesFit .long (#v[⟨(PQ(.long, V)).n, (PQ(.long, V)).key⟩] : Vector (Part .long) 1) ∧
       Obj.CodesFit V (#v[⟨(PQ(.long, V)).n, (PQ(.long, V)).val⟩] : Vector (Part V) 1) ∧
-      Vals.PickFits .long (PQ(.long, V)).key (ids nubI(.long, V, PQ(.long, V))) ∧
-      Vals.PickFits V (PQ(.long, V)).val (ids nubI(.long, V, PQ(.long, V)))
+      Vals.PickFits .long (PQ(.long, V)).key (List.range (PQ(.long, V)).n.toNat) ∧
+      Vals.PickFits V (PQ(.long, V)).val (List.range (PQ(.long, V)).n.toNat)
 set_option hygiene false in
 scoped notation "roundOK" => roundAt(V)
 
@@ -118,11 +118,12 @@ open FoldN
 theorem round_rep {E V : Obj} (el : Rel .long E) (pend P S : Rel .long V)
     (hSK : Obj.CodesFit .long (#v[⟨S.n, S.key⟩] : Vector (Part .long) 1))
     (hSV : V.CodesFit (#v[⟨S.n, S.val⟩] : Vector (Part V) 1))
-    (hSk : Vals.PickFits .long S.key (ids nubI(.long, V, S)))
-    (hSv : Vals.PickFits V S.val (ids nubI(.long, V, S)))
+    (hSk : Vals.PickFits .long S.key (List.range S.n.toNat))
+    (hSv : Vals.PickFits V S.val (List.range S.n.toNat))
     (jc : Vector Code 2) (hjc : jc = Obj.codes .long jparts) (hjf : Obj.CodesFit .long jparts)
     (I : ByteArray) (hI : I = anti (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two))
-    (hJk : Vals.PickFits V (Rel.key (pend°)) (ids I)) (hJv : Vals.PickFits .long (Rel.val (pend°)) (ids I))
+    (hJk : Vals.PickFits V (Rel.key (pend°)) (List.range pend.n.toNat))
+    (hJv : Vals.PickFits .long (Rel.val (pend°)) (List.range pend.n.toNat))
     (Q : Rel .long V) (hQ : Q = (antiJoin (pend°) (idU (Rel.key el)))°)
     (hU : P.n.toNat + Q.n.toNat < USize.size)
     (hNk : ((#[⟨P.n, P.key⟩, ⟨Q.n, Q.key⟩] : Array (Part .long)).toList.map fun c : Part .long => c.1.toNat).sum <
@@ -132,8 +133,8 @@ theorem round_rep {E V : Obj} (el : Rel .long E) (pend P S : Rel .long V)
     (hFk : Vals.RazeFits .long P.key Q.key) (hFv : Vals.RazeFits V P.val Q.val)
     (hUK : Obj.CodesFit .long (#v[⟨(PQ(.long, V)).n, (PQ(.long, V)).key⟩] : Vector (Part .long) 1))
     (hUV : V.CodesFit (#v[⟨(PQ(.long, V)).n, (PQ(.long, V)).val⟩] : Vector (Part V) 1))
-    (hUk : Vals.PickFits .long (PQ(.long, V)).key (ids nubI(.long, V, PQ(.long, V))))
-    (hUv : Vals.PickFits V (PQ(.long, V)).val (ids nubI(.long, V, PQ(.long, V)))) :
+    (hUk : Vals.PickFits .long (PQ(.long, V)).key (List.range (PQ(.long, V)).n.toNat))
+    (hUv : Vals.PickFits V (PQ(.long, V)).val (List.range (PQ(.long, V)).n.toNat)) :
     rep (Rel.nub S) = rep S ∧
       ∀ r v, rep (P ∪ Q) r v ↔ rep P r v ∨ (rep pend r v ∧ ¬ ∃ e, rep el r e) := by
   refine ⟨rep_nub S (one_ok _ hSK) (one_ok _ hSV) hSk hSv, fun r v => ?_⟩

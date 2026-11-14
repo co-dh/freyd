@@ -562,7 +562,7 @@ theorem anti_pick_rows {mu mv : USize} (U : Vals B mu) (V : Vals B mv) (uc vc : 
     (hun : uc.n = mu) (hvn : vc.n = mv)
     (hj : ∀ {j p : Nat} (hj : j < mv.toNat) (hp : p < mu.toNat),
       Column.idAt vc.b vc.w j = Column.idAt uc.b uc.w p ↔ V.row ⟨j, hj⟩ = U.row ⟨p, hp⟩)
-    (hP : Vals.PickFits B U (ids (anti uc vc))) (u : B.El) :
+    (hP : Vals.PickFits B U (List.range mu.toNat)) (u : B.El) :
     (∃ i, (Vals.pickPart B U (anti uc vc)).2.row i = u) ↔ (∃ p, U.row p = u) ∧ ¬∃ j, V.row j = u := by
   have hm := anti_ids uc vc hxw hyw hxs hys
   have hL : len (anti uc vc) < USize.size := by
@@ -570,7 +570,7 @@ theorem anti_pick_rows {mu mv : USize} (U : Vals B mu) (V : Vals B mv) (uc vc : 
     exact Nat.lt_of_le_of_lt (Nat.le_trans (List.length_filter_le _ _) (Nat.le_of_eq (List.length_range ..)))
       uc.n.toNat_lt_size
   have hlt : ∀ t ∈ ids (anti uc vc), t < mu.toNat := fun t ht => by rw [← hun]; exact ((hm.2.2 t).1 ht).1
-  rw [pickPart_rows U _ hL hlt hP u]
+  rw [pickPart_rows U _ hL hlt (pickFits_sublist (hun ▸ anti_sublist uc vc) hP) u]
   constructor
   · rintro ⟨t, hti, ht, e⟩
     obtain ⟨-, hno⟩ := (hm.2.2 t).1 hti
@@ -604,7 +604,7 @@ theorem sym_vac_holds (R : Rel A C) (S : Rel B C) {ma mb : USize} (Ua : Vals A m
       Column.idAt rk.b rk.w j = Column.idAt uac.b uac.w p ↔ R.key.row ⟨j, hj⟩ = Ua.row ⟨p, hp⟩)
     (hb : ∀ {j p : Nat} (hj : j < S.n.toNat) (hp : p < mb.toNat),
       Column.idAt sk.b sk.w j = Column.idAt ubc.b ubc.w p ↔ S.key.row ⟨j, hj⟩ = Ub.row ⟨p, hp⟩)
-    (hPa : Vals.PickFits A Ua (ids (anti uac rk))) (hPb : Vals.PickFits B Ub (ids (anti ubc sk)))
+    (hPa : Vals.PickFits A Ua (List.range ma.toNat)) (hPb : Vals.PickFits B Ub (List.range mb.toNat))
     (hN : (vacA).1.toNat * (vacB).1.toNat < USize.size) (h63 : (vacA).1.toNat * (vacB).1.toNat < 2 ^ 63)
     (hA : Vals.PickFits A (vacA).2 ((List.range ((vacA).1.toNat * (vacB).1.toNat)).map (· / (vacB).1.toNat)))
     (hB : Vals.PickFits B (vacB).2 ((List.range ((vacA).1.toNat * (vacB).1.toNat)).map (· % (vacB).1.toNat)))
@@ -657,7 +657,7 @@ theorem rep_symDiv {ma mb : USize} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma) 
     (hMU : ((List.range lc.n.toNat).map fun i => ((List.range rc.n.toNat).filter fun j =>
       Column.idAt rc.b rc.w j == Column.idAt lc.b lc.w i).length).sum < USize.size)
     (hB : Vals.PickFits A rf.2 ((jp(lc, rc)).map Prod.fst)) (hC : Vals.PickFits B sf.2 ((jp(lc, rc)).map Prod.snd))
-    (hPa : Vals.PickFits A Ua (ids (anti uac rk))) (hPb : Vals.PickFits B Ub (ids (anti ubc sk)))
+    (hPa : Vals.PickFits A Ua (List.range ma.toNat)) (hPb : Vals.PickFits B Ub (List.range mb.toNat))
     (hN : (vacA).1.toNat * (vacB).1.toNat < USize.size) (h63 : (vacA).1.toNat * (vacB).1.toNat < 2 ^ 63)
     (hA : Vals.PickFits A (vacA).2 ((List.range ((vacA).1.toNat * (vacB).1.toNat)).map (· / (vacB).1.toNat)))
     (hBv : Vals.PickFits B (vacB).2 ((List.range ((vacA).1.toNat * (vacB).1.toNat)).map (· % (vacB).1.toNat)))
@@ -673,8 +673,8 @@ theorem rep_symDiv {ma mb : USize} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma) 
     (hFk : Vals.RazeFits A P.key Q.key) (hFv : Vals.RazeFits B P.val Q.val)
     (hUK : A.CodesFit (#v[⟨(PQ(A, B)).n, (PQ(A, B)).key⟩] : Vector (Part A) 1))
     (hUV : B.CodesFit (#v[⟨(PQ(A, B)).n, (PQ(A, B)).val⟩] : Vector (Part B) 1))
-    (hUk : Vals.PickFits A (PQ(A, B)).key (ids nubI(A, B, PQ(A, B))))
-    (hUv : Vals.PickFits B (PQ(A, B)).val (ids nubI(A, B, PQ(A, B)))) (x : A.El) (y : B.El) :
+    (hUk : Vals.PickFits A (PQ(A, B)).key (List.range (PQ(A, B)).n.toNat))
+    (hUv : Vals.PickFits B (PQ(A, B)).val (List.range (PQ(A, B)).n.toNat)) (x : A.El) (y : B.El) :
     rep (symDiv R S Ua Ub) x y ↔
       (∀ c, rep R x c ↔ rep S y c) ∧ ((∃ c, rep R x c) ∨ ((∃ p, Ua.row p = x) ∧ ∃ j, Ub.row j = y)) := by
   classical
