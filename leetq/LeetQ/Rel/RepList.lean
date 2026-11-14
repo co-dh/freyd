@@ -445,7 +445,58 @@ theorem rep_cons {K B : Obj} (P : Rel K (.prod B (.arr B))) (hp : (Rel.val P).2.
     rw [hrow _ _ _ r hr]
     exact congr (congrArg List.cons (congrArg Prod.fst hv)) (congrArg Prod.snd hv)
 
+/-- The chain `rep_foldBy` leaves for `map`: rows `ys[t] = b :: ys[t+1]` ending at `[]` read back as one list
+whose cell `t` is related to `xs[t]`. -/
+theorem map_chain {α β : Type _} (R : α → β → Prop) (xs : List α) (w : List β) :
+    (∃ ys : List (List β), ∃ hy : ys.length = xs.length + 1,
+      ys[xs.length]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_self _) hy.symm) = [] ∧
+      (∀ t (ht : t < xs.length), ∃ b, R (xs[t]'ht) b ∧
+        ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm) =
+          b :: ys[t+1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm)) ∧
+      w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.succ_pos _) hy.symm)) ↔
+    w.length = xs.length ∧ ∀ t (ht : t < xs.length) (ht' : t < w.length), R (xs[t]'ht) (w[t]'ht') := by
+  constructor
+  · rintro ⟨ys, hy, hnil, hstep, rfl⟩
+    have hdrop : ∀ t (ht : t ≤ xs.length), ys[t]'(by omega) = (ys[0]'(by omega)).drop t := by
+      intro t
+      induction t with
+      | zero => intro _; rfl
+      | succ t ih =>
+        intro ht
+        obtain ⟨b, -, hb⟩ := hstep t (by omega)
+        have h := ih (by omega)
+        rw [hb] at h
+        rw [← List.tail_drop, ← h]
+        rfl
+    have hlen : ∀ k t (ht : t ≤ xs.length), t + k = xs.length → (ys[t]'(by omega)).length = k := by
+      intro k
+      induction k with
+      | zero =>
+        intro t ht h
+        obtain rfl : t = xs.length := by omega
+        rw [hnil]
+        rfl
+      | succ k ih =>
+        intro t ht h
+        obtain ⟨b, -, hb⟩ := hstep t (by omega)
+        rw [hb, List.length_cons, ih (t+1) (by omega) (by omega)]
+    refine ⟨hlen xs.length 0 (by omega) (by omega), fun t ht ht' => ?_⟩
+    obtain ⟨b, hR, hb⟩ := hstep t ht
+    have h := hdrop t (by omega)
+    rw [hb, List.drop_eq_getElem_cons ht'] at h
+    injection h with h1
+    rw [← h1]
+    exact hR
+  · rintro ⟨hl, hR⟩
+    refine ⟨(List.range (xs.length + 1)).map fun t => w.drop t, by simp, ?_,
+      fun t ht => ⟨w[t]'(by omega), hR t ht (by omega), ?_⟩, ?_⟩
+    · simp [hl]
+    · simp only [List.getElem_map, List.getElem_range]
+      exact List.drop_eq_getElem_cons _
+    · simp
+
 end LeetQ.Rel.Rep
 
 #print axioms LeetQ.Rel.Rep.rep_uncons
 #print axioms LeetQ.Rel.Rep.rep_cons
+#print axioms LeetQ.Rel.Rep.map_chain
