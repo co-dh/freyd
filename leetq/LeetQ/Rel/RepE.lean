@@ -79,11 +79,11 @@ theorem rep_E {B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) (M : Rel
     (hNv : ((pv(T, N)).toList.map fun c : Part (.arr B) => c.1.toNat).sum < USize.size)
     (hFk : Vals.RazeFits (.arr A) (Rel.key T) (Rel.key N))
     (hFv : Vals.RazeFits (.arr B) (Rel.val T) (Rel.val N))
-    (U : Rel (.arr A) (.arr B)) (hU : U = Uc(T, N))
-    (ku vu : Code) (hku : ku = kcR(U)) (hvu : vu = vcR(U))
-    (huK : cOK(ku, Rel.n U, Rel.key U)) (huV : cOK(vu, Rel.n U, Rel.val U))
-    (huk : Vals.PickFits (.arr A) (Rel.key U) (ids (tuples.tupleIds ku #[vu]).2))
-    (huv : Vals.PickFits (.arr B) (Rel.val U) (ids (tuples.tupleIds ku #[vu]).2))
+    (L : Rel (.arr A) (.arr B)) (hL : L = Uc(T, N))
+    (ku vu : Code) (hku : ku = kcR(L)) (hvu : vu = vcR(L))
+    (huK : cOK(ku, Rel.n L, Rel.key L)) (huV : cOK(vu, Rel.n L, Rel.val L))
+    (huk : Vals.PickFits (.arr A) (Rel.key L) (ids (tuples.tupleIds ku #[vu]).2))
+    (huv : Vals.PickFits (.arr B) (Rel.val L) (ids (tuples.tupleIds ku #[vu]).2))
     (hM : M = LeetQ.Rel.Alg.mem X ≫ R)
     -- `rep_memComp` at `R`, `X`
     (hmv : Vals.PickFits (.arr A) X (List.range n.toNat))
@@ -95,12 +95,11 @@ theorem rep_E {B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) (M : Rel
     (hcC : Vals.PickFits B (Rel.val R) ((jpairs(mS(X), R)).map Prod.snd)) :
     (∀ xs Y, rep (LeetQ.Rel.Alg.E R X) xs Y → (∃ i, Vals.row X i = xs) ∧ ∀ y, y ∈ Y ↔ ∃ x ∈ xs, rep R x y) ∧
       (∀ xs, (∃ Y, rep (LeetQ.Rel.Alg.E R X) xs Y) ↔ ∃ i, Vals.row X i = xs) := by
-  subst hku hvu hU hN0 hD hT hI hpc hloT hpT hkt hkc hvc
   have hm : ∀ xs y, rep M xs y ↔ (∃ i, Vals.row X i = xs) ∧ ∃ x ∈ xs, rep R x y := fun xs y => by
     rw [hM]; exact rep_memComp R X hmv hmk hcc hcrn hcM hcMU hcA hcC xs y
   rw [show LeetQ.Rel.Alg.E R X = LeetQ.Rel.Alg.lamOn M X by rw [hM]; rfl]
-  obtain ⟨h1, h2⟩ := rep_lamOn M X hK hV hk hv hF hw hn hs hW h63 hpk hpv hlo hp hc hdk hdv htN ht63 htA htB
-    hN hNk hNv hFk hFv huK huV huk huv
+  obtain ⟨h1, h2⟩ := rep_lamOn M X kc vc hkc hvc hK hV hk hv kt hkt hF hw hn hs hW h63 p lo hpT hloT hpk hpv hlo
+    hp pc hpc hc I hI hdk hdv D hD htN ht63 htA htB T N hT hN0 hN hNk hNv hFk hFv L hL ku vu hku hvu huK huV huk huv
   have h2' : ∀ xs, (∃ Y, rep (LeetQ.Rel.Alg.lamOn M X) xs Y) ↔ ∃ i, Vals.row X i = xs := fun xs =>
     (h2 xs).trans ⟨fun h => h.elim (fun ⟨_, hb⟩ => ((hm _ _).1 hb).1) id, Or.inr⟩
   exact ⟨fun xs Y h => ⟨(h2' xs).1 ⟨Y, h⟩, fun y => (h1 xs Y h y).trans
