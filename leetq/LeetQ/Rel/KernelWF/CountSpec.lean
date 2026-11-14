@@ -27,6 +27,14 @@ theorem sum_map_eq_iff : ∀ {l : List Nat} {f g : Nat → Nat}, (∀ i ∈ l, f
     simp only [List.map_cons, List.sum_cons, List.forall_mem_cons]
     exact ⟨by omega, ⟨fun e => ⟨by omega, hiff.1 (by omega)⟩, fun ⟨e1, e2⟩ => by rw [e1, hiff.2 e2]⟩⟩
 
+/-- Filtering a list's positions by a test on the element there, then reading the elements, filters the list. -/
+theorem filter_getD_map {α : Type} (L : List α) (d : α) (Q : α → Bool) :
+    ((List.range L.length).filter (fun t => Q (L.getD t d))).map (fun t => L.getD t d) = L.filter Q := by
+  have hL : (List.range L.length).map (fun t => L.getD t d) = L :=
+    List.ext_getElem (by simp) fun t h1 h2 => by simp [List.getElem?_eq_getElem h2]
+  conv => rhs; rw [← hL]
+  rw [List.filter_map]; rfl
+
 /-- A filter's length is the sum of its 0/1 indicator. -/
 theorem length_filter_sum : ∀ (l : List Nat) (p : Nat → Bool),
     (l.filter p).length = (l.map fun i => if p i then 1 else 0).sum
