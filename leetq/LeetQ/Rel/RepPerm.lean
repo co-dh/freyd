@@ -194,27 +194,21 @@ theorem rep_alpha {K B : Obj} {n : USize} (I : Vals K 1) (P : Vals (.prod B (.ar
 
 /-! ## `tic` -/
 
+open Freyd Freyd.Alg Freyd.Alg.RelSet in
 /-- **`tic`, read back**: a row `(b, bs)` of `P` goes to the non-empty prefixes of `b :: bs`, shortest first.
     `tic P` is `I ≫ tail I.val`, `I = C ≫ inits C.val`, `C = cons P` (bound by `hC`, `hI`). Hypotheses:
     `rep_cons`'s at `P` (`hc`), `rep_comp`'s at `I` (`h1`) and at the result (`h2`), `rep_inits`'s at `C.val`
     (`hi`), `rep_tail`'s at `I.val` (`ht`). -/
-theorem rep_tic {K B : Obj} (P : Rel K (.prod B (.arr B))) (C : Rel K (.arr B)) (hC : C = cons P)
+theorem tic_of {K B : Obj} (P : Rel K (.prod B (.arr B))) (C : Rel K (.arr B)) (hC : C = cons P)
     (I : Rel K (.arr (.arr B))) (hI : I = C ≫ inits (Rel.val C))
-    (hc : consOK(K, B, P)) (h1 : cmpOK(.arr B, C, inits (Rel.val C))) (hi : initsOK(B, Rel.n C, Rel.val C))
-    (h2 : cmpOK(.arr (.arr B), I, tail (Rel.val I))) (ht : uncOK(.arr B, I)) :
+    (eC : ∀ k ys, rep (cons P) k ys ↔ ∃ b bs, rep P k (b, bs) ∧ ys = b :: bs)
+    (e1 : rep (C ≫ inits (Rel.val C)) = rep C ≫ rep (inits (Rel.val C)))
+    (eN : ∀ xs yss, rep (inits (Rel.val C)) xs yss ↔ (∃ j, (Rel.val C).row j = xs) ∧
+      yss = (List.range (xs.length + 1)).map fun k => xs.take k)
+    (e2 : rep (I ≫ tail (Rel.val I)) = rep I ≫ rep (tail (Rel.val I)))
+    (eT : ∀ xs bs, rep (tail (Rel.val I)) xs bs ↔ (∃ j, (Rel.val I).row j = xs) ∧ ∃ b, xs = b :: bs) :
     ∀ k zss, rep (tic P) k zss ↔ ∃ b bs, rep P k (b, bs) ∧
       zss = (List.range (bs.length + 1)).map fun j => (b :: bs).take (j + 1) := by
-  have eC := rep_cons_ok P hc
-  obtain ⟨h1f, h1'⟩ := h1
-  obtain ⟨c1, c2, c3, c4⟩ := h1' _ rfl
-  have e1 := rep_comp _ _ (codes_faithful_wf _ _ h1f).1 c1 c2 c3 c4
-  obtain ⟨iS, iU, hx⟩ := hi _ rfl
-  obtain ⟨iK, iV⟩ := hx _ rfl _ rfl _ rfl
-  have eN := rep_inits (Rel.val C) _ rfl iS iU _ rfl _ rfl _ rfl iK iV
-  obtain ⟨h2f, h2'⟩ := h2
-  obtain ⟨d1, d2, d3, d4⟩ := h2' _ rfl
-  have e2 := rep_comp _ _ (codes_faithful_wf _ _ h2f).1 d1 d2 d3 d4
-  have eT := rep_tail (Rel.val I) _ rfl _ rfl _ rfl (ht _ rfl _ rfl _ rfl)
   -- `I`: a row `(b, bs)` to every prefix of `b :: bs`
   have eI : ∀ k yss, rep I k yss ↔ ∃ b bs, rep P k (b, bs) ∧
       yss = (List.range ((b :: bs).length + 1)).map fun j => (b :: bs).take j := by
@@ -246,6 +240,23 @@ theorem rep_tic {K B : Obj} (P : Rel K (.prod B (.arr B))) (C : Rel K (.arr B)) 
     have hy := (eI k _).2 ⟨b, bs, hb, rfl⟩
     obtain ⟨q, -, hq⟩ := id hy
     exact ⟨_, hy, (eT _ _).2 ⟨⟨q, hq⟩, [], hl b bs⟩⟩
+
+/-- **`tic`, read back at its pieces' premises**: `tic_of`, each read-back by its lemma. -/
+theorem rep_tic {K B : Obj} (P : Rel K (.prod B (.arr B))) (C : Rel K (.arr B)) (hC : C = cons P)
+    (I : Rel K (.arr (.arr B))) (hI : I = C ≫ inits (Rel.val C))
+    (hc : consOK(K, B, P)) (h1 : cmpOK(.arr B, C, inits (Rel.val C))) (hi : initsOK(B, Rel.n C, Rel.val C))
+    (h2 : cmpOK(.arr (.arr B), I, tail (Rel.val I))) (ht : uncOK(.arr B, I)) :
+    ∀ k zss, rep (tic P) k zss ↔ ∃ b bs, rep P k (b, bs) ∧
+      zss = (List.range (bs.length + 1)).map fun j => (b :: bs).take (j + 1) := by
+  obtain ⟨h1f, h1'⟩ := h1
+  obtain ⟨c1, c2, c3, c4⟩ := h1' _ rfl
+  obtain ⟨iS, iU, hx⟩ := hi _ rfl
+  obtain ⟨iK, iV⟩ := hx _ rfl _ rfl _ rfl
+  obtain ⟨h2f, h2'⟩ := h2
+  obtain ⟨d1, d2, d3, d4⟩ := h2' _ rfl
+  exact tic_of P C hC I hI (rep_cons_ok P hc) (rep_comp _ _ (codes_faithful_wf _ _ h1f).1 c1 c2 c3 c4)
+    (rep_inits (Rel.val C) _ rfl iS iU _ rfl _ rfl _ rfl iK iV) (rep_comp _ _ (codes_faithful_wf _ _ h2f).1 d1 d2 d3 d4)
+    (rep_tail (Rel.val I) _ rfl _ rfl _ rfl (ht _ rfl _ rfl _ rfl))
 
 /-! ## `perm` -/
 
@@ -479,16 +490,16 @@ scoped notation "sufOK" =>
 end ListN
 open ListN
 
+open Freyd Freyd.Alg Freyd.Alg.RelSet in
 /-- **One round of `suffix`, read back**: `F ≫ tail` takes an array to the tail of each array `F` gives it, and the
     union adds those to `S`. Hypotheses: `sufOK`. -/
-theorem suffix_round {B : Obj} (S F : Rel (.arr B) (.arr B)) (h : sufOK) :
+theorem suffix_round_of {B : Obj} (S F : Rel (.arr B) (.arr B))
+    (eT : ∀ xs bs, rep (tail (ran F).val) xs bs ↔ (∃ j, (ran F).val.row j = xs) ∧ ∃ b, xs = b :: bs)
+    (eC : rep (F ≫ tail (ran F).val) = rep F ≫ rep (tail (ran F).val))
+    (eD : rep (ran F) = corefl (A := (⟨(Obj.arr B).El⟩ : Freyd.Alg.RelSet.{0})) fun ys => ∃ s, rep F s ys)
+    (eU : rep (S ∪ F ≫ tail (ran F).val) = rep S ∪ rep (F ≫ tail (ran F).val)) :
     (∀ xs ys, rep (F ≫ tail (ran F).val) xs ys ↔ ∃ c, rep F xs (c :: ys)) ∧
     ∀ xs ys, rep (S ∪ F ≫ tail (ran F).val) xs ys ↔ rep S xs ys ∨ ∃ c, rep F xs (c :: ys) := by
-  obtain ⟨⟨hDf, hDp⟩, ht, ⟨hcf, hc⟩, hU⟩ := h _ rfl
-  have eT := rep_tail (Rel.val (ran F)) _ rfl _ rfl _ rfl (ht _ rfl _ rfl _ rfl)
-  obtain ⟨c1, c2, c3, c4⟩ := hc _ rfl
-  have eC := rep_comp _ _ (codes_faithful_wf _ _ hcf).1 c1 c2 c3 c4
-  have eD := rep_ran_corefl F (one_ok _ hDf) (hDp)
   have e1 : ∀ xs ys, rep (F ≫ tail (ran F).val) xs ys ↔ ∃ c, rep F xs (c :: ys) := by
     intro xs ys
     rw [eC, Freyd.Alg.RelSet.comp_apply]
@@ -500,22 +511,37 @@ theorem suffix_round {B : Obj} (S F : Rel (.arr B) (.arr B)) (h : sufOK) :
       have hr : rep (ran F) (c :: ys) (c :: ys) := by rw [eD]; exact ⟨rfl, xs, hc⟩
       obtain ⟨j, -, hj⟩ := hr
       exact ⟨c :: ys, hc, (eT _ _).2 ⟨⟨j, hj⟩, c, rfl⟩⟩
-  obtain ⟨hN, hFk, hFv, hUK, hUV, hUk, hUv⟩ := hU _ rfl _ rfl
   refine ⟨e1, fun xs ys => ?_⟩
-  rw [rep_union_full S _ hN hFk hFv (one_ok _ hUK) (one_ok _ hUV) hUk hUv]
+  rw [eU]
   show rep S xs ys ∨ rep _ xs ys ↔ _
   exact or_congr Iff.rfl (e1 xs ys)
+
+/-- `suffix_round_of` at `sufOK`, each read-back by its lemma. -/
+theorem suffix_round {B : Obj} (S F : Rel (.arr B) (.arr B)) (h : sufOK) :
+    (∀ xs ys, rep (F ≫ tail (ran F).val) xs ys ↔ ∃ c, rep F xs (c :: ys)) ∧
+    ∀ xs ys, rep (S ∪ F ≫ tail (ran F).val) xs ys ↔ rep S xs ys ∨ ∃ c, rep F xs (c :: ys) := by
+  obtain ⟨⟨hDf, hDp⟩, ht, ⟨hcf, hc⟩, hU⟩ := h _ rfl
+  obtain ⟨c1, c2, c3, c4⟩ := hc _ rfl
+  obtain ⟨hN, hFk, hFv, hUK, hUV, hUk, hUv⟩ := hU _ rfl _ rfl
+  exact suffix_round_of S F (rep_tail (Rel.val (ran F)) _ rfl _ rfl _ rfl (ht _ rfl _ rfl _ rfl))
+    (rep_comp _ _ (codes_faithful_wf _ _ hcf).1 c1 c2 c3 c4) (rep_ran_corefl F (one_ok _ hDf) (hDp))
+    (rep_union_full S _ hN hFk hFv (one_ok _ hUK) (one_ok _ hUV) hUk hUv)
 
 /-- **`suffix`, read back**: an array `xs` of `X` goes to exactly its suffixes. Round `i` holds in `F` the arrays
     `drop i xs` (for `i ≤ |xs|`) and in `S` every `drop t xs`, `t ≤ i`; the fuel `X.1 + 1` passes every array's
     length (`arr_row_length`), and a stop at an empty `F` means every array is shorter. The round `g` is bound by
-    its defining equation (`hg`); `hR` is `sufOK` at every round up to the payload count. -/
-theorem rep_suffix {B : Obj} {n : USize} (X : Vals (.arr B) n)
+    its defining equation (`hg`); `hR` reads back each round `iter` runs (`done` failing up to it), as
+    `suffix_round` concludes. -/
+theorem suffix_rounds {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (g : Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B) → Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B))
     (hg : ∀ S F, g (S, F) = (S ∪ F ≫ tail (ran F).val, F ≫ tail (ran F).val))
-    -- kept: each round's suffixes `F` and their union `S` are intermediates; RazeFits/CodesFit no input bounds
-    (hR : ∀ i, i ≤ X.1.toNat → ∀ S F, S = (g^[i] (idU X, idU X)).1 → F = (g^[i] (idU X, idU X)).2 → sufOK) :
+    (hR : ∀ i, i ≤ X.1.toNat → (∀ i' ≤ i, ((g^[i'] (idU X, idU X)).2.n == 0) = false) →
+      (∀ xs ys, rep (g^[i + 1] (idU X, idU X)).2 xs ys ↔ ∃ c, rep (g^[i] (idU X, idU X)).2 xs (c :: ys)) ∧
+      ∀ xs ys, rep (g^[i + 1] (idU X, idU X)).1 xs ys ↔
+        rep (g^[i] (idU X, idU X)).1 xs ys ∨ ∃ c, rep (g^[i] (idU X, idU X)).2 xs (c :: ys)) :
     ∀ xs ys, rep (suffix X) xs ys ↔ (∃ j, X.row j = xs) ∧ ys <:+ xs := by
+  obtain ⟨j, hj, he, hs, hm⟩ := iter_stop (fun s : Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B) => s.2.n == 0) g
+    (X.1.toNat + 1) (idU X, idU X)
   have hd : ∀ (i : Nat) (xs : List B.El) ys, (∃ c, c :: ys = xs.drop i) ↔ i < xs.length ∧ ys = xs.drop (i + 1) := by
     intro i xs ys
     constructor
@@ -527,7 +553,7 @@ theorem rep_suffix {B : Obj} {n : USize} (X : Vals (.arr B) n)
     · rintro ⟨hi, rfl⟩
       exact ⟨xs[i], (List.drop_eq_getElem_cons hi).symm⟩
   -- after `i` rounds: `F` is `drop i`, `S` every `drop t`, `t ≤ i`
-  have inv : ∀ i, i ≤ X.1.toNat + 1 →
+  have inv : ∀ i, i ≤ j →
       (∀ xs ys, rep (g^[i] (idU X, idU X)).2 xs ys ↔ (∃ j, X.row j = xs) ∧ i ≤ xs.length ∧ ys = xs.drop i) ∧
       (∀ xs ys, rep (g^[i] (idU X, idU X)).1 xs ys ↔
         (∃ j, X.row j = xs) ∧ ∃ t ≤ i, t ≤ xs.length ∧ ys = xs.drop t) := by
@@ -545,8 +571,7 @@ theorem rep_suffix {B : Obj} {n : USize} (X : Vals (.arr B) n)
     | succ i ih =>
       intro hi
       obtain ⟨hF, hS⟩ := ih (by omega)
-      have hr := suffix_round _ _ (hR i (by omega) _ _ rfl rfl)
-      have e : g^[i + 1] (idU X, idU X) = _ := hg (g^[i] (idU X, idU X)).1 (g^[i] (idU X, idU X)).2
+      have hr := hR i (by omega) (fun i' hi' => hm i' (by omega))
       have hF' : ∀ xs ys, (∃ c, rep (g^[i] (idU X, idU X)).2 xs (c :: ys)) ↔
           (∃ j, X.row j = xs) ∧ i + 1 ≤ xs.length ∧ ys = xs.drop (i + 1) := by
         intro xs ys
@@ -558,7 +583,6 @@ theorem rep_suffix {B : Obj} {n : USize} (X : Vals (.arr B) n)
         · rintro ⟨hj, hl, e⟩
           obtain ⟨c, hc⟩ := (hd i xs ys).2 ⟨hl, e⟩
           exact ⟨c, (hF _ _).2 ⟨hj, by omega, hc⟩⟩
-      rw [e]
       refine ⟨fun xs ys => (hr.1 xs ys).trans (hF' xs ys), fun xs ys => (hr.2 xs ys).trans
         ((or_congr (hS xs ys) (hF' xs ys)).trans ?_)⟩
       constructor
@@ -570,15 +594,9 @@ theorem rep_suffix {B : Obj} {n : USize} (X : Vals (.arr B) n)
         · exact Or.inl ⟨hj, t, by omega, hl, e⟩
         · obtain rfl : t = i + 1 := by omega
           exact Or.inr ⟨hj, hl, e⟩
-  obtain ⟨j, hj, he, hs, -⟩ := iter_stop (fun s : Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B) => s.2.n == 0) g
-    (X.1.toNat + 1) (idU X, idU X)
   have hl : suffix X = (g^[j] (idU X, idU X)).1 := by
-    rw [← he]
-    refine congrArg (fun g' : Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B) →
-        Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B) =>
-      (iter (X.1.toNat + 1) (fun s => s.2.n == 0) g' (idU X, idU X)).1) (funext fun st => ?_)
-    obtain ⟨S, F⟩ := st
-    rw [hg S F]
+    rw [← he, show g = fun s => (suffixRound s).1 from funext fun ⟨S, F⟩ => hg S F]
+    exact congrArg Prod.fst (iterC_fst (X.1.toNat + 1) _ suffixRound (idU X, idU X))
   have hstop : X.1.toNat + 1 ≤ j ∨ ∀ xs ys, ¬ rep (g^[j] (idU X, idU X)).2 xs ys := by
     rcases hs with hs | hs
     · exact Or.inl (by omega)
@@ -587,7 +605,7 @@ theorem rep_suffix {B : Obj} {n : USize} (X : Vals (.arr B) n)
       have h0 : (g^[j] (idU X, idU X)).2.n = 0 := beq_iff_eq.1 hs
       have h1 : (g^[j] (idU X, idU X)).2.n.toNat = 0 := by rw [h0]; rfl
       exact Nat.not_lt_zero _ (Nat.lt_of_lt_of_eq i.2 h1)
-  obtain ⟨hFj, hSj⟩ := inv j hj
+  obtain ⟨hFj, hSj⟩ := inv j (Nat.le_refl _)
   intro xs ys
   rw [hl]
   refine (hSj xs ys).trans (and_congr_right fun ⟨r, hr⟩ => ⟨fun ⟨t, _, _, e⟩ => by
@@ -597,6 +615,17 @@ theorem rep_suffix {B : Obj} {n : USize} (X : Vals (.arr B) n)
   · omega
   · have : xs.length < j := Nat.lt_of_not_le fun hc => h' xs _ ((hFj xs _).2 ⟨⟨r, hr⟩, hc, rfl⟩)
     omega
+
+/-- **`suffix`, read back at `sufOK`**: `suffix_rounds`, each round by `suffix_round`. -/
+theorem rep_suffix {B : Obj} {n : USize} (X : Vals (.arr B) n)
+    (g : Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B) → Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B))
+    (hg : ∀ S F, g (S, F) = (S ∪ F ≫ tail (ran F).val, F ≫ tail (ran F).val))
+    -- kept: each round's suffixes `F` and their union `S` are intermediates; RazeFits/CodesFit no input bounds
+    (hR : ∀ i, i ≤ X.1.toNat → ∀ S F, S = (g^[i] (idU X, idU X)).1 → F = (g^[i] (idU X, idU X)).2 → sufOK) :
+    ∀ xs ys, rep (suffix X) xs ys ↔ (∃ j, X.row j = xs) ∧ ys <:+ xs :=
+  suffix_rounds X g hg fun i hi _ => by
+    rw [show g^[i + 1] (idU X, idU X) = _ from hg (g^[i] (idU X, idU X)).1 (g^[i] (idU X, idU X)).2]
+    exact suffix_round _ _ (hR i hi _ _ rfl rfl)
 
 /-! ## `snoc` -/
 

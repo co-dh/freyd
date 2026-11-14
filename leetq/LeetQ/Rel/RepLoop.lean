@@ -99,34 +99,37 @@ theorem loopOn_rounds {K X Y : Obj} (F : Rel (.prod X Y) (.prod X Y) → Rel (.p
     (hf : ∀ out St D u p, D = ran St → u = outr D ≫ uncons (ran (outr D)).val → p = pair (outl D) (outl u) →
       f (out, St) = (out ∪ St ≫ outl (antiJoin D (dom u)), Rel.nub (St ≫ pair (p ≫ F (ran p)) (outr u))))
     (Fr : Nat → X.El × Y.El → X.El → Prop)
-    (hS : ∀ i, i ≤ (Rel.val P).2.1.toNat → ∀ k c' ys, rep (f^[i + 1] (Alg.zero, P)).2 k (c', ys) ↔
+    -- each round `iter` runs: below the fuel, `done` failing at every iterate up to it
+    (hS : ∀ i, i ≤ (Rel.val P).2.1.toNat → (∀ i' ≤ i, ((f^[i'] (Alg.zero, P)).2.n == 0) = false) →
+      ∀ k c' ys, rep (f^[i + 1] (Alg.zero, P)).2 k (c', ys) ↔
       ∃ c y, rep (f^[i] (Alg.zero, P)).2 k (c, y :: ys) ∧ Fr i (c, y) c')
-    (hO : ∀ i, i ≤ (Rel.val P).2.1.toNat → ∀ k c, rep (f^[i + 1] (Alg.zero, P)).1 k c ↔
+    (hO : ∀ i, i ≤ (Rel.val P).2.1.toNat → (∀ i' ≤ i, ((f^[i'] (Alg.zero, P)).2.n == 0) = false) →
+      ∀ k c, rep (f^[i + 1] (Alg.zero, P)).1 k c ↔
       rep (f^[i] (Alg.zero, P)).1 k c ∨ rep (f^[i] (Alg.zero, P)).2 k (c, [])) :
     ∀ k c, rep (loopOn F P) k c ↔ ∃ c₀ xs, rep P k (c₀, xs) ∧ ∃ g : Nat → X.El, g 0 = c₀ ∧
       (∀ t (ht : t < xs.length), Fr t (g t, xs[t]'ht) (g (t + 1))) ∧ c = g xs.length := by
-  obtain ⟨j, hj, he, hs, -⟩ := iter_stop (fun s : Rel K X × Rel K (.prod X (.arr Y)) => s.2.n == 0) f
+  obtain ⟨j, hj, he, hs, hm⟩ := iter_stop (fun s : Rel K X × Rel K (.prod X (.arr Y)) => s.2.n == 0) f
     ((Rel.val P).2.1.toNat + 1) (Alg.zero, P)
+  have hfe : f = fun st => (loopRound (fun D => (F D, true)) st).1 := funext fun ⟨o, S⟩ => by
+    rw [hf o S _ _ _ rfl rfl rfl, ← nubC_fst]; rfl
   have hl : loopOn F P = (f^[j] (Alg.zero, P)).1 := by
-    rw [← he]
-    refine congrArg (fun g : Rel K X × Rel K (.prod X (.arr Y)) → Rel K X × Rel K (.prod X (.arr Y)) =>
-      (iter ((Rel.val P).2.1.toNat + 1) (fun s => s.2.n == 0) g (Alg.zero, P)).1) (funext fun st => ?_)
-    obtain ⟨o, S⟩ := st
-    rw [hf o S _ _ _ rfl rfl rfl]
+    rw [← he, hfe]
+    exact congrArg Prod.fst (iterC_fst _ _ (loopRound (fun D => (F D, true))) (Alg.zero, P))
   -- `out` after `j` rounds: the values of the empty states met before
-  have hout : ∀ j, j ≤ (Rel.val P).2.1.toNat + 1 → ∀ k c, rep (f^[j] (Alg.zero, P)).1 k c ↔
-      ∃ i < j, rep (f^[i] (Alg.zero, P)).2 k (c, []) := by
-    intro j
-    induction j with
+  have hout : ∀ j', j' ≤ j → ∀ k c, rep (f^[j'] (Alg.zero, P)).1 k c ↔
+      ∃ i < j', rep (f^[i] (Alg.zero, P)).2 k (c, []) := by
+    intro j'
+    induction j' with
     | zero => intro _ k c; exact ⟨fun ⟨i, _⟩ => i.elim0, fun ⟨_, hi, _⟩ => absurd hi (Nat.not_lt_zero _)⟩
-    | succ j ih =>
+    | succ j' ih =>
       intro hjN k c
-      rw [show f^[j + 1] (Alg.zero, P) = f (f^[j] (Alg.zero, P)) from rfl] at *
-      rw [show f (f^[j] (Alg.zero, P)) = f^[j + 1] (Alg.zero, P) from rfl, hO j (by omega), ih (by omega)]
+      rw [show f^[j' + 1] (Alg.zero, P) = f (f^[j'] (Alg.zero, P)) from rfl] at *
+      rw [show f (f^[j'] (Alg.zero, P)) = f^[j' + 1] (Alg.zero, P) from rfl,
+        hO j' (by omega) (fun i' hi' => hm i' (by omega)), ih (by omega)]
       constructor
       · rintro (⟨i, hi, h⟩ | h)
         · exact ⟨i, by omega, h⟩
-        · exact ⟨j, by omega, h⟩
+        · exact ⟨j', by omega, h⟩
       · rintro ⟨i, hi, h⟩
         rcases Nat.lt_succ_iff_lt_or_eq.1 hi with hi | rfl
         · exact Or.inl ⟨i, hi, h⟩
@@ -144,9 +147,10 @@ theorem loopOn_rounds {K X Y : Obj} (F : Rel (.prod X Y) (.prod X Y) → Rel (.p
       have h1 : (f^[j] (Alg.zero, P)).2.n.toNat = 0 := by rw [h0]; rfl
       exact Nat.not_lt_zero _ (Nat.lt_of_lt_of_eq i.2 h1)
   intro k c
-  rw [hl, hout j hj]
-  exact loop_out Fr (fun i k s => rep (f^[i] (Alg.zero, P)).2 k s) ((Rel.val P).2.1.toNat + 1)
-    (fun i hi => hS i (by omega)) (Rel.val P).2.1.toNat j hj hN hstop k c
+  rw [hl, hout j (Nat.le_refl _)]
+  exact loop_out Fr (fun i k s => rep (f^[i] (Alg.zero, P)).2 k s) j
+    (fun i hi => hS i (by omega) (fun i' hi' => hm i' (by omega))) (Rel.val P).2.1.toNat j (Nat.le_refl _) hN
+    hstop k c
 
 section Round
 
@@ -418,7 +422,7 @@ theorem rep_loopOn {K X Y : Obj} (F : Rel (.prod X Y) (.prod X Y) → Rel (.prod
     rw [e]
     exact ⟨fun k c' ys => (hr.1 k c' ys).trans
       (exists_congr fun c => exists_congr fun y => and_congr Iff.rfl (hFr _ _).symm), hr.2⟩
-  exact loopOn_rounds F P f hf Fr (fun i hi => (one i hi).1) (fun i hi => (one i hi).2)
+  exact loopOn_rounds F P f hf Fr (fun i hi _ => (one i hi).1) (fun i hi _ => (one i hi).2)
 
 /-- **`loop`, read back**: `rep_loopOn` at the family `fun _ => F`, every step `F` itself. -/
 theorem rep_loop {K X Y : Obj} (F : Rel (.prod X Y) X) (P : Rel K (.prod X (.arr Y)))

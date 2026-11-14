@@ -225,6 +225,41 @@ theorem repeat_map {α β : Type} (g : β → β) (π : α → β) (G : α → �
   | 0 => rfl
   | j + 1 => by show π (G (G^[j] x)) = g (g^[j] (π x)); rw [hG, repeat_map g π G hG x j]
 
+/-- **`iterC`'s state is `iter`'s** on the round's state, its bit dropped. -/
+theorem iterC_fst {α : Type} (n : Nat) (done : α → Bool) (r : α → α × Bool) (a : α) :
+    (iterC n done r a).1 = iter n done (fun s => (r s).1) a :=
+  iter_map done (fun s => (r s).1) Prod.fst (fun s => let g := r s.1; (g.1, s.2 && g.2)) (fun _ => rfl) n (a, true)
+
+/-- **`iterC`'s bit sets the bit of every round it ran**: round `i` below the fuel, `done` failing at every
+    iterate up to it, is a round `iter` ran, and its bit is in the `&&`. -/
+theorem iterC_run {α : Type} (n : Nat) (done : α → Bool) (r : α → α × Bool) (a : α)
+    (hb : (iterC n done r a).2 = true) :
+    ∀ i, i < n → (∀ i' ≤ i, done ((fun s => (r s).1)^[i'] a) = false) → (r ((fun s => (r s).1)^[i] a)).2 = true := by
+  let G : α × Bool → α × Bool := fun s => let g := r s.1; (g.1, s.2 && g.2)
+  have hπ := repeat_map (fun s => (r s).1) Prod.fst G (fun _ => rfl) (a, true)
+  have bits : ∀ j, (G^[j] (a, true)).2 = true → ∀ i < j, (r (G^[i] (a, true)).1).2 = true := by
+    intro j
+    induction j with
+    | zero => intro _ i hi; exact absurd hi (Nat.not_lt_zero _)
+    | succ j ih =>
+      intro h i hi
+      have h' : (G (G^[j] (a, true))).2 = true := h
+      simp only [G, Bool.and_eq_true] at h'
+      rcases Nat.lt_succ_iff_lt_or_eq.1 hi with hi | rfl
+      · exact ih h'.1 i hi
+      · exact h'.2
+  obtain ⟨j, hj, he, hs, -⟩ := iter_stop (fun s : α × Bool => done s.1) G n (a, true)
+  intro i hi hne
+  have hij : i < j := by
+    refine Nat.lt_of_not_le fun hji => ?_
+    rcases hs with hs | hs
+    · omega
+    · have h0 := hne j hji
+      rw [← hπ j] at h0
+      exact absurd hs (by simp only [h0, Bool.false_eq_true, not_false_eq_true])
+  have h := bits j (by rw [← he]; exact hb) i hij
+  rwa [hπ i] at h
+
 /-- **`foldRound`'s new state is `rnd`'s**, the step's relation in place of the step. -/
 theorem foldRound_fst {E V : Obj} (ids : Rel .long (.arr E)) (stepC : Rel .long E → Rel .long V → Rel .long V × Bool)
     (step : Rel .long E → Rel .long V → Rel .long V) (hstep : ∀ el p, step el p = (stepC el p).1)

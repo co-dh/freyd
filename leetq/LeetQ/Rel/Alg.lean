@@ -823,9 +823,27 @@ def length {E : Obj} {n : USize} (X : Vals (.arr E) n) : Rel (.arr E) (.atom .lo
 
 /-- `suffix : arr E ⟶ arr E` on the arrays `X`, each array to each of its final segments (`suffix`,
     AOP/A5_6_ListCombinators.lean:221): `tail*`, `𝟙 ∪ tail ∪ tail tail ∪ …` by `iter`, each round `tail` on the
-    arrays the last one reached; an array is never longer than the payload `X.1`, so `X.1 + 1` rounds end. -/
-def suffix {E : Obj} {n : USize} (X : Vals (.arr E) n) : Rel (.arr E) (.arr E) :=
-  (iter (X.1.toNat + 1) (fun s => s.2.n == 0) (fun (S, F) => let F' := F ≫ tail (ran F).val; (S ∪ F', F')) (idU X, idU X)).1
+    arrays the last one reached; an array is never longer than the payload `X.1`, so `X.1 + 1` rounds end.
+    `iterC` is `iter` on a round that also answers a bit, carrying the `&&` of the bits of the rounds it ran. -/
+def iterC {α : Type} (n : Nat) (done : α → Bool) (r : α → α × Bool) (a : α) : α × Bool :=
+  iter n (fun s => done s.1) (fun s => let g := r s.1; (g.1, s.2 && g.2)) (a, true)
+
+/-- One round of `suffix` on `(S, F)`, `S ∪ F tail` beside `F tail`, and its bit: `ranC`'s, `tailC`'s, `compC`'s,
+    `unionC`'s. -/
+def suffixRound {E : Obj} (st : Rel (.arr E) (.arr E) × Rel (.arr E) (.arr E)) :
+    (Rel (.arr E) (.arr E) × Rel (.arr E) (.arr E)) × Bool :=
+  let W := ranC st.2
+  let t := tailC W.1.val
+  let F := compC st.2 t.1
+  let U := unionC st.1 F.1
+  ((U.1, F.1), W.2 && t.2 && F.2 && U.2)
+
+/-- `suffix` and whether it ran within capacity: the `&&` of the bits of the rounds it ran (`iterC`). -/
+def suffixC {E : Obj} {n : USize} (X : Vals (.arr E) n) : Rel (.arr E) (.arr E) × Bool :=
+  let r := iterC (X.1.toNat + 1) (fun s => s.2.n == 0) suffixRound (idU X, idU X); (r.1.1, r.2)
+
+/-- `suffix`: `suffixC`'s relation. -/
+def suffix {E : Obj} {n : USize} (X : Vals (.arr E) n) : Rel (.arr E) (.arr E) := (suffixC X).1
 
 /-! ## Arrays of arrays in list order: maps on positions -/
 
@@ -1116,27 +1134,57 @@ def merge {K B : Obj} (Q : Rel B B) (P : Rel K (.prod (.arr B) (.arr B))) : Rel 
     meets, so a state with no universe loops too; a state whose array is empty ends at its `c`. The states
     are `nub`bed each round, as `foldBy`'s, or a value reached along two paths doubles its rows each round
     after. The cells of the arrays' payload plus one bound the rounds. -/
+def loopRound {K X Y : Obj} (F : Rel (.prod X Y) (.prod X Y) → Rel (.prod X Y) X × Bool)
+    (st : Rel K X × Rel K (.prod X (.arr Y))) : (Rel K X × Rel K (.prod X (.arr Y))) × Bool :=
+  let D := ranC st.2
+  let W := ranC (outr D.1)
+  -- `uncons` on the distinct arrays: on `(outr D).val`, an array held by `k` states gives each of them `k`
+  -- rows, and `pair` below `k²`, so a round's rows grow as the states sharing a suffix, not as the states
+  let c := unconsC W.1.val
+  let u := compC (outr D.1) c.1
+  let p := pairC (outl D.1) (outl u.1)
+  let G := F (ran p.1)
+  let Q := compC p.1 G.1
+  let R := pairC Q.1 (outr u.1)
+  let T := compC st.2 R.1
+  let N := nubC T.1
+  let du := domC u.1
+  let A := antiJoinC D.1 du.1
+  let O := compC st.2 (outl A.1)
+  let U := unionC st.1 O.1
+  ((U.1, N.1), D.2 && W.2 && c.2 && u.2 && p.2 && G.2 && Q.2 && R.2 && T.2 && N.2 && du.2 && A.2 && O.2 && U.2)
+
+/-- `loopOn` on a step answering a bit, and whether it ran within capacity: the `&&` of the bits of the rounds it
+    ran (`iterC`), each round's the step's and its primitives' (`loopRound`). -/
+def loopOnC {K X Y : Obj} (F : Rel (.prod X Y) (.prod X Y) → Rel (.prod X Y) X × Bool)
+    (P : Rel K (.prod X (.arr Y))) : Rel K X × Bool :=
+  let r := iterC (P.val.2.1.toNat + 1) (fun s => s.2.n == 0) (loopRound F) (zero, P); (r.1.1, r.2)
+
+/-- `loopOn`: `loopOnC`'s relation, the step one with no bit of its own. -/
 def loopOn {K X Y : Obj} (F : Rel (.prod X Y) (.prod X Y) → Rel (.prod X Y) X) (P : Rel K (.prod X (.arr Y))) :
     Rel K X :=
-  let round : Rel K X × Rel K (.prod X (.arr Y)) → Rel K X × Rel K (.prod X (.arr Y)) := fun (out, St) =>
-    let D := ran St
-    -- `uncons` on the distinct arrays: on `(outr D).val`, an array held by `k` states gives each of them `k`
-    -- rows, and `pair` below `k²`, so a round's rows grow as the states sharing a suffix, not as the states
-    let u := outr D ≫ uncons (ran (outr D)).val
-    let p := pair (outl D) (outl u)
-    (out ∪ St ≫ outl (antiJoin D (dom u)), (St ≫ pair (p ≫ F (ran p)) (outr u)).nub)
-  (iter (P.val.2.1.toNat + 1) (fun s => s.2.n == 0) round (zero, P)).1
+  (loopOnC (fun D => (F D, true)) P).1
 
-/-- `loop(F)` with `F` one relation: `loopOn` with `F` whatever pairs a round meets. -/
-def loop {K X Y : Obj} (F : Rel (.prod X Y) X) (P : Rel K (.prod X (.arr Y))) : Rel K X :=
-  loopOn (fun _ => F) P
+/-- `loop(F)` with `F` one relation, and whether it ran within capacity: `loopOnC` with `F` whatever pairs a round
+    meets, a relation with no bit of its own. -/
+def loopC {K X Y : Obj} (F : Rel (.prod X Y) X) (P : Rel K (.prod X (.arr Y))) : Rel K X × Bool :=
+  loopOnC (fun _ => (F, true)) P
+
+/-- `loop(F)`: `loopC`'s relation. -/
+def loop {K X Y : Obj} (F : Rel (.prod X Y) X) (P : Rel K (.prod X (.arr Y))) : Rel K X := (loopC F P).1
 
 /-- `tic ≜ cons inits tail : B × arr B ⟶ arr (arr B)` on the rows of `P` (`tic`, AOP/A9_3_Bracket.lean:1845;
-    B&dM p.235): the non-empty prefixes of `a :: xs`. -/
-def tic {K B : Obj} (P : Rel K (.prod B (.arr B))) : Rel K (.arr (.arr B)) :=
-  let C := cons P
-  let I := C ≫ inits C.val
-  I ≫ tail I.val
+    B&dM p.235): the non-empty prefixes of `a :: xs`, on the twins of its pieces, the bit the `&&` of theirs. -/
+def ticC {K B : Obj} (P : Rel K (.prod B (.arr B))) : Rel K (.arr (.arr B)) × Bool :=
+  let C := consC P
+  let N := initsC C.1.val
+  let I := compC C.1 N.1
+  let T := tailC I.1.val
+  let r := compC I.1 T.1
+  (r.1, C.2 && N.2 && I.2 && T.2 && r.2)
+
+/-- `tic`: `ticC`'s relation. -/
+def tic {K B : Obj} (P : Rel K (.prod B (.arr B))) : Rel K (.arr (.arr B)) := (ticC P).1
 
 namespace Arr
 
