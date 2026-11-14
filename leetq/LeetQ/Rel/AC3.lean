@@ -57,7 +57,7 @@ end LeetQ.Rel.Alg
 namespace LeetQ.Rel.AC3
 
 
-open LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.Rep
+open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.Rep LeetQ.Rel.Rep.OpsN
 
 variable {V D : Obj}
 
@@ -206,10 +206,90 @@ theorem acInv_init (s : Rel V D) (as : List (Revise V D)) (X₀ : Rel V D) (U : 
 
 /-! ## The rounds, one by one -/
 
+/-- `R`'s two columns, each coded alone, fit their objects. -/
+def Coded {A B : Obj} (R : Rel A B) : Prop := A.CodesFit #v[⟨R.n, R.key⟩] ∧ B.CodesFit #v[⟨R.n, R.val⟩]
+
+/-- `R`'s two columns pick back at all its rows. -/
+def Fits {A B : Obj} (R : Rel A B) : Prop :=
+  Vals.PickFits A R.key (List.range R.n.toNat) ∧ Vals.PickFits B R.val (List.range R.n.toNat)
+
 /-- `R`'s two columns fit their objects: what `rep_nub` and `nub_rows_inj` take, through `one_ok`. -/
-def NubFit {A B : Obj} (R : Rel A B) : Prop :=
-  A.CodesFit #v[⟨R.n, R.key⟩] ∧ B.CodesFit #v[⟨R.n, R.val⟩] ∧
-    Vals.PickFits A R.key (List.range R.n.toNat) ∧ Vals.PickFits B R.val (List.range R.n.toNat)
+def NubFit {A B : Obj} (R : Rel A B) : Prop := Coded R ∧ Fits R
+
+/-- **A fold of `∩` from `Y` fits where `Y` does**: `inter_fits` at each step, which asks nothing of the right side. -/
+theorem foldl_inter_fits {γ : Type} (L : γ → Rel V D) :
+    ∀ (as : List γ) (Y : Rel V D), Fits Y → Fits (as.foldl (fun Y a => Y ∩ L a) Y)
+  | [], _, h => h
+  | a :: t, Y, h => by
+    obtain ⟨hk, hv, -⟩ := inter_fits Y (L a) h.1 h.2
+    exact foldl_inter_fits L t (Y ∩ L a) ⟨hk, hv⟩
+
+/-- What a naive round on `X` needs at each arc that no theorem yet supplies: `∩`'s joint pair codes (`pairsOK`,
+    the open `CodesFit` of the step's operands), and `A\(X C)` denoting its `Rel(Set)` op (`rep_leftDiv`'s open
+    `CodesFit`, `⊤`-fit and razed-output premises, with `rep_comp`'s codes for `X C`). Per round: each names this
+    round's relations, and no theorem carries a `CodesFit` from a relation to the rows picked from it. -/
+def NaiveGap (s : Rel V D) (as : List (Revise V D)) (X : Rel V D) : Prop :=
+  ∀ pre a suf, as = pre ++ a :: suf → ∀ (Y L : Rel V D), Y = pre.foldl (naiveStep X) s →
+    L = leftDiv a.A (X ≫ a.C) a.UV.key a.UD.key → pairsOK(Y, L) ∧ ∀ x d, rep L x d ↔ Nv a (rep X) x d
+
+/-- **A naive round meets its arcs** where `s` fits and the round's `NaiveGap` holds: `rep_inter` at each step, the
+    left side fitting by `foldl_inter_fits`. -/
+theorem naive_meets (s : Rel V D) (as : List (Revise V D)) (X : Rel V D) (hs : Fits s) (h : NaiveGap s as X) :
+    StepMeets (naiveStep X) s as fun a => Nv a (rep X) := fun pre a suf e x d => by
+  obtain ⟨hc, hL⟩ := h pre a suf e _ _ rfl rfl
+  have hY : Fits (pre.foldl (naiveStep X) s) := foldl_inter_fits _ pre s hs
+  show rep (pre.foldl (naiveStep X) s ∩ leftDiv a.A (X ≫ a.C) a.UV.key a.UD.key) x d ↔ _
+  rw [rep_inter _ _ hc hY.1 hY.2]
+  exact and_congr Iff.rfl (hL x d)
+
+-- `𝟙_X`, the coreflexive on the pairs of `X`; the parts the anti-join codes; the pairs of `X` not in `X′`, as
+-- `acDelta` names them (fields applied, not projected: `X.key` would be one identifier, not the parameter `X`)
+set_option hygiene false in
+local notation "pairsU(" X ")" => idU (t := Obj.prod V D) (Rel.key X, Rel.val X)
+set_option hygiene false in
+local notation "dvp(" X ", " X' ")" => (#v[⟨Rel.n (pairsU(X)), Rel.val (pairsU(X))⟩,
+  ⟨Rel.n (pairsU(X')), Rel.val (pairsU(X'))⟩] : Vector (Part (Obj.prod V D)) 2)
+set_option hygiene false in
+local notation "gone(" X ", " X' ")" => antiJoin (pairsU(X)) (pairsU(X'))
+
+/-- What `Δ′` needs at a round from `X` to `X′` that no theorem yet supplies: the anti-join's joint value codes
+    (`codesOK`, `rep_antiJoin`'s `hc`) and `ran`'s one-part code (`oneOK`) — open `CodesFit`s of this round's
+    relations, so per round. -/
+def DeltaGap (X X' : Rel V D) : Prop :=
+  codesOK(Obj.codes (.prod V D) dvp(X, X'), dvp(X, X')) ∧ oneOK(V, (outl (gone(X, X'))).n, (outl (gone(X, X'))).val)
+
+/-- `rep 𝟙_X` is `𝟙` on the pairs of `X` (`idU_holds`). -/
+theorem rep_idU_pairs (X : Rel V D) (p q : V.El × D.El) : rep (pairsU(X)) p q ↔ p = q ∧ rep X p.1 p.2 := by
+  rw [rep_apply, idU_holds]
+  exact and_congr Iff.rfl ⟨fun ⟨i, e⟩ => by subst e; exact ⟨i, rfl, rfl⟩, fun ⟨i, e1, e2⟩ => ⟨i, Prod.ext e1 e2⟩⟩
+
+/-- **`Δ′ = ran(outl(antiJoin(𝟙_X, 𝟙_X′)))` is the variables with a pair of `X` not in `X′`**: `rep_ran_corefl`,
+    `outl_holds`, `rep_antiJoin`, `rep_idU_pairs`, the fits carried by `antiJoin_fits` and `outl_fits` from `X`'s. -/
+theorem rep_dPrime (X X' : Rel V D) (hX : Fits X) (h : DeltaGap X X') (w v : V.El) :
+    rep (ran (outl (gone(X, X')))) w v ↔
+      w = v ∧ ∃ e, rep X w e ∧ ¬ rep X' w e := by
+  have hk : Vals.PickFits (.prod V D) (pairsU(X)).key (List.range (pairsU(X)).n.toNat) := by
+    unfold Vals.PickFits; exact hX
+  have hv : Vals.PickFits (.prod V D) (pairsU(X)).val (List.range (pairsU(X)).n.toNat) := by
+    unfold Vals.PickFits; exact hX
+  obtain ⟨hJk, hJv, -⟩ := antiJoin_fits _ _ h.1 hk hv
+  obtain ⟨-, hOv, -⟩ := outl_fits _ hJk hJv
+  have hJ : ∀ a b, rep (gone(X, X')) a b ↔
+      ∃ y, rep (pairsU(X)) a y ∧ y = b ∧ ¬ ∃ x, rep (pairsU(X')) x y := fun a b => by
+    rw [rep_antiJoin _ _ h.1 hk hv]; exact Iff.rfl
+  rw [rep_ran_corefl _ h.2 hOv]
+  show w = v ∧ (∃ a, rep (outl (gone(X, X'))) a w) ↔ _
+  constructor
+  · rintro ⟨rfl, a, ha⟩
+    obtain ⟨z, hz⟩ := (outl_holds _ a w).1 ha
+    obtain ⟨y, hy, rfl, hn⟩ := (hJ a _).1 hz
+    obtain ⟨rfl, hX⟩ := (rep_idU_pairs X a _).1 hy
+    exact ⟨rfl, z, hX, fun h' => hn ⟨(w, z), (rep_idU_pairs X' _ _).2 ⟨rfl, h'⟩⟩⟩
+  · rintro ⟨rfl, e, hX, hn⟩
+    refine ⟨rfl, (w, e), (outl_holds _ _ w).2 ⟨e, (hJ _ _).2 ⟨(w, e), (rep_idU_pairs X _ _).2 ⟨rfl, hX⟩, rfl, ?_⟩⟩⟩
+    rintro ⟨x, hx⟩
+    obtain ⟨rfl, h'⟩ := (rep_idU_pairs X' _ _).1 hx
+    exact hn h'
 
 /-- The `j`-th delta state from `(X₀, U)`. -/
 abbrev dState (as : List (Revise V D)) (X₀ : Rel V D) (U : Rel V V) (j : Nat) : Rel V D × Rel V V :=
@@ -240,7 +320,7 @@ theorem acDelta_iterate (s : Rel V D) (as : List (Revise V D)) (X₀ : Rel V D) 
     obtain ⟨hI, he⟩ := ih
     obtain ⟨hr, hI'⟩ := acDelta_round s as _ _ hI (hNd k) (hD k) (hΔ' k)
     refine ⟨hI', hr.trans ((Freyd.Alg.RelSet.hom_ext fun x d => ?_).trans
-      (rep_nub _ (one_ok _ (hF k).1) (one_ok _ (hF k).2.1) (hF k).2.2.1 (hF k).2.2.2).symm)⟩
+      (rep_nub _ (one_ok _ (hF k).1.1) (one_ok _ (hF k).1.2) (hF k).2.1 (hF k).2.2).symm)⟩
     -- `rep (acRound s as X)` is read off `rep X` alone
     rw [rep_acRound s as _ (hNd k), rep_acRound s as _ (hNn k), he]
 
@@ -331,37 +411,50 @@ theorem n_eq_zero_iff {A B : Obj} (R : Rel A B) : R.n = 0 ↔ ∀ x y, ¬ rep R 
     `acRound(Xc) ⊒ Xc` (`n_eq_zero_iff`, `count_lt` on the duplicate-free decreasing chain), which comes within
     `|s.nub|` rounds because each earlier round drops a row. Hypotheses: `n` at least that bound; `s`'s columns fit
     (`hs`); `U` coreflexive, holding every arc's predecessors, and `s` inside every arc's vacuous part
-    (`acInv_init`); and `acDelta_iterate`'s per-round ones. -/
+    (`acInv_init`). Per round, the upstream gaps only, each naming this round's relations: `NaiveGap` at the delta
+    and the naive states (`hNd`, `hNn`); `hD`, the delta arc steps, whose operands after the first arc are `∪`'s
+    razes; `DeltaGap` (`hG`); a delta round's output fitting (`hXf`, the `PickFits` of `∪`'s raze); `Coded` of
+    each naive round (`hC`). The fits of `∩`, the anti-join, `outl` and `ran` are derived. -/
 theorem acFix_eq_fixOn (s : Rel V D) (as : List (Revise V D)) (U : Rel V V) (n : Nat)
     (hn : s.nub.n.toNat + 1 ≤ n) (hs : NubFit s)
     (hU : ∀ w v, rep U w v → w = v) (hUA : ∀ a ∈ as, ∀ w x, rep a.A w x → rep U w w)
     (hsV : ∀ a ∈ as, ∀ x d, rep s x d → Vac a x d)
-    (hNd : ∀ j, StepMeets (naiveStep (dState as s.nub U j).1) s as fun a => Nv a (rep (dState as s.nub U j).1))
+    (hNd : ∀ j, NaiveGap s as (dState as s.nub U j).1)
     (hD : ∀ j, StepMeets (deltaStep (dState as s.nub U j).1 (dState as s.nub U j).2) (dState as s.nub U j).1 as
       fun a => Ld a (rep (dState as s.nub U j).1) (rep (dState as s.nub U j).2)
         (Alg.ran ((dState as s.nub U j).2 ≫ a.A)))
-    (hΔ' : ∀ j w v, rep (acDelta as (dState as s.nub U j)).2 w v ↔
-      w = v ∧ ∃ e, rep (dState as s.nub U j).1 w e ∧ ¬ rep (acDelta as (dState as s.nub U j)).1 w e)
-    (hNn : ∀ j, StepMeets (naiveStep (nState s as s.nub j)) s as fun a => Nv a (rep (nState s as s.nub j)))
-    (hF : ∀ j, NubFit (acRound s as (nState s as s.nub j))) :
+    (hG : ∀ j, DeltaGap (dState as s.nub U j).1 (acDelta as (dState as s.nub U j)).1)
+    (hXf : ∀ j, Fits (acDelta as (dState as s.nub U j)).1)
+    (hNn : ∀ j, NaiveGap s as (nState s as s.nub j))
+    (hC : ∀ j, Coded (acRound s as (nState s as s.nub j))) :
     rep (acFix s as U).1 = rep (fixOn n (acRound s as) s).1 := by
   classical
-  have hsn : rep s.nub = rep s := rep_nub _ (one_ok _ hs.1) (one_ok _ hs.2.1) hs.2.2.1 hs.2.2.2
+  have hF : ∀ j, NubFit (acRound s as (nState s as s.nub j)) := fun j =>
+    ⟨hC j, by unfold acRound; exact foldl_inter_fits _ as s hs.2⟩
+  have hX : ∀ j, Fits (dState as s.nub U j).1
+    | 0 => by show Fits s.nub; exact nub_pickFits s (one_ok _ hs.1.1) (one_ok _ hs.1.2) hs.2.1 hs.2.2
+    | j + 1 => by show Fits (acDelta as (dState as s.nub U j)).1; exact hXf j
+  have hΔ' : ∀ j w v, rep (acDelta as (dState as s.nub U j)).2 w v ↔
+      w = v ∧ ∃ e, rep (dState as s.nub U j).1 w e ∧ ¬ rep (acDelta as (dState as s.nub U j)).1 w e := fun j =>
+    rep_dPrime _ _ (hX j) (hG j)
+  have hNd := fun j => naive_meets s as _ hs.2 (hNd j)
+  have hNn := fun j => naive_meets s as _ hs.2 (hNn j)
+  have hsn : rep s.nub = rep s := rep_nub _ (one_ok _ hs.1.1) (one_ok _ hs.1.2) hs.2.1 hs.2.2
   have hit := acDelta_iterate s as s.nub U (acInv_init s as s.nub U hsn hU hUA hsV) hNd hD hΔ' hNn hF
   -- a naive round fixes `Y j` when it keeps all of it
   let Fix := fun j => ∀ x d, rep (nState s as s.nub j) x d → rep (nState s as s.nub (j + 1)) x d
   have hmem : ∀ j x d, rep (nState s as s.nub (j + 1)) x d ↔ rep s x d ∧ ∀ a ∈ as, Nv a (rep (nState s as s.nub j)) x d :=
     fun j x d => by
       rw [show nState s as s.nub (j + 1) = (acRound s as (nState s as s.nub j)).nub from rfl,
-        rep_nub _ (one_ok _ (hF j).1) (one_ok _ (hF j).2.1) (hF j).2.2.1 (hF j).2.2.2, rep_acRound s as _ (hNn j)]
+        rep_nub _ (one_ok _ (hF j).1.1) (one_ok _ (hF j).1.2) (hF j).2.1 (hF j).2.2, rep_acRound s as _ (hNn j)]
   have hsub : ∀ j x d, rep (nState s as s.nub (j + 1)) x d → rep (nState s as s.nub j) x d := fun j x d h => by
     obtain ⟨hs', hNv⟩ := (hmem j x d).1 h
     rw [← (hit j).2] at hNv ⊢
     exact (hit j).1.2.2.2.1 x d hs' hNv
   have hinj : ∀ j, RowsInj (nState s as s.nub j)
-    | 0 => nub_rows_inj s (one_ok _ hs.1) (one_ok _ hs.2.1) hs.2.2.1 hs.2.2.2
-    | j + 1 => nub_rows_inj (acRound s as (nState s as s.nub j)) (one_ok _ (hF j).1) (one_ok _ (hF j).2.1)
-        (hF j).2.2.1 (hF j).2.2.2
+    | 0 => nub_rows_inj s (one_ok _ hs.1.1) (one_ok _ hs.1.2) hs.2.1 hs.2.2
+    | j + 1 => nub_rows_inj (acRound s as (nState s as s.nub j)) (one_ok _ (hF j).1.1) (one_ok _ (hF j).1.2)
+        (hF j).2.1 (hF j).2.2
   -- `fixOn`'s stop: equal row count is `Fix`
   have hcnt : ∀ j, (nState s as s.nub (j + 1)).n.toNat = (nState s as s.nub j).n.toNat ↔ Fix j := fun j => by
     obtain ⟨hle, hlt⟩ := count_lt _ _ (hinj (j + 1)) (hsub j)
