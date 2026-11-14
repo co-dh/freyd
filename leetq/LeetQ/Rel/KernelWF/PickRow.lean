@@ -1235,4 +1235,61 @@ theorem pickFits_pick : (A : Obj) → {n : USize} → (x : Vals A n) → (i : By
 
 #print axioms pickFits_pick
 
+/-- **Picking reads at most the source read at the picked rows and at all rows `i` names**, the pick's own row
+    count paid besides: a picked payload's count is the copied windows of all the rows (`pick_arr_shape`), or a
+    side's share of them (`pick_sum_shape`), which the next level's rows already count; a dictionary at most
+    doubles (`pickArr_dict`). Bounded by `2^63` and `USize.size` at all rows, every level fits (`pickFits_of_reads`). -/
+theorem reads_pick : (A : Obj) → {n : USize} → (x : Vals A n) → (i : ByteArray) → (m : USize) →
+    (h : len i = m.toNat) → (qs : List Nat) → (∀ q ∈ qs, q < m.toNat) →
+    Vals.reads A x ((List.range m.toNat).map fun q => (Column.bitsAt i (q * 8) 8).toNat) < 2 ^ 63 →
+    Vals.reads A x ((List.range m.toNat).map fun q => (Column.bitsAt i (q * 8) 8).toNat) < USize.size →
+    Vals.reads A (Vals.pick A x i m h) qs + m.toNat ≤
+      Vals.reads A x (qs.map fun q => (Column.bitsAt i (q * 8) 8).toNat) +
+        Vals.reads A x ((List.range m.toNat).map fun q => (Column.bitsAt i (q * 8) 8).toNat)
+  | .atom t, n, x, i, m, h, qs, _, _, _ => by
+    have hd := pickArr_dict x i m h
+    unfold Vals.reads Vals.pick
+    simp only [List.length_map, List.length_range]
+    omega
+  | .prod a b, n, x, i, m, h, qs, hq, h63, hU => by
+    unfold Vals.reads at h63 hU ⊢
+    unfold Vals.pick; dsimp only
+    have := reads_pick a x.1 i m h qs hq (by omega) (by omega)
+    have := reads_pick b x.2 i m h qs hq (by omega) (by omega)
+    omega
+  | .arr b, n, ⟨p, lo, hi, f⟩, i, m, h, qs, hq, h63, hU => by
+    have hf := pickFits_of_reads h63 hU
+    unfold Vals.PickFits at hf; dsimp only at hf
+    obtain ⟨hp, hl63, hlU, -⟩ := hf
+    obtain ⟨k, lo', hi', i', h', he, hall, hqs⟩ := pick_arr_shape p lo hi f i m h hp hl63 hlU
+    obtain ⟨hlt, hmap⟩ := hqs qs hq
+    rw [he]
+    unfold Vals.reads at h63 hU ⊢
+    dsimp only at h63 hU ⊢
+    have ih := reads_pick b f i' k h' _ hlt (by rw [hall]; omega) (by rw [hall]; omega)
+    rw [hall, hmap] at ih
+    simp only [List.length_map, List.length_range] at h63 hU ⊢
+    omega
+  | .sum a b, n, ⟨l, r, tag, idx, xa, xb⟩, i, m, h, qs, hq, h63, hU => by
+    have hf := pickFits_of_reads h63 hU
+    unfold Vals.PickFits at hf; dsimp only at hf
+    obtain ⟨hm, hl, hr, -, -⟩ := hf
+    rw [List.length_map, List.length_range] at hm
+    obtain ⟨il, ir, hil, hir, he, hL, hR, hQ⟩ := pick_sum_shape l r tag idx xa xb i m h hm hl hr
+    obtain ⟨hlt, hmapl, hrt, hmapr⟩ := hQ qs hq
+    rw [he]
+    unfold Vals.reads at h63 hU ⊢
+    dsimp only at h63 hU ⊢
+    have iha := reads_pick a xa il (len il).toUSize (USize.toNat_ofNat_of_lt' hil).symm _ hlt
+      (by rw [hL]; omega) (by rw [hL]; omega)
+    have ihb := reads_pick b xb ir (len ir).toUSize (USize.toNat_ofNat_of_lt' hir).symm _ hrt
+      (by rw [hR]; omega) (by rw [hR]; omega)
+    rw [hL, hmapl] at iha
+    rw [hR, hmapr] at ihb
+    simp only [Bool.false_eq_true, ↓reduceIte, ↓reduceDIte] at iha ihb h63 hU ⊢
+    simp only [List.length_map, List.length_range] at h63 hU ⊢
+    omega
+
+#print axioms reads_pick
+
 end LeetQ.Rel.Alg
