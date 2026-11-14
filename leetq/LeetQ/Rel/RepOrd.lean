@@ -339,13 +339,20 @@ theorem bag_row {n : USize} (X : Vals (.arr (.atom .long)) n) (hp : X.1.toNat < 
 
 /-- **`rep (bagify X)` at `long`**: an array of `X` goes to `ys` exactly when `ys` is a permutation of it,
     ascending — the one sorted member of its `perm` class. Hypotheses: the payload count, the row count and the
-    summed counts below `2^63` (`xi`'s rows are graded as longs), the summed counts a `USize` (`expand`'s copies),
-    `Vals.PickFits` where `Vals.compact` picks `X`. -/
+    summed counts below `2^63` (`xi`'s rows are graded as longs), the summed counts a `USize` (`expand`'s copies).
+    `Vals.compact`'s fit at `X` follows from the counts (`pickFits_arr_count`). -/
 theorem rep_bagify {n : USize} (X : Vals (.arr (.atom .long)) n) (hp : X.1.toNat < 2 ^ 63)
-    (hn : n.toNat < 2 ^ 63) (hS : pc(n.toNat) < 2 ^ 63) (hU : pc(n.toNat) < USize.size)
-    (hKf : Vals.PickFits (.arr (.atom .long)) X
-      ((List.range n.toNat).map fun q => (Column.bitsAt (tilLongs n) (q * 8) 8).toNat)) :
+    (hn : n.toNat < 2 ^ 63) (hS : pc(n.toNat) < 2 ^ 63) (hU : pc(n.toNat) < USize.size) :
     ∀ xs ys, rep (bagify X) xs ys ↔ (∃ j, X.row j = xs) ∧ ys.Perm xs ∧ ys.Pairwise (· ≤ ·) := by
+  -- the payload is atoms inside `[0, X.1)`, so the windows' fit is outright
+  have hKf : Vals.PickFits (.arr (.atom .long)) X
+      ((List.range n.toNat).map fun q => (Column.bitsAt (tilLongs n) (q * 8) 8).toNat) := by
+    rw [(List.map_congr_left fun q hq => tilLongs_get (List.mem_range.1 hq)).trans (List.map_id _)]
+    refine pickFits_arr_count X hp hS hU (pickFits_atom _ fun k hk => ?_)
+    obtain ⟨r, hr, hk⟩ := List.mem_flatMap.1 hk
+    rw [dif_pos (List.mem_range.1 hr), List.mem_range'_1] at hk
+    have := Nat.min_le_right (max (Int64.toInt (Arr.get X.2.2.1 ⟨r, List.mem_range.1 hr⟩)) 0).toNat X.1.toNat
+    omega
   have hkey : ∀ q : Fin n.toNat, (Vals.compact _ X).row q = X.row q := fun q => by
     rw [show Vals.compact _ X = Vals.pick _ X (tilLongs _) _ (len_tilLongs _) from rfl,
       pick_row _ X (tilLongs n) n (len_tilLongs _) hKf,

@@ -158,6 +158,14 @@ local notation "pre(" r ")" => ((List.range r).map fun u => (Column.bitsAt (slic
 set_option hygiene false in
 local notation "nN" => (Rel.n P).toNat
 
+/-- **An atom side fits at the rows `tilLongs n` reads**: they are `0, …, n-1`, so no row misses. -/
+theorem pickFits_tilLongs {t : QAtomicType} {n : USize} (x : Vals (.atom t) n) :
+    Vals.PickFits (.atom t) x ((List.range n.toNat).map fun q => (Column.bitsAt (tilLongs n) (q * 8) 8).toNat) :=
+  pickFits_atom x fun k hk => by
+    obtain ⟨q, hq, rfl⟩ := List.mem_map.1 hk
+    rw [tilLongs_get (List.mem_range.1 hq)]
+    exact List.mem_range.1 hq
+
 /-- **`cons`, read back**: a row `(b, bs)` of `P` goes to the array `b :: bs`, under its key. The pieces `cons`
     computes are bound by their equations: the slices `s` of `P`'s arrays, `expand`'s index and rank columns
     `xi`, `xr` (at `m` copies), the tails' payload rows `j` and the tails `tl`, the counts plus one `c1`, their
@@ -1027,7 +1035,6 @@ theorem map_step_rep {E B : Obj} (el : Rel .long E) (R : Rel E B) (pend : Rel .l
     (lo : ByteArray) (hlo : lo = sub (Rel.n P) hi c1)
     (dst : ByteArray) (hdst : dst = addc m (add m (gather 8 lo xi) xr) 1)
     (g : ByteArray) (hg : g = (Code.ofLongs (concatBytes #[dst, lo])).grade)
-    (hKf : Vals.PickFits .long (Rel.key P) ((List.range (Rel.n P).toNat).map fun q => (Column.bitsAt (tilLongs (Rel.n P)) (q * 8) 8).toNat))
     (hTf : Vals.PickFits B (Rel.val P).2.2.2.2 ((List.range m.toNat).map fun q => (Column.bitsAt j (q * 8) 8).toNat))
     (hRf : Vals.RazeFits B tl (Rel.val P).1)
     (hFf : ∀ hN, Vals.PickFits B (Obj.raze B #[⟨m, tl⟩, ⟨Rel.n P, (Rel.val P).1⟩] hN)
@@ -1041,7 +1048,7 @@ theorem map_step_rep {E B : Obj} (el : Rel .long E) (R : Rel E B) (pend : Rel .l
   subst hP
   intro r v
   rw [rep_cons (pair (el ≫ R) pend) hp s hs hS hU xi hxi m hm xr hxr j hj tl htl c1 hc1 hi hhi lo hlo
-    dst hdst g hg hKf hTf hRf hFf, h1]
+    dst hdst g hg (pickFits_tilLongs _) hTf hRf hFf, h1]
   constructor
   · rintro ⟨b, bs, hb, rfl⟩
     obtain ⟨hq, hu⟩ := hb
@@ -1105,8 +1112,6 @@ theorem rep_map {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n)
       ∀ lo : ByteArray, lo = sub (Rel.n P) hi c1 →
       ∀ dst : ByteArray, dst = addc m (add m (gather 8 lo xi) xr) 1 →
       ∀ g : ByteArray, g = (Code.ofLongs (concatBytes #[dst, lo])).grade →
-      Vals.PickFits .long (Rel.key P)
-        ((List.range (Rel.n P).toNat).map fun q => (Column.bitsAt (tilLongs (Rel.n P)) (q * 8) 8).toNat) ∧
       Vals.PickFits B (Rel.val P).2.2.2.2 ((List.range m.toNat).map fun q => (Column.bitsAt j (q * 8) 8).toNat) ∧
       Vals.RazeFits B tl (Rel.val P).1 ∧
       ∀ hN, Vals.PickFits B (Obj.raze B #[⟨m, tl⟩, ⟨Rel.n P, (Rel.val P).1⟩] hN)
@@ -1129,9 +1134,9 @@ theorem rep_map {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n)
     obtain ⟨hkO, hkn, hkM, hkB, hkC, hP⟩ := hQ _ rfl _ rfl
     obtain ⟨hp, hs⟩ := hP _ rfl
     obtain ⟨hS, hU, hx⟩ := hs _ rfl
-    obtain ⟨hKf, hTf, hRf, hFf⟩ := hx _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
+    obtain ⟨hTf, hRf, hFf⟩ := hx _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
     exact map_step_rep _ R _ _ rfl hjO hjn hjM hjC _ rfl _ rfl hkO hkn hkM hkB hkC _ rfl hp _ rfl
-      hS hU _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl hKf hTf hRf hFf r v
+      hS hU _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl hTf hRf hFf r v
   refine (rep_foldBy (nilVal B) X T hT hn hv hp hTv pend₀ hpend hN h63 (pickFits_nilVal B _)
     (fun el pend => cons (pair (el ≫ R) pend)) (fun _ eu v => ∃ b, rep R eu.1 b ∧ v = b :: eu.2) elK hE f hf hR hS
     F hF jc hjc hjO hjn hjM hjA hjC xs ys).trans ?_

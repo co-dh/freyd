@@ -37,10 +37,9 @@ theorem subseq_step_rep {B : Obj} (el : Rel .long B) (pend : Rel .long (.arr B))
     (lo : ByteArray) (hlo : lo = sub (Rel.n W) hi c1)
     (dst : ByteArray) (hdst : dst = addc m (add m (gather 8 lo xi) xr) 1)
     (g : ByteArray) (hg : g = (Code.ofLongs (concatBytes #[dst, lo])).grade)
-    (hKf : Vals.PickFits .long (Rel.key W)
-      ((List.range (Rel.n W).toNat).map fun q => (Column.bitsAt (tilLongs (Rel.n W)) (q * 8) 8).toNat))
     (hTf : Vals.PickFits B (Rel.val W).2.2.2.2 ((List.range m.toNat).map fun q => (Column.bitsAt j (q * 8) 8).toNat))
     (hRf : Vals.RazeFits B tl (Rel.val W).1)
+    -- stays: at a generic `B` the razed cells' fit bounds the two parts' summed `.arr` windows and `.sum` counts
     (hFf : ∀ hN, Vals.PickFits B (Obj.raze B #[⟨m, tl⟩, ⟨Rel.n W, (Rel.val W).1⟩] hN)
       ((List.range (len g)).map fun q => (Column.bitsAt g (q * 8) 8).toNat))
     (P : Rel .long (.arr B)) (hP : P = cons W) (Q : Rel .long (.arr B)) (hQ : Q = pend)
@@ -56,7 +55,7 @@ theorem subseq_step_rep {B : Obj} (el : Rel .long B) (pend : Rel .long (.arr B))
   have h1 := rep_pair el pend (codesOK_long2 _ _ hkO) hkn hkM (pickFits_atom_fst _) hkB hkC
   subst hW
   have h2 := rep_cons (pair el pend) hp s hs hcS hcU xi hxi m hm xr hxr j hj tl htl c1 hc1 hi hhi lo hlo
-    dst hdst g hg hKf hTf hRf hFf
+    dst hdst g hg (pickFits_tilLongs _) hTf hRf hFf
   subst P Q
   intro r v
   rw [rep_union_full (cons (pair el pend)) _ hU (razeFits_atom_count _ _ hU (by decide) rfl) hFv
@@ -164,8 +163,6 @@ theorem rep_subseq {B : Obj} {n : USize} (X : Vals (.arr B) n)
       ∀ lo : ByteArray, lo = sub (Rel.n W) hi c1 →
       ∀ dst : ByteArray, dst = addc m (add m (gather 8 lo xi) xr) 1 →
       ∀ g : ByteArray, g = (Code.ofLongs (concatBytes #[dst, lo])).grade →
-      Vals.PickFits .long (Rel.key W)
-        ((List.range (Rel.n W).toNat).map fun q => (Column.bitsAt (tilLongs (Rel.n W)) (q * 8) 8).toNat) ∧
       Vals.PickFits B (Rel.val W).2.2.2.2 ((List.range m.toNat).map fun q => (Column.bitsAt j (q * 8) 8).toNat) ∧
       Vals.RazeFits B tl (Rel.val W).1 ∧
       (∀ hN, Vals.PickFits B (Obj.raze B #[⟨m, tl⟩, ⟨Rel.n W, (Rel.val W).1⟩] hN)
@@ -195,10 +192,10 @@ theorem rep_subseq {B : Obj} {n : USize} (X : Vals (.arr B) n)
     obtain ⟨hkO, hkn, hkM, hkB, hkC, hW⟩ := hC i hi _ _ rfl rfl _ rfl
     obtain ⟨hp, hs⟩ := hW _ rfl
     obtain ⟨hcS, hcU, hx⟩ := hs _ rfl
-    obtain ⟨hKf, hTf, hRf, hFf, hPQ⟩ := hx _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
+    obtain ⟨hTf, hRf, hFf, hPQ⟩ := hx _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
     obtain ⟨hU, hFv, hUV, hUk, hUv⟩ := hPQ _ rfl _ rfl
     rw [subseq_step_rep _ _ _ rfl hkO hkn hkM hkB hkC _ rfl hp _ rfl hcS hcU _ rfl _ rfl _ rfl _ rfl
-      _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl hKf hTf hRf hFf _ rfl _ rfl hU hFv hUV hUk hUv r v]
+      _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl hTf hRf hFf _ rfl _ rfl hU hFv hUV hUk hUv r v]
     constructor
     · rintro (⟨e, u, he, hu, rfl⟩ | hu)
       · exact Or.inl ⟨e, u, he, hu, Or.inl rfl⟩

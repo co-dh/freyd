@@ -219,6 +219,27 @@ theorem pickFits_payload {B : Obj} {n : USize} (x : Vals (.arr B) n) {ps : List 
   simp only [Vals.PickFits] at hf
   exact ⟨hf.1, hf.2.2.2⟩
 
+/-- **An array side fits at all its rows** from its counts: the payload below `2^63`, the rows' summed counts
+    (`slicesOf`'s, the clamped windows' lengths) below `2^63` and `USize.size`, and the payload at the windows. -/
+theorem pickFits_arr_count {B : Obj} {n : USize} (x : Vals (.arr B) n) (hp : x.1.toNat < 2 ^ 63)
+    (hS : ((List.range n.toNat).map fun r => (Column.bitsAt (slicesOf x).2 (r * 8) 8).toNat).sum < 2 ^ 63)
+    (hU : ((List.range n.toNat).map fun r => (Column.bitsAt (slicesOf x).2 (r * 8) 8).toNat).sum < USize.size)
+    (hB : Vals.PickFits B x.2.2.2 ((List.range n.toNat).flatMap fun r =>
+      if h : r < n.toNat then List.range' sL(x, r, h) (sH(x, r, h) - sL(x, r, h)) else [])) :
+    Vals.PickFits (.arr B) x (List.range n.toNat) := by
+  have hl : ((List.range n.toNat).flatMap fun r =>
+      if h : r < n.toNat then List.range' sL(x, r, h) (sH(x, r, h) - sL(x, r, h)) else []).length =
+      ((List.range n.toNat).map fun r => (Column.bitsAt (slicesOf x).2 (r * 8) 8).toNat).sum := by
+    rw [List.length_flatMap]
+    congr 1
+    refine List.map_congr_left fun r hr => ?_
+    have hr' := List.mem_range.1 hr
+    simp only [dif_pos hr', List.length_range']
+    exact (slicesOf_get x hp hr').2.symm
+  obtain ⟨p, lo, hi, f⟩ := x
+  unfold Vals.PickFits
+  exact ⟨hp, Nat.lt_of_le_of_lt (Nat.le_of_eq hl) hS, Nat.lt_of_le_of_lt (Nat.le_of_eq hl) hU, hB⟩
+
 #print axioms slicesOf_copies
 #print axioms copy_row
 #print axioms row_copy

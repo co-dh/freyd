@@ -388,8 +388,6 @@ local notation "subOK" =>
       ∀ lo : ByteArray, lo = sub (Rel.n W) hi c1 →
       ∀ dst : ByteArray, dst = addc m (add m (gather 8 lo xi) xr) 1 →
       ∀ g : ByteArray, g = (Code.ofLongs (concatBytes #[dst, lo])).grade →
-      Vals.PickFits .long (Rel.key W)
-        ((List.range (Rel.n W).toNat).map fun q => (Column.bitsAt (tilLongs (Rel.n W)) (q * 8) 8).toNat) ∧
       Vals.PickFits B (Rel.val W).2.2.2.2 ((List.range m.toNat).map fun q => (Column.bitsAt j (q * 8) 8).toNat) ∧
       Vals.RazeFits B tl (Rel.val W).1 ∧
       (∀ hN, Vals.PickFits B (Obj.raze B #[⟨m, tl⟩, ⟨Rel.n W, (Rel.val W).1⟩] hN)
