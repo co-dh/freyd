@@ -3,6 +3,7 @@
 -/
 import LeetQ.Rel.KernelWF.SegSpec
 import LeetQ.Rel.KernelWF.DivSpec
+import LeetQ.Rel.KernelWF.CodesRec
 
 namespace LeetQ.Rel.Alg
 
@@ -363,7 +364,7 @@ theorem slices_core {N m : Nat} {O G L c κ : Nat → Nat} {K : Nat → Nat × N
     (hκ : ∀ i j, i < N → j < N → (κ i = κ j ↔ c i = c j))
     (hsrt : ∀ t t', t < t' → t' < N → G t = G t' → κ (L t) ≤ κ (L t'))
     (hK : ∀ t, K t = (G t, c (L t)))
-    (hoff : ∀ j, off j = if O j < N then Verify.groupOf K N (O j) else (firstsOf K N).length) :
+    (hoff : ∀ j ≤ m, off j = if O j < N then Verify.groupOf K N (O j) else (firstsOf K N).length) :
     (∀ j ≤ m, off j ≤ (firstsOf K N).length) ∧ (∀ a b, a ≤ b → b ≤ m → off a ≤ off b) ∧
       off m = (firstsOf K N).length ∧ ∀ j < m, ∀ j' < m, (SEQ(c, j) = SEQ(c, j') ↔
         ∀ x, (∃ i, O j ≤ i ∧ i < O (j + 1) ∧ c i = x) ↔ (∃ i, O j' ≤ i ∧ i < O (j' + 1) ∧ c i = x)) := by
@@ -387,7 +388,7 @@ theorem slices_core {N m : Nat} {O G L c κ : Nat → Nat} {K : Nat → Nat × N
   -- the first rows below start `j` are those numbered below `off j`
   have hc : ∀ j ≤ m, ∀ r (hr : r < (firstsOf K N).length), ((firstsOf K N)[r] < O j ↔ r < off j) := by
     intro j hj r hr
-    rw [hoff j]
+    rw [hoff j hj]
     split
     · rename_i hlt
       have hmem : O j ∈ firstsOf K N := by
@@ -404,7 +405,7 @@ theorem slices_core {N m : Nat} {O G L c κ : Nat → Nat} {K : Nat → Nat × N
       have : O j = N := by have := hON j hj; omega
       constructor <;> intro _ <;> omega
   have hoffle : ∀ j ≤ m, off j ≤ (firstsOf K N).length := fun j hj => by
-    rw [hoff j]; split
+    rw [hoff j hj]; split
     · exact Nat.le_of_lt (Verify.groupOf_lt ‹_›)
     · exact Nat.le_refl _
   have hmono : ∀ a b, a ≤ b → b ≤ m → off a ≤ off b := fun a b hab hbm => by
@@ -413,7 +414,7 @@ theorem slices_core {N m : Nat} {O G L c κ : Nat → Nat} {K : Nat → Nat × N
     have h1 := (hc a (by omega) (off b) hr).2 hlt
     have h2 := (hc b hbm (off b) hr).1 (Nat.lt_of_lt_of_le h1 (hO a b hab hbm))
     exact Nat.lt_irrefl _ h2
-  have hoffm : off m = (firstsOf K N).length := by rw [hoff m, if_neg (by omega)]
+  have hoffm : off m = (firstsOf K N).length := by rw [hoff m (Nat.le_refl _), if_neg (by omega)]
   -- the representatives numbered `[off j, off (j+1))` are the first rows in slice `j`
   have hblk : ∀ j < m, ∀ r (hr : r < (firstsOf K N).length),
       (off j ≤ r ∧ r < off (j + 1) ↔ G (firstsOf K N)[r] = j) := fun j hj r hr => by
@@ -497,6 +498,228 @@ theorem slices_core {N m : Nat} {O G L c κ : Nat → Nat} {K : Nat → Nat × N
     simp only [List.getElem_map, List.getElem_range] at e ⊢
     simp only [List.length_map, List.length_range] at h1 h2
     exact (hκ _ _ (hLF _ (by have := hoffle (j + 1) hj; omega)) (hLF _ (by have := hoffle (j' + 1) hj'; omega))).1 e
+
+-- the long `j` of the starts `s`, and the row the grade `p` puts at sorted position `t`
+set_option hygiene false in
+local notation "T(" j ")" => UInt64.toNat (Column.bitsAt s (j * 8) 8)
+set_option hygiene false in
+local notation "LP(" t ")" => UInt64.toNat (Column.bitsAt p (t * 8) 8)
+-- the (slice, code) key of sorted position `t`
+set_option hygiene false in
+local notation "KP" => fun t => (UInt64.toNat (Column.bitsAt seg (t * 8) 8), Column.idAt vc.b vc.w (LP(t)))
+
+/-- **`setIds` numbers the slices by their sets of codes**: over a well-formed code `vc` and `m` ascending starts
+    `s` from `0`, slice `j` being the rows `i < n` from `s[j]` up to the next start, slices `j` and `j'` get one
+    id exactly when they hold the same set of codes, and slice `j`'s id is at most `j`. Hypotheses: `vc` well
+    formed (lane, exact payload size), true size bounds, and the shape of the starts (`0` first, ascending,
+    at most `n`). -/
+theorem setIds_spec (vc : Code) (s : ByteArray) {m : Nat}
+    (hw : vc.w = 1 ∨ vc.w = 2 ∨ vc.w = 4 ∨ vc.w = 8 ∨ vc.w = 16 ∨ vc.w = 32 ∨ vc.w = 64)
+    (hs : vc.b.size = (vc.n.toNat * vc.w + 7) / 8) (hsz : s.size = 8 * m) (hn : vc.n.toNat < 2 ^ 63)
+    (hm : m + 1 < 2 ^ 63) (h0 : 0 < m → T(0) = 0) (hasc : ∀ j, j + 1 < m → T(j) ≤ T(j + 1))
+    (hle : ∀ j < m, T(j) ≤ vc.n.toNat) {j j' : Nat} (hj : j < m) (hj' : j' < m) :
+    (Column.bitsAt (setIds vc s) (8 * j) 8 = Column.bitsAt (setIds vc s) (8 * j') 8 ↔
+      ∀ c, (∃ i < vc.n.toNat, T(j) ≤ i ∧ (j + 1 < m → i < T(j + 1)) ∧ Column.idAt vc.b vc.w i = c) ↔
+        (∃ i < vc.n.toNat, T(j') ≤ i ∧ (j' + 1 < m → i < T(j' + 1)) ∧ Column.idAt vc.b vc.w i = c)) ∧
+      (Column.bitsAt (setIds vc s) (8 * j) 8).toNat ≤ j := by
+  have h8 : (Nat.toUSize 8).toNat = 8 := KernelWF.toNat_small 8 (by decide)
+  have hg8 : ∀ src idx : ByteArray, (gather 8 src idx).size = 8 * len idx := fun src idx => by
+    simp only [gather, KernelWF.gatherBytes_size, h8, len]; omega
+  have hw64 : vc.w ≤ 64 := by omega
+  have hw0 : 0 < vc.w := by omega
+  have hcb : 8 ≤ vc.w → 8 * vc.b.size = vc.w * vc.n.toNat := fun h8 => by
+    rcases hw with h | h | h | h | h | h | h <;> rw [h] at hs ⊢ <;> omega
+  unfold setIds
+  dsimp only
+  -- the offsets `o = s, n`
+  obtain ⟨hosz, hoget, holast⟩ := concat_one s vc.n.toUInt64 hsz
+  generalize concatBytes #[s, one vc.n.toUInt64] = o at hosz hoget holast ⊢
+  have hOl : O(m) = vc.n.toNat := by rw [holast]; simp
+  have hOT : ∀ j < m, O(j) = T(j) := fun j hj => by rw [hoget j hj]
+  have hOs : ∀ j < m, O(j) ≤ O(j + 1) := fun j hj => by
+    rw [hOT j hj]
+    rcases Nat.lt_or_ge (j + 1) m with h | h
+    · rw [hOT _ h]; exact hasc j h
+    · rw [show j + 1 = m by omega, hOl]; exact hle j hj
+  have hO : ∀ a b, a ≤ b → b ≤ m → O(a) ≤ O(b) := by
+    intro a b hab hb
+    induction b with
+    | zero => cases Nat.le_zero.1 hab; exact Nat.le_refl _
+    | succ b ih =>
+      rcases Nat.lt_or_eq_of_le hab with h | rfl
+      · exact Nat.le_trans (ih (by omega) (by omega)) (hOs b (by omega))
+      · exact Nat.le_refl _
+  have hol : len o = m + 1 := by simp only [len]; omega
+  -- the slice of each row
+  obtain ⟨hsegsz, hG⟩ := groupOf_spec o vc.n hosz hn hm (by rw [hOT 0 (by omega)]; exact h0 (by omega))
+    hOs hOl
+  generalize groupOf o vc.n = seg at hsegsz hG ⊢
+  have hsl : len seg = vc.n.toNat := by simp only [len]; omega
+  -- the grade `p`: slice, then code
+  obtain ⟨hperm, κ, hκ, hsrt⟩ := gradeBy_lex seg vc hw hs hsegsz fun i hi => by have := (hG i hi).1; omega
+  generalize gradeBy vc.n #[Code.ofLongs seg, vc] = p at hperm hsrt ⊢
+  have hlenp : (ids p).length = vc.n.toNat := by rw [hperm.length_eq, List.length_range]
+  have hpl : len p = vc.n.toNat := by rw [len_eq_ids, hlenp]
+  have hL : ∀ t < vc.n.toNat, LP(t) < vc.n.toNat := fun t ht => by
+    rw [← ids_getElem (by omega)]; exact List.mem_range.1 (hperm.mem_iff.1 (List.getElem_mem _))
+  have hLs : ∀ i < vc.n.toNat, ∃ t < vc.n.toNat, LP(t) = i := fun i hi => by
+    obtain ⟨t, ht, e⟩ := List.getElem_of_mem (hperm.mem_iff.2 (List.mem_range.2 hi))
+    exact ⟨t, by omega, (ids_getElem ht).symm.trans e⟩
+  have hGmono : ∀ a b, a ≤ b → b < vc.n.toNat → S(a) ≤ S(b) := fun a b hab hb => by
+    refine Nat.not_lt.1 fun hlt => ?_
+    have ha := hG a (by omega); have hb' := hG b hb
+    have := hO (S(b) + 1) (S(a)) hlt (by omega); omega
+  have hsort : ((ids p).map fun i => S(i)).Pairwise (· ≤ ·) :=
+    List.pairwise_map.2 (hsrt.imp fun h => by rcases h with h | ⟨h, -⟩ <;> omega)
+  have hrng : ((List.range vc.n.toNat).map fun i => S(i)).Pairwise (· ≤ ·) :=
+    List.pairwise_map.2 ((pairwise_range _).imp_of_mem fun _ hb hab =>
+      hGmono _ _ (Nat.le_of_lt hab) (List.mem_range.1 hb))
+  have heq := List.Perm.eq_of_pairwise (fun a b _ _ h1 h2 => Nat.le_antisymm h1 h2) hsort hrng (hperm.map _)
+  have hGL : ∀ t < vc.n.toNat, S(LP(t)) = S(t) := fun t ht => by
+    have e := List.getElem_of_eq heq (i := t) (by simp only [List.length_map]; omega)
+    simp only [List.getElem_map, List.getElem_range] at e
+    rw [ids_getElem (by omega)] at e; exact e
+  -- the sorted (slice, code) pairs and their grouping
+  have hpl' : len p < USize.size := by rw [hpl]; exact vc.n.toNat_lt_size
+  have hpi : ∀ t < len p, (Column.bitsAt p (t * 8) 8).toNat < vc.n.toNat := fun t ht => hL t (by omega)
+  obtain ⟨hBw, hBn, -, hBid⟩ := gather_spec vc p hpl' hw hcb hpi
+  have hBs := gather_size vc p hpl' hw
+  have hkind : (vc.gather p).kind = vc.kind := by unfold Code.kind; rw [hBw]
+  have hBw' : (vc.gather p).w = 1 ∨ (vc.gather p).w = 2 ∨ (vc.gather p).w = 4 ∨ (vc.gather p).w = 8 ∨
+      (vc.gather p).w = 16 ∨ (vc.gather p).w = 32 ∨ (vc.gather p).w = 64 := by rw [hBw]; exact hw
+  have hBs' : (vc.gather p).b.size = ((vc.gather p).n.toNat * (vc.gather p).w + 7) / 8 := by rw [hBs, hBn, hBw]
+  have hBn' : (vc.gather p).n.toNat = vc.n.toNat := by rw [hBn, hpl]
+  have hA : (gather 8 seg p).size = 8 * vc.n.toNat := by rw [hg8, hpl]
+  have hPK : ∀ t < vc.n.toNat, PK(gather 8 seg p, vc.gather p) t = (S(t), Column.idAt vc.b vc.w (LP(t))) :=
+    fun t ht => by
+      simp only
+      rw [gather8_get (by omega) (by rw [hsl]; exact hL t ht), hGL t ht, hBw, hBid t (by omega)]
+  rcases hr : (match vc.kind with
+    | some k => Order.groupIdsPair .i64 k vc.n (gather 8 seg p) (vc.gather p).b
+    | none => Order.groupIdsPairIds 64 vc.w.toUSize vc.n (gather 8 seg p) (vc.gather p).b) with ⟨q, fs⟩
+  have hr' : (q, fs) = match (vc.gather p).kind with
+      | some k => Order.groupIdsPair .i64 k vc.n (gather 8 seg p) (vc.gather p).b
+      | none => Order.groupIdsPairIds 64 (vc.gather p).w.toUSize vc.n (gather 8 seg p) (vc.gather p).b := by
+    rw [hkind, hBw]; exact hr.symm
+  obtain ⟨hfs, -, hqcap⟩ := pairIds_read _ _ vc.n hBw' hBs' hBn' hA _ hr'
+  have hgl := groupLongs_read _ _ vc.n hBw' hBs' hBn' hA _ hr'
+  simp only at hfs hqcap
+  obtain ⟨hFeq, -, hGeq⟩ := groups_congr (PK(gather 8 seg p, vc.gather p)) vc.n.toNat
+    (g' := KP) fun a ha b hb => by rw [hPK a ha, hPK b hb]
+  rw [hFeq] at hfs
+  have hFN := firstsOf_length_le KP vc.n.toNat
+  have hfl : len fs = (firstsOf KP vc.n.toNat).length := by rw [len_eq_ids, hfs]
+  -- the pair numbers widened to longs, then `len fs` appended
+  have hglsz : (groupLongs vc.n (q, fs)).size = 8 * vc.n.toNat := by
+    have hW : Column.idWidthOf (fs.size / 8) ≤ 64 := by
+      unfold Column.idWidthOf
+      rcases laneWidth_cases (Column.widthFor (fs.size / 8 - 1)) with h | h | h | h | h | h | h | h <;> rw [h] <;> decide
+    show (Order.indices _).size = _
+    simp only [KernelWF.indices_size, List.length_map, List.length_range, lane_toNat hW, hqcap]; omega
+  have hglget : ∀ t < vc.n.toNat, (Column.bitsAt (groupLongs vc.n (q, fs)) (t * 8) 8).toNat =
+      Verify.groupOf KP vc.n.toNat t := fun t ht => by
+    rw [ids_get hgl (by simpa using ht)]; simp only [List.getElem_map, List.getElem_range]; exact hGeq t ht
+  obtain ⟨hc2sz, hc2get, hc2last⟩ := concat_one (groupLongs vc.n (q, fs)) (len fs).toUInt64 hglsz
+  generalize concatBytes #[groupLongs vc.n (q, fs), one (len fs).toUInt64] = C2 at hc2sz hc2get hc2last ⊢
+  have hc2l : len C2 = vc.n.toNat + 1 := by simp only [len]; omega
+  generalize hO'D : gather 8 C2 o = O' at ⊢
+  have hO'sz : O'.size = 8 * (m + 1) := by rw [← hO'D, hg8, hol]
+  have hoff : ∀ j ≤ m, (Column.bitsAt O' (8 * j) 8).toNat = if O(j) < vc.n.toNat then
+      Verify.groupOf KP vc.n.toNat (O(j)) else (firstsOf KP vc.n.toNat).length := fun j hj => by
+    have hOj : O(j) ≤ vc.n.toNat := by have := hO j m hj (Nat.le_refl _); omega
+    rw [← hO'D, Nat.mul_comm, gather8_get (by omega) (by omega)]
+    split
+    · rename_i h; rw [hc2get _ h, hglget _ h]
+    · rename_i h
+      rw [show O(j) = vc.n.toNat by omega, hc2last, ← hfl]; exact UInt64.toNat_ofNat_of_lt' (by have : UInt64.size = 2 ^ 64 := rfl; omega)
+  have hsrtc : ∀ t t', t < t' → t' < vc.n.toNat → S(t) = S(t') → κ (LP(t)) ≤ κ (LP(t')) := fun t t' htt ht' e => by
+    have h := List.pairwise_iff_getElem.1 hsrt t t' (by omega) (by omega) htt
+    rw [ids_getElem (by omega), ids_getElem (by omega), hGL t (by omega), hGL t' ht'] at h
+    rcases h with h | ⟨-, h⟩
+    · omega
+    · exact h
+  obtain ⟨hoffle, hmono, hoffm, hcore⟩ := slices_core (N := vc.n.toNat) (m := m) (O := fun j => O(j))
+    (G := fun i => S(i)) (L := fun t => LP(t)) (c := Column.idAt vc.b vc.w) (κ := κ) (K := KP)
+    (off := fun j => (Column.bitsAt O' (8 * j) 8).toNat) hO hOl hG hL hLs hGL hκ hsrtc (fun _ => rfl) hoff
+  -- the payload: one representative code per pair
+  have hidxl : len (gather 8 p fs) = (firstsOf KP vc.n.toNat).length := by rw [gather_len, hfl]
+  have hidxget : ∀ r (hr : r < (firstsOf KP vc.n.toNat).length),
+      (Column.bitsAt (gather 8 p fs) (r * 8) 8).toNat = LP((firstsOf KP vc.n.toNat)[r]) := fun r hr => by
+    have hf := ids_get hfs hr
+    rw [gather8_get (by omega) (by rw [hf, hpl]; exact Verify.firsts_lt KP _ (List.getElem_mem hr)), hf]
+  have hil : len (gather 8 p fs) < USize.size := by have := vc.n.toNat_lt_size; omega
+  obtain ⟨-, -, -, hVid⟩ := gather_spec vc (gather 8 p fs) hil hw hcb fun r hr => by
+    rw [hidxget r (by omega)]; exact hL _ (Verify.firsts_lt KP _ (List.getElem_mem _))
+  have hVs := gather_size vc (gather 8 p fs) hil hw
+  generalize (vc.gather (gather 8 p fs)).b = v at hVid hVs ⊢
+  have hrep : ∀ r < (firstsOf KP vc.n.toNat).length, (Column.resAt v 0 vc.w r).toNat =
+      Column.idAt vc.b vc.w (LP((firstsOf KP vc.n.toNat).getD r 0)) := fun r hr => by
+    show Column.idAt v vc.w r = _
+    rw [hVid r (by omega), hidxget r hr, List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hr, Option.getD_some]
+  -- `rankSlices`' guards
+  have hlt63 : ∀ j ≤ m, (Column.bitsAt O' (8 * j) 8).toNat < 2 ^ 63 := fun j hj => by
+    have : (Column.bitsAt O' (8 * j) 8).toNat ≤ _ := hoffle j hj; omega
+  have hI : ∀ j ≤ m, (Column.bitsAt O' (8 * j) 8).toInt64.toInt = ((Column.bitsAt O' (8 * j) 8).toNat : Int) :=
+    fun j hj => toInt64_toInt (hlt63 j hj)
+  have hm8 : O'.size / 8 - 1 = m := by omega
+  have hwt : vc.w.toUSize.toNat = vc.w := lane_toNat hw64
+  have gw : vc.w.toUSize.toNat ≤ 64 := by rw [hwt]; exact hw64
+  have go : 8 ≤ O'.size := by omega
+  have g0 : 0 ≤ (Column.bitsAt O' 0 8).toInt64.toInt := by
+    have := hI 0 (Nat.zero_le _); rw [Nat.mul_zero] at this; rw [this]; omega
+  have gcap : (Column.bitsAt O' (8 * (O'.size / 8 - 1)) 8).toInt64.toInt ≤
+      (Column.idsCap v vc.w.toUSize.toNat (Column.bitsAt O' (8 * (O'.size / 8 - 1)) 8).toInt64.toInt.toNat : Int) := by
+    rw [hm8, hI m (Nat.le_refl _), Int.toNat_natCast, hwt, idsCap_full hw0]
+    · exact Int.le_refl _
+    · have e : (Column.bitsAt O' (8 * m) 8).toNat = _ := hoffm
+      rw [e, hVs, hidxl, Nat.mul_comm vc.w]
+      generalize (firstsOf KP vc.n.toNat).length * vc.w = X; omega
+  have gasc : ∀ k, k < O'.size / 8 - 1 →
+      (Column.bitsAt O' (8 * k) 8).toInt64.toInt ≤ (Column.bitsAt O' (8 * (k + 1)) 8).toInt64.toInt := fun k hk => by
+    rw [hm8] at hk
+    rw [hI k (by omega), hI (k + 1) (by omega)]; exact Int.ofNat_le.2 (hmono k (k + 1) (by omega) (by omega))
+  have hsize : (Order.rankSlices vc.w.toUSize v O').size = 8 * len s := by
+    rw [rankSlices_size _ _ _ gw go g0 gcap gasc, hm8]; simp only [len]; omega
+  obtain ⟨hR, hRle⟩ := rankSlices_get _ _ _ gw go g0 gcap gasc (by omega) (j := j) (j' := j')
+    (by omega) (by omega)
+  simp only [hI j (by omega), hI (j + 1) (by omega), hI j' (by omega), hI (j' + 1) (by omega), Int.toNat_natCast,
+    hwt] at hR
+  have harr : ∀ (a b : Nat) (f g : Nat → UInt64), (Array.range a).map f = (Array.range b).map g ↔
+      (List.range a).map (fun t => (f t).toNat) = (List.range b).map (fun t => (g t).toNat) := fun a b f g => by
+    rw [← Array.toList_inj, Array.toList_map, Array.toList_map, Array.toList_range, Array.toList_range]
+    constructor
+    · intro h; have := congrArg (List.map UInt64.toNat) h; simpa [List.map_map, Function.comp_def] using this
+    · intro h
+      refine List.map_injective_iff.2 (fun x y e => UInt64.toNat_inj.1 e) ?_
+      simpa [List.map_map, Function.comp_def] using h
+  have hseq : ∀ j < m, (List.range ((Column.bitsAt O' (8 * (j + 1)) 8).toNat - (Column.bitsAt O' (8 * j) 8).toNat)).map
+      (fun t => (Column.resAt v 0 vc.w ((Column.bitsAt O' (8 * j) 8).toNat + t)).toNat) =
+      (List.range ((Column.bitsAt O' (8 * (j + 1)) 8).toNat - (Column.bitsAt O' (8 * j) 8).toNat)).map
+      (fun t => Column.idAt vc.b vc.w (LP((firstsOf KP vc.n.toNat).getD ((Column.bitsAt O' (8 * j) 8).toNat + t) 0))) :=
+    fun j hj => List.map_congr_left fun t ht => hrep _ (by
+      have := List.mem_range.1 ht
+      have : (Column.bitsAt O' (8 * (j + 1)) 8).toNat ≤ _ := hoffle (j + 1) hj
+      omega)
+  have hex : ∀ j < m, ∀ x, (∃ i, O(j) ≤ i ∧ i < O(j + 1) ∧ Column.idAt vc.b vc.w i = x) ↔
+      (∃ i < vc.n.toNat, T(j) ≤ i ∧ (j + 1 < m → i < T(j + 1)) ∧ Column.idAt vc.b vc.w i = x) := fun j hj x => by
+    rw [hOT j hj]
+    have hnext : j + 1 < m → O(j + 1) = T(j + 1) := hOT (j + 1)
+    have hON : O(j + 1) ≤ vc.n.toNat := by have := hO (j + 1) m hj (Nat.le_refl _); omega
+    constructor
+    · rintro ⟨i, h1, h2, e⟩
+      exact ⟨i, by omega, h1, fun h => by rw [← hnext h]; exact h2, e⟩
+    · rintro ⟨i, hi, h1, h2, e⟩
+      refine ⟨i, h1, ?_, e⟩
+      by_cases h : j + 1 < m
+      · rw [hnext h]; exact h2 h
+      · rw [show j + 1 = m by omega, hOl]; exact hi
+  have hc := hcore j hj j' hj'
+  dsimp only at hc
+  simp only [need, dif_pos hsize]
+  refine ⟨hR.trans ((harr _ _ _ _).trans ?_), hRle⟩
+  dsimp only
+  rw [hseq j hj, hseq j' hj']
+  exact hc.trans (forall_congr' fun x => iff_congr (hex j hj x) (hex j' hj' x))
 
 #print axioms concat_one
 #print axioms slices_core
