@@ -181,6 +181,29 @@ theorem rep_uncat_ok {B : Obj} {n : USize} (X : Vals (.arr B) n) (h : uncatOK(B,
   exact rep_uncat X hp _ rfl hS hU _ rfl _ rfl _ rfl hK hVi hVt _ rfl hkO hkn hkM hkU hkA hkB hkC _ rfl hpa hpb
     _ rfl hS' hU' _ rfl _ rfl _ rfl _ rfl _ rfl hKf hAf hBf _ rfl _ rfl hjO hjn hjM hjU hjA hjC hv hk
 
+open Freyd Freyd.Alg Freyd.Alg.RelSet in
+/-- **`α ≜ [nil, cons]`, read back**: the copairing, out of the sum, of `nil` on the elements `I` lists (each to
+    the empty array) and `cons` on the pairs `P` lists (`(b, bs)` to `b :: bs`). Hypotheses: `rep_junc_full`'s at
+    `nil I`, `cons (idU P)` (`hN`, `h63`, `hF`), `rep_cons`'s at `idU P` (`hc`). -/
+theorem rep_alpha {K B : Obj} {n : USize} (I : Vals K 1) (P : Vals (.prod B (.arr B)) n)
+    (hN : (Alg.nil (B := B) I).n.toNat + (cons (idU P)).n.toNat < USize.size)
+    (h63 : (Alg.nil (B := B) I).n.toNat + (cons (idU P)).n.toNat ≤ 2 ^ 63)
+    (hF : Vals.RazeFits (.arr B) (Alg.nil (B := B) I).val (cons (idU P)).val)
+    (hc : consOK(.prod B (.arr B), B, idU P)) :
+    rep (alpha I P) = Freyd.Alg.junc (sumCop (⟨K.El⟩ : RelSet.{0}) ⟨B.El × List B.El⟩)
+      (corefl (A := (⟨K.El⟩ : RelSet.{0})) (fun u => ∃ i, I.row i = u) ≫
+        (graph (fun _ => []) :(⟨K.El⟩ : RelSet.{0}) ⟶ ⟨List B.El⟩))
+      (corefl (A := (⟨B.El × List B.El⟩ : RelSet.{0})) (fun p => ∃ i, P.row i = p) ≫
+        (graph (fun p => p.1 :: p.2) :(⟨B.El × List B.El⟩ : RelSet.{0}) ⟶ ⟨List B.El⟩)) := by
+  rw [alpha, rep_junc_full _ _ hN h63 hF, ← rep_idU P]
+  congr 1
+  · refine hom_ext fun u xs => (rep_nil I u xs).trans ⟨?_, ?_⟩
+    · rintro ⟨h, rfl⟩; exact ⟨u, ⟨rfl, h⟩, rfl⟩
+    · rintro ⟨v, ⟨rfl, h⟩, rfl⟩; exact ⟨h, rfl⟩
+  · refine hom_ext fun p ys => (rep_cons_ok _ hc p ys).trans ⟨?_, ?_⟩
+    · rintro ⟨b, bs, h, rfl⟩; exact ⟨(b, bs), h, rfl⟩
+    · rintro ⟨⟨b, bs⟩, h, rfl⟩; exact ⟨b, bs, h, rfl⟩
+
 /-! ## `tic` -/
 
 /-- **`tic`, read back**: a row `(b, bs)` of `P` goes to the non-empty prefixes of `b :: bs`, shortest first.
@@ -712,6 +735,7 @@ end LeetQ.Rel.Rep
 #print axioms LeetQ.Rel.Rep.rep_cons_ok
 #print axioms LeetQ.Rel.Rep.rep_cat_ok
 #print axioms LeetQ.Rel.Rep.rep_uncat_ok
+#print axioms LeetQ.Rel.Rep.rep_alpha
 #print axioms LeetQ.Rel.Rep.rep_tic
 #print axioms LeetQ.Rel.Rep.perm_step_set
 #print axioms LeetQ.Rel.Rep.perm_step_rep
