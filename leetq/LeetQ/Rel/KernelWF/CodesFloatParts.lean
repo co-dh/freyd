@@ -169,7 +169,57 @@ theorem codes_float_parts_wf {t : QAtomicType} (ht : t = .real ∨ t = .float �
   refine ⟨hw, by simp, rfl, fun h8 => ⟨(hid h8).1, fun i hi => ?_⟩⟩
   rw [hik i hi]; exact (hid h8).2 _ (by omega)
 
+/-- **A side of dense parts at a small integral or float kind: its codes are faithful jointly across the parts,
+    each well formed, all on one lane** — the int sides through `codes_small_int_parts_faithful`/`_wf`, the float
+    sides grouped by their bits (`codes_float_parts_faithful`/`_wf`); the parts' summed count a `USize`. -/
+theorem codes_dense_faithful_wf {t : QAtomicType} {k₀ : Scan.Kind} (ht : orderKind t = some k₀)
+    (hk₀ : k₀ = .u8 ∨ k₀ = .i16 ∨ k₀ = .i32 ∨ k₀ = .f32 ∨ k₀ = .f64) {p : Nat} (cs : Vector (Part (.atom t)) p)
+    (hd : ∀ k (hk : k < p), ∃ b, (cs[k]'hk).2.enc = .bytes b) (hN : (cs.toList.map (·.1.toNat)).sum < USize.size) :
+    ((∀ {k l : Nat} (hk : k < p) (hl : l < p) {i j : Nat} (hi : i < (cs[k]'hk).1.toNat)
+        (hj : j < (cs[l]'hl).1.toNat),
+        Column.idAt ((Obj.codes (.atom t) cs)[k]'hk).b ((Obj.codes (.atom t) cs)[k]'hk).w i =
+          Column.idAt ((Obj.codes (.atom t) cs)[l]'hl).b ((Obj.codes (.atom t) cs)[l]'hl).w j ↔
+        Vals.row (A := .atom t) (cs[k]'hk).2 ⟨i, hi⟩ = Vals.row (A := .atom t) (cs[l]'hl).2 ⟨j, hj⟩) ∧
+      ∀ {k : Nat} (hk : k < p),
+        let c := (Obj.codes (.atom t) cs)[k]'hk
+        laneOK(c.w) ∧ c.n = (cs[k]'hk).1 ∧
+        c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
+        (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)) ∧
+      ∀ {k l : Nat} (hk : k < p) (hl : l < p),
+        ((Obj.codes (.atom t) cs)[k]'hk).w = ((Obj.codes (.atom t) cs)[l]'hl).w := by
+  rcases hk₀ with hk₀ | hk₀ | hk₀ | hk₀ | hk₀
+  -- a float side groups by its bits (`bitsType`)
+  all_goals try
+    have hf : t = .real ∨ t = .float ∨ t = .datetime := by cases t <;> simp [orderKind] at ht <;> simp_all
+    exact ⟨⟨fun hk hl _ _ hi hj => codes_float_parts_faithful hf cs hd hN hk hl hi hj,
+      fun hk => (codes_float_parts_wf hf cs hd hN hk).1⟩, fun hk hl => (codes_float_parts_wf hf cs hd hN hk).2 hl⟩
+  all_goals
+    have hk₀ : k₀ = .u8 ∨ k₀ = .i16 ∨ k₀ = .i32 := by simp_all
+    refine ⟨⟨fun hk hl _ _ hi hj => codes_small_int_parts_faithful ht hk₀ cs hd hN hk hl hi hj,
+      fun hk => codes_small_int_parts_wf ht hk₀ cs hN hk⟩, fun hk hl => ?_⟩
+    rw [codes_small_int_cut ht hk₀ cs (by omega)]; unfold Code.cut; split <;> simp
+
+/-- **One part of a small integral side, in any encoding, or of a dense float side: its codes are faithful and
+    well formed** (`codes_small_int_faithful`/`_wf`; a float through `codes_dense_faithful_wf` at one part). -/
+theorem codes_num_one_faithful_wf {t : QAtomicType} {k₀ : Scan.Kind} (ht : orderKind t = some k₀)
+    (x : Part (.atom t)) (hk₀ : k₀ = .u8 ∨ k₀ = .i16 ∨ k₀ = .i32 ∨ ((k₀ = .f32 ∨ k₀ = .f64) ∧ ∃ b, x.2.enc = .bytes b)) :
+    (∀ {i j : Nat} (hi : i < x.1.toNat) (hj : j < x.1.toNat),
+      Column.idAt (Obj.codes (.atom t) #v[x])[0].b (Obj.codes (.atom t) #v[x])[0].w i =
+          Column.idAt (Obj.codes (.atom t) #v[x])[0].b (Obj.codes (.atom t) #v[x])[0].w j ↔
+        Vals.row x.2 ⟨i, hi⟩ = Vals.row x.2 ⟨j, hj⟩) ∧
+    (let c := (Obj.codes (.atom t) #v[x])[0]
+    laneOK(c.w) ∧ c.n = x.1 ∧ c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
+      (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)) := by
+  rcases hk₀ with hk | hk | hk | ⟨hf, hd⟩
+  all_goals try exact ⟨fun hi hj => codes_small_int_faithful ht (by simp [hk]) x hi hj,
+    codes_small_int_wf ht (by simp [hk]) x⟩
+  have h := codes_dense_faithful_wf ht (by rcases hf with h | h <;> simp [h]) #v[x]
+    (fun k hk => by match k, hk with | 0, _ => exact hd) (by simpa using x.1.toNat_lt_size)
+  exact ⟨fun hi hj => h.1.1 (k := 0) (l := 0) (by decide) (by decide) hi hj, h.1.2 (k := 0) (by decide)⟩
+
 #print axioms codes_float_parts_faithful
 #print axioms codes_float_parts_wf
+#print axioms codes_dense_faithful_wf
+#print axioms codes_num_one_faithful_wf
 
 end LeetQ.Rel.Alg

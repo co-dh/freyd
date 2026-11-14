@@ -109,17 +109,7 @@ theorem codes_faithful_wf (A : Obj) : ∀ {p : Nat} (cs : Vector (Part A) p), A.
       · obtain ⟨h1, h2, h3, h4⟩ := codes_boolean_wf cs hk
         exact ⟨Or.inl h2, h1, h3, h4⟩
       · rw [(codes_boolean_wf cs hk).2.1, (codes_boolean_wf cs hl).2.1]
-    · rcases hk₀ with hk₀ | hk₀ | hk₀ | hk₀ | hk₀
-      -- a float side groups by its bits (`bitsType`)
-      all_goals try
-        have hf : t = .real ∨ t = .float ∨ t = .datetime := by cases t <;> simp [orderKind] at ht <;> simp_all
-        exact ⟨⟨fun hk hl _ _ hi hj => codes_float_parts_faithful hf cs hd hN hk hl hi hj,
-          fun hk => (codes_float_parts_wf hf cs hd hN hk).1⟩, fun hk hl => (codes_float_parts_wf hf cs hd hN hk).2 hl⟩
-      all_goals
-        have hk₀ : k₀ = .u8 ∨ k₀ = .i16 ∨ k₀ = .i32 := by simp_all
-        refine ⟨⟨fun hk hl _ _ hi hj => codes_small_int_parts_faithful ht hk₀ cs hd hN hk hl hi hj,
-          fun hk => codes_small_int_parts_wf ht hk₀ cs hN hk⟩, fun hk hl => ?_⟩
-        rw [codes_small_int_cut ht hk₀ cs (by omega)]; exact cut_lane _ _ hk hl
+    · exact codes_dense_faithful_wf ht hk₀ cs hd hN
     · refine ⟨⟨fun hk hl _ _ hi hj => codes_long_dense_faithful ht cs hd hN hk hl hi hj,
         fun hk => codes_long_dense_wf ht cs hd hN hk⟩, fun hk hl => ?_⟩
       cases hro : rangeOffsets t (cs.map (·.2.part)) ((cs.map (·.1)).foldl (fun s n => s + n.toNat) 0) with

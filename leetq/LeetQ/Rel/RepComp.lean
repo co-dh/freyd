@@ -9,6 +9,7 @@ import LeetQ.Rel.KernelWF.CodesSpec
 import LeetQ.Rel.KernelWF.CodesProd
 import LeetQ.Rel.KernelWF.PickRow
 import LeetQ.Rel.KernelWF.CodesSymParts
+import LeetQ.Rel.KernelWF.CodesFloatParts
 
 namespace LeetQ.Rel.Rep
 
@@ -156,14 +157,15 @@ end Comp
 #print axioms rep_comp_boolean
 #print axioms rep_comp_long
 
-section CompSmallInt
+section CompDense
 
 open Freyd Freyd.Alg.RelSet
 
-/-- `rep_comp` through a small integral middle side (`byte`, `char`, `short`, the four-byte types) of dense
-    payloads, the two counts summing below a `USize` (`codes_small_int_parts_faithful`/`_wf`). -/
-theorem rep_comp_small_int {t : QAtomicType} {k₀ : Scan.Kind} (ht : orderKind t = some k₀)
-    (hk₀ : k₀ = .u8 ∨ k₀ = .i16 ∨ k₀ = .i32) (R : Rel A (.atom t)) (S : Rel (.atom t) C)
+/-- `rep_comp` through a small integral or float middle side (`byte`, `char`, `short`, the four-byte types,
+    `real`, `float`, `datetime`) of dense payloads, the two counts summing below a `USize`
+    (`codes_dense_faithful_wf`). -/
+theorem rep_comp_dense {t : QAtomicType} {k₀ : Scan.Kind} (ht : orderKind t = some k₀)
+    (hk₀ : k₀ = .u8 ∨ k₀ = .i16 ∨ k₀ = .i32 ∨ k₀ = .f32 ∨ k₀ = .f64) (R : Rel A (.atom t)) (S : Rel (.atom t) C)
     (hRv : ∃ b, R.val.enc = .bytes b) (hSk : ∃ b, S.key.enc = .bytes b) (hN : R.n.toNat + S.n.toNat < USize.size)
     (hrn : S.n.toNat < 2 ^ 63)
     (hM : ((List.range R.n.toNat).map fun i => ((List.range S.n.toNat).filter fun j =>
@@ -177,12 +179,12 @@ theorem rep_comp_small_int {t : QAtomicType} {k₀ : Scan.Kind} (ht : orderKind 
   have hd : ∀ k (hk : k < 2), ∃ b, (jcs)[k].2.enc = .bytes b := fun k hk => by
     match k, hk with | 0, _ => exact hRv | 1, _ => exact hSk
   have hN' : ((jcs).toList.map (·.1.toNat)).sum < USize.size := by simpa using hN
-  rep_comp R S ⟨fun {_ _} hk hl {_ _} hi hj => codes_small_int_parts_faithful ht hk₀ _ hd hN' hk hl hi hj,
-    fun hk => codes_small_int_parts_wf ht hk₀ _ hN' hk⟩ hrn hM hMU hA hC
+  have hc := codes_dense_faithful_wf ht hk₀ _ hd hN'
+  rep_comp R S ⟨fun {_ _} hk hl {_ _} hi hj => hc.1.1 hk hl hi hj, fun hk => hc.1.2 hk⟩ hrn hM hMU hA hC
 
-end CompSmallInt
+end CompDense
 
-#print axioms rep_comp_small_int
+#print axioms rep_comp_dense
 
 section CompGuid
 

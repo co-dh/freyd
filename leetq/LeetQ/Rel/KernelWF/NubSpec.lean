@@ -10,6 +10,7 @@ import LeetQ.Rel.KernelWF.PickRow
 import LeetQ.Rel.KernelWF.MemberSpec
 import LeetQ.Rel.KernelWF.CodesProd
 import LeetQ.Rel.KernelWF.CodesSpec
+import LeetQ.Rel.KernelWF.CodesFloatParts
 
 namespace LeetQ.Rel.Alg
 
@@ -234,13 +235,17 @@ theorem rep_nub_boolean (R : Rel (.atom .boolean) (.atom .boolean)) : rep R.nub 
       by have h := codes_boolean_wf (#v[⟨R.n, R.val⟩] : Vector (Part _) 1) (k := 0) (by decide)
          exact ⟨Or.inl h.2.1, h.1, h.2.2.1, h.2.2.2⟩⟩
 
-/-- `rep_nub` at small integral sides (`byte`, `char`, `short`, the four-byte types;
-    `codes_small_int_faithful`/`_wf`). -/
-theorem rep_nub_small_int {t t' : QAtomicType} {k₀ k₁ : Scan.Kind} (ht : orderKind t = some k₀)
-    (hk₀ : k₀ = .u8 ∨ k₀ = .i16 ∨ k₀ = .i32) (ht' : orderKind t' = some k₁) (hk₁ : k₁ = .u8 ∨ k₁ = .i16 ∨ k₁ = .i32)
-    (R : Rel (.atom t) (.atom t')) : rep R.nub = rep R :=
-  rep_nub_atoms R ⟨fun hi hj => codes_small_int_faithful ht hk₀ _ hi hj, codes_small_int_wf ht hk₀ _⟩
-    ⟨fun hi hj => codes_small_int_faithful ht' hk₁ _ hi hj, codes_small_int_wf ht' hk₁ _⟩
+/-- `rep_nub` at small integral sides (`byte`, `char`, `short`, the four-byte types) in any encoding, or float
+    sides (`real`, `float`, `datetime`) of a dense payload (`codes_num_one_faithful_wf`). -/
+theorem rep_nub_num {t t' : QAtomicType} {k₀ k₁ : Scan.Kind} (R : Rel (.atom t) (.atom t'))
+    (ht : orderKind t = some k₀)
+    (hk₀ : k₀ = .u8 ∨ k₀ = .i16 ∨ k₀ = .i32 ∨ ((k₀ = .f32 ∨ k₀ = .f64) ∧ ∃ b, R.key.enc = .bytes b))
+    (ht' : orderKind t' = some k₁)
+    (hk₁ : k₁ = .u8 ∨ k₁ = .i16 ∨ k₁ = .i32 ∨ ((k₁ = .f32 ∨ k₁ = .f64) ∧ ∃ b, R.val.enc = .bytes b)) :
+    rep R.nub = rep R :=
+  have hK := codes_num_one_faithful_wf ht ⟨R.n, R.key⟩ hk₀
+  have hV := codes_num_one_faithful_wf ht' ⟨R.n, R.val⟩ hk₁
+  rep_nub_atoms R ⟨fun hi hj => hK.1 hi hj, hK.2⟩ ⟨fun hi hj => hV.1 hi hj, hV.2⟩
 
 /-- `rep_nub` at eight-byte integral sides (`codes_long_one_faithful`/`_wf`). -/
 theorem rep_nub_long {t t' : QAtomicType} (ht : orderKind t = some .i64) (ht' : orderKind t' = some .i64)
@@ -254,7 +259,7 @@ theorem rep_nub_guid (R : Rel (.atom .guid) (.atom .guid)) : rep R.nub = rep R :
     ⟨fun hi hj => codes_guid_faithful _ hi hj, codes_guid_wf _⟩
 
 #print axioms rep_nub_boolean
-#print axioms rep_nub_small_int
+#print axioms rep_nub_num
 #print axioms rep_nub_long
 #print axioms rep_nub_guid
 
