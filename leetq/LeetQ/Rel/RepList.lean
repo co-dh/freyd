@@ -495,8 +495,90 @@ theorem map_chain {α β : Type _} (R : α → β → Prop) (xs : List α) (w : 
       exact List.drop_eq_getElem_cons _
     · simp
 
+-- `RepFold`'s `codesOK`, `kp2`, `mpairs`, `msum` (local notations, so restated here)
+set_option hygiene false in
+local notation "codesOK(" cs ", " ps ")" => ((∀ {k l : Nat} (hk : k < 2) (hl : l < 2) {i j : Nat}
+    (hi : i < (ps[k]'hk).1.toNat) (hj : j < (ps[l]'hl).1.toNat),
+    Column.idAt (cs[k]'hk).b (cs[k]'hk).w i = Column.idAt (cs[l]'hl).b (cs[l]'hl).w j ↔
+      Vals.row (ps[k]'hk).2 ⟨i, hi⟩ = Vals.row (ps[l]'hl).2 ⟨j, hj⟩) ∧
+  ∀ {k : Nat} (hk : k < 2),
+    ((cs[k]'hk).w = 1 ∨ (cs[k]'hk).w = 2 ∨ (cs[k]'hk).w = 4 ∨ (cs[k]'hk).w = 8 ∨ (cs[k]'hk).w = 16 ∨
+      (cs[k]'hk).w = 32 ∨ (cs[k]'hk).w = 64) ∧
+    (cs[k]'hk).n = (ps[k]'hk).1 ∧ (cs[k]'hk).b.size = ((cs[k]'hk).n.toNat * (cs[k]'hk).w + 7) / 8 ∧
+    ((cs[k]'hk).w < 8 → (cs[k]'hk).card < USize.size ∧
+      ∀ i < (cs[k]'hk).n.toNat, Column.idAt (cs[k]'hk).b (cs[k]'hk).w i < (cs[k]'hk).card))
+set_option hygiene false in
+local notation "kp2(" R ", " S ")" => (#v[⟨Rel.n R, Rel.key R⟩, ⟨Rel.n S, Rel.key S⟩] : Vector (Part .long) 2)
+set_option hygiene false in
+local notation "mpairs(" cs ", " R ", " S ")" => ((List.range (Rel.n R).toNat).flatMap fun i =>
+  ((List.range (Rel.n S).toNat).filter fun j => Column.idAt (cs[1]'Nat.one_lt_two).b (cs[1]'Nat.one_lt_two).w j ==
+    Column.idAt (cs[0]'Nat.zero_lt_two).b (cs[0]'Nat.zero_lt_two).w i).map (i, ·))
+set_option hygiene false in
+local notation "msum(" cs ", " R ", " S ")" => ((List.range (Rel.n R).toNat).map fun i =>
+  ((List.range (Rel.n S).toNat).filter fun j => Column.idAt (cs[1]'Nat.one_lt_two).b (cs[1]'Nat.one_lt_two).w j ==
+    Column.idAt (cs[0]'Nat.zero_lt_two).b (cs[0]'Nat.zero_lt_two).w i).length).sum
+
+/-- **`map`'s step, read back**: `cons (pair (el ≫ R) pend)` takes row `r`'s element `e` and list `u` to
+    `b :: u` for each `b` with `e R b`. `Q = el ≫ R`, `P = pair Q pend` and the codes `jc`, `kc` are bound by
+    their equations. Hypotheses: `rep_comp`'s at `el`, `R` (`hj…`), `rep_pair`'s at `Q`, `pend` (`hk…`),
+    `rep_cons`'s at `P`. -/
+theorem map_step_rep {E B : Obj} (el : Rel .long E) (R : Rel E B) (pend : Rel .long (.arr B))
+    (jc : Vector Code 2)
+    (hjc : jc = Obj.codes E (#v[⟨Rel.n el, Rel.val el⟩, ⟨Rel.n R, Rel.key R⟩] : Vector (Part E) 2))
+    (hjO : codesOK(jc, (#v[⟨Rel.n el, Rel.val el⟩, ⟨Rel.n R, Rel.key R⟩] : Vector (Part E) 2)))
+    (hjn : (Rel.n R).toNat < 2 ^ 63) (hjM : msum(jc, el, R) < 2 ^ 63) (hjU : msum(jc, el, R) < USize.size)
+    (hjA : Vals.PickFits .long (Rel.key el) ((mpairs(jc, el, R)).map Prod.fst))
+    (hjC : Vals.PickFits B (Rel.val R) ((mpairs(jc, el, R)).map Prod.snd))
+    (Q : Rel .long B) (hQ : Q = el ≫ R)
+    (kc : Vector Code 2) (hkc : kc = Obj.codes .long kp2(Q, pend)) (hkO : codesOK(kc, kp2(Q, pend)))
+    (hkn : (Rel.n pend).toNat < 2 ^ 63) (hkM : msum(kc, Q, pend) < 2 ^ 63)
+    (hkU : msum(kc, Q, pend) < USize.size)
+    (hkA : Vals.PickFits .long (Rel.key Q) ((mpairs(kc, Q, pend)).map Prod.fst))
+    (hkB : Vals.PickFits B (Rel.val Q) ((mpairs(kc, Q, pend)).map Prod.fst))
+    (hkC : Vals.PickFits (.arr B) (Rel.val pend) ((mpairs(kc, Q, pend)).map Prod.snd))
+    (P : Rel .long (.prod B (.arr B))) (hP : P = pair Q pend)
+    (hp : (Rel.val P).2.1.toNat < 2 ^ 63)
+    (s : ByteArray × ByteArray) (hs : s = slicesOf (Rel.val P).2)
+    (hS : ((List.range (Rel.n P).toNat).map fun r => (Column.bitsAt s.2 (r * 8) 8).toNat).sum + (Rel.n P).toNat < 2 ^ 63)
+    (hU : ((List.range (Rel.n P).toNat).map fun r => (Column.bitsAt s.2 (r * 8) 8).toNat).sum + (Rel.n P).toNat < USize.size)
+    (xi : ByteArray) (hxi : xi = expandBytes 8 0 (tilLongs (Rel.n P)) s.2)
+    (m : USize) (hm : m = (len xi).toUSize)
+    (xr : ByteArray) (hxr : xr = sub m (tilLongs m) (gather 8 (sub (Rel.n P) (sums (Rel.n P) s.2) s.2) xi))
+    (j : ByteArray) (hj : j = add m (gather 8 s.1 xi) xr)
+    (hjl : len j = m.toNat) (tl : Vals B m) (htl : tl = Vals.pick B (Rel.val P).2.2.2.2 j m hjl)
+    (c1 : ByteArray) (hc1 : c1 = addc (Rel.n P) s.2 1) (hi : ByteArray) (hhi : hi = sums (Rel.n P) c1)
+    (lo : ByteArray) (hlo : lo = sub (Rel.n P) hi c1)
+    (dst : ByteArray) (hdst : dst = addc m (add m (gather 8 lo xi) xr) 1)
+    (g : ByteArray) (hg : g = (Code.ofLongs (concatBytes #[dst, lo])).grade)
+    (hKf : Vals.PickFits .long (Rel.key P) ((List.range (Rel.n P).toNat).map fun q => (Column.bitsAt (tilLongs (Rel.n P)) (q * 8) 8).toNat))
+    (hTf : Vals.PickFits B (Rel.val P).2.2.2.2 ((List.range m.toNat).map fun q => (Column.bitsAt j (q * 8) 8).toNat))
+    (hRf : Vals.RazeFits B tl (Rel.val P).1)
+    (hFf : ∀ hN, Vals.PickFits B (Obj.raze B #[⟨m, tl⟩, ⟨Rel.n P, (Rel.val P).1⟩] hN)
+      ((List.range (len g)).map fun q => (Column.bitsAt g (q * 8) 8).toNat)) :
+    ∀ r v, rep (cons (pair (el ≫ R) pend)) r v ↔
+      ∃ e u, rep el r e ∧ rep pend r u ∧ ∃ b, rep R e b ∧ v = b :: u := by
+  subst hjc hkc
+  have h2 := rep_comp el R hjO hjn hjM hjU hjA hjC
+  subst hQ
+  have h1 := rep_pair (el ≫ R) pend hkO hkn hkM hkU hkA hkB hkC
+  subst hP
+  intro r v
+  rw [rep_cons (pair (el ≫ R) pend) hp s hs hS hU xi hxi m hm xr hxr j hj hjl tl htl c1 hc1 hi hhi lo hlo
+    dst hdst g hg hKf hTf hRf hFf, h1]
+  constructor
+  · rintro ⟨b, bs, hb, rfl⟩
+    obtain ⟨hq, hu⟩ := hb
+    rw [h2] at hq
+    obtain ⟨e, he, hR⟩ := hq
+    exact ⟨e, bs, he, hu, b, hR, rfl⟩
+  · rintro ⟨e, u, he, hu, b, hR, rfl⟩
+    refine ⟨b, u, ⟨?_, hu⟩, rfl⟩
+    rw [h2]
+    exact ⟨e, he, hR⟩
+
 end LeetQ.Rel.Rep
 
 #print axioms LeetQ.Rel.Rep.rep_uncons
 #print axioms LeetQ.Rel.Rep.rep_cons
 #print axioms LeetQ.Rel.Rep.map_chain
+#print axioms LeetQ.Rel.Rep.map_step_rep
