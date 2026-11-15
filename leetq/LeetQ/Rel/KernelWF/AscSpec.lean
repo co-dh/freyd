@@ -490,6 +490,15 @@ theorem pickShared_small : (B : Obj) → {s : USize} → (x : Vals B s) → (i :
   | .arr _, _, _, _, _, _, hx => hx
   | .sum _ _, _, _, _, _, _, hx => hx
 
+/-- A side that picks within capacity is `Small`: `Vals.PickFits` bounds every payload and sum side below `2^63`. -/
+theorem small_of_pickFits : (A : Obj) → {n : USize} → (x : Vals A n) → (ps : List Nat) →
+    Vals.PickFits A x ps → x.Small
+  | .atom _, _, _, _, _ => trivial
+  | .prod a b, _, x, ps, h => ⟨small_of_pickFits a x.1 ps h.1, small_of_pickFits b x.2 ps h.2⟩
+  | .arr b, _, ⟨_, _, _, f⟩, _, h => ⟨h.1, small_of_pickFits b f _ h.2.2.2⟩
+  | .sum a b, _, ⟨_, _, _, _, x, y⟩, _, h =>
+    ⟨h.2.1, h.2.2.1, small_of_pickFits a x _ h.2.2.2.1, small_of_pickFits b y _ h.2.2.2.2⟩
+
 /-- **`Vals.pickShared` read back**: row `q` is `x`'s row `i[q]`, at every side, wherever that is a row. -/
 theorem pickShared_row (B : Obj) {s : USize} (x : Vals B s) (i : ByteArray) (k : USize)
     (h : len i = k.toNat) (q : Fin k.toNat) (hin : (Column.bitsAt i (q.1 * 8) 8).toNat < s.toNat) :

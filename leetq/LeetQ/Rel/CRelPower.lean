@@ -7,6 +7,8 @@ import LeetQ.Rel.CRelRel
 import LeetQ.Run.CRelRelDef
 import LeetQ.Rel.RepEst
 import LeetQ.Run.CRelPowerDef
+import LeetQ.Rel.KernelWF.AscSpec
+import LeetQ.Rel.RepPrim
 
 namespace LeetQ.Rel
 
@@ -85,6 +87,45 @@ theorem rep_setifyC {n : USize} (X : Vals (.arr B) n) (hb : (setifyC X).2 = true
   simp only [setifyC, Bool.and_eq_true] at hb
   exact rep_lamOnC_rows _ X (fun xs y => y ∈ xs) (rep_memC X hb.1) hb.2
 
+/-- **`Λ(R)`'s arrays are ascending and duplicate-free**, `B` ordered: each is `R.nub`'s values at a sublist of
+    `sortBy`'s permutation of its rows (`rep_transpose_list`), which lists them ascending (`sortBy_asc`). -/
+theorem transposeC_asc (R : Rel A B) (hB : B.Ordered) (hb : (transposeC R).2 = true) :
+    ∀ a X, rep (transposeC R).1 a X → X.Nodup ∧ X.Pairwise fun x y => ¬ B.lt y x := by
+  obtain ⟨hK, hV, hk, hv, hWk, hW, h63⟩ := transposeC_ok R hb
+  intro a X h
+  obtain ⟨hnd, -, L, hL, -, rfl⟩ := (rep_transpose_list R hK hV hk hv hWk hW h63).1 a X h
+  refine ⟨hnd, ?_⟩
+  have hs := (sortBy_asc (sortsAsc_all B hB) (Rel.nub R).val
+    (small_of_pickFits B _ _ (nub_pickFits R hK hV hk hv).2) (tilLongs (Rel.nub R).n)
+    (by rw [len_tilLongs]; exact (Rel.nub R).n.toNat_lt_size)
+    (fun i h => by rw [ids_tilLongs] at h; exact List.mem_range.1 h)).sublist hL
+  rw [List.pairwise_map] at hs ⊢
+  exact hs.imp fun h => h _ _
+
+/-- **`Λ(R)` total on `U` gives ascending, duplicate-free arrays**, `B` ordered: `Λ(R)`'s (`transposeC_asc`) and
+    the empty arrays of the elements of `U` that `R` relates to nothing. -/
+theorem lamOnC_asc {m : USize} (R : Rel A B) (U : Vals A m) (hB : B.Ordered) (hb : (lamOnC R U).2 = true) :
+    ∀ a Y, rep (lamOnC R U).1 a Y → Y.Nodup ∧ Y.Pairwise fun x y => ¬ B.lt y x := by
+  simp only [lamOnC, Bool.and_eq_true] at hb
+  obtain ⟨⟨⟨⟨ht, -⟩, -⟩, hn⟩, hu⟩ := hb
+  intro a Y h
+  simp only [lamOnC] at h
+  rw [rep_unionC _ _ hu] at h
+  rcases h with h | h
+  · exact transposeC_asc R hB ht a Y h
+  · rw [rep_topC _ _ hn] at h
+    simp only [comp_apply] at h
+    obtain ⟨_, -, _, -, rfl, j, hj⟩ := h
+    rw [nilVal_row] at hj
+    subst hj
+    exact ⟨List.nodup_nil, List.Pairwise.nil⟩
+
+/-- **`setify` lists each set's elements ascending, each once**, `B` ordered: `lamOnC_asc` at `∋` on `X`. -/
+theorem setifyC_asc {n : USize} (X : Vals (.arr B) n) (hB : B.Ordered) (hb : (setifyC X).2 = true) :
+    ∀ xs Y, rep (setifyC X).1 xs Y → Y.Nodup ∧ Y.Pairwise fun x y => ¬ B.lt y x := by
+  simp only [setifyC, Bool.and_eq_true] at hb
+  exact lamOnC_asc _ X hB hb.2
+
 /-- **`rep (E R X)` under `EC`'s bit**: `rep_lamOnC_rows` at `∋ ≫ R` on `X` (`rep_compC`, `rep_memC`). -/
 theorem rep_EC {n : USize} (R : Rel A B) (X : Vals (.arr A) n) (hb : (EC R X).2 = true) :
     (∀ xs Y, rep (EC R X).1 xs Y → (∃ i, Vals.row X i = xs) ∧ ∀ y, y ∈ Y ↔ ∃ x ∈ xs, rep R x y) ∧
@@ -139,6 +180,7 @@ theorem rep_PC {n m : USize} (R : Rel A B) (X : Vals (.arr A) n) (Y : Vals (.arr
       exact ⟨a, ⟨hx, ha⟩, hR⟩
 
 #print axioms rep_PC
+#print axioms setifyC_asc
 #print axioms unionC_ok
 #print axioms rep_τC
 #print axioms rep_lamOnC
