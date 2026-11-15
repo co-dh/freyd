@@ -939,10 +939,7 @@ def lengthC {E : Obj} {n : USize} (X : Vals (.arr E) n) : Rel (.arr E) (.atom .l
 def length {E : Obj} {n : USize} (X : Vals (.arr E) n) : Rel (.arr E) (.atom .long) := (lengthC X).1
 
 
-/-- `suffix : arr E ⟶ arr E` on the arrays `X`, each array to each of its final segments (`suffix`,
-    AOP/A5_6_ListCombinators.lean:221): `tail*`, `𝟙 ∪ tail ∪ tail tail ∪ …` by `iter`, each round `tail` on the
-    arrays the last one reached; an array is never longer than the payload `X.1`, so `X.1 + 1` rounds end.
-    `iterC` is `iter` on a round that also answers a bit, carrying the `&&` of the bits of the rounds it ran. -/
+/-- `iter` on a round that also answers a bit, carrying the `&&` of the bits of the rounds it ran. -/
 def iterC {α : Type} (n : Nat) (done : α → Bool) (r : α → α × Bool) (a : α) : α × Bool :=
   iter n (fun s => done s.1) (fun s => let g := r s.1; (g.1, s.2 && g.2)) (a, true)
 
@@ -955,23 +952,6 @@ def fixOnC {A B : Obj} (n : Nat) (φC : Rel A B → Rel A B × Bool) (X₀ : Rel
     (fun s => let y := φC s.2.1; let z := nubC y.1; ((s.2.1.n.toNat, z.1, s.2.2 + 1), y.2 && z.2))
     (x.1.n.toNat + 1, x.1, 0)
   ((r.1.2.1, r.1.2.2), x.2 && r.2)
-
-/-- One round of `suffix` on `(S, F)`, `S ∪ F tail` beside `F tail`, and its bit: `ranC`'s, `tailC`'s, `compC`'s,
-    `unionC`'s. -/
-def suffixRound {E : Obj} (st : Rel (.arr E) (.arr E) × Rel (.arr E) (.arr E)) :
-    (Rel (.arr E) (.arr E) × Rel (.arr E) (.arr E)) × Bool :=
-  let W := ranC st.2
-  let t := tailC W.1.val
-  let F := compC st.2 t.1
-  let U := unionC st.1 F.1
-  ((U.1, F.1), W.2 && t.2 && F.2 && U.2)
-
-/-- `suffix` and whether it ran within capacity: the `&&` of the bits of the rounds it ran (`iterC`). -/
-def suffixC {E : Obj} {n : USize} (X : Vals (.arr E) n) : Rel (.arr E) (.arr E) × Bool :=
-  let r := iterC (X.1.toNat + 1) (fun s => s.2.n == 0) suffixRound (idU X, idU X); (r.1.1, r.2)
-
-/-- `suffix`: `suffixC`'s relation. -/
-def suffix {E : Obj} {n : USize} (X : Vals (.arr E) n) : Rel (.arr E) (.arr E) := (suffixC X).1
 
 /-! ## Arrays of arrays in list order: maps on positions -/
 
@@ -1013,6 +993,27 @@ def tailsC {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr (.ar
 
 /-- `tails`: `tailsC`'s relation. -/
 def tails {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr (.arr B)) := (tailsC X).1
+
+/-- `N ∋` on the arrays `X`, `N` one of the slice nests `initsC`/`tailsC`: each array to each array its nest holds,
+    read back by `∋` (`memC`) and joined to the array (`compC`); no round, no cell copied before `Vals.compact`.
+    The bit the `&&` of the three pieces'. -/
+def nestMemC {B : Obj} {n : USize} (N : Vals (.arr B) n → Rel (.arr B) (.arr (.arr B)) × Bool)
+    (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) × Bool :=
+  let i := N X; let m := memC i.1.val; let r := compC i.1 m.1; (r.1, i.2 && m.2 && r.2)
+
+/-- `prefix : arr E ⟶ arr E` on the arrays `X`, each array to each of its initial segments (`prefix`, B&dM p.126):
+    `inits ∋`, the slices `[lo, lo + k)`. -/
+def prefixC {E : Obj} {n : USize} (X : Vals (.arr E) n) : Rel (.arr E) (.arr E) × Bool := nestMemC initsC X
+
+/-- `prefix`: `prefixC`'s relation. -/
+def «prefix» {E : Obj} {n : USize} (X : Vals (.arr E) n) : Rel (.arr E) (.arr E) := (prefixC X).1
+
+/-- `suffix : arr E ⟶ arr E` on the arrays `X`, each array to each of its final segments (`suffix`,
+    AOP/A5_6_ListCombinators.lean:221): `tails ∋`, the slices `[lo + k, hi)`. -/
+def suffixC {E : Obj} {n : USize} (X : Vals (.arr E) n) : Rel (.arr E) (.arr E) × Bool := nestMemC tailsC X
+
+/-- `suffix`: `suffixC`'s relation. -/
+def suffix {E : Obj} {n : USize} (X : Vals (.arr E) n) : Rel (.arr E) (.arr E) := (suffixC X).1
 
 /-- `cat : arr B × arr B ⟶ arr B` on the rows of `P`, each `(xs, ys)` to `xs` then `ys` under its key (`cat`,
     AOP/A5_6_ListCombinators.lean:224, the graph of `cappend`). `cons` with an array for a head: the new arrays
