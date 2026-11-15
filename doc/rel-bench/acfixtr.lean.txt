@@ -1,0 +1,12 @@
+/-- bench-only copy of `acFixC` that traces each round (rel-141). -/
+def acLoop {V D : Obj} (as : List (Revise V D)) : Nat → Rel V D → Rel V V → Nat → (Rel V D × Nat) × Bool
+  | 0, X, _, k => ((X, k), true)
+  | n+1, X, U, k =>
+    if U.n == 0 then ((X, k), true) else
+    let d := acDeltaC as (X, U)
+    dbgTrace s!"ACFIX round {k+1}: {X.n} -> {d.1.1.n} delta {U.n}->{d.1.2.n}" fun _ =>
+    let r := acLoop as n d.1.1 d.1.2 (k+1); (r.1, d.2 && r.2)
+
+def acFixTr {V D : Obj} (s : Rel V D) (as : List (Revise V D)) (U : Rel V V) : (Rel V D × Nat) × Bool :=
+  let x := nubC s; let r := acLoop as (x.1.n.toNat + 1) x.1 U 0; (r.1, x.2 && r.2)
+
