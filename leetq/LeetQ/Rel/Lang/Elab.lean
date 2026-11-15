@@ -5,7 +5,7 @@ import LeetQ.Rel.Lang.Syntax
     `A ⟶ B` over the declared objects, definitions expanded, a body whose declared parameter is given a family
     lifted by the rows of §e. Two passes: `elabE` types the surface term into `Pre` with object variables,
     unified as it goes; `build` reads the solved objects and gives `Tm`, the core term, indexed by its source,
-    target and whether it runs on demand, so `Eval` has no error path. -/
+    target and whether it runs on demand, so its expansion (`Expand`) has no error path. -/
 
 namespace LeetQ.Rel.Lang
 
@@ -81,8 +81,8 @@ inductive Tm : Obj → Obj → Bool → Type where
   | lt {m : USize} (U : Arr .long m) : Tm .long .long false
   /-- `⦇e,S⦈` on the arrays in demand, `S` run on the pairs each round meets. -/
   | fold {E V : Obj} {d : Bool} (e : Tm V V false) (S : Tm (.prod E V) V d) : Tm (.arr E) V true
-  /-- `R`, whose identity among the program's sub-terms is `k` (`Eval.hoist`): equal sub-terms have one
-      identity, and one evaluation runs each identity once per demand. -/
+  /-- `R`, whose identity among the program's sub-terms is `k`: equal sub-terms have one identity, computed
+      once (`Expand.share`). -/
   | share {A B : Obj} {d : Bool} (k : Nat) (R : Tm A B d) : Tm A B d
   /-- `⦇e,S⦈` given a family (§e), on the pairs (key, array) in demand: one fold with carrier `I×V`, seeded at
       each key by the fibre of `e` there, its step `S` given `(x,(i,v))` and carrying the key `i`. -/
