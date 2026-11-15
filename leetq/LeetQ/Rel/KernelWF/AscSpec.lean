@@ -7,6 +7,8 @@ import LeetQ.Rel.KernelWF.SortSpec
 import LeetQ.Rel.KernelWF.PickSpec
 import LeetQ.Rel.KernelWF.RazeSpec
 import LeetQ.Rel.ObjOrder
+import LeetQ.Rel.KernelWF.PickRow
+import LeetQ.Rel.KernelWF.CodesRec
 import QLean.Verify.Grade
 
 namespace LeetQ.Rel.Alg
@@ -18,10 +20,18 @@ def ascBy (A : Obj) {n : USize} (c : Vals A n) (R : Nat → Nat → Prop) (i j :
   ∀ (hi : i < n.toNat) (hj : j < n.toNat), A.lt (c.row ⟨i, hi⟩) (c.row ⟨j, hj⟩) ∨
     (A.key (c.row ⟨i, hi⟩) = A.key (c.row ⟨j, hj⟩) ∧ R i j)
 
+/-- Every array payload and sum side of `x` holds fewer than `2^63` values: the longs `place` and `addc`
+    compute `Vals.row`'s positions in. `Vals.pickShared` keeps it (`pickShared_small`), sharing the payloads. -/
+def _root_.LeetQ.Rel.Vals.Small : {A : Obj} → {n : USize} → Vals A n → Prop
+  | .atom _, _, _ => True
+  | .prod _ _, _, x => x.1.Small ∧ x.2.Small
+  | .arr _, _, x => x.1.toNat < 2 ^ 63 ∧ x.2.2.2.Small
+  | .sum _ _, _, x => x.1.toNat < 2 ^ 63 ∧ x.2.1.toNat < 2 ^ 63 ∧ x.2.2.2.2.1.Small ∧ x.2.2.2.2.2.Small
+
 /-- `sortBy` at `A` sorts stably by `Obj.lt`: refining a `p` listed in `R` order, it answers `p` again, ascending
-    by `Obj.lt`, rows of one key still in `R` order. -/
+    by `Obj.lt`, rows of one key still in `R` order — on a column whose payloads are `Small`. -/
 def SortsAsc (A : Obj) : Prop :=
-  ∀ {n : USize} (c : Vals A n) (p : ByteArray), len p < USize.size → (∀ i ∈ ids p, i < n.toNat) →
+  ∀ {n : USize} (c : Vals A n), c.Small → ∀ p : ByteArray, len p < USize.size → (∀ i ∈ ids p, i < n.toNat) →
     ∀ R : Nat → Nat → Prop, (ids p).Pairwise R →
       (ids (A.sortBy c p)).Perm (ids p) ∧ (ids (A.sortBy c p)).Pairwise (ascBy A c R)
 
@@ -45,7 +55,7 @@ theorem sortsAsc_atom (t : QAtomicType)
     (hg : ∀ {n : USize} (x : Arr t n), ∃ g, gradeColumn t false n x.enc = some (.bytes g) ∧
       (ids g).Perm (List.range n.toNat) ∧ (ids g).Pairwise (ascBy (.atom t) (n := n) x (· < ·))) :
     SortsAsc (.atom t) := by
-  intro n c p hl hp R hR
+  intro n c _ p hl hp R hR
   obtain ⟨g, hgc, hgp, hgs⟩ := hg (pick t ⟨_, c⟩ p).2
   have hx := pick_len t ⟨_, c⟩ p hl
   have hsb : (Obj.atom t).sortBy c p = gather 8 p g := by simp only [Obj.sortBy, Obj.sortByC, hgc]
@@ -74,11 +84,11 @@ theorem sortsAsc_atom (t : QAtomicType)
 
 /-- **A product sorts lexicographically**: `sortBy` refines by the second component, then stably by the first. -/
 theorem sortsAsc_prod {a b : Obj} (ha : SortsAsc a) (hb : SortsAsc b) : SortsAsc (.prod a b) := by
-  intro n c p hl hp R hR
+  intro n c hc p hl hp R hR
   have hsb : (Obj.prod a b).sortBy c p = a.sortBy c.1 (b.sortBy c.2 p) := rfl
-  obtain ⟨p1, s1⟩ := hb c.2 p hl hp R hR
+  obtain ⟨p1, s1⟩ := hb c.2 hc.2 p hl hp R hR
   have hl1 : len (b.sortBy c.2 p) < USize.size := by rw [len_eq_ids, p1.length_eq, ← len_eq_ids]; exact hl
-  obtain ⟨p2, s2⟩ := ha c.1 _ hl1 (fun i hi => hp i (p1.mem_iff.1 hi)) _ s1
+  obtain ⟨p2, s2⟩ := ha c.1 hc.1 _ hl1 (fun i hi => hp i (p1.mem_iff.1 hi)) _ s1
   rw [hsb]
   refine ⟨p2.trans p1, s2.imp fun {i j} h hi hj => ?_⟩
   show (Obj.prod a b).lt (c.1.row _, c.2.row _) (c.1.row _, c.2.row _) ∨
@@ -91,11 +101,11 @@ theorem sortsAsc_prod {a b : Obj} (ha : SortsAsc a) (hb : SortsAsc b) : SortsAsc
     · exact .inr ⟨by rw [e, e'], h⟩
 
 /-- **The target**: on a side that sorts by `Obj.lt`, no row of the answer is before an earlier one. -/
-theorem sortBy_asc {A : Obj} (hA : SortsAsc A) {n : USize} (c : Vals A n) (p : ByteArray)
+theorem sortBy_asc {A : Obj} (hA : SortsAsc A) {n : USize} (c : Vals A n) (hc : c.Small) (p : ByteArray)
     (hl : len p < USize.size) (hp : ∀ i ∈ ids p, i < n.toNat) :
     (ids (A.sortBy c p)).Pairwise fun i j => ∀ (hi : i < n.toNat) (hj : j < n.toNat),
       ¬ A.lt (c.row ⟨j, hj⟩) (c.row ⟨i, hi⟩) :=
-  (hA c p hl hp (fun _ _ => True) (List.pairwise_iff_getElem.2 fun _ _ _ _ _ => trivial)).2.imp
+  (hA c hc p hl hp (fun _ _ => True) (List.pairwise_iff_getElem.2 fun _ _ _ _ _ => trivial)).2.imp
     fun h hi hj => (h hi hj).elim (A.lt_asymm ·) fun ⟨e, _⟩ => by unfold Obj.lt; rw [e]; exact List.lt_irrefl _
 
 /-! ## The numeric atoms: `grade` and `gradeFoR` by `Order.keyAt` -/
@@ -470,6 +480,199 @@ theorem sortsAsc_symbol : SortsAsc (.atom .symbol) := sortsAsc_atom .symbol fun 
   case enum dict dof ids' => exact he ▸ grade_ids x he
   all_goals have hwf := x.wf; rw [he] at hwf; simp [Enc.WF, QAtomicType.width] at hwf
 
+/-! ## Arrays and sums: `sortSide`, a side sorted at positions picked whole -/
+
+theorem pickShared_small : (B : Obj) → {s : USize} → (x : Vals B s) → (i : ByteArray) → (k : USize) →
+    (h : len i = k.toNat) → x.Small → (Vals.pickShared B x i k h).Small
+  | .atom _, _, _, _, _, _, _ => trivial
+  | .prod a b, _, x, i, k, h, hx => ⟨pickShared_small a x.1 i k h hx.1, pickShared_small b x.2 i k h hx.2⟩
+  | .arr _, _, _, _, _, _, hx => hx
+  | .sum _ _, _, _, _, _, _, hx => hx
+
+/-- **`Vals.pickShared` read back**: row `q` is `x`'s row `i[q]`, at every side, wherever that is a row. -/
+theorem pickShared_row (B : Obj) {s : USize} (x : Vals B s) (i : ByteArray) (k : USize)
+    (h : len i = k.toNat) (q : Fin k.toNat) (hin : (Column.bitsAt i (q.1 * 8) 8).toNat < s.toNat) :
+    (Vals.pickShared B x i k h).row q = x.row ⟨_, hin⟩ := by
+  induction B generalizing s with
+  | atom t => rw [Vals.pickShared, Vals.row_atom, Vals.row_atom]; exact pickArr_get ⟨_, x⟩ i k h q hin
+  | prod a b iha ihb =>
+    show (Vals.row (Vals.pickShared a x.1 i k h) q, Vals.row (Vals.pickShared b x.2 i k h) q) =
+      (Vals.row x.1 ⟨_, hin⟩, Vals.row x.2 ⟨_, hin⟩)
+    rw [iha, ihb]
+  | arr b _ =>
+    obtain ⟨_, lo, hi, _⟩ := x
+    simp only [Vals.pickShared, Vals.row, pickArr_get ⟨_, lo⟩ i k h q hin, pickArr_get ⟨_, hi⟩ i k h q hin]
+  | sum a b _ _ =>
+    obtain ⟨_, _, tag, idx, _, _⟩ := x
+    simp only [Vals.pickShared, Vals.row, pickArr_get ⟨_, tag⟩ i k h q hin, pickArr_get ⟨_, idx⟩ i k h q hin]
+
+/-- **`sortSide` sorts by the values its rows read**: row `r` of `q` reading `f r`, `x`'s row at `ps[r]`, the
+    answer is ascending in `f` by `Obj.lt`, rows of one key in `R` order — given that `B` sorts by `Obj.lt`. -/
+theorem sortSide_asc {B : Obj} (hB : SortsAsc B) {s : USize} (x : Vals B s) (hx : x.Small) (hs : 0 < s.toNat)
+    (ps q : ByteArray) (hq : len q < USize.size) (hps : ∀ r ∈ ids q, r < len ps ∧ (ids ps).getD r 0 < s.toNat)
+    (R : Nat → Nat → Prop) (hR : (ids q).Pairwise R) (f : Nat → B.El)
+    (hf : ∀ r ∈ ids q, ∀ h : (ids ps).getD r 0 < s.toNat, f r = x.row ⟨_, h⟩) :
+    (ids (sortSide x (fun v r => (B.sortByC v r).1) ps q)).Pairwise fun i j =>
+      B.lt (f i) (f j) ∨ B.key (f i) = B.key (f j) ∧ R i j := by
+  have hm : ((len q).toUSize).toNat = len q := USize.toNat_ofNat_of_lt' hq
+  unfold sortSide
+  rw [dif_pos ⟨hs, hq⟩]
+  have hg := ids_gather8 fun t ht => (hps t ht).1
+  have hRr : (List.range (len q)).Pairwise fun a b => R ((ids q).getD a 0) ((ids q).getD b 0) := by
+    rw [List.pairwise_iff_getElem]
+    intro a b ha hb hab
+    simp only [List.getElem_range, List.length_range] at ha hb ⊢
+    rw [len_eq_ids] at ha hb
+    rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem ha, List.getD_eq_getElem?_getD,
+      List.getElem?_eq_getElem hb, Option.getD_some, Option.getD_some]
+    exact List.pairwise_iff_getElem.1 hR a b ha hb hab
+  obtain ⟨hperm, hsrt⟩ := hB (Vals.pickShared B x (gather 8 ps q) (len q).toUSize (by rw [gather_len]; exact hm.symm))
+    (pickShared_small B x _ _ _ hx) (tilLongs (len q).toUSize) (by rw [len_tilLongs, hm]; exact hq)
+    (fun t ht => by rw [ids_tilLongs] at ht; exact List.mem_range.1 ht) _ (by rw [ids_tilLongs, hm]; exact hRr)
+  have hgr : ∀ t ∈ ids (B.sortBy (Vals.pickShared B x (gather 8 ps q) (len q).toUSize
+      (by rw [gather_len]; exact hm.symm)) (tilLongs (len q).toUSize)), t < len q := fun t ht => by
+    have := hperm.mem_iff.1 ht; rw [ids_tilLongs, hm] at this; exact List.mem_range.1 this
+  have hrow : ∀ a (ha : a < ((len q).toUSize).toNat), (Vals.pickShared B x (gather 8 ps q) (len q).toUSize
+      (by rw [gather_len]; exact hm.symm)).row ⟨a, ha⟩ = f ((ids q).getD a 0) := fun a ha => by
+    have hal : a < (ids q).length := by rw [← len_eq_ids, ← hm]; exact ha
+    have hmem : (ids q)[a]'hal ∈ ids q := List.getElem_mem hal
+    have hl2 : a < (ids (gather 8 ps q)).length := by rw [hg, List.length_map]; exact hal
+    have e1 : (Column.bitsAt (gather 8 ps q) (a * 8) 8).toNat = (ids ps).getD ((ids q)[a]'hal) 0 := by
+      have := List.getElem_of_eq hg hl2; rw [List.getElem_map, ids_getElem hl2] at this; exact this
+    have hin : (Column.bitsAt (gather 8 ps q) (a * 8) 8).toNat < s.toNat := by rw [e1]; exact (hps _ hmem).2
+    have eq : (ids q).getD a 0 = (ids q)[a]'hal := by
+      rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hal, Option.getD_some]
+    rw [pickShared_row B x _ _ _ ⟨a, ha⟩ hin, eq, hf _ hmem (by rw [← e1]; exact hin)]
+    exact congrArg x.row (Fin.ext e1)
+  show (ids (gather 8 q (B.sortBy _ _))).Pairwise _
+  rw [ids_gather8 hgr, List.pairwise_map]
+  refine hsrt.imp_of_mem fun {a b} ha hb hab => ?_
+  have hi : a < ((len q).toUSize).toNat := by rw [hm]; exact hgr a ha
+  have hj : b < ((len q).toUSize).toNat := by rw [hm]; exact hgr b hb
+  rcases hab hi hj with h | ⟨e, h⟩
+  · rw [hrow a hi, hrow b hj] at h; exact .inl h
+  · rw [hrow a hi, hrow b hj] at e; exact .inr ⟨e, h⟩
+
+/-- A row `i` of `p` that `whereBits` of `g` keeps is `p`'s long `k` for a marked `k`. -/
+theorem mem_where {p g : ByteArray} (hl : len p < USize.size) {i : Nat}
+    (hi : i ∈ ids (gather 8 p (whereBits (len p).toUSize g))) :
+    ∃ k, k < len p ∧ Column.bitAt g k = true ∧ i = (ids p).getD k 0 := by
+  have hm : ((len p).toUSize).toNat = len p := USize.toNat_ofNat_of_lt' hl
+  have hin : ∀ t ∈ ids (whereBits (len p).toUSize g), t < len p := fun t ht => by
+    rw [(whereBits_ids _ g).1, List.mem_filter, List.mem_range, hm] at ht; exact ht.1
+  rw [ids_gather8 hin, List.mem_map] at hi
+  obtain ⟨k, hk, rfl⟩ := hi
+  rw [(whereBits_ids _ g).1, List.mem_filter, List.mem_range, hm] at hk
+  exact ⟨k, hk.1, hk.2, rfl⟩
+
+/-- `whereBits` of `g` keeps a sublist of `p`'s rows. -/
+theorem where_sublist {p g : ByteArray} (hl : len p < USize.size) :
+    (ids (gather 8 p (whereBits (len p).toUSize g))).Sublist (ids p) := by
+  have hm : ((len p).toUSize).toNat = len p := USize.toNat_ofNat_of_lt' hl
+  have hin : ∀ t ∈ ids (whereBits (len p).toUSize g), t < len p := fun t ht => by
+    rw [(whereBits_ids _ g).1, List.mem_filter, List.mem_range, hm] at ht; exact ht.1
+  have e : (List.range (len p)).map (fun t => (ids p).getD t 0) = ids p := by
+    rw [len_eq_ids]; exact map_range_getD _
+  rw [ids_gather8 hin, (whereBits_ids _ g).1, hm]
+  exact (List.filter_sublist.map _).trans (by rw [e]; exact List.Sublist.refl _)
+
+
+/-- **A sum sorts by its tag, then by its side's own order**: `inl` rows first, each side by `sortSide`. -/
+theorem sortsAsc_sum {a b : Obj} (ha : SortsAsc a) (hb : SortsAsc b) : SortsAsc (.sum a b) := by
+  intro n c hc p hl hp R hR
+  refine ⟨sortBy_permutes _ _ p hl, ?_⟩
+  obtain ⟨l, r, tag, idx, x, y⟩ := c
+  obtain ⟨hl63, hr63, hx, hy⟩ := hc
+  have hm : ((len p).toUSize).toNat = len p := USize.toNat_ofNat_of_lt' hl
+  have hcl : ∀ {g : ByteArray}, len (gather 8 p (whereBits (len p).toUSize g)) < USize.size := fun {g} => by
+    rw [len_eq_ids]; exact Nat.lt_of_le_of_lt (where_sublist hl).length_le (by rw [← len_eq_ids]; exact hl)
+  let tb := tagBits (pickArr .boolean ⟨n, tag⟩ p (len p).toUSize hm.symm)
+  let ps := longsOf (place (A := a) (B := b) ⟨l, r, tag, idx, x, y⟩ ((l.toNat : Int) - 1) ((r.toNat : Int) - l.toNat) 0 0)
+  -- a kept row: a row of `p`, its tag the side's, its position `Vals.row`'s
+  have hside : ∀ (s : Bool) {g : ByteArray}, (∀ k < len p, Column.bitAt g k = true → Column.bitAt tb k = s) →
+      ∀ i ∈ ids (gather 8 p (whereBits (len p).toUSize g)), ∃ hi : i < n.toNat, tag.get ⟨i, hi⟩ = s ∧
+        i < len ps ∧ (ids ps).getD i 0 = min (max (idx.get ⟨i, hi⟩).toInt 0).toNat ((if s then r.toNat else l.toNat) - 1) := by
+    intro s g hg i hi
+    obtain ⟨k, hk, hgk, rfl⟩ := mem_where hl hi
+    have hkl : k < (ids p).length := by rw [← len_eq_ids]; exact hk
+    have hpk : (ids p).getD k 0 = (ids p)[k] := by
+      rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hkl, Option.getD_some]
+    have hin : (ids p)[k] < n.toNat := hp _ (List.getElem_mem hkl)
+    have ht := hg k hk hgk
+    rw [show k = (⟨k, by rw [hm]; exact hk⟩ : Fin ((len p).toUSize).toNat).1 from rfl, pickArr_tag_bit,
+      dif_pos (by rw [← ids_getElem hkl]; exact hin)] at ht
+    rw [hpk]
+    have htag : tag.get ⟨(ids p)[k], hin⟩ = s := by rw [← ht]; congr 1; exact Fin.ext (ids_getElem hkl)
+    have hlen : (ids p)[k] < len ps := by rw [len_longsOf]; exact hin
+    refine ⟨hin, htag, hlen, ?_⟩
+    have hpl : (ids p)[k] < (ids ps).length := by rw [← len_eq_ids]; exact hlen
+    rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hpl, Option.getD_some, ids_getElem hpl,
+      longsOf_get _ hin, place_get _ hl63 hr63]
+    simp only [htag]
+    have h1 : l.toNat < 2 ^ 63 := hl63
+    have h2 : r.toNat < 2 ^ 63 := hr63
+    have h3 : UInt64.size = 2 ^ 64 := rfl
+    rw [UInt64.toNat_ofNat_of_lt' (by cases s <;> simp only [Bool.false_eq_true, ↓reduceIte] <;> omega)]
+  have hL := hside false fun k hk h => by rw [notBits_bitAt _ _ (by rw [hm]; exact hk)] at h; simpa using h
+  have hRt := hside true fun k _ h => h
+  simp only [Obj.sortBy, Obj.sortByC, dif_pos hl]
+  rw [ids_concat2 (sortSide_size8 _ _ _ _ (gather_size8 _ _)), List.pairwise_append]
+  -- the rows of one side, in its own order
+  have side : ∀ {B : Obj} (hB : SortsAsc B) {s : USize} (v : Vals B s), v.Small → ∀ (t : Bool) (g : ByteArray)
+      (inj : B.El → (Obj.sum a b).El), (∀ u w, (Obj.sum a b).lt (inj u) (inj w) ↔ B.lt u w) →
+      (∀ u, (Obj.sum a b).key (inj u) = (if t then 1 else 0) :: B.key u) →
+      (∀ i ∈ ids (gather 8 p (whereBits (len p).toUSize g)), ∃ hi : i < n.toNat, tag.get ⟨i, hi⟩ = t ∧
+        i < len ps ∧ (ids ps).getD i 0 = min (max (idx.get ⟨i, hi⟩).toInt 0).toNat (s.toNat - 1)) →
+      (∀ (i : Nat) (hi : i < n.toNat), tag.get ⟨i, hi⟩ = t → Vals.row (A := .sum a b) ⟨l, r, tag, idx, x, y⟩ ⟨i, hi⟩ =
+        inj (if h : 0 < s.toNat then v.row ⟨min (max (idx.get ⟨i, hi⟩).toInt 0).toNat (s.toNat - 1), by omega⟩
+          else B.dflt)) →
+      (ids (sortSide v (fun v r => (B.sortByC v r).1) ps (gather 8 p (whereBits (len p).toUSize g)))).Pairwise
+        (ascBy (.sum a b) ⟨l, r, tag, idx, x, y⟩ R) := by
+    intro B hB s v hv t g inj hlt hkey hmem hrow
+    have hsub := List.Pairwise.sublist (where_sublist (g := g) hl) hR
+    have hperm := sortSide_perm v (fun v r => (B.sortByC v r).1) (fun v r hr => sortBy_permutes B v r hr) ps
+      (gather 8 p (whereBits (len p).toUSize g))
+    by_cases hs : 0 < s.toNat
+    · let f (i : Nat) : B.El := if h : (ids ps).getD i 0 < s.toNat then v.row ⟨_, h⟩ else B.dflt
+      have hS := sortSide_asc hB v hv hs ps _ hcl (fun i hi => by
+          obtain ⟨_, _, h1, h2⟩ := hmem i hi; exact ⟨h1, by rw [h2]; omega⟩) R hsub f
+        (fun i _ h => dif_pos h)
+      refine hS.imp_of_mem fun {i j} hi hj hij hi' hj' => ?_
+      obtain ⟨_, ti, _, pi⟩ := hmem i (hperm.mem_iff.1 hi)
+      obtain ⟨_, tj, _, pj⟩ := hmem j (hperm.mem_iff.1 hj)
+      have fi : Vals.row (A := .sum a b) ⟨l, r, tag, idx, x, y⟩ ⟨i, hi'⟩ = inj (f i) := by
+        rw [hrow i hi' ti, dif_pos hs]; simp only [f, pi]; rw [dif_pos (by omega)]
+      have fj : Vals.row (A := .sum a b) ⟨l, r, tag, idx, x, y⟩ ⟨j, hj'⟩ = inj (f j) := by
+        rw [hrow j hj' tj, dif_pos hs]; simp only [f, pj]; rw [dif_pos (by omega)]
+      show Obj.lt _ (Vals.row _ _) (Vals.row _ _) ∨ Obj.key _ (Vals.row _ _) = Obj.key _ (Vals.row _ _) ∧ R i j
+      rw [fi, fj, hlt, hkey, hkey]
+      rcases hij with h | ⟨e, h⟩
+      · exact .inl h
+      · exact .inr ⟨by rw [e], h⟩
+    · unfold sortSide
+      rw [dif_neg fun h => hs h.1]
+      refine hsub.imp_of_mem fun {i j} hi hj hij hi' hj' => .inr ⟨?_, hij⟩
+      obtain ⟨_, ti, _, _⟩ := hmem i hi
+      obtain ⟨_, tj, _, _⟩ := hmem j hj
+      show Obj.key _ (Vals.row _ _) = Obj.key _ (Vals.row _ _)
+      rw [hrow i hi' ti, hrow j hj' tj, dif_neg hs, dif_neg hs]
+  refine ⟨side ha x hx false _ Sum.inl (Obj.lt_inl a b) (fun _ => rfl) (fun i hi => by simpa using hL i hi)
+      (fun i hi ht => ?_),
+    side hb y hy true _ Sum.inr (Obj.lt_inr a b) (fun _ => rfl) (fun i hi => by simpa using hRt i hi)
+      (fun i hi ht => ?_), ?_⟩
+  · simp only [Vals.row, ht, Bool.false_eq_true, ↓reduceIte]; rfl
+  · simp only [Vals.row, ht, ↓reduceIte]; rfl
+  · intro i hi j hj hi' hj'
+    have pl := sortSide_perm x (fun v r => (a.sortByC v r).1) (fun v r hr => sortBy_permutes a v r hr) ps
+      (gather 8 p (whereBits (len p).toUSize (Ew.notBits (len p).toUSize tb)))
+    have pr := sortSide_perm y (fun v r => (b.sortByC v r).1) (fun v r hr => sortBy_permutes b v r hr) ps
+      (gather 8 p (whereBits (len p).toUSize tb))
+    obtain ⟨_, ti, -⟩ := hL i (pl.mem_iff.1 hi)
+    obtain ⟨_, tj, -⟩ := hRt j (pr.mem_iff.1 hj)
+    refine .inl ?_
+    show Obj.lt _ (Vals.row _ _) (Vals.row _ _)
+    simp only [Vals.row, ti, tj]
+    exact Obj.lt_inl_inr a b _ _
 /-! ## Every side whose atoms qlean orders
 
 A `.general` atom is left out: qlean states no order on it (`orderKind .general = none`, `Obj.key` keys it `[]`),
@@ -491,14 +694,14 @@ theorem sortsAsc_ordered_atom {t : QAtomicType} (h : t ≠ .general) : SortsAsc 
   case general => exact absurd rfl h
   all_goals exact sortsAsc_num rfl (by decide)
 
-/-- **Every ordered side sorts stably by `Obj.lt`**, given that an array and a sum of sides that do, do: the two
-    constructors `Obj.sortByC` still grades by `codes`, which are the open obligations `harr`, `hsum`. -/
-theorem sortsAsc_ordered (harr : ∀ b, SortsAsc b → SortsAsc (.arr b))
-    (hsum : ∀ a b, SortsAsc a → SortsAsc b → SortsAsc (.sum a b)) : ∀ A : Obj, A.Ordered → SortsAsc A
+/-- **Every ordered side sorts stably by `Obj.lt`**, given that an array of a side that does, does: the LSD
+    passes of `Obj.sortByC` at `.arr`, the open obligation `harr`. -/
+theorem sortsAsc_ordered (harr : ∀ b, SortsAsc b → SortsAsc (.arr b)) :
+    ∀ A : Obj, A.Ordered → SortsAsc A
   | .atom _, h => sortsAsc_ordered_atom h
-  | .prod a b, ⟨ha, hb⟩ => sortsAsc_prod (sortsAsc_ordered harr hsum a ha) (sortsAsc_ordered harr hsum b hb)
-  | .arr b, h => harr b (sortsAsc_ordered harr hsum b h)
-  | .sum a b, ⟨ha, hb⟩ => hsum a b (sortsAsc_ordered harr hsum a ha) (sortsAsc_ordered harr hsum b hb)
+  | .prod a b, ⟨ha, hb⟩ => sortsAsc_prod (sortsAsc_ordered harr a ha) (sortsAsc_ordered harr b hb)
+  | .arr b, h => harr b (sortsAsc_ordered harr b h)
+  | .sum a b, ⟨ha, hb⟩ => sortsAsc_sum (sortsAsc_ordered harr a ha) (sortsAsc_ordered harr b hb)
 
 #print axioms sortsAsc_ordered
 #print axioms sortsAsc_symbol
@@ -507,5 +710,6 @@ theorem sortsAsc_ordered (harr : ∀ b, SortsAsc b → SortsAsc (.arr b))
 #print axioms sortsAsc_prod
 #print axioms sortsAsc_num
 #print axioms sortsAsc_boolean
+#print axioms sortsAsc_sum
 
 end LeetQ.Rel.Alg
