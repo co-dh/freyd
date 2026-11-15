@@ -117,6 +117,12 @@ def builtins : List (Op × Except String (Option Name)) :=
    (.index 0, none' "AOP declares no element at a position")] ++
   (prims.filter fun r => r.written && !r.prelude).map fun r => (.prim r.sym, r.aop.map some)
 
+-- `prims` names its AOP readings unchecked (Syntax cannot import AOP), so every row's is checked here, where they resolve
+run_cmd do
+  for (o, r) in builtins do
+    if let .ok (some n) := r then
+      unless (← getEnv).contains n do throwError "builtins: the AOP reading of `{o.sym}` is `{n}`, which is not declared"
+
 /-- The prelude's names with a fixed AOP counterpart, each its prelude body in the fragment: `rel(…)` has no
     prelude, and AOP writes `∈` as `∋°`. -/
 def prelude : List (String × (Lang.Pos → Lang.Expr)) := [("∈", fun p => .conv p (.op p .mem [] []))]
