@@ -217,7 +217,7 @@ theorem pairsOK_leaf (cs : Array Col) {out : Array ByteArray} {sps : Array Col} 
       (((TP.leaf R).pairs out sz false).run n).1.1 (((TP.leaf R).pairs out sz false).run n).1.2 ∧
     PairsOK (uOf cs B) (uOf cs A) (spOf sps B).1.toNat (spOf sps A).1.toNat (fun b a => (TP.leaf R).den a b)
       (((TP.leaf R).pairs out sz true).run n).1.1 (((TP.leaf R).pairs out sz true).run n).1.2 := by
-  obtain ⟨-, hany, hcol⟩ := codeAll_inv cs h
+  obtain ⟨-, hany, hcol, -⟩ := codeAll_inv cs h
   have hin : ∀ i (hi : i < cs.size), (sps.any (·.1 == cs[i].1)) = true := fun i hi => by
     have := hany _ (List.getElem_mem (l := cs.toList) (by simpa using hi)); simpa using this
   obtain ⟨qa, hfa, hka, hca⟩ := hcol n (by omega) A _ ek (by have := hin n (by omega); rwa [ek] at this)
