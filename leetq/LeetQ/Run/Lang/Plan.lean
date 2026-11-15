@@ -328,16 +328,21 @@ def ofTm : {A B : Obj} → {d : Bool} → Tm A B d → Bld (Side × Side)
 
 /-! ### Builders of `Alg`'s defs (stage 1b) -/
 
-/-- A code's four registers `w`, `n`, `card`, `b`; `card` as `card.toUSize`, what `idGroups` reads. -/
-def codeVals (c : Alg.Code) : Array Val := #[.size c.w.toUSize, .size c.n, .size c.card.toUSize, .bytes c.b]
+/-- A code's four registers `w`, `n`, `max`, `b`: `max` the greatest code, `card - 1`, which fits a `USize` at every
+    width (`2⁶⁴ - 1` at `64`) where `card` does not. `card = 0` (no code) reads `0`, as `card = 1` does; the one
+    reader of a table size, `idGroups` at `2`/`4` bits, never sees either, as there `card ≥ 3` (`Code.ofLane`). -/
+def codeVals (c : Alg.Code) : Array Val := #[.size c.w.toUSize, .size c.n, .size (c.card - 1).toUSize, .bytes c.b]
 
-/-- `Code.groupIds` on a code's registers `w`, `n`, `card` (as `card.toUSize`, all `idGroups` reads), `b`: one `if`
-    per lane `laneKind` names, tested at run time on `w`, `groupIds` at that layout; `idGroups` past the last. -/
-def groupIdsB (w n card b : Nat) : Bld (Array Nat) :=
+/-- `Code.groupIds` on a code's registers `w`, `n`, `max`, `b`: one `if` per lane `laneKind` names, tested at run
+    time on `w`, `groupIds` at that layout; past the last, `idGroups` on a table of `max + 1` entries. -/
+def groupIdsB (w n max b : Nat) : Bld (Array Nat) :=
   go ([1, 8, 16, 32, 64].filterMap fun v => (Alg.laneKind v).map (v, ·))
 where
   go : List (Nat × Scan.Kind) → Bld (Array Nat)
-    | [] => call "qlean_sort_id_groups" #[card, n, w, b] 2
+    | [] => do
+      let one ← lit (.size 1)
+      let card ← emit1 (.call "lean_usize_add" #[max, one])
+      call "qlean_sort_id_groups" #[card, n, w, b] 2
     | (v, k) :: ks => do
       let x ← lit (.size v.toUSize)
       let e ← emit1 (.call "lean_usize_dec_eq" #[w, x])

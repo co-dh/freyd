@@ -13,7 +13,7 @@ open QLean
 /-- The kernels a plan may call, each read off its `@[extern]` declaration. -/
 def abi : List Kernel :=
   [kernel% QLean.Db.ownWrite, kernel% QLean.Kernel.Order.groupIds, kernel% QLean.Kernel.Order.idGroups,
-   kernel% USize.decEq]
+   kernel% USize.decEq, kernel% USize.add]
 
 def abiOf (sym : String) : Option Kernel := abi.find? (·.sym == sym)
 

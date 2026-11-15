@@ -306,13 +306,14 @@ theorem push_keep {C rs : Array Val} {x : Val} (h4 : C.size ≤ rs.size) (hr : �
   ⟨by simp; omega, fun i hi => by rw [Array.getElem?_push, if_neg (by omega)]; exact hr i hi⟩
 
 theorem abiOf_decEq : abiOf "lean_usize_dec_eq" = some (kernel% USize.decEq) := by simp [abiOf, abi, List.find?]
+theorem abiOf_add : abiOf "lean_usize_add" = some (kernel% USize.add) := by simp [abiOf, abi, List.find?]
 theorem abiOf_groupIds : abiOf "qlean_sort_group_ids" = some (kernel% QLean.Kernel.Order.groupIds) := by
   simp [abiOf, abi, List.find?]
 theorem abiOf_idGroups : abiOf "qlean_sort_id_groups" = some (kernel% QLean.Kernel.Order.idGroups) := by
   simp [abiOf, abi, List.find?]
 
 /-- `groupIdsB.go` on lanes `ks`: `groupIds` at the first lane of the code's width, `idGroups` past the last. -/
-theorem groupIdsB_go {fg : Array Fun × Array Fun} (c : Alg.Code) (hw : c.w < USize.size) (ks : List (Nat × Scan.Kind))
+theorem groupIdsB_go {fg : Array Fun × Array Fun} (c : Alg.Code) (hw : c.w < USize.size) (hc : 0 < c.card) (ks : List (Nat × Scan.Kind))
     (hks : ∀ p ∈ ks, p.1 < USize.size) (rs : Array Val) (h4 : (codeVals c).size ≤ rs.size)
     (hr : ∀ i < (codeVals c).size, rs[i]? = (codeVals c)[i]?) :
     Builds abiOf fg fg (groupIdsB.go 0 1 2 3 ks) rs
@@ -326,11 +327,25 @@ theorem groupIdsB_go {fg : Array Fun × Array Fun} (c : Alg.Code) (hw : c.w < US
   induction ks generalizing rs with
   | nil =>
     rw [groupIdsB.go]
-    have ha : #[2, 1, 0, 3].mapM (reg rs "qlean_sort_id_groups") =
+    have hadd : (c.card - 1).toUSize + 1 = c.card.toUSize := by
+      rw [show c.card.toUSize = (c.card - 1 + 1).toUSize by rw [Nat.sub_add_cancel hc]]
+      exact (USize.ofNat_add _ _).symm
+    refine Builds.emit1 (v := .size 1) (fun _ _ _ _ => rfl) ?_
+    obtain ⟨h4₁, hr₁⟩ := push_keep (x := .size 1) h4 hr
+    have ha₁ : #[2, rs.size].mapM (reg (rs.push (.size 1)) "lean_usize_add") =
+        .ok #[.size (c.card - 1).toUSize, .size 1] := by
+      rw [List.mapM_toArray]; simp only [List.mapM_cons, List.mapM_nil]
+      rw [reg_of (rd h4₁ hr₁ 2 (by simp [codeVals])), reg_of (Array.getElem?_push_size)]; rfl
+    refine Builds.emit1 (v := .size c.card.toUSize) (fun _ _ _ ws => by
+      rw [Array.push_eq_append (as := rs.push (.size 1))]
+      exact runI_call abiOf_add rfl ha₁ (by rw [← hadd]; rfl) rfl) ?_
+    obtain ⟨h4₂, hr₂⟩ := push_keep (x := .size c.card.toUSize) h4₁ hr₁
+    have ha : #[(rs.push (.size 1)).size, 1, 0, 3].mapM
+        (reg ((rs.push (.size 1)).push (.size c.card.toUSize)) "qlean_sort_id_groups") =
         .ok #[.size c.card.toUSize, .size c.n, .size c.w.toUSize, .bytes c.b] := by
       rw [List.mapM_toArray]; simp only [List.mapM_cons, List.mapM_nil]
-      rw [reg_of (rd h4 hr 2 (by simp [codeVals])), reg_of (rd h4 hr 1 (by simp [codeVals])), reg_of (rd h4 hr 0 (by simp [codeVals])),
-        reg_of (rd h4 hr 3 (by simp [codeVals]))]; rfl
+      rw [reg_of (Array.getElem?_push_size), reg_of (rd h4₂ hr₂ 1 (by simp [codeVals])),
+        reg_of (rd h4₂ hr₂ 0 (by simp [codeVals])), reg_of (rd h4₂ hr₂ 3 (by simp [codeVals]))]; rfl
     exact Builds.emit (fun _ _ _ ws => runI_call abiOf_idGroups rfl ha rfl rfl) rfl
   | cons p ks ih =>
     obtain ⟨v, k⟩ := p
@@ -379,14 +394,14 @@ theorem lanes_find (w : Nat) :
     hb 64 (Ne.symm h64)]
 
 /-- `groupIdsB` run on a code's registers answers `Code.groupIds` of that code. -/
-theorem groupIdsB_builds {fg : Array Fun × Array Fun} (c : Alg.Code) (hw : c.w < USize.size) :
+theorem groupIdsB_builds {fg : Array Fun × Array Fun} (c : Alg.Code) (hw : c.w < USize.size) (hc : 0 < c.card) :
     Builds abiOf fg fg (groupIdsB 0 1 2 3) (codeVals c) #[.bytes c.groupIds.1, .bytes c.groupIds.2] := by
   have hl : ∀ p ∈ ([1, 8, 16, 32, 64].filterMap fun v => (Alg.laneKind v).map (v, ·)), p.1 < USize.size := by
     intro p hp
     have : p = (1, .bit) ∨ p = (8, .u8) ∨ p = (16, .i16) ∨ p = (32, .i32) ∨ p = (64, .i64) := by
       simpa [Alg.laneKind] using hp
     rcases USize.size_eq with hs | hs <;> rcases this with rfl | rfl | rfl | rfl | rfl <;> simp [hs]
-  have := groupIdsB_go (fg := fg) c hw _ hl (codeVals c) (Nat.le_refl _) (fun _ _ => rfl)
+  have := groupIdsB_go (fg := fg) c hw hc _ hl (codeVals c) (Nat.le_refl _) (fun _ _ => rfl)
   rw [lanes_find] at this
   exact this
 
