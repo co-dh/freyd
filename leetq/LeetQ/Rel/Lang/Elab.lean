@@ -1430,7 +1430,9 @@ def build : Pre → Except Err Res
   | .call pos c us xs alt a b => do
     let A ← toObj st dp a; let B ← toObj st dp b
     let us := us.map (zonk st)
-    let rs ← xs.attach.mapM fun ⟨x, _⟩ => build x
+    let rs ← xs.attach.mapM fun ⟨x, h⟩ =>
+      have : sizeOf x < sizeOf xs := List.sizeOf_lt_of_mem h
+      build x
     let base (u : OTy) := match u with | .base _ => (uniOf objs u).isSome | _ => false
     if !us.all base || rs.any (·.2.2.1) then build alt else
     let f ← us.foldlM (fun f u => return .arg f (← uniTm objs st dp pos u .long "a call")) (Tm.call (A := A) (B := B) c)

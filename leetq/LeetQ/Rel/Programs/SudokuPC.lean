@@ -1,4 +1,4 @@
-import LeetQ.Rel.Programs.Prelude
+import LeetQ.Rel.Programs.CSP
 
 /-! # Sudoku path consistency (AIMA §6.2.3), 4×4
 
@@ -35,7 +35,7 @@ over every `m` at once. -/
 
 namespace LeetQ.Rel.Programs
 
-rel_program sudokupc after prelude where
+rel_program sudokupc after csp where
     obj Cell = 0…15                               -- the cell in row r, column k is 4r+k
     obj Unit = 0…11                               -- rows 0…3, columns 4…7, boxes 8…11
     obj D = 1…4
@@ -44,7 +44,6 @@ rel_program sudokupc after prelude where
     g : Cell ⟶ D ≜ {(0,4),(13,1),(15,4)}          -- "4............1.4"
 
     peer : Cell ⟶ Cell ≜ (unit unit°) ∩ ≠
-    AC3(A : α ⟶ α, C : β ⟶ β, s : α ⟶ β) : α ⟶ β ≜ νX : s ∩ (A\(X C))
     s₀ : Cell ⟶ D ≜ g°\𝟙(D)
     s : Cell ⟶ D ≜ AC3(peer, ≠, s₀)
 
