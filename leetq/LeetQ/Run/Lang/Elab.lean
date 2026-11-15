@@ -369,9 +369,10 @@ def Pre.nilSrcs : Pre → List OTy
   | .bagify _ | .tic _ | .atPos .. | .succ .. | .arith .. | .leq .. | .lt .. | .lit .. => []
 
 /-- A `nil` whose source no context fixed, once the whole term is elaborated, starts at `1`: B&dM's
-    `nil : 1 ⟶ [A]`. A fold's seed `ran(nil)` drops that source, so only this rule gives it (§e). -/
-def settleNil (p : Pos) (x : Pre) : M Unit := x.nilSrcs.forM fun a => do
-  if let .mv _ := zonk (← get) a then unify p "nil's source" a (.base "1")
+    `nil : 1 ⟶ [A]`, `one` the object `1` in scope (`Env.one`). A fold's seed `ran(nil)` drops that source, so only
+    this rule gives it (§e). -/
+def settleNil (one : OTy) (p : Pos) (x : Pre) : M Unit := x.nilSrcs.forM fun a => do
+  if let .mv _ := zonk (← get) a then unify p "nil's source" a one
 
 /-! ### Fixed points: where the variable occurs -/
 
@@ -458,7 +459,7 @@ structure Env where
 
 /-- The definition `n`: the program's, else the one the resolver gives. -/
 def Env.def? (env : Env) (n : String) : Option Def :=
-  (env.defs.lookup n).orElse fun _ => match env.res n with | .ext e => if e.obj then none else env.ext.lookup e.const | _ => none
+  (env.defs.lookup n).orElse fun _ => match env.res n with | .ext e => if e.obj || e.thm then none else env.ext.lookup e.const | _ => none
 
 /-- The infix operator `n`: the program's `_n_`, else the registered infix the resolver gives. -/
 def Env.infix? (env : Env) (n : String) : Option Def :=
@@ -467,6 +468,9 @@ def Env.infix? (env : Env) (n : String) : Option Def :=
 /-- The object `n`: the program's, else the registered object the resolver gives. -/
 def Env.obj? (env : Env) (n : String) : Option ObjInfo :=
   (env.objs.lookup n).orElse fun _ => match env.res n with | .ext e => if e.obj then env.extObjs.lookup e.const else none | _ => none
+
+/-- The object `1` in scope, the source a `nil` no context fixes starts at (`settleNil`). -/
+def Env.one (env : Env) : OTy := ((env.obj? "1").map (·.ty)).getD (.base "1")
 
 /-- `o` as the program wrote it, resolved: an alias stands for its definition, a variable for its object in `vs`,
     one use's instantiation (§e). -/

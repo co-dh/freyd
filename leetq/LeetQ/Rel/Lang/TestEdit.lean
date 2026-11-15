@@ -32,7 +32,8 @@ def expected (term : String) : String :=
   s!"{term} = \{" ++ ", ".intercalate (ps.map fun (x, y) => s!"(({word x}, {word y}), {cost x y})") ++ "}"
 
 -- `mle`'s lengths, printed after the program
-rel_program mleLength after Programs.edit where
+open LeetQ.Rel.Programs.prelude Programs.edit in
+rel_program mleLength where
     print D mle length 𝟙(N)
 
 #guard Programs.edit.ok

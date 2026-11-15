@@ -7,7 +7,8 @@ of expanding its body. `SudokuAC` traces one arc of it on a board. -/
 
 namespace LeetQ.Rel.Programs
 
-rel_program csp after prelude where
+open LeetQ.Rel.Programs.prelude in
+rel_program csp where
     -- AIMA REVISE on every arc of A at once, iterated: AC-3 (arc consistency, Mackworth's algorithm 3): the largest
     -- X ⊑ s with every arc supported
     AC3(A : α ⟶ α, C : β ⟶ β, s : α ⟶ β) : α ⟶ β ≜ νX : s ∩ (A\(X C))

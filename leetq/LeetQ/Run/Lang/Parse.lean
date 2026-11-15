@@ -263,6 +263,7 @@ def constOf (home : Lean.Name) (k : String) : Lean.Name := home.str ((unInfix k)
 def extOf (home : Lean.Name) : Decl → Option (String × Ext)
   | .defn _ k ps .. => some (k, { const := constOf home k, arity := ps.length, isInfix := (unInfix k).isSome })
   | .obj _ k _ => some (k, { const := home.str k, obj := true })
+  | .«theorem» _ k .. => some (k, { const := home.str k, thm := true })
   | _ => none
 
 /-- The parts of a written name `m.x` (`csp.AC3`, `csp.≼`), as `name` reads them: words between `.`s. -/

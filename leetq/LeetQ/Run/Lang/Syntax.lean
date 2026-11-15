@@ -27,12 +27,13 @@ instance : ToString Err := ⟨fun e => if e.pos.line == 0 then e.msg else s!"{e.
 def Err.inProg (n : String) (e : Err) : Err := ⟨default, s!"in the program `{n}`, {e.pos}: {e.msg}"⟩
 
 /-- A definition or object of a program, as the registry records it (`Expand.relRegistry`) and the resolver gives
-    it: its constant `n.x`, its arity, whether it is an infix operator `_x_`, whether an object. -/
+    it: its constant `n.x`, its arity, whether it is an infix operator `_x_`, an object, a theorem. -/
 structure Ext where
   const : Lean.Name
   arity : Nat := 0
   isInfix : Bool := false
   obj : Bool := false
+  thm : Bool := false
   deriving Repr, Inhabited
 
 /-- What a written name (`AC3`, `csp.AC3`, `≠`) resolves to in Lean's scope (the current namespace and `open`s),

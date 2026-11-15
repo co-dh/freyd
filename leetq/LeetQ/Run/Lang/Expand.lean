@@ -158,7 +158,7 @@ def once (env : Env) (p : Pos) (n : String) (qs : List Param) (e : Expr) (ty : O
     let r ← elabE env' none e
     let (q, s, t) := r.plain
     declared env' p n rigid ty s t
-    settleNil p q
+    settleNil env'.one p q
     pure (r, os) : M (Arg × List (Obj × Obj))).run { fixes := nv + qs.length }
   -- a body that needs keys is read on its source's universe, a variable's when the source is one, as a top-level
   -- term is (`top`): the constant returns a closed relation (decision M)
@@ -211,7 +211,7 @@ def checkOf (env : Env) (p : Pos) (e f : Expr) (eq : Bool) : Except Err (Chk × 
     let st ← get
     try unify p "" s' s; unify p "" t' t
     catch _ => throw ⟨p, s!"check: the sides have types {zonk st s} ⟶ {zonk st t} and {zonk st s'} ⟶ {zonk st t'}"⟩
-    settleNil p r.plain.1; settleNil p r'.plain.1
+    settleNil env.one p r.plain.1; settleNil env.one p r'.plain.1
     pure (r, r') : M (Arg × Arg)).run {}
   let (⟨A, B, R⟩, s, t) ← top env st p e r
   let (⟨A', B', S⟩, s', t') ← top env st p f r'
@@ -251,7 +251,7 @@ def walk (prog : Program) (env : Env) (wrap : String → Def → Def) (own : Lea
         let (r, st) ← (do
           let r ← elabE env none e
           if let some ty := ty then let (_, s, t) := r.plain; declared env p n rigid ty s t
-          settleNil p r.plain.1
+          settleNil env.one p r.plain.1
           pure r).run {}
         ex := ex ++ st.expanded
         let (q, s, t) := r.plain
@@ -281,7 +281,7 @@ def walk (prog : Program) (env : Env) (wrap : String → Def → Def) (own : Lea
         | _, _ => pure ()
         env := { env with defs := (n, wrap n d) :: env.defs }
     | .print p e =>
-      let (r, st) ← (do let r ← elabE env none e; settleNil p r.plain.1; pure r).run {}
+      let (r, st) ← (do let r ← elabE env none e; settleNil env.one p r.plain.1; pure r).run {}
       ex := ex ++ st.expanded
       pr := pr ++ [(e.show, ← top env st p e r)]
     | .check p e f eq => let (c, e') ← checkOf env p e f eq; cs := cs ++ [c]; ex := ex ++ e'

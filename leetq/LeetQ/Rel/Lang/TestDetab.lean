@@ -41,7 +41,8 @@ def inputs : List (String × List String) :=
   [("p", ["a", "BL", "BL", "BL"]), ("q", ["a", "a", "a", "BL", "a"]), ("y", List.replicate 5 "BL")]
 
 -- the program's eight `check`s turned back into `print`s, one per line, so the values compared are Lean's below
-rel_program out after Programs.detab where
+open LeetQ.Rel.Programs.prelude Programs.detab in
+rel_program out where
     print x detab
     print x detab entab
     print p Λ(H)est(R)

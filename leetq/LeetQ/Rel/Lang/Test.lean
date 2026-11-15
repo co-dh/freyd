@@ -19,10 +19,13 @@ abbrev CM := Lean.Elab.Command.CommandElabM
 
 /-- The statements `src` read as a `rel_program`'s (`Embed`, the one grammar) in the scope `s`, nothing elaborated;
     they start on the line of `where`, so a line of `src` is a line of the error. A Lean parse error has no line. -/
+/-- The scope of a text read after the prelude outside any Lean scope: its names unqualified (`Parse.openAll`). -/
+def preludeScope : Parse.S := { cs := #[], res := Parse.openAll [(`LeetQ.Rel.Programs.prelude, Programs.prelude)] }
+
 def readIn (s : Parse.S) (src : String) : CM (Except Err Program) := do
   let txt := "rel_program t where " ++ src
   match Lean.Parser.runParserCategory (← Lean.getEnv) `command txt with
-  | .ok stx => pure (Embed.program (Lean.FileMap.ofString txt) s stx[5].getArgs)
+  | .ok stx => pure ((Embed.program (Lean.FileMap.ofString txt) s stx[4].getArgs).map (·.1))
   | .error e => pure (.error ⟨default, e⟩)
 
 /-- The definition `n` of an expansion at the objects `A ⟶ B`. -/
@@ -40,7 +43,8 @@ abbrev St : Obj := .arr XX
 def moves (gs : List (String × Gen.Gv)) : Option (List (Int64 × Int64)) :=
   (get gs "plan" .long XX).map fun R => (R.nub.toList.mergeSort fun a b => decide (a.1 ≤ b.1)).map (·.2)
 
-rel_program given after Programs.blocks where
+open LeetQ.Rel.Programs.prelude Programs.blocks in
+rel_program given where
     qR : [X×X] ⟶ X×X ≜ QR(∋)
     qM : [X×X] ⟶ X×X ≜ QM(∋)
     qF : [X×X] ⟶ X×X ≜ Qc⇝
@@ -54,10 +58,11 @@ rel_program cycle from Programs.blocks where
     S₀ : X ⟶ X ≜ {(A,A),(B,B),(C,C)}
     G : X ⟶ X ≜ {(A,B),(B,A)}
 
+open LeetQ.Rel.Programs.prelude Programs.blocks in
 /-- `Λ(S)est(P)`, `Λ(S)thin(P)` with the order `P` a family (the rows of §e on `S∋`) against the order closed
     (the closed row), on the reachable states — `est` of a map is the map — and on their complements, where a
     block has two values. -/
-rel_program orders after Programs.blocks where
+rel_program orders where
     O : X ⟶ X ≜ {(A,A),(A,B),(A,C),(B,B),(B,C),(C,C)}
     Of : [X×X] ⟶ X×X ≜ Q⊤(St,X)⟨𝟙,O⟩
     lc(S : X ⟶ X) : X ⟶ X ≜ Λ(S)est(O)
@@ -73,17 +78,19 @@ rel_program orders after Programs.blocks where
     print s₀lf(Y(∋),Of)
     print s₀tf(Y(∋),Of)
 
+open LeetQ.Rel.Programs.prelude Programs.blocks in
 /-- A body given families of two indices, `∋` at `St` and `ζ∋` at `N` (the `k`-th state's pairs), runs at
     `St×N`: the fibre at `(s,k)` is `s ∩ ζ(k)`. Against the same meet written by hand, and at `(s₀,0)`, `(s₀,1)`. -/
-rel_program twoIdx after Programs.blocks where
+rel_program twoIdx where
     k(S : X ⟶ X, T : X ⟶ X) : X ⟶ X ≜ S ∩ T
     check (Q×𝟙(N))k(∋,ζ∋) = (Q×𝟙(N))⟨π₁∋,π₂ζ∋⟩cor(𝟙)π₁
     print (s₀×{(0,0)})k(∋,ζ∋)
     print (s₀×{(1,1)})k(∋,ζ∋)
 
+open LeetQ.Rel.Programs.prelude in
 /-- `X⦇e,S⦈` given a family (§e): at each key of a three-key family, the fibre of the lifted fold is the fold of
     the fibre. `p(R)` holds the pairs `(a,b)` with `b` at most two steps of `R` from `a`. -/
-rel_program foldLaw after Programs.prelude where
+rel_program foldLaw where
     obj X = {A,B,C}
     obj K = 0…2
     obj L = 5…6
@@ -109,10 +116,11 @@ def fibres (gs : List (String × Gen.Gv)) : Bool :=
 
 #guard foldLaw.ok && fibres foldLaw.expanded
 
+open LeetQ.Rel.Programs.prelude in
 /-- A lifted fold whose step has closed parts (§e, cost of the keyed fold): `G`, `∼R ∩ G` (a complement, so
     `⊤`), `dom(R)`, `π₂⟨π₁,π₁⟩`, each keyed on the pairs a round meets; at every key the fibre is the fold of
     the fibre. -/
-rel_program foldClosed after Programs.prelude where
+rel_program foldClosed where
     obj X = {A,B,C}
     obj K = 0…2
     obj L = 5…6
@@ -130,9 +138,10 @@ rel_program foldClosed after Programs.prelude where
 
 #guard foldClosed.ok && fibres foldClosed.expanded
 
+open LeetQ.Rel.Programs.prelude in
 /-- Object variables (§e): `uq : α ⟶ β` at `X ⟶ N` and at `N ⟶ X` against the ground copies `uX`, `uN`; and
     `d : α ⟶ α` given `Fm : K ⟶ X×X`, which `α ⟶ α` reads as a family, against `d` of each fibre. -/
-rel_program objVars after Programs.prelude where
+rel_program objVars where
     obj X = {A,B,C}
     obj N = {x,y,z}
     obj K = 0…2
@@ -179,7 +188,8 @@ rel_program objVars after Programs.prelude where
   "s₀ tf(Y(∋), Of) = {((A, A) (B, B) (C, A), (A, [B])), ((A, A) (B, B) (C, A), (B, [A])), " ++
     "((A, A) (B, B) (C, A), (C, [B]))}"]
 
-rel_program printPlan after Programs.blocks where
+open LeetQ.Rel.Programs.prelude Programs.blocks in
+rel_program printPlan where
     print plan
 
 #guard given.ok && table.ok && cycle.ok
@@ -220,13 +230,13 @@ def reach : List St.El := [[(0, 0), (1, 1), (2, 0)], [(0, 0), (1, 2), (2, 0)], [
 
 /-- The program `prog` read after the prelude: its error, if any. -/
 def elabErr (prog : Except Err Program) : Option Err :=
-  match prog >>= (Expand.read (fun _ => false) [(`prelude, Programs.prelude)] ·) with | .error e => some e | .ok _ => none
+  match prog >>= (Expand.read (fun _ => false) [(`LeetQ.Rel.Programs.prelude, Programs.prelude)] ·) with | .error e => some e | .ok _ => none
 
 /-- The statements `src` read after the prelude and `prog` fail at `line` (and `col`, when given) with `what` in the
     message. -/
 def errAt (src : String) (line : Nat) (what : String) (col : Option Nat := none) (prog : Program := []) :
     CM Unit := do
-  let r ← readIn (Parse.after (Parse.scope Programs.prelude) prog) src
+  let r ← readIn (Parse.after (preludeScope) prog) src
   match elabErr (r.map (prog ++ ·)) with
   | some e => unless e.pos.line == line && col.all (· == e.pos.col) && (e.msg.splitOn what).length > 1 do
       throwError "expected an error at line {line} with '{what}', got {e}"
@@ -264,7 +274,7 @@ def errAt (src : String) (line : Nat) (what : String) (col : Option Nat := none)
 
 /-- The term `s` read after the prelude with `R S p e` and the object `X` in scope, printed by `out`. -/
 def parsed (s : String) (out : Expr → String) : CM String := do
-  let sc := Parse.scope Programs.prelude
+  let sc := preludeScope
   match ← readIn { sc with known := [("R", 0), ("S", 0), ("p", 0), ("e", 0)] ++ sc.known, objs := "X" :: sc.objs }
       ("print " ++ s) with
   | .ok [.print _ e] => pure (out e)
@@ -290,9 +300,11 @@ def readsAll (ps : List (String × String)) : CM Unit := ps.forM fun (s, r) => d
 -- and written bare
 #eval readsAll [("prefix", "prefix"), ("suffix prefix", "(suffix prefix)")]
 
+open LeetQ.Rel.Programs.prelude in
+open LeetQ.Rel.Programs.prelude in
 /-- Lean keywords as Rel names in a program, bare: one defined (`do`), one used (`prefix`); a Lean command that starts
     with a keyword (`example`) still ends the program. -/
-rel_program kwNames after Programs.prelude where
+rel_program kwNames where
     do : [α] ⟶ [α] ≜ suffix prefix
 example : True := trivial
 #guard kwNames.ok
@@ -302,7 +314,7 @@ example : True := trivial
 
 /-! The list builtins of §b on arrays built by `Λ` and `cons`, each value as `Algebra.lean`'s guard of the op
     states it: `x` is `a ↦ [3 1 2]`, `b ↦ [1 5]`; `y` is `a ↦ [7]`, `b ↦ [8 9]`; `z` is `a ↦ [3 3 1 2]`. -/
-rel_program lists after Programs.prelude where
+rel_program lists where
     obj N = 0…9
     obj K = {a,b}
     x : K ⟶ [N] ≜ ⟨{(a,3),(b,1)}, Λ({(a,1),(a,2),(b,5)})⟩cons
@@ -354,7 +366,8 @@ rel_program lists after Programs.prelude where
 /-! `at(i)`, positions from `0`, on the arrays `x` above: `at(0) = head`, `tail at(i) = at(i+1)`, and a position
     past every array's end the empty relation. -/
 #eval trips ["at(0)", "at(12)", "R at(2) S"]
-rel_program ats after Programs.prelude where
+open LeetQ.Rel.Programs.prelude in
+rel_program ats where
     obj N = 0…9
     obj K = {a,b}
     x : K ⟶ [N] ≜ ⟨{(a,3),(b,1)}, Λ({(a,1),(a,2),(b,5)})⟩cons
@@ -372,9 +385,10 @@ rel_program ats after Programs.prelude where
 #eval errAt "obj N = 0…9\nf : [N] ⟶ N ≜ at(x)\n" 2 "at( ) takes a position, a number from 0, found 'x'"
 #eval errAt "obj N = 0…9\nf : [N] ⟶ N ≜ at(-1)\n" 2 "at( ) takes a position from 0 that fits a long, found -1"
 
+open LeetQ.Rel.Programs.prelude in
 /-- A list builtin in a lifted body takes the closed row (§e): at each key of a two-key family the fibre of the
     lifted body is the body on the fibre. -/
-rel_program listsLifted after Programs.prelude where
+rel_program listsLifted where
     obj N = 0…9
     obj K = {a,b}
     obj J = {i,j}
@@ -388,9 +402,10 @@ rel_program listsLifted after Programs.prelude where
 
 #guard listsLifted.ok
 
+open LeetQ.Rel.Programs.prelude in
 /-- Orders on demand (§a): each operator runs its order on the pairs it compares, here `R ≜ length ≤ length°` on
     `[N]`, which has no universe; a closed order as before; and `∼R`, tested as the complement of `R`'s test. -/
-rel_program onDemand after Programs.prelude where
+rel_program onDemand where
     obj N = 0…9
     obj K = {a,b}
     L : K ⟶ [[N]] ≜ {(a,[1 2] [3] [8]),(b,[5] [4 6 7] [9])}
@@ -428,7 +443,8 @@ rel_program onDemand after Programs.prelude where
 /-! The kernel's value verbs of §b on pairs of numbers, each `Alg.arith` with its opcode: a result outside the
     declared object has no row (`minus` below `0`, as `succ` at the top), nor a zero divisor. -/
 
-rel_program arith after Programs.prelude where
+open LeetQ.Rel.Programs.prelude in
+rel_program arith where
     obj N = 0…20
     w : N×N ⟶ N×N ≜ {((7,2),(7,2)),((2,7),(2,7)),((7,0),(7,0)),((3,5),(3,5))}
     print w plus
@@ -455,8 +471,9 @@ rel_program arith after Programs.prelude where
 
 #eval trips ["plus", "times", "minus", "div", "mod", "max", "min", "⟨R, S⟩ times", "R mod°"]
 
+open LeetQ.Rel.Programs.prelude in
 /-- A value verb in a lifted body takes the closed row (§e): at each key the fibre is the body on the fibre. -/
-rel_program arithLifted after Programs.prelude where
+rel_program arithLifted where
     obj N = 0…9
     obj K = {a,b}
     obj J = {i,j}
@@ -472,10 +489,11 @@ rel_program arithLifted after Programs.prelude where
 #guard arithLifted.ok
 #guard arithLifted.prints == ["f(R₀) = {(a, 1), (a, 9), (b, 0), (b, 1)}"]
 
+open LeetQ.Rel.Programs.prelude in
 /-- B&dM's digits of a number (`val_converse_eq`): `op°`, the converse of `op(n,d) = 10n+d` on a digit `d`,
     taken from `x` once a round until it reaches `0`, each digit put on the front of the list. The rounds `K`
     hold no number of `N`, so a literal's words name one object (§c). -/
-rel_program digits after Programs.prelude where
+rel_program digits where
     obj N = 0…199
     obj K = 200…203
     ten : N ⟶ N ≜ ⊤(N,N){(10,10)}
@@ -495,7 +513,8 @@ rel_program digits after Programs.prelude where
   "a closed term in a lifted body: [N] has no universe"
 
 -- a nested literal (§c): each leaf position its own object, the side their product
-rel_program nested after Programs.prelude where
+open LeetQ.Rel.Programs.prelude in
+rel_program nested where
     obj X = {A,B}
     obj N = 0…1
     L : X×N ⟶ N×X ≜ {((A,0),(1,B)),((B,1),(0,A))}
@@ -512,7 +531,8 @@ rel_program nested after Programs.prelude where
 #eval errAt "obj X = {A,B}\nf ≜ 𝟙(X)\n" 2 "`f` has no type; it is f : X ⟶ X"
 #eval errAt "obj X = {A,B}\nf(R : X ⟶ X) ≜ R°\n" 2 "`f` has no type; it is f(R : X ⟶ X) : X ⟶ X"
 -- one generic definition at two objects in one program: its variables instantiated at each use
-rel_program generic after Programs.prelude where
+open LeetQ.Rel.Programs.prelude in
+rel_program generic where
     obj X = {A,B}
     obj N = 0…1
     sw : α×β ⟶ β×α ≜ ⟨π₂,π₁⟩
@@ -520,7 +540,8 @@ rel_program generic after Programs.prelude where
     print {((1,B),(1,B))}sw
 #guard printed generic.prints == ["{((A, 0), (0, A))}", "{((1, B), (B, 1))}"]
 -- the declared type determines an object the body leaves open: `nil`'s source and element
-rel_program declNil after Programs.prelude where
+open LeetQ.Rel.Programs.prelude in
+rel_program declNil where
     obj N = 0…3
     e : 1 ⟶ [N] ≜ nil
     print e
@@ -530,11 +551,12 @@ def heads : List String := ["f : X ⟶ X", "g(R : α ⟶ β) : β ⟶ α", "_≼
 def headsSrc : String := "obj X = {A,B}\n" ++
   String.join ((heads.zip ["𝟙", "R°", "R S"]).map fun (h, b) => s!"{h} ≜ {b}\n")
 #eval do
-  match (← readIn (Parse.scope Programs.prelude) headsSrc) >>= fun p => typesOf (some p) with
+  match (← readIn (preludeScope) headsSrc) >>= fun p => typesOf (some p) with
   | .ok ts => unless ts == heads do throwError "the heads print as {ts}"
   | .error e => throwError "{e}"
 -- a `where` item; a test takes no type of its own
-rel_program whereItem after Programs.prelude where
+open LeetQ.Rel.Programs.prelude in
+rel_program whereItem where
     obj B = 0…1
     f : B×B ⟶ B ≜ a where a ≜ π₂
     print {((0,1),(0,1))}f
@@ -544,7 +566,8 @@ rel_program whereItem after Programs.prelude where
 /-! Array literals (§c): two or more items juxtaposed, or `[…]`; an element position is one object over the
     elements of all rows' arrays there, at any depth and on either side; printed as it is read. -/
 
-rel_program arrs after Programs.prelude where
+open LeetQ.Rel.Programs.prelude in
+rel_program arrs where
     obj N = -3…9
     obj K = {a,b}
     x : 1 ⟶ [N] ≜ {(∗,3 1 2)}
@@ -580,7 +603,8 @@ def emptyErr : String := "the object of [] cannot be read off an empty array: wr
 #eval errAt (arrE ++ "e ≜ {(∗,[])}\n") 2 "`e` has no type; it is e : 1 ⟶ [α]"
 -- the context determines it (§c): the other side of a check, the other operand, the declared type, the
 -- composition, the pair
-rel_program arrCtx after Programs.prelude where
+open LeetQ.Rel.Programs.prelude in
+rel_program arrCtx where
     obj N = 0…9
     obj K = {a,b}
     e : 1 ⟶ [N] ≜ nil
@@ -604,7 +628,8 @@ rel_program arrCtx after Programs.prelude where
 #guard arrCtx.ok && printed arrCtx.prints == ["{(∗, [])}", "{(∗, [[]])}"]
 -- words two objects hold: open too, fixed by the context, else the error at the literal
 def twoObjs : String := "obj A = {a,b}\nobj B = {a,c}\n"
-rel_program twoObjsX after Programs.prelude where
+open LeetQ.Rel.Programs.prelude in
+rel_program twoObjsX where
     obj A = {a,b}
     obj B = {a,c}
     x : A ⟶ B ≜ {(a,a)}
@@ -612,7 +637,8 @@ rel_program twoObjsX after Programs.prelude where
 #guard printed twoObjsX.prints == ["{(a, a)}"]
 #eval errAt (twoObjs ++ "print {(a,c)}\n") 3 "the elements [a] are in [B, A]; write the literal after its object" (col := some 7)
 -- a wrong expectation is a failed check, not an object error
-rel_program wrongCheck after Programs.prelude where
+open LeetQ.Rel.Programs.prelude in
+rel_program wrongCheck where
     obj N = 0…9
     x : 1 ⟶ [N] ≜ {(∗,1 2)}
     check x = {(∗,[])}
@@ -627,7 +653,8 @@ rel_program wrongCheck after Programs.prelude where
     lists numbers by value. -/
 
 def zs : List Int := (List.range 7).map fun k : Nat => (k : Int) - 3
-rel_program signed after Programs.prelude where
+open LeetQ.Rel.Programs.prelude in
+rel_program signed where
     obj Z = -3…3
     obj K = {a,b}
     x : K ⟶ Z ≜ {(a,-1),(b,2),(a,-3)} -- a comment, after a signed literal
@@ -670,7 +697,8 @@ def ints (R : Rel .long .long) : List (Int × Int) := R.toList.map fun (a, b) =>
         (f a b).bind fun c => if zs.contains c then some ((a, b), c) else none)
   | none => false
 -- `-5…-1` is a range; `3…-3` is empty, refused at its last number; a word other than a number is no range bound
-rel_program negRange after Programs.prelude where
+open LeetQ.Rel.Programs.prelude in
+rel_program negRange where
     obj Z = -5…-1
     print 𝟙(Z) succ
 #guard negRange.prints == ["𝟙(Z) succ = {(-5, -4), (-4, -3), (-3, -2), (-2, -1)}"]
@@ -693,14 +721,15 @@ def reading : Decl → Option (String × String)
 
 -- a `where` item in place in the body and in the items after it (§c)
 #eval do
-  match ← readIn (Parse.scope Programs.prelude) "obj B = 0…1\nf(S) ≜ b ∪ S where a ≜ π₁, b ≜ a π₂ S\n" with
+  match ← readIn (preludeScope) "obj B = 0…1\nf(S) ≜ b ∪ S where a ≜ π₁, b ≜ a π₂ S\n" with
   | .ok p => unless p.filterMap reading == [("f", "(((π₁ π₂) S) ∪ S)")] do throwError "{p.filterMap reading}"
   | .error e => throwError "{e}"
 
 /-! Terms on an object with no universe (§a): a converse pushed to the leaves, a division tested on the pairs a
     meet supplies, `R×S` as `⟨π₁R,π₂S⟩`; and what is still refused. Expected values by hand. -/
 
-rel_program chs after Programs.prelude where
+open LeetQ.Rel.Programs.prelude in
+rel_program chs where
     obj Ch = {a,b}
     obj N = 0…3
     x : 1 ⟶ [Ch] ≜ {(∗,a b)}
@@ -712,7 +741,8 @@ rel_program chs after Programs.prelude where
 
 
 -- the converse: `(RS)° = S°R°`, `∩`, a pair with one side's converse, `R°° = R`, a coreflexive, `cons° = uncons`
-rel_program chsConv after chs where
+open LeetQ.Rel.Programs.prelude chs in
+rel_program chsConv where
     print x cons° (perm cons°)°
     print x (perm ∩ perm)° cons°
     print x ⟨cons°π₁, perm⟩°° π₂
@@ -725,7 +755,8 @@ rel_program chsConv after chs where
 #eval errAt "print x (cons° ⟨π₁,π₂⟩ cons)°\n" 1 "the converse of π₁ does not run on demand" (prog := chs)
 #eval errAt "print {(∗,a)} ∈\n" 1 "the converse of ∋ does not run on demand" (prog := chs)
 -- a division tested on the pairs: `R/S`, `R\S`, `frac`, `∼`, `−`, each beside a term run on demand
-rel_program chsDiv after chs where
+open LeetQ.Rel.Programs.prelude chs in
+rel_program chsDiv where
     print ⟨{(∗,1)},ns⟩ok
     print ⟨{(∗,3)},ns⟩ok
     print ⟨{(∗,2)},ns⟩ok
@@ -741,7 +772,8 @@ rel_program chsDiv after chs where
 #eval errAt "print {(∗,1)}(≤/∋)\n" 1 "R/S reads its operands whole" (prog := chs)
 #eval errAt "print {(∗,1)}((≤/∋) ∩ (≤/∋))\n" 1 "R/S reads its operands whole" (prog := chs)
 -- `R×S` on demand as `⟨π₁R,π₂S⟩`; closed, as before
-rel_program chsProd after chs where
+open LeetQ.Rel.Programs.prelude chs in
+rel_program chsProd where
     print ⟨{(1,1)},⟨{(1,2)},Λ({(1,1)})⟩⟩(𝟙×π₁)plus
     print y cons°(𝟙×perm)
     print ⟨x,{(∗,b)}⟩(perm×𝟙)
@@ -753,7 +785,8 @@ rel_program chsProd after chs where
 #eval errAt "print ⟨{(∗,a)},{(∗,b)}⟩(∈×𝟙)\n" 1 "[Ch] has no universe" (prog := chs)
 -- `loop(F)` runs `F` on the pairs each round meets: a state that is an array (a copy, a reverse, the
 -- subsequences), and a pair with an array (the copy with its length)
-rel_program chsLoop after chs where
+open LeetQ.Rel.Programs.prelude chs in
+rel_program chsLoop where
     print x ⟨nil,𝟙⟩loop(snoc)
     print y ⟨nil,𝟙⟩loop(⟨π₂,π₁⟩cons)
     print x ⟨nil,𝟙⟩loop(snoc ∪ π₁)
@@ -767,7 +800,8 @@ rel_program chsLoop after chs where
     `sort(Q) = perm ordered(Q)`), on a repeated element, the empty array, two element objects and arrays of arrays;
     the converses; the declared infix operators; the errors. -/
 
-rel_program pre after Programs.prelude where
+open LeetQ.Rel.Programs.prelude in
+rel_program pre where
     obj N = 0…9
     obj K = {a,b,c,d}
     obj Ch = {p,q}
@@ -798,7 +832,8 @@ def is {B : Obj} (gs : List (String × Gen.Gv)) (n : String) (R : Rel .long B) :
 
 -- the converses: `perm° = perm` (the one rule kept for a definition), `ordered(Q)` a coreflexive, and
 -- `sort(Q)° = ordered(Q)° perm°` from them
-rel_program converses after Programs.prelude where
+open LeetQ.Rel.Programs.prelude in
+rel_program converses where
     obj N = 0…9
     x : 1 ⟶ [N] ≜ {(∗,1 2 3)}
     print x perm°
@@ -811,7 +846,8 @@ rel_program converses after Programs.prelude where
 
 -- a declared infix operator: `R + S = ⟨R,S⟩plus`, the prelude's `⇒` and `⊕`, a program's own `_≼_`, each read at
 -- the one level with `∩`, left to right
-rel_program infixes after Programs.prelude where
+open LeetQ.Rel.Programs.prelude in
+rel_program infixes where
     obj N = 0…9
     w : N×N ⟶ N×N ≜ {((2,3),(2,3)),((4,1),(4,1))}
     print w(π₁ + π₂)
@@ -828,7 +864,8 @@ rel_program infixes after Programs.prelude where
    "{(1, 0), (1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8), (1, 9)}", "{(1, inl 1)}"]
 #eval trips ["R ⇒ S", "R ⊕ S", "R + S", "frac(R, S)", "∈", "perm", "ordered(R)", "sort(R)", "cor(R)"]
 -- `cor(R)`: the pairs of `R` as a coreflexive on `A×B`
-rel_program corPairs after Programs.prelude where
+open LeetQ.Rel.Programs.prelude in
+rel_program corPairs where
     obj N = 0…3
     print {((1,2),(1,2)),((2,1),(2,1)),((3,3),(3,3))}cor(≤)
 #guard printed corPairs.prints == ["{((1, 2), (1, 2)), ((3, 3), (3, 3))}"]
@@ -847,7 +884,7 @@ rel_program corPairs after Programs.prelude where
 /-- The text `src` read after the prelude `pre`: its error. -/
 def afterErr (pre src : String) : CM Err := do
   let p ← match ← readIn { cs := #[] } pre with | .ok p => pure p | .error e => throwError "{e}"
-  match (← readIn (Parse.scope p) src) >>= (Expand.read (fun _ => false) [(`pre, p)] ·) with
+  match (← readIn { cs := #[], res := Parse.openAll [(`pre, p)] } src) >>= (Expand.read (fun _ => false) [(`pre, p)] ·) with
   | .error e => pure e
   | .ok _ => throwError "expected an error, got none"
 -- the prelude's line 1 starts after `rel_program t where `, 20 columns
@@ -890,7 +927,8 @@ def afterErr (pre src : String) : CM Err := do
 
 #eval trips ["νZ : R ∩ Z", "(μZ : 𝟙 ∪ (R Z)) S", "R° ∪ (νZ : R ∩ (S \\ (Z R)))", "⟨νZ : R ∩ Z, S⟩"]
 -- `R*`, the least `X` with `𝟙 ∪ RX ⊑ X`, against the closure written out
-rel_program closure after Programs.prelude where
+open LeetQ.Rel.Programs.prelude in
+rel_program closure where
     obj N = 0…4
     R : N ⟶ N ≜ {(0,1),(1,2),(2,3)}
     c : N ⟶ N ≜ μX : 𝟙 ∪ (R X)
@@ -902,7 +940,8 @@ rel_program closure after Programs.prelude where
   ("R S*", "(R (μX' : (𝟙 ∪ (S X'))))"), ("(R X')*", "(μX'' : (𝟙 ∪ ((R X') X'')))")]
 -- `R*` against the hand-written `μ` and its value; `R°*` and `R*°` against its converse; `X`, a name of the
 -- program, is not captured by the `μ` of `(R X)*`
-rel_program star after Programs.prelude where
+open LeetQ.Rel.Programs.prelude in
+rel_program star where
     obj N = 0…4
     R : N ⟶ N ≜ {(0,1),(1,2),(2,3)}
     X : N ⟶ N ≜ {(3,4)}
@@ -917,7 +956,8 @@ rel_program star after Programs.prelude where
 -- `*` is no name
 #eval errAt "obj B = 0…1\n* : B ⟶ B ≜ 𝟙(B)\n" 0 "expected"
 -- the points with an infinite `R`-path: the rounds from `𝟙` written out, which stop changing at the second
-rel_program infPath after Programs.prelude where
+open LeetQ.Rel.Programs.prelude in
+rel_program infPath where
     obj N = 0…5
     R : N ⟶ N ≜ {(0,1),(1,2),(2,0),(3,4)}
     v : N ⟶ N ≜ νX : 𝟙(N) ∩ dom(R X)
@@ -929,7 +969,8 @@ rel_program infPath after Programs.prelude where
     check v = {(0,0),(1,1),(2,2)}
 #guard infPath.ok
 -- arc consistency on `y = x²` with both arcs, `x → y` by `sq` and `y → x` by `sq°`
-rel_program square after Programs.prelude where
+open LeetQ.Rel.Programs.prelude in
+rel_program square where
     obj V = {x,y}
     obj D = 0…9
     A : V ⟶ V ≜ {(x,y)}
@@ -944,7 +985,8 @@ rel_program square after Programs.prelude where
 #guard square.ok
 -- `μ` on an array target, its values duplicate-free lists: the unions of the singletons `s`, which stop growing
 -- once every set of three is reached; against the two levels of union written out
-rel_program muArr after Programs.prelude where
+open LeetQ.Rel.Programs.prelude in
+rel_program muArr where
     obj B = 0…2
     s : B ⟶ [B] ≜ Λ({(0,0)}) ∪ Λ({(0,1)}) ∪ Λ({(0,2)})
     f : B ⟶ [B] ≜ μX : s ∪ (⟨X, X⟩ cat setify)
@@ -955,7 +997,8 @@ rel_program muArr after Programs.prelude where
 #guard muArr.ok
 #guard muArr.prints == ["f = {(0, [0]), (0, 0 1), (0, 0 1 2), (0, 0 2), (0, [1]), (0, 1 2), (0, [2])}"]
 -- a `μ` whose arrays grow every round: no fixed point, so its rounds reach `muCap` and the program reports it
-rel_program muGrow after Programs.prelude where
+open LeetQ.Rel.Programs.prelude in
+rel_program muGrow where
     obj B = 0…1
     r : B ⟶ [B] ≜ {(0,[1])}
     g : B ⟶ [B] ≜ μX : r ∪ (⟨X, r⟩ cat)
@@ -1019,7 +1062,8 @@ def acTraces (gs : List (String × Gen.Gv)) (s uv ud : String) (arcs : List (Str
   | some ⟨_, _, s, U, as⟩ => (deltaTrace as (s.n.toNat + 1) s.nub U, naiveTrace s as U (s.n.toNat + 1) s.nub)
   | none => ([], [])
 
-rel_program sudokuEx after Programs.sudokuac where
+open LeetQ.Rel.Programs.prelude Programs.csp Programs.sudokuac in
+rel_program sudokuEx where
     uV : Cell ⟶ Cell ≜ 𝟙(Cell)
     uD : D ⟶ D ≜ 𝟙(D)
     ne : D ⟶ D ≜ ≠

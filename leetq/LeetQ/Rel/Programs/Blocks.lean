@@ -4,7 +4,8 @@ import LeetQ.Rel.Programs.Prelude
 
 namespace LeetQ.Rel.Programs
 
-rel_program blocks after prelude where
+open LeetQ.Rel.Programs.prelude in
+rel_program blocks where
     obj X = {A,B,C}                               -- the blocks
     obj N = 0…27                                  -- counts: a bound fixed before the search
     obj St = 𝒫(X×X)                               -- a state: the set of its pairs

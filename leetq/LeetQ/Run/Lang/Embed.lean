@@ -210,7 +210,8 @@ def onText {α : Type} (s : Syntax) (t : String) (p : P α) : C α := do
   let q ← posOf s
   let whole : P α := do let a ← p; if (← Parse.peek).isSome then Parse.expected "the end of the token" else pure a
   match whole.run { (← get) with cs := t.toList.toArray, i := 0, line := q.line, col := q.col } with
-  | .ok (a, _) => pure a
+  -- a token's reads leave only the constants they resolved (`used`); the rest is the token's own
+  | .ok (a, t) => do modify ({ · with used := t.used }); pure a
   | .error e => throw e
 
 /-- The source text of a token: an identifier as Lean reads it, a number, a symbol. A name that is a Lean keyword
@@ -470,17 +471,23 @@ def stmt (s : Syntax) : C Decl := do
     modify fun st => { st with known := ps.map (fun q => (q.name, 0)) ++ st.known }
     let on ← if s[3].getNumArgs == 0 then pure none else some <$> expr s[3][1]
     let e ← expr s[5]; let f ← expr s[7]; let eq := atomIn s[6] == "="
-    -- a reason resolves in the program and its chain only: a cross-program name waits for the registry (§3)
+    -- a reason is the program's theorem or definition, else the registry's one the resolver gives
     let steps ← (if s[8].getNumArgs == 0 then #[] else s[8][2].getArgs).toList.mapM fun t => do
       unless t.getKind == ``cStep do failAt t "expected a step `_ = e := n`"
       let q ← posOf t; let x ← expr t[2]; let r ← posOf t[5]; let m ← wordOf t[5]
       let st ← get
-      let isDef := st.known.any (fun k => k.1 == m || k.1 == Parse.infixKey m) && !ps.any (·.name == m)
+      -- a name not the program's is the registry's, through the resolver (§2.3)
+      let own := st.known.any (fun k => k.1 == m || k.1 == Parse.infixKey m) || st.thms.contains m
+      let ex := if own || ps.any (·.name == m) then none else st.ext m
+      if let some e := ex then modify fun st => { st with used := e.const :: st.used }
+      let isDef := (st.known.any (fun k => k.1 == m || k.1 == Parse.infixKey m) && !ps.any (·.name == m)) ||
+        ex.any (fun e => !e.obj && !e.thm)
+      let isThm := st.thms.contains m || ex.any (·.thm)
       let why ← if t[4].getNumArgs == 0 then
-          if st.thms.contains m then pure (Why.thm r m)
+          if isThm then pure (Why.thm r m)
           else failAt t[5] (if isDef then s!"`{m}` is a definition; write `≜ {m}`" else s!"unknown theorem '{m}'")
         else if isDef then pure (Why.unfold r m)
-          else failAt t[5] (if st.thms.contains m then s!"`{m}` is a theorem, not a definition"
+          else failAt t[5] (if isThm then s!"`{m}` is a theorem, not a definition"
             else s!"unknown definition '{m}'")
       if eq && atomIn t[1] != "=" then failAt t s!"`{n}` states `=`: a step `⊑` proves only `⊑`"
       pure (q, atomIn t[1] == "=", x, why)
@@ -520,13 +527,19 @@ def declConst (c : Name) (d : Decl) : CoreM Unit :=
 def resolverAt (env : Environment) (opts : Options) (reg : Expand.Registry) (ns : Name) (opens : List OpenDecl) :
     (String → Found) × (String → Bool) :=
   let id (t : String) : Name := (Parse.parts t).foldl Name.str .anonymous
+  let at_ (ns : Name) (t : String) : List Name := ((ResolveName.resolveGlobalName env opts ns opens (id t)).filterMap
+    fun (c, fs) => if fs.isEmpty then some c else none).eraseDups
+  -- Lean's resolution from the namespace `ns` outwards, where a constant that is no Rel definition shadows nothing:
+  -- the first namespace level whose resolution has Rel definitions gives them
+  let levels := (ns.components.length + 1 |> List.range).map fun k => ns.components.take (ns.components.length - k)
   (fun t =>
-    let cs := ((ResolveName.resolveGlobalName env opts ns opens (id t)).filterMap fun (c, fs) =>
-      if fs.isEmpty then some c else none).eraseDups
-    match cs.filterMap (reg.exts[·]?) with
-    | [(e, _)] => .ext e
-    | [] => if cs.isEmpty then .none else .bad false s!"`{t}` is not a Rel definition: Lean resolves it to {cs}"
-    | es => .bad true s!"ambiguous name `{t}`: it is {es.map (·.1.const)}",
+    let es := (levels.map fun c => (at_ (c.foldl (· ++ ·) .anonymous) t).filterMap (reg.exts[·]?)).find? (!·.isEmpty)
+    match es with
+    | some [(e, _)] => .ext e
+    | some es => .bad true s!"ambiguous name `{t}`: it is {es.map (·.1.const)}"
+    | none => match at_ ns t with
+      | [] => .none
+      | cs => .bad false s!"`{t}` is not a Rel definition: Lean resolves it to {cs}",
    fun t => !(ResolveName.resolveNamespace env ns opens (id t)).isEmpty)
 
 /-- The scope of a program read here: the current namespace and `open`s. -/

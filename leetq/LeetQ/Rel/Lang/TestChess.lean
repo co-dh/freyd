@@ -41,7 +41,8 @@ def fibre (n : String) : Option (Rel .long .long) :=
 
 /-! Mate in one, each against the value its check states. -/
 
-rel_program printM after Programs.chess where
+open LeetQ.Rel.Programs.prelude Programs.chess in
+rel_program printM where
     print m
 
 -- W Kg1 Ra7 Rb1, B Ke8: Rb1-b8 mates; the program's own board, run as written: its `check m = …` holds and it
