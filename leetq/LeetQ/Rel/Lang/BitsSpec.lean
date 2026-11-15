@@ -268,16 +268,18 @@ theorem offsOf_seg (na : Nat) (i : ByteArray) (hs : (ids i).Pairwise (· ≤ ·)
   simp only [segRange, h0, h1, Nat.max_eq_right hmono]
   exact seg_iff hs a k
 
-/-- **`≫` as bits** (`rep_comp`'s side, `rep_tableC`): from `R`'s code pairs `i`, `j` (`i` ascending, `R` read off
-    them) and `S`'s matrix, `bitRowsOver`'s `∨` of `S`'s rows holds `TP.comp`'s relation. -/
-theorem rep_compB {R : TP A B} {S : TP B C} {uc : Nat → C.El} (na : Nat) (i j : ByteArray) {s : Bits}
-    (hs : s.Enc ub uc S.den) (hl : len j = len i) (hsort : (ids i).Pairwise (· ≤ ·))
+/-- **The rows of `S` folded over `R`'s segments**: from `r`'s code pairs `i`, `j` (`i` ascending, `r` read off them)
+    and `t`'s matrix, `bitRowsOver`'s `∨` (`all = false`) holds `r t`, its `∧` (`all = true`) holds `r\t`'s
+    `∀` clause; an empty segment answers `false`, resp. `true`. -/
+theorem enc_rows {r : A.El → B.El → Prop} {t : B.El → C.El → Prop} {uc : Nat → C.El} (all : Bool) (na : Nat)
+    (i j : ByteArray) {s : Bits} (hs : s.Enc ub uc t) (hl : len j = len i) (hsort : (ids i).Pairwise (· ≤ ·))
     (hJ : ∀ b ∈ ids j, b < s.na)
-    (hR : ∀ a < na, ∀ y, R.den (ua a) y ↔
+    (hR : ∀ a < na, ∀ y, r (ua a) y ↔
       ∃ (k : Nat) (hk : k < (ids i).length) (hk' : k < (ids j).length), (ids i)[k]'hk = a ∧ ub ((ids j)[k]'hk') = y)
     (hna : na ≤ 2 ^ 27) (hfit : s.na * s.w ≤ 2 ^ 27) (hsw : s.w ≤ 2 ^ 27)
     (hm : len i < min (2 ^ 63) USize.size) :
-    (Bits.comp na i j s).Enc ua uc (TP.comp R S).den := by
+    (⟨na, s.w, bitRowsOver all s.w.toUSize (offsOf na i) j s.b⟩ : Bits).Enc ua uc
+      fun a c => if all then ∀ y, r a y → t y c else ∃ y, r a y ∧ t y c := by
   intro a ha c hc
   change a < na at ha
   change c < s.w at hc
@@ -285,27 +287,52 @@ theorem rep_compB {R : TP A B} {S : TP B C} {uc : Nat → C.El} (na : Nat) (i j 
   have hW : s.w.toUSize.toNat = s.w := toUSize_fit hsw
   obtain ⟨hsz, hseg⟩ := offsOf_seg na i hsort hna hm
   have hj8 : j.size / 8 = len i := by rw [← hl, len_eq_ids, ids, List.length_map, List.length_range]
-  have e := bitRowsOver_spec false s.w.toUSize (offsOf na i) j s.b a c (segRange (offsOf na i) (j.size / 8) a).1
+  have e := bitRowsOver_spec all s.w.toUSize (offsOf na i) j s.b a c (segRange (offsOf na i) (j.size / 8) a).1
     (segRange (offsOf na i) (j.size / 8) a).2 (by omega) (by omega) rfl
   rw [hW, hj8] at e
-  show Column.bitAt (bitRowsOver false s.w.toUSize (offsOf na i) j s.b) (a * s.w + c) = true ↔
-    ∃ y, R.den (ua a) y ∧ S.den y (uc c)
-  rw [e, if_neg (by decide)]
   have hJl : (ids j).length = (ids i).length := by rw [← len_eq_ids, ← len_eq_ids, hl]
-  constructor
-  · rintro ⟨k, h1, h2, hb⟩
-    obtain ⟨hk, hka⟩ := (hseg a ha k).1 ⟨h1, h2⟩
-    have hk' : k < (ids j).length := by rw [hJl]; exact hk
+  -- position `k` of a segment reads row `j[k]` of `t`
+  have hbit : ∀ k (hk' : k < (ids j).length),
+      Column.bitAt s.b ((atI64 j k).toNatClampNeg * s.w + c) = true ↔ t (ub ((ids j)[k]'hk')) (uc c) := by
+    intro k hk'
     have hb' : (ids j)[k]'hk' < s.na := hJ _ (List.getElem_mem hk')
-    rw [atI64_eq, clamp_toInt64 _ (by rw [ids_get rfl hk']; omega), ids_get rfl hk'] at hb
-    exact ⟨ub ((ids j)[k]'hk'), (hR a ha _).2 ⟨k, hk, hk', hka, rfl⟩, (hs _ hb' c hc).1 hb⟩
-  · rintro ⟨y, hy, hS⟩
-    obtain ⟨k, hk, hk', hka, rfl⟩ := (hR a ha y).1 hy
-    obtain ⟨h1, h2⟩ := (hseg a ha k).2 ⟨hk, hka⟩
-    have hb' : (ids j)[k]'hk' < s.na := hJ _ (List.getElem_mem hk')
-    refine ⟨k, h1, h2, ?_⟩
     rw [atI64_eq, clamp_toInt64 _ (by rw [ids_get rfl hk']; omega), ids_get rfl hk']
-    exact (hs _ hb' c hc).2 hS
+    exact hs _ hb' c hc
+  show Column.bitAt (bitRowsOver all s.w.toUSize (offsOf na i) j s.b) (a * s.w + c) = true ↔
+    if all then ∀ y, r (ua a) y → t y (uc c) else ∃ y, r (ua a) y ∧ t y (uc c)
+  rw [e]
+  cases all
+  · simp only [Bool.false_eq_true, ↓reduceIte]
+    constructor
+    · rintro ⟨k, h1, h2, hb⟩
+      obtain ⟨hk, hka⟩ := (hseg a ha k).1 ⟨h1, h2⟩
+      have hk' : k < (ids j).length := by rw [hJl]; exact hk
+      exact ⟨_, (hR a ha _).2 ⟨k, hk, hk', hka, rfl⟩, (hbit k hk').1 hb⟩
+    · rintro ⟨y, hy, hS⟩
+      obtain ⟨k, hk, hk', hka, rfl⟩ := (hR a ha y).1 hy
+      obtain ⟨h1, h2⟩ := (hseg a ha k).2 ⟨hk, hka⟩
+      exact ⟨k, h1, h2, (hbit k hk').2 hS⟩
+  · simp only [↓reduceIte]
+    constructor
+    · intro h y hy
+      obtain ⟨k, hk, hk', hka, rfl⟩ := (hR a ha y).1 hy
+      obtain ⟨h1, h2⟩ := (hseg a ha k).2 ⟨hk, hka⟩
+      exact (hbit k hk').1 (h k h1 h2)
+    · intro h k h1 h2
+      obtain ⟨hk, hka⟩ := (hseg a ha k).1 ⟨h1, h2⟩
+      have hk' : k < (ids j).length := by rw [hJl]; exact hk
+      exact (hbit k hk').2 (h _ ((hR a ha _).2 ⟨k, hk, hk', hka, rfl⟩))
+
+/-- **`≫` as bits** (`rep_comp`'s side, `rep_tableC`): `enc_rows`' `∨`, which holds `TP.comp`'s relation. -/
+theorem rep_compB {R : TP A B} {S : TP B C} {uc : Nat → C.El} (na : Nat) (i j : ByteArray) {s : Bits}
+    (hs : s.Enc ub uc S.den) (hl : len j = len i) (hsort : (ids i).Pairwise (· ≤ ·))
+    (hJ : ∀ b ∈ ids j, b < s.na)
+    (hR : ∀ a < na, ∀ y, R.den (ua a) y ↔
+      ∃ (k : Nat) (hk : k < (ids i).length) (hk' : k < (ids j).length), (ids i)[k]'hk = a ∧ ub ((ids j)[k]'hk') = y)
+    (hna : na ≤ 2 ^ 27) (hfit : s.na * s.w ≤ 2 ^ 27) (hsw : s.w ≤ 2 ^ 27)
+    (hm : len i < min (2 ^ 63) USize.size) :
+    (Bits.comp na i j s).Enc ua uc (TP.comp R S).den :=
+  enc_rows false na i j hs hl hsort hJ hR hna hfit hsw hm
 
 #print axioms rep_compB
 
