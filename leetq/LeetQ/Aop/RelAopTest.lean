@@ -80,7 +80,7 @@ rel_aop laws
 #check @laws.estMap.aop
 
 -- a bare citation two opened programs declare is ambiguous, and the error names both
-/-- error: line 88, col 20: ambiguous name `estMap`: it is [LeetQ.Rel.Programs.mss.estMap, LeetQ.Rel.Lang.RelAopTest.laws.estMap] -/
+/-- error: line 88, col 20: ambiguous name `estMap`: it is [LeetQ.Rel.Programs.prelude.estMap, LeetQ.Rel.Lang.RelAopTest.laws.estMap] -/
 #guard_msgs in
 open LeetQ.Rel.Programs.prelude Programs.mss laws in
 rel_program lawsAmbiguous where
@@ -90,7 +90,7 @@ rel_program lawsAmbiguous where
 open LeetQ.Rel.Programs.prelude Programs.mss laws in
 /-- A cited law whose hypothesis nothing discharges: `laws.estMap` at `oplus` needs `dom(oplus) = 𝟙`, which no
     hypothesis of `bad` and no theorem of `laws` states. The program-qualified name picks `laws`'s law where
-    `mss` declares an `estMap` too. -/
+    the prelude declares an `estMap` too. -/
 rel_program lawsBad where
     theorem bad : Λ(oplus)est(≥) = oplus := calc
       _ = oplus := laws.estMap(oplus, ≥)

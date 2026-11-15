@@ -1,4 +1,4 @@
-import LeetQ.Aop.RelAop
+import LeetQ.Aop.Prelude
 import LeetQ.Rel.Programs.Mss
 import AOP.A7_7_MSS
 
@@ -38,13 +38,12 @@ rel_aop mss
     NN := relProd (⟨Int⟩ : RelSet.{0}) ⟨Int⟩, Nα := relProd (⟨Int⟩ : RelSet.{0}) (P ⟨Int⟩),
     NNα := relProd (⟨Int⟩ : RelSet.{0}) Nα.p, L : Coproduct ((F Unit Int).obj Nα.p) (dL Unit) NNα.p := sumCop _ _
   proof
-    absorption := (by rw [Λ_absorption, Cat.assoc]),                                  -- Λ(S)E(R) = Λ(S R)
-    Eunion := (by rw [Cat.assoc]; exact congrArg (_ ≫ ·) (existsImage_eq_Λ_bigUnion _)),  -- E(R) = E(Λ(R))E(∋)
+    zeroEntire := (graph_map _).1,
+    zeroSimple := (graph_map _).2,
+    geqRefl := MSS.geq_refl,
     estUnion := (by simp only [Cat.assoc]; exact MSS.mss_shape_step4),                 -- no prefix set is empty
-    Ecomp := (by rw [Cat.assoc, existsImage_comp]),                                    -- E(R S) = E(R)E(S)
     greedyFold := (by                                                                  -- Λ(⦇S⦈)est(≥) = ⦇Λ(S)est(≥)⦈
       have h := MSS.mss_greedy_eq; simp only [MSS.mss_step1, cataR_eq_relCata] at h; rw [top_zero]; exact h),
-    estMap := Λ_map_comp_est (graph_map _) MSS.geq_refl,                               -- Λ(f)est(R) = f
     toFused := (by
       calc shape
           = (suffix%∋ ≫ existsImage ((«prefix» ≫ ListRel.sum)%∋ ≫ est(MSS.geq))) ≫ est(MSS.geq) := rfl  -- ≜ shape
@@ -68,12 +67,9 @@ rel_aop mss
           show _ = Programs.mss.scan.aop
           delta Programs.mss.scan.aop Programs.mss.oplus.aop; rw [top_zero, ← k_eq]; rfl)
 
-#print axioms Programs.mss.absorption.aop
-#print axioms Programs.mss.Eunion.aop
+#print axioms Programs.mss.zeroEntire.aop
 #print axioms Programs.mss.estUnion.aop
-#print axioms Programs.mss.Ecomp.aop
 #print axioms Programs.mss.greedyFold.aop
-#print axioms Programs.mss.estMap.aop
 #print axioms Programs.mss.toShape.aop
 #print axioms Programs.mss.toFused.aop
 #print axioms Programs.mss.toGreedy.aop

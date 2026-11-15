@@ -40,6 +40,14 @@ rel_program prelude where
     ordered(Q : α ⟶ α) : [α] ⟶ [α] ≜ 𝟙 − dom(tails ∋ ⟨at(0),tail⟩(π₁∼Q ∩ (π₂∋)))   -- every element is Q-related to each later one
     sort(Q : α ⟶ α) : [α] ⟶ [α] ≜ perm ordered(Q)
 
+    -- Laws of any relation, proved by `rel_aop prelude` (LeetQ/Aop/Prelude.lean); a map is `dom(f) = 𝟙` and `simple(f)`.
+
+    simple(f : α ⟶ β) ≜ f°f ⊑ 𝟙                                   -- f relates each input to at most one output
+    theorem absorption(S : α ⟶ β, R : β ⟶ γ) : Λ(S)E(R) = Λ(S R)  -- B&dM (4.24) Λ-absorption
+    theorem Eunion(R : α ⟶ β) : E(R) = E(Λ(R))E(∋)                 -- E(R) is the union of the images of Λ(R)
+    theorem Ecomp(R : α ⟶ β, S : β ⟶ γ) : E(R S) = E(R)E(S)        -- E is a functor
+    theorem estMap(f : α ⟶ β, R : β ⟶ β) if dom(f) = 𝟙, simple(f), 𝟙 ⊑ R : Λ(f)est(R) = f  -- a singleton's R-extreme is itself
+
 end LeetQ.Rel.Programs
 
 namespace LeetQ.Rel.Lang
