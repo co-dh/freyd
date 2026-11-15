@@ -1,4 +1,4 @@
-import LeetQ.Rel.Programs.Prelude
+import LeetQ.Rel.Programs.CSP
 
 /-! # Sudoku path consistency (AIMA §6.2.3), 9×9
 
@@ -9,7 +9,7 @@ and `π₁\` another. -/
 
 namespace LeetQ.Rel.Programs
 
-rel_program sudokupc9 after prelude where
+rel_program sudokupc9 after csp where
     obj Cell = 0…80                               -- the cell in row r, column k is 9r+k
     obj Unit = 0…26                               -- rows 0…8, columns 9…17, boxes 18…26
     obj D = 1…9
@@ -18,7 +18,6 @@ rel_program sudokupc9 after prelude where
     g : Cell ⟶ D ≜ {(0,4),(6,8),(8,5),(10,3),(21,7),(28,2),(34,6),(40,8),(42,4),(49,1),(57,6),(59,3),(61,7),(63,5),(66,2),(72,1),(74,4)}
 
     peer : Cell ⟶ Cell ≜ (unit unit°) ∩ ≠
-    AC3(A : α ⟶ α, C : β ⟶ β, s : α ⟶ β) : α ⟶ β ≜ νX : s ∩ (A\(X C))
     s₀ : Cell ⟶ D ≜ g°\𝟙(D)
     s : Cell ⟶ D ≜ AC3(peer, ≠, s₀)
 

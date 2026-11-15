@@ -352,4 +352,6 @@ csp.AC3 : (α β : Obj) → (Uα : CRel α α) → (Uβ : CRel β β)
 | K | native(`precompileModules`)单独做(rel-140b),不并进这项工作                                                 |
 | L | `Tm` 的 index 允许 object variable,并加一个调用叶子(数据结构改动,已批准)                                   |
 | M | 需要 key 的实参(`d = true`)和 family 实参报错;constant 只收 closed 关系                                      |
+|   | 第 5 步之前的例外:family 实参、或 object variable 不是声明过的 object 时,这次使用展开 body,记进 `n.notCalled`(被调的 constant、位置、原因) |
+|   | 第 5 步之前的例外:body 做不成 constant 的定义(type variable 上的算术、复合 object 的 universe)在每次使用处展开,记进 `n.notOnce`;第 5 步让两张表都空,之后两者都报错 |
 | N | object 是 "`Obj` 加 universe" 的一个 structure,每个 type variable 收一个这样的值(数据结构改动,已批准)       |

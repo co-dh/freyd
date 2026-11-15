@@ -108,8 +108,73 @@ abbrev Top := ((A : Obj) × (B : Obj) × Tm A B false) × OTy × OTy
 /-- A `check`: where, both sides' texts, `=` (else `⊑`), the objects as named, both sides at one type. -/
 abbrev Chk := Pos × String × String × Bool × OTy × OTy × ((A : Obj) × (B : Obj) × Tm A B false × Tm A B false)
 
-/-- What a program reads: its closed definitions, its prints (text and term), its checks, its objects. -/
-abbrev Read := List (String × Res) × List (String × Top) × List Chk × Objs
+/-- A definition elaborated once (`once`): its name, its count `n` of object variables (whose universes are the
+    variables `0 … n-1`), its parameters' objects (the variables from `n` on), its body. -/
+abbrev Once := String × Nat × List (Obj × Obj) × Res
+
+/-- What a program reads: its closed definitions, its prints (text and term), its checks, its objects, and its
+    definitions elaborated once. -/
+abbrev Read := List (String × Res) × List (String × Top) × List Chk × Objs × List Once × List (String × String) ×
+  List (String × String)
+
+/-- The object variables of a definition, in order, each once: its parameters' then its type's. -/
+def varsOf (qs : List Param) (ty : OExp × OExp) : List String :=
+  (qs.flatMap (fun P => match P.ty with | some (x, y) => x.vars ++ y.vars | none => []) ++ ty.1.vars ++ ty.2.vars).eraseDups
+
+/-- `n(qs) ≜ e : ty` built once, its object variables `vs` rigid: each an object of its own whose universe is the
+    variable of its place, each parameter the variable after them (`Once`). A body that does not build so (it
+    needs keys, or a universe of an object made of variables) is an error, which names `n`. -/
+def once (env : Env) (p : Pos) (n : String) (qs : List Param) (e : Expr) (ty : OExp × OExp) (vs : List String) :
+    Except Err (Once × List (String × String)) := do
+  let nv := vs.length
+  let objs := vs.zipIdx.map (fun (v, k) => (v, ({ ty := .base v, uniVar := some k } : ObjInfo))) ++ env.objs
+  let rigid := vs.map fun v => (v, OTy.base v)
+  let ((r, os), st) ← (do
+    let mut params : List (String × Arg) := []
+    let mut os : List (Obj × Obj) := []
+    for (P, j) in qs.zipIdx do
+      let some (x, y) := P.ty | throw ⟨p, s!"parameter '{P.name}' declares no type"⟩
+      let s ← oty env rigid x; let t ← oty env rigid y
+      params := params ++ [(P.name, .rel (.var p (nv + j) s t) s t)]
+      os := os ++ [(← objOf p s, ← objOf p t)]
+    let env' := { env with objs, params }
+    let r ← elabE env' none e
+    let (q, s, t) := r.plain
+    declared env' p n rigid ty s t
+    settleNil p q
+    pure (r, os) : M (Arg × List (Obj × Obj))).run { fixes := nv + qs.length }
+  -- a body that needs keys is read on its source's universe, a variable's when the source is one, as a top-level
+  -- term is (`top`): the constant returns a closed relation (decision M)
+  let (q, s, _) := r.plain
+  match ← build objs st p (.close p q s s!"`{n}` is elaborated once, to a constant returning a closed relation") with
+  | ⟨A, B, false, t⟩ => pure ((n, nv, os, ⟨A, B, false, t⟩), st.expanded)
+  | _ => throw ⟨p, s!"internal: `{n}` closed still needs keys"⟩
+
+/-- `n` elaborated once to the constant `c` (`once`), its object variables `vs`, declared `ty`: each use is the
+    call `c(…)` (`Pre.call`); the expansion `d` gives its type and is what the analyses read. A family argument is
+    refused here, a non-declared object or an argument that needs keys at `build` (decision M). -/
+def callDef (env : Env) (qs : List Param) (ty : OExp × OExp) (vs : List String) (c : Lean.Name) (d : Def) : Def :=
+  { d with apply := fun p as => do
+      let r ← d.apply p as
+      let (bs, m) ← (qs.zip as).foldlM (fun (bs, m) (P, a) => do
+        let (b, j, m) ← bind env p P a m; pure (bs ++ [(P, b.2, j)], m)) (([], []) : List (Param × Arg × Option OTy) × List (String × OTy))
+      -- a use the constant cannot take expands the body, recorded (decision M, until step 5)
+      let expand (why : String) : M Arg := do
+        modify fun st => { st with expanded := st.expanded ++ [(c.toString, s!"{p}: {why}")] }; pure r
+      if let some (P, _) := bs.find? (·.2.2.isSome) then return ← expand s!"'{P.name}' is given a family"
+      let .rel q s t := r | throw ⟨p, s!"internal: `{c}` given relations is a family"⟩
+      -- a variable only the declared result names is fixed by the result's type, as `declared` fixes it
+      let m ← vs.foldlM (fun m v => do if (m.lookup v).isSome then pure m else return (v, ← fresh) :: m) m
+      unify p "" s (← oty env m ty.1); unify p "" t (← oty env m ty.2)
+      let some us := vs.mapM (m.lookup ·) | throw ⟨p, s!"internal: `{c}` has an object variable no type names"⟩
+      -- an object made of others is no declared object; one still open is checked at `build`
+      let st ← get
+      if let some u := us.find? (fun u => match zonk st u with | .base _ | .mv _ => false | _ => true) then
+        return ← expand s!"an object variable is {zonk st u}, not a declared object"
+      -- an argument that needs keys (`≠`) is read on its source's universe, as a top-level term is (`top`); the
+      -- universe is looked up at `build`, in the objects of the program making the call, not of the one defining `n`
+      let why := s!"`{c}` takes only closed relations (decision M)"
+      pure (.rel (.call p c us (bs.map fun (_, b, _) => let (x, a, _) := b.plain; Pre.close p x a why) q s t) s t) }
 
 /-- A top-level term, `r` its elaboration `e` with the objects `st`: closed on its source's universe when it needs
     keys, refused where that object has none. -/
@@ -122,10 +187,16 @@ def top (env : Env) (st : St) (p : Pos) (e : Expr) (r : Arg) : Except Err Top :=
 
 /-- The declarations of `prog`, in order, from the environment `env`: each closed definition (no keys) with its
     core term, each `print` and `check` with its terms; nothing evaluated: a definition is in scope as its built
-    term. -/
-def walk (prog : Program) (env : Env) (wrap : String → Def → Def) :
-    Except Err (Env × List (String × Res) × List (String × Top) × List Chk) := do
+    term. A parametric definition is called where `calls` holds its constant `own.x`; else, when `emitting`, it is
+    built once for `emit` (`once`), and expanded at each use here, where its constant does not exist yet. -/
+def walk (prog : Program) (env : Env) (wrap : String → Def → Def) (own : Lean.Name) (calls : Lean.Name → Bool)
+    (emitting : Bool) :
+    Except Err (Env × List (String × Res) × List (String × Top) × List Chk × List Once × List (String × String) ×
+      List (String × String)) := do
   let mut env := env
+  let mut os : List Once := []
+  let mut xs : List (String × String) := []
+  let mut ex : List (String × String) := []
   let mut ds : List (String × Res) := []
   let mut pr : List (String × Top) := []
   let mut cs : List Chk := []
@@ -143,6 +214,7 @@ def walk (prog : Program) (env : Env) (wrap : String → Def → Def) :
           if let some ty := ty then let (_, s, t) := r.plain; declared env p n rigid ty s t
           settleNil p r.plain.1
           pure r).run {}
+        ex := ex ++ st.expanded
         let (q, s, t) := r.plain
         let s := zonk st s; let t := zonk st t
         let each := wrap n (mkDef env n p [] (.rel e) ty)
@@ -154,9 +226,24 @@ def walk (prog : Program) (env : Env) (wrap : String → Def → Def) :
           | .error e, .error _ => throw e
         env := { env with defs := (n, wrap n { arity := 0, apply := fun _ _ => pure (.rel (.tm res) s t) }) :: env.defs }
         if !dm then ds := ds ++ [(n, res)]
-      | qs, b, ty => env := { env with defs := (n, wrap n (mkDef env n p qs b ty)) :: env.defs }
+      | qs, b, ty =>
+        let d := mkDef env n p qs b ty
+        match b, ty with
+        | .rel e, some ty =>
+          let vs := varsOf qs ty
+          let c := own ++ Lean.Name.mkSimple n
+          if calls c then env := { env with defs := (n, wrap n (callDef env qs ty vs c d)) :: env.defs }; continue
+          if emitting then
+            -- a body the spike cannot make a constant (arithmetic or a universe on an object variable: step 5) stays
+            -- expanded at each use, as before; the reason is kept, emitted as `n.notOnce`
+            match once env p n qs e ty vs with
+            | .ok (o, e) => os := os ++ [o]; ex := ex ++ e
+            | .error e => xs := xs ++ [(n, s!"{e.pos}: {e.msg}")]
+        | _, _ => pure ()
+        env := { env with defs := (n, wrap n d) :: env.defs }
     | .print p e =>
       let (r, st) ← (do let r ← elabE env none e; settleNil p r.plain.1; pure r).run {}
+      ex := ex ++ st.expanded
       pr := pr ++ [(e.show, ← top env st p e r)]
     | .check p e f eq =>
       -- the two sides elaborated together, one type: an object one side leaves open is the other's (§c)
@@ -168,25 +255,28 @@ def walk (prog : Program) (env : Env) (wrap : String → Def → Def) :
         catch _ => throw ⟨p, s!"check: the sides have types {zonk st s} ⟶ {zonk st t} and {zonk st s'} ⟶ {zonk st t'}"⟩
         settleNil p r.plain.1; settleNil p r'.plain.1
         pure (r, r') : M (Arg × Arg)).run {}
+      ex := ex ++ st.expanded
       let (⟨A, B, R⟩, s, t) ← top env st p e r
       let (⟨A', B', S⟩, s', t') ← top env st p f r'
       if h : A' = A ∧ B' = B then cs := cs ++ [(p, e.show, f.show, eq, s, t, ⟨A, B, R, h.1 ▸ h.2 ▸ S⟩)]
       else throw ⟨p, s!"check: the sides have types {s} ⟶ {t} and {s'} ⟶ {t'}"⟩
-  pure (env, ds, pr, cs)
+  pure (env, ds, pr, cs, os, xs, ex)
 
-/-- What `prog` declares, read after the prelude `pre` and the programs `mid` (whose own prints and checks are not
-    `prog`'s); a program with no prelude is one (`rel_program prelude`), its definitions seen as a prelude's
-    (`preludeDef`). -/
-def read (pre : Option Program) (mid prog : Program) : Except Err Read := do
+/-- What the program `own` declares, `prog`, read after the programs of `chain`, each with its constant, root
+    first: the prelude, then the programs between (whose own prints and checks are not `prog`'s); a program with
+    no chain is the prelude (`rel_program prelude`), its definitions seen as a prelude's (`preludeDef`). A
+    definition of the chain whose constant `calls` holds is called, not expanded. -/
+def read (calls : Lean.Name → Bool) (chain : List (Lean.Name × Program)) (prog : Program) (own : Lean.Name := .anonymous) :
+    Except Err Read := do
   let keep : String → Def → Def := fun _ d => d
   let mut env : Env := {}
   let mut wrap := preludeDef
-  if let some p := pre then
-    env := (← (walk p {} preludeDef).mapError Err.inPrelude).1
+  if let (r, rp) :: mid := chain then
+    env := (← (walk rp {} preludeDef r calls false).mapError Err.inPrelude).1
     wrap := keep
-  env := (← walk mid env keep).1
-  let (e, ds, ps, cs) ← walk prog env wrap
-  pure (ds, ps, cs, e.objs)
+    for (m, mp) in mid do env := (← walk mp env keep m calls false).1
+  let (e, ds, ps, cs, os, xs, ex) ← walk prog env wrap own calls true
+  pure (ds, ps, cs, e.objs, os, xs, ex)
 
 /-! ### The core term as an `Expr` -/
 
@@ -201,7 +291,7 @@ deriving instance ToExpr for OTy
 def fv : {A B : Obj} → {d : Bool} → Tm A B d → List Nat
   | _, _, _, .top V => fv V
   | _, _, _, .comp R S | _, _, _, .meet R S | _, _, _, .join R S | _, _, _, .diff R S => fv R ++ fv S
-  | _, _, _, .pair R S | _, _, _, .prod R S | _, _, _, .junc R S => fv R ++ fv S
+  | _, _, _, .pair R S | _, _, _, .prod R S | _, _, _, .junc R S | _, _, _, .arg R S => fv R ++ fv S
   | _, _, _, .conv R | _, _, _, .dom R | _, _, _, .ran R | _, _, _, .lam R | _, _, _, .E R | _, _, _, .map R => fv R
   | _, _, _, .est R | _, _, _, .thin R | _, _, _, .own R | _, _, _, .thinL R | _, _, _, .merge R => fv R
   | _, _, _, .loop R | _, _, _, .flat R => fv R
@@ -246,28 +336,33 @@ def number : {A B : Obj} → {d : Bool} → Tm A B d → StateM Nat (Tm A B d)
   | _, _, _, .flat R => do w (.flat (← number R))
   | _, _, _, .nu k S b => do w (.nu k (← number S) (← number b))
   | _, _, _, .mu k U V b => do w (.mu k (← number U) (← number V) (← number b))
+  | _, _, _, .arg f x => do w (.arg (← number f) (← number x))
   | _, _, _, t => w t
 where w {A B : Obj} {d : Bool} (t : Tm A B d) : StateM Nat (Tm A B d) :=
   if closed t then modifyGet fun k => (.share k t, k + 1) else pure t
 
-/-- `X C`, `X` the variable `k`, `C` closed: `C`. -/
+/-- `t` needs no keys and does not read the variable `k`: fixed across the rounds of `k`'s fixed point, though it
+    may read a parameter of a definition elaborated once or an enclosing fixed point's variable. -/
+def free (k : Nat) {A B : Obj} {d : Bool} (t : Tm A B d) : Bool := !d && !(fv t).contains k
+
+/-- `X C`, `X` the variable `k`, `C` free of it: `C`. -/
 def varComp (k : Nat) : {A B : Obj} → {d : Bool} → Tm A B d → Option ((D : Obj) × Tm D B false)
-  | _, _, _, .comp (B := D) (e := false) (.var k') C => if k' == k && closed C then some ⟨D, C⟩ else none
+  | _, _, _, .comp (B := D) (e := false) (.var k') C => if k' == k && free k C then some ⟨D, C⟩ else none
   | _, _, _, .share _ R => varComp k R
   | _, _, _, _ => none
 
-/-- The arcs of an AC-3 body `S ∩ ⋂ₖ Aₖ\(X Cₖ)` over the variable `k`, its closed conjuncts skipped (they are
-    `S`); `none` for any other body. -/
+/-- The arcs of an AC-3 body `S ∩ ⋂ₖ Aₖ\(X Cₖ)` over the variable `k`, its conjuncts free of `k` skipped (they
+    are `S`); `none` for any other body. -/
 def arcs (k : Nat) : {V D : Obj} → {d : Bool} → Tm V D d →
     Option (List (Tm V V false × Tm D D false × Tm V V false × Tm D D false))
   | _, _, _, .share _ R => arcs k R
   | _, _, _, .meet R S => return (← arcs k R) ++ (← arcs k S)
   | V, D, _, .ldiv (A := V') R S UB UC =>
-    if closed R && closed S && closed UB && closed UC then some [] else do
+    if free k R && free k S && free k UB && free k UC then some [] else do
     let ⟨D', C⟩ ← varComp k S
-    unless closed R && closed UB && closed UC do none
+    unless free k R && free k UB && free k UC do none
     if h : V' = V ∧ D' = D then some [(h.1 ▸ R, h.2 ▸ C, UB, UC)] else none
-  | _, _, _, t => if closed t then some [] else none
+  | _, _, _, t => if free k t then some [] else none
 
 /-- The constant of each closed value, and the code of each numbered sub-term (`number`). -/
 abbrev RM := StateT (Std.HashMap Lean.Expr Name × Std.HashMap Nat Lean.Expr) MetaM
@@ -364,6 +459,13 @@ partial def planOr (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : 
   | some p => pure p
   | none => pure (g ``Gen.pleaf #[oE A, oE B, bE d, ← code pre ρ t])
 
+/-- A call's head and its arguments before the last, applied: a partial application is never a constant. -/
+partial def spine (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} : Tm A B false → RM Lean.Expr
+  | .share _ f => spine pre ρ f
+  | .arg f x => return mkApp (← spine pre ρ f) (← code pre ρ x)
+  | .call c => return mkConst c
+  | t => node pre ρ t
+
 /-- `φ`'s body as `fun X : CRel A B => …`, the variable `k` read as `X`. -/
 partial def body (pre : Name) (ρ : List (Nat × Lean.Expr)) (A B : Obj) (k : Nat) (b : Tm A B false) : RM Lean.Expr :=
   withLocalDeclD `X (mkApp2 (mkConst ``CRel) (oE A) (oE B)) fun x => do
@@ -450,6 +552,8 @@ partial def node (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bo
       return g ``Gen.nuAC #[oE A, oE B, ← c S, ← arc a, ← mkListLit arcTy (← as.mapM arc)]
     | _ => return g ``Gen.nu #[oE A, oE B, ← c S, ← body pre ρ A B k b]
   | A, B, _, .mu k UA UB b => return g ``Gen.mu #[oE A, oE B, ← c UA, ← c UB, ← body pre ρ A B k b]
+  | _, _, _, .call c => return mkConst c
+  | _, _, _, t@(.arg ..) => spine pre ρ t
 
 end
 
@@ -544,6 +648,36 @@ partial def prfNode (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d :
 
 end
 
+/-- `k` under one local of each type `tys`, closed over them: `(∀ xs, ty, fun xs => v)` of `k`'s `(ty, v)`. -/
+def lams (tys : List Lean.Expr) (k : Array Lean.Expr → PM (Lean.Expr × Lean.Expr)) (xs : Array Lean.Expr := #[]) :
+    PM (Lean.Expr × Lean.Expr) :=
+  match tys with
+  | [] => do let (t, v) ← k xs; pure (← mkForallFVars xs t, ← mkLambdaFVars xs v)
+  | ty :: tys => withLocalDeclD `x ty fun x => lams tys k (xs.push x)
+
+/-- An entry of the registry: a definition's constant (`once`), or a program's chain, the programs it is read
+    after, root first. -/
+inductive RegEntry
+  | call (c : Name)
+  | chain (n : Name) (ns : List Name)
+  deriving Inhabited
+
+/-- The registry, written only by `rel_program`: the constants a program read after the program of one may call
+    (`walk`), and each program's chain (`read`). -/
+structure Registry where
+  calls : List Name := []
+  chains : List (Name × List Name) := []
+  deriving Inhabited
+
+def Registry.add (r : Registry) : RegEntry → Registry
+  | .call c => { r with calls := c :: r.calls }
+  | .chain n ns => { r with chains := (n, ns) :: r.chains }
+
+initialize relRegistry : SimplePersistentEnvExtension RegEntry Registry ←
+  registerSimplePersistentEnvExtension {
+    addEntryFn := Registry.add
+    addImportedFn := fun ess => ess.foldl (fun r es => es.foldl Registry.add r) {} }
+
 def pairT (a b : Lean.Expr) : Lean.Expr := mkApp2 (mkConst ``Prod [0, 0]) a b
 def listT (a : Lean.Expr) : Lean.Expr := mkApp (mkConst ``List [0]) a
 
@@ -558,18 +692,29 @@ def objsE (objs : Objs) : MetaM Lean.Expr := do
     (each `print`'s line and ok bit), `n.prints` (the lines), `n.failures` (`failures`: each `check` that does not
     hold, and an op out of capacity) and `n.ok`, that there is none. -/
 def emit (n : Name) (r : Read) : MetaM Unit := do
-  let (ds, ps, cs, objs) := r
+  let (ds, ps, cs, objs, os, xs, ex) := r
   -- one numbering over the whole program, as the code of each number is kept across it
-  let (ds, ps, cs) := Prod.fst <| (do
+  let ((ds, ps, cs), fs) := Prod.fst <| (do
+    let fs ← os.mapM fun (x, nv, qs, ⟨A, B, d, t⟩) => return (x, nv, qs, (⟨A, B, d, ← number t⟩ : Res))
     let ds ← ds.mapM fun (x, ⟨A, B, d, t⟩) => return (x, ⟨A, B, d, ← number t⟩)
     let ps ← ps.mapM fun (x, ⟨A, B, t⟩, s, u) => return (x, ⟨A, B, ← number t⟩, s, u)
     let cs ← cs.mapM fun (p, x, y, eq, s, u, ⟨A, B, R, S⟩) =>
       return (p, x, y, eq, s, u, ⟨A, B, ← number R, ← number S⟩)
-    pure (ds, ps, cs) : StateM Nat (List (String × Res) × List (String × Top) × List Chk)).run 0
+    pure ((ds, ps, cs), fs) : StateM Nat ((List (String × Res) × List (String × Top) × List Chk) × List Once)).run 0
   addConst (n ++ `objs) (mkConst ``Objs) (← objsE objs)
   let os := mkConst (n ++ `objs)
   let app (t : Lean.Expr) := mkApp t (mkConst ``Unit.unit)
   let (entries, printed, checked, unproved) ← (do
+    -- each definition elaborated once: `n.x : Fn U₁ → … → Fn R₁ → … → Fn A B`, the universes of its object
+    -- variables then its parameters, each read as `x ()` where the body reads its variable
+    for (x, nv, qs, ⟨A, B, _, t⟩) in fs do
+      let fn (X Y : Obj) := mkApp3 (mkConst ``Gen.Fn) (bE false) (oE X) (oE Y)
+      let tys := (List.replicate nv ((.long : Obj), (.long : Obj)) ++ qs).map fun (X, Y) => fn X Y
+      let (ty, v) ← lams tys fun xs => do
+        let ρ := xs.toList.zipIdx.map fun (x, k) => (k, mkApp x (mkConst ``Unit.unit))
+        pure (fn A B, ← code n ρ t)
+      addConst (n ++ Name.mkSimple x) ty v
+      modifyEnv (relRegistry.addEntry · (.call (n ++ Name.mkSimple x)))
     let mut gaps : List (String × String) := []
     let mut es := []
     for (x, ⟨A, B, d, t⟩) in ds do
@@ -602,6 +747,12 @@ def emit (n : Name) (r : Read) : MetaM Unit := do
   -- the definitions with no `rep_x` yet, each with the first combinator `GenSpec` has no lemma for
   let sty := pairT (mkConst ``String) (mkConst ``String)
   addConst (n ++ `unproved) (listT sty) (← mkListLit sty (unproved.map fun (x, c) =>
+    mkApp4 (mkConst ``Prod.mk [0, 0]) (mkConst ``String) (mkConst ``String) (toExpr x) (toExpr c)))
+  -- the parametric definitions not elaborated once, each with the reason (`walk`)
+  addConst (n ++ `notOnce) (listT sty) (← mkListLit sty (xs.map fun (x, c) =>
+    mkApp4 (mkConst ``Prod.mk [0, 0]) (mkConst ``String) (mkConst ``String) (toExpr x) (toExpr c)))
+  -- the uses of a constant that expand its body instead (`callDef`); `n.expanded` is taken by the definitions
+  addConst (n ++ `notCalled) (listT sty) (← mkListLit sty (ex.map fun (x, c) =>
     mkApp4 (mkConst ``Prod.mk [0, 0]) (mkConst ``String) (mkConst ``String) (toExpr x) (toExpr c)))
   let ety := pairT (mkConst ``String) (mkConst ``Gen.Gv)
   addConst (n ++ `expanded) (listT ety) (← mkListLit ety entries)
