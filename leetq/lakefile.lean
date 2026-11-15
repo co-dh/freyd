@@ -34,6 +34,32 @@ lean_lib LeetQRun where
 lean_lib LeetQ where
   globs := #[.submodules `LeetQ.Rel]
 
+/-- Stage 1a of the native backend (`doc/rel-native-design.md` §13): `TestNative`'s `main`, which prints its plan as C
+    (`relc-1a c FILE`) and writes the Lean side's column directory (`lean DIR`, `plan DIR`). -/
+lean_exe «relc-1a» where
+  root := `LeetQ.Rel.Lang.TestNative
+
+/-- The C `relc-1a` prints, linked with qlean's `libqleankernel.a` and `c/rt.c` and nothing of Lean's: the static
+    library contributes only the objects the program calls, and `rt.c` the runtime symbols those reach. -/
+target «rel-native-1a» pkg : System.FilePath := do
+  let some q ← findPackage? `qlean | error "rel-native-1a: the package `qlean` is not in the workspace"
+  let dir := pkg.buildDir / "native"
+  let inc := (← getLeanIncludeDir).toString
+  let relc ← «relc-1a».fetch
+  let cJob ← relc.mapM fun exe => do
+    let c := dir / "rel-native-1a.c"
+    IO.FS.createDirAll dir
+    let out ← IO.Process.output { cmd := exe.toString, args := #["c", c.toString] }
+    unless out.exitCode == 0 do error s!"{exe} c {c}: exit {out.exitCode}: {out.stderr}"
+    return c
+  let rtO ← buildO (dir / "rt.o") (← inputTextFile (q.dir / "c" / "rt.c")) #["-I", inc] #["-O2", "-fPIC"]
+  let mainO ← buildO (dir / "rel-native-1a.o") cJob #["-I", inc] #["-O2"]
+  let kern := q.staticLibDir / nameToStaticLib "qleankernel"
+  mainO.bindM fun m => rtO.mapM fun r => do
+    let exe := dir / "rel-native-1a"
+    proc { cmd := "cc", args := #["-o", exe.toString, m.toString, r.toString, kern.toString, "-lm"] }
+    return exe
+
 -- The only lib that imports AOP: the Rel→AOP bridge. `LeetQ` and `LeetQRun` stay AOP-free,
 -- and `LeetQ.Rel` no longer claims these modules, so AOP is built only when this lib is.
 @[default_target]
