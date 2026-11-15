@@ -331,6 +331,151 @@ theorem grade_guid {n : USize} (x : Arr .guid n) : ∃ g, gradeColumn .guid fals
 
 theorem sortsAsc_guid : SortsAsc (.atom .guid) := sortsAsc_atom .guid grade_guid
 
+/-! ## The symbol: `gradeSyms` and `gradeIds` by the stored bytes -/
+
+/-- Row `i` of a symbol column that `Enc.get` decodes from valid UTF-8 bytes `s`: its `Obj.key` is `s`'s symbol
+    key, the decode-then-`toUTF8` round trip returning the bytes. -/
+theorem key_symAt {n : USize} (x : Arr .symbol n) {i : Nat} (hi : i < n.toNat) {s : ByteArray}
+    (hs : s.IsValidUTF8) (hg : Enc.get .symbol n x.enc i = some (.symbol ((String.fromUTF8? s).getD ""))) :
+    (Obj.atom .symbol).key (x.get ⟨i, hi⟩) = s.data.toList.map (·.toNat + 1) ++ [0] := by
+  rw [Arr.get_ne _ _ (by decide), hg]
+  simp only [Option.bind_some, Carrier.of?, Option.getD_some, Obj.key, String.fromUTF8?, dif_pos hs]
+  rfl
+
+/-- **`gradeSyms` sorts a `.syms` column by `Obj.lt`**, stable. -/
+theorem grade_syms {n : USize} (x : Arr .symbol n) {blob : ByteArray} {offs : Array Nat}
+    (he : x.enc = .syms blob offs) : ∃ g, gradeColumn .symbol false n x.enc = some (.bytes g) ∧
+      (ids g).Perm (List.range n.toNat) ∧ (ids g).Pairwise (ascBy (.atom .symbol) (n := n) x (· < ·)) := by
+  have hwf := x.wf; rw [he] at hwf
+  obtain ⟨hsz, -, hv⟩ := hwf
+  have hs : offs.size - 1 = n.toNat := by omega
+  have hk : ∀ i (hi : i < n.toNat), (Obj.atom .symbol).key (x.get ⟨i, hi⟩) =
+      (Column.symKey blob offs i).data.toList.map (·.toNat + 1) ++ [0] := fun i hi =>
+    key_symAt x hi (hv i hi) (by rw [he]; simp only [Enc.get, if_pos hi]; rfl)
+  obtain ⟨hp, hsrt⟩ := range_mergeSort
+    (le := fun i j => Column.symCmp (Column.symKey blob offs i) (Column.symKey blob offs j) != .gt)
+    (fun _ _ _ => symLe_trans) (fun _ _ => symLe_total _ _) (offs.size - 1)
+  rw [hs] at hp hsrt
+  have hm : ∀ i ∈ (List.range n.toNat).mergeSort
+      (fun i j => Column.symCmp (Column.symKey blob offs i) (Column.symKey blob offs j) != .gt), i < 2 ^ 64 :=
+    fun i hi => Nat.lt_trans (List.mem_range.1 (hp.mem_iff.1 hi)) (usize_lt n)
+  refine ⟨_, by rw [he]; rfl, ?_⟩
+  simp only [Order.gradeSyms, Bool.false_eq_true, ↓reduceIte, hs]
+  rw [ids_indices _ hm]
+  refine ⟨hp, ascBy_of_le x _ (fun i j hi hj => ?_) hsrt⟩
+  rw [symCmp_ne_gt]
+  show ¬ _ < _ ↔ ¬ (Obj.atom .symbol).key _ < (Obj.atom .symbol).key _
+  rw [hk j hj, hk i hi]
+
+/-- Two byte strings whose symbol keys are each `≤` the other are equal. -/
+theorem symLe_antisymm {x y : ByteArray} (h1 : (Column.symCmp x y != .gt) = true)
+    (h2 : (Column.symCmp y x != .gt) = true) : x.data.toList = y.data.toList := by
+  rw [symCmp_ne_gt] at h1 h2
+  have e := List.le_antisymm (List.not_lt.1 h2) (List.not_lt.1 h1)
+  have e' := List.append_cancel_right e
+  exact List.map_injective_iff.2 (fun a b h => UInt8.toNat_inj.1 (by simpa using h)) e'
+
+/-- **The rank `gradeIds` grades by is the symbols' order**: in `ord`, a stable sort of the `d` dictionary entries
+    by their bytes, no two entries holding one string, entry `a` is placed no later than `b` exactly when its bytes
+    are not after `b`'s. -/
+theorem idxOf_le_iff {dict : ByteArray} {dof : Array Nat}
+    (hnd : ((List.range (dof.size - 1)).map fun i => (Column.symKey dict dof i).data.toList).Nodup)
+    {a b : Nat} (ha : a < dof.size - 1) (hb : b < dof.size - 1) :
+    ((List.range (dof.size - 1)).mergeSort fun a b =>
+        Column.symCmp (Column.symKey dict dof a) (Column.symKey dict dof b) != .gt).idxOf a ≤
+      ((List.range (dof.size - 1)).mergeSort fun a b =>
+        Column.symCmp (Column.symKey dict dof a) (Column.symKey dict dof b) != .gt).idxOf b ↔
+      (Column.symCmp (Column.symKey dict dof a) (Column.symKey dict dof b) != .gt) = true := by
+  obtain ⟨hp, hsrt⟩ := range_mergeSort
+    (le := fun a b => Column.symCmp (Column.symKey dict dof a) (Column.symKey dict dof b) != .gt)
+    (fun _ _ _ => symLe_trans) (fun _ _ => symLe_total _ _) (dof.size - 1)
+  generalize (List.range (dof.size - 1)).mergeSort _ = L at hp hsrt
+  have hma : a ∈ L := hp.mem_iff.2 (List.mem_range.2 ha)
+  have hmb : b ∈ L := hp.mem_iff.2 (List.mem_range.2 hb)
+  have hla := List.idxOf_lt_length_of_mem hma
+  have hlb := List.idxOf_lt_length_of_mem hmb
+  have hga : L[L.idxOf a] = a := List.getElem_idxOf hla
+  have hgb : L[L.idxOf b] = b := List.getElem_idxOf hlb
+  have hpw := List.pairwise_iff_getElem.1 hsrt
+  constructor
+  · intro h
+    rcases Nat.lt_or_eq_of_le h with h | h
+    · have := (hpw _ _ hla hlb h).1; rwa [hga, hgb] at this
+    · have : a = b := by rw [← hga, ← hgb]; simp only [h]
+      subst this
+      have := symLe_total (Column.symKey dict dof a) (Column.symKey dict dof a)
+      simpa using this
+  · intro h
+    refine Nat.le_of_not_lt fun hlt => ?_
+    have h2 := (hpw _ _ hlb hla hlt).1
+    rw [hga, hgb] at h2
+    have e := symLe_antisymm h h2
+    have hab : a = b := List.inj_on_of_nodup_map hnd (List.mem_range.2 ha) (List.mem_range.2 hb) e
+    subst hab
+    exact Nat.lt_irrefl _ hlt
+
+/-- **`gradeIds` sorts an `.enum` column by `Obj.lt`**, stable. -/
+theorem grade_ids {n : USize} (x : Arr .symbol n) {dict : ByteArray} {dof : Array Nat} {ids' : ByteArray}
+    (he : x.enc = .enum dict dof ids') : ∃ g, gradeColumn .symbol false n x.enc = some (.bytes g) ∧
+      (ids g).Perm (List.range n.toNat) ∧ (ids g).Pairwise (ascBy (.atom .symbol) (n := n) x (· < ·)) := by
+  have hwf := x.wf; rw [he] at hwf
+  obtain ⟨-, -, hin, hnd, hv⟩ := hwf
+  let w := Column.idWidth dof
+  let ord := (List.range (dof.size - 1)).mergeSort fun a b =>
+    Column.symCmp (Column.symKey dict dof a) (Column.symKey dict dof b) != .gt
+  let rank (i : Nat) : Nat := ord.idxOf (Column.idAt ids' w i)
+  have hk : ∀ i (hi : i < n.toNat), (Obj.atom .symbol).key (x.get ⟨i, hi⟩) =
+      (Column.symKey dict dof (Column.idAt ids' w i)).data.toList.map (·.toNat + 1) ++ [0] := fun i hi =>
+    key_symAt x hi (hv _ (hin i hi)) (by rw [he]; simp only [Enc.get, if_pos hi]; rfl)
+  obtain ⟨hp, hsrt⟩ := range_mergeSort (le := fun i j => decide (rank i ≤ rank j))
+    (fun _ _ _ h1 h2 => by simp only [decide_eq_true_eq] at *; omega)
+    (fun a b => by simp only [Bool.or_eq_true, decide_eq_true_eq]; omega) n.toNat
+  have hm : ∀ i ∈ (List.range n.toNat).mergeSort (fun i j => decide (rank i ≤ rank j)), i < 2 ^ 64 :=
+    fun i hi => Nat.lt_trans (List.mem_range.1 (hp.mem_iff.1 hi)) (usize_lt n)
+  refine ⟨_, by rw [he]; rfl, ?_⟩
+  simp only [Order.gradeIds, Bool.false_eq_true, ↓reduceIte]
+  rw [ids_indices _ hm]
+  refine ⟨hp, ascBy_of_le x _ (fun i j hi hj => ?_) hsrt⟩
+  rw [decide_eq_true_iff, idxOf_le_iff hnd (hin i hi) (hin j hj), symCmp_ne_gt]
+  show ¬ _ < _ ↔ ¬ (Obj.atom .symbol).key _ < (Obj.atom .symbol).key _
+  rw [hk j hj, hk i hi]
+
+/-- **The symbol sorts stably by `Obj.lt`**, on both of its encodings. -/
+theorem sortsAsc_symbol : SortsAsc (.atom .symbol) := sortsAsc_atom .symbol fun x => by
+  cases he : x.enc
+  case syms blob offs => exact he ▸ grade_syms x he
+  case enum dict dof ids' => exact he ▸ grade_ids x he
+  all_goals have hwf := x.wf; rw [he] at hwf; simp [Enc.WF] at hwf
+
+/-! ## Every side whose atoms qlean orders
+
+A `.general` atom is left out: qlean states no order on it (`orderKind .general = none`, `Obj.key` keys it `[]`),
+and its rows sort by `codes`, an order of one call. -/
+
+/-- `A` holds no `.general` atom: each of its atoms is one qlean's sort kernels order. -/
+def _root_.LeetQ.Rel.Obj.Ordered : Obj → Prop
+  | .atom t => t ≠ .general
+  | .prod a b => a.Ordered ∧ b.Ordered
+  | .arr b => b.Ordered
+  | .sum a b => a.Ordered ∧ b.Ordered
+
+/-- **Every atom but `.general` sorts stably by `Obj.lt`.** -/
+theorem sortsAsc_ordered_atom {t : QAtomicType} (h : t ≠ .general) : SortsAsc (.atom t) := by
+  cases t
+  all_goals first | exact absurd rfl h | exact sortsAsc_boolean | exact sortsAsc_symbol | exact sortsAsc_guid
+    | exact sortsAsc_num rfl (by decide)
+
+/-- **Every ordered side sorts stably by `Obj.lt`**, given that an array and a sum of sides that do, do: the two
+    constructors `Obj.sortByC` still grades by `codes`, which are the open obligations `harr`, `hsum`. -/
+theorem sortsAsc_ordered (harr : ∀ b, SortsAsc b → SortsAsc (.arr b))
+    (hsum : ∀ a b, SortsAsc a → SortsAsc b → SortsAsc (.sum a b)) : ∀ A : Obj, A.Ordered → SortsAsc A
+  | .atom _, h => sortsAsc_ordered_atom h
+  | .prod a b, ⟨ha, hb⟩ => sortsAsc_prod (sortsAsc_ordered harr hsum a ha) (sortsAsc_ordered harr hsum b hb)
+  | .arr b, h => harr b (sortsAsc_ordered harr hsum b h)
+  | .sum a b, ⟨ha, hb⟩ => hsum a b (sortsAsc_ordered harr hsum a ha) (sortsAsc_ordered harr hsum b hb)
+
+#print axioms sortsAsc_ordered
+#print axioms sortsAsc_symbol
 #print axioms sortsAsc_guid
 #print axioms sortBy_asc
 #print axioms sortsAsc_prod
