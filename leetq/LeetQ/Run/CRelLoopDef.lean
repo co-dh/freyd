@@ -22,6 +22,8 @@ variable {K X Y B : Obj}
 /-- `tic`, ok where `P` is and `ticC` ran within capacity. -/
 def tic (P : CRel K (.prod B (.arr B))) : CRel K (.arr (.arr B)) := guard P.ok fun _ => let r := ticC P.rel; ⟨r.1, r.2⟩
 
+/-- `suffix` on the arrays `X`, ok where `suffixC` ran within capacity. -/
+def suffix {n : USize} (X : Vals (.arr B) n) : CRel (.arr B) (.arr B) := let r := suffixC X; ⟨r.1, r.2⟩
 
 /-- `loopOn` on a step over `CRel`s, ok where `P` is, every round's step was and `loopOnC` ran within capacity. The
     step sees its input as ok: its bit is already in the loop's. -/

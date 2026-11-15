@@ -1,5 +1,5 @@
 /-
-  The runtime ok-bit on the iterative composites `loopOn`/`loop` and on `tic`: an iterative op's round
+  The runtime ok-bit on the iterative composites `suffix`, `loopOn`/`loop` and on `tic`: an iterative op's round
   answers its new state and a bit, the `&&` of its pieces' twins' bits; `iterC` carries the `&&` of the rounds it
   ran, and `iterC_run` reads each run round's bit back. The proofs use only the rounds `iter` ran (`done` failing
   up to them): each such round's read-back comes from its pieces' `rep_<op>C`. What stays is not a size bound:
@@ -30,6 +30,23 @@ theorem rep_ticC {K B : Obj} (P : Rel K (.prod B (.arr B))) (hb : (ticC P).2 = t
   exact tic_of P _ rfl _ rfl (rep_consC P hC) (rep_compC _ _ hI) (rep_initsC _ hN) (rep_compC _ _ hr)
     (rep_tailC _ hT)
 
+/-- **`suffix` under `suffixC`'s bit**: `suffix_rounds`, each round `iter` ran read back by `suffix_round_of` at
+    its bit (`iterC_run`): `ranC`'s codes and `fitsN` bits, `rep_tailC`, `rep_compC`, `rep_unionC`. -/
+theorem rep_suffixC {B : Obj} {n : USize} (X : Vals (.arr B) n) (hb : (suffixC X).2 = true) :
+    ∀ xs ys, rep (suffixC X).1 xs ys ↔ (∃ j, X.row j = xs) ∧ ys <:+ xs :=
+  suffix_rounds X (fun s => (suffixRound s).1) (fun _ _ => rfl) fun i hi hne => by
+    have h := iterC_run (X.1.toNat + 1) (fun s : Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B) => s.2.n == 0)
+      suffixRound (idU X, idU X) hb i (by omega) hne
+    rw [show (fun s => (suffixRound s).1)^[i + 1] (idU X, idU X) =
+      (suffixRound ((fun s => (suffixRound s).1)^[i] (idU X, idU X))).1 from rfl]
+    generalize (fun s => (suffixRound s).1)^[i] (idU X, idU X) = st at h ⊢
+    obtain ⟨S, F⟩ := st
+    simp only [suffixRound, Bool.and_eq_true] at h
+    obtain ⟨⟨⟨hW, hT⟩, hC⟩, hU⟩ := h
+    simp only [ranC, distinctCoreflC, Bool.and_eq_true] at hW
+    exact suffix_round_of S F (rep_tailC _ hT) (rep_compC _ _ hC)
+      (rep_ran_corefl F (one_ok _ (Obj.codesC_fits _ _ hW.1)) (pickFits_of_fitsN _ _ _ hW.2 _ (by simp)))
+      (rep_unionC _ _ hU)
 
 /-- **`loopOn` under `loopOnC`'s bit**: `loopOn_rounds`, each round `iter` ran read back by `loop_round_set` at its
     bit (`iterC_run`): `ranC`'s and `domC`'s codes and `fitsN` bits, `rep_unconsC`, `rep_compC`, `rep_pairC`,
@@ -230,6 +247,7 @@ theorem rep_fixOnC {A B : Obj} (n : Nat) (φC : Rel A B → Rel A B × Bool) (X�
 
 #print axioms rep_fixOnC
 #print axioms rep_ticC
+#print axioms rep_suffixC
 #print axioms rep_loopOnC
 #print axioms rep_loopC
 #print axioms rep_mergeRoundC
@@ -246,6 +264,10 @@ theorem rep_tic (P : CRel K (.prod B (.arr B))) (hb : (tic P).ok = true) :
     ∀ k zss, rep (tic P).rel k zss ↔ ∃ b bs, rep P.rel k (b, bs) ∧
       zss = (List.range (bs.length + 1)).map fun j => (b :: bs).take (j + 1) := by
   have e : tic P = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_ticC P.rel hb
+
+theorem rep_suffix {n : USize} (X : Vals (.arr B) n) (hb : (suffix X).ok = true) :
+    ∀ xs ys, rep (suffix X).rel xs ys ↔ (∃ j, X.row j = xs) ∧ ys <:+ xs :=
+  rep_suffixC X hb
 
 /-- `hS`: the step's spec at each round whose step was ok. -/
 theorem rep_loopOn (F : CRel (.prod X Y) (.prod X Y) → CRel (.prod X Y) X) (P : CRel K (.prod X (.arr Y)))

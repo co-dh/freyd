@@ -268,6 +268,125 @@ theorem perm_chain {β : Type _} (xs w : List β) :
       | zero => exact ⟨a, b, hw.symm, rfl⟩
       | succ t => exact hstep t (by simp at ht; omega)
 
+/-! ## `suffix` -/
+
+open ListN
+
+open Freyd Freyd.Alg Freyd.Alg.RelSet in
+/-- **One round of `suffix`, read back**: `F ≫ tail` takes an array to the tail of each array `F` gives it, and the
+    union adds those to `S`. -/
+theorem suffix_round_of {B : Obj} (S F : Rel (.arr B) (.arr B))
+    (eT : ∀ xs bs, rep (tail (ran F).val) xs bs ↔ (∃ j, (ran F).val.row j = xs) ∧ ∃ b, xs = b :: bs)
+    (eC : rep (F ≫ tail (ran F).val) = rep F ≫ rep (tail (ran F).val))
+    (eD : rep (ran F) = corefl (A := (⟨(Obj.arr B).El⟩ : Freyd.Alg.RelSet.{0})) fun ys => ∃ s, rep F s ys)
+    (eU : rep (S ∪ F ≫ tail (ran F).val) = rep S ∪ rep (F ≫ tail (ran F).val)) :
+    (∀ xs ys, rep (F ≫ tail (ran F).val) xs ys ↔ ∃ c, rep F xs (c :: ys)) ∧
+    ∀ xs ys, rep (S ∪ F ≫ tail (ran F).val) xs ys ↔ rep S xs ys ∨ ∃ c, rep F xs (c :: ys) := by
+  have e1 : ∀ xs ys, rep (F ≫ tail (ran F).val) xs ys ↔ ∃ c, rep F xs (c :: ys) := by
+    intro xs ys
+    rw [eC, Freyd.Alg.RelSet.comp_apply]
+    constructor
+    · rintro ⟨a, ha, ht⟩
+      obtain ⟨-, c, rfl⟩ := (eT a ys).1 ht
+      exact ⟨c, ha⟩
+    · rintro ⟨c, hc⟩
+      have hr : rep (ran F) (c :: ys) (c :: ys) := by rw [eD]; exact ⟨rfl, xs, hc⟩
+      obtain ⟨j, -, hj⟩ := hr
+      exact ⟨c :: ys, hc, (eT _ _).2 ⟨⟨j, hj⟩, c, rfl⟩⟩
+  refine ⟨e1, fun xs ys => ?_⟩
+  rw [eU]
+  show rep S xs ys ∨ rep _ xs ys ↔ _
+  exact or_congr Iff.rfl (e1 xs ys)
+
+/-- **`suffix`, read back**: an array `xs` of `X` goes to exactly its suffixes. Round `i` holds in `F` the arrays
+    `drop i xs` (for `i ≤ |xs|`) and in `S` every `drop t xs`, `t ≤ i`; the fuel `X.1 + 1` passes every array's
+    length (`arr_row_length`), and a stop at an empty `F` means every array is shorter. The round `g` is bound by
+    its defining equation (`hg`); `hR` reads back each round `iter` runs (`done` failing up to it), as
+    `suffix_round_of` concludes. -/
+theorem suffix_rounds {B : Obj} {n : USize} (X : Vals (.arr B) n)
+    (g : Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B) → Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B))
+    (hg : ∀ S F, g (S, F) = (S ∪ F ≫ tail (ran F).val, F ≫ tail (ran F).val))
+    (hR : ∀ i, i ≤ X.1.toNat → (∀ i' ≤ i, ((g^[i'] (idU X, idU X)).2.n == 0) = false) →
+      (∀ xs ys, rep (g^[i + 1] (idU X, idU X)).2 xs ys ↔ ∃ c, rep (g^[i] (idU X, idU X)).2 xs (c :: ys)) ∧
+      ∀ xs ys, rep (g^[i + 1] (idU X, idU X)).1 xs ys ↔
+        rep (g^[i] (idU X, idU X)).1 xs ys ∨ ∃ c, rep (g^[i] (idU X, idU X)).2 xs (c :: ys)) :
+    ∀ xs ys, rep (suffix X) xs ys ↔ (∃ j, X.row j = xs) ∧ ys <:+ xs := by
+  obtain ⟨j, hj, he, hs, hm⟩ := iter_stop (fun s : Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B) => s.2.n == 0) g
+    (X.1.toNat + 1) (idU X, idU X)
+  have hd : ∀ (i : Nat) (xs : List B.El) ys, (∃ c, c :: ys = xs.drop i) ↔ i < xs.length ∧ ys = xs.drop (i + 1) := by
+    intro i xs ys
+    constructor
+    · rintro ⟨c, h⟩
+      refine ⟨?_, (congrArg List.tail h).trans (by rw [List.tail_drop])⟩
+      have := congrArg List.length h
+      simp at this
+      omega
+    · rintro ⟨hi, rfl⟩
+      exact ⟨xs[i], (List.drop_eq_getElem_cons hi).symm⟩
+  -- after `i` rounds: `F` is `drop i`, `S` every `drop t`, `t ≤ i`
+  have inv : ∀ i, i ≤ j →
+      (∀ xs ys, rep (g^[i] (idU X, idU X)).2 xs ys ↔ (∃ j, X.row j = xs) ∧ i ≤ xs.length ∧ ys = xs.drop i) ∧
+      (∀ xs ys, rep (g^[i] (idU X, idU X)).1 xs ys ↔
+        (∃ j, X.row j = xs) ∧ ∃ t ≤ i, t ≤ xs.length ∧ ys = xs.drop t) := by
+    intro i
+    induction i with
+    | zero =>
+      intro _
+      have e : ∀ xs ys, rep (idU X) xs ys ↔ (∃ j, X.row j = xs) ∧ 0 ≤ xs.length ∧ ys = xs.drop 0 :=
+        fun xs ys => (idU_holds X xs ys).trans
+          ⟨fun ⟨h, hj⟩ => ⟨hj, Nat.zero_le _, h.symm⟩, fun ⟨hj, _, h⟩ => ⟨h.symm, hj⟩⟩
+      refine ⟨e, fun xs ys => (e xs ys).trans (and_congr Iff.rfl
+        ⟨fun h => ⟨0, Nat.le_refl _, h⟩, fun ⟨t, ht, _, h⟩ => ?_⟩)⟩
+      obtain rfl : t = 0 := by omega
+      exact ⟨Nat.zero_le _, h⟩
+    | succ i ih =>
+      intro hi
+      obtain ⟨hF, hS⟩ := ih (by omega)
+      have hr := hR i (by omega) (fun i' hi' => hm i' (by omega))
+      have hF' : ∀ xs ys, (∃ c, rep (g^[i] (idU X, idU X)).2 xs (c :: ys)) ↔
+          (∃ j, X.row j = xs) ∧ i + 1 ≤ xs.length ∧ ys = xs.drop (i + 1) := by
+        intro xs ys
+        constructor
+        · rintro ⟨c, h⟩
+          obtain ⟨hj, -, h⟩ := (hF _ _).1 h
+          obtain ⟨hl, e⟩ := (hd i xs ys).1 ⟨c, h⟩
+          exact ⟨hj, hl, e⟩
+        · rintro ⟨hj, hl, e⟩
+          obtain ⟨c, hc⟩ := (hd i xs ys).2 ⟨hl, e⟩
+          exact ⟨c, (hF _ _).2 ⟨hj, by omega, hc⟩⟩
+      refine ⟨fun xs ys => (hr.1 xs ys).trans (hF' xs ys), fun xs ys => (hr.2 xs ys).trans
+        ((or_congr (hS xs ys) (hF' xs ys)).trans ?_)⟩
+      constructor
+      · rintro (⟨hj, t, ht, hl, e⟩ | ⟨hj, hl, e⟩)
+        · exact ⟨hj, t, by omega, hl, e⟩
+        · exact ⟨hj, i + 1, Nat.le_refl _, hl, e⟩
+      · rintro ⟨hj, t, ht, hl, e⟩
+        rcases Nat.lt_or_ge t (i + 1) with h | h
+        · exact Or.inl ⟨hj, t, by omega, hl, e⟩
+        · obtain rfl : t = i + 1 := by omega
+          exact Or.inr ⟨hj, hl, e⟩
+  have hl : suffix X = (g^[j] (idU X, idU X)).1 := by
+    rw [← he, show g = fun s => (suffixRound s).1 from funext fun ⟨S, F⟩ => hg S F]
+    exact congrArg Prod.fst (iterC_fst (X.1.toNat + 1) _ suffixRound (idU X, idU X))
+  have hstop : X.1.toNat + 1 ≤ j ∨ ∀ xs ys, ¬ rep (g^[j] (idU X, idU X)).2 xs ys := by
+    rcases hs with hs | hs
+    · exact Or.inl (by omega)
+    · refine Or.inr fun xs ys h => ?_
+      obtain ⟨i, -⟩ := h
+      have h0 : (g^[j] (idU X, idU X)).2.n = 0 := beq_iff_eq.1 hs
+      have h1 : (g^[j] (idU X, idU X)).2.n.toNat = 0 := by rw [h0]; rfl
+      exact Nat.not_lt_zero _ (Nat.lt_of_lt_of_eq i.2 h1)
+  obtain ⟨hFj, hSj⟩ := inv j (Nat.le_refl _)
+  intro xs ys
+  rw [hl]
+  refine (hSj xs ys).trans (and_congr_right fun ⟨r, hr⟩ => ⟨fun ⟨t, _, _, e⟩ => by
+    rw [e]; exact List.drop_suffix .., fun h => ⟨xs.length - ys.length, ?_, by omega, List.suffix_iff_eq_drop.1 h⟩⟩)
+  have hx : xs.length ≤ X.1.toNat := by rw [← hr]; exact arr_row_length X r
+  rcases hstop with h' | h'
+  · omega
+  · have : xs.length < j := Nat.lt_of_not_le fun hc => h' xs _ ((hFj xs _).2 ⟨⟨r, hr⟩, hc, rfl⟩)
+    omega
+
 /-! ## `snoc` -/
 
 section Snoc
