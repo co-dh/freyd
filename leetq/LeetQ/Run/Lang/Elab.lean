@@ -83,11 +83,12 @@ inductive Tm : Obj → Obj → Bool → Type where
   | merge {B : Obj} (Q : Tm (.prod B B) (.prod B B) true) : Tm (.prod (.arr B) (.arr B)) (.arr B) true
   /-- `loop(F)` on the pairs (state, array) in demand, `F` run on the pairs (state, element) each round meets. -/
   | loop {X Y : Obj} {d : Bool} (F : Tm (.prod X Y) X d) : Tm (.prod X (.arr Y)) X true
-  /-- `succ`, the kernel's value verb `k` (`plus`, `times`, …), `≤`, `<` on the declared number universe `U`. -/
-  | succ {m : USize} (U : Arr .long m) : Tm .long .long true
-  | arith {m : USize} (k : UInt8) (U : Arr .long m) : Tm (.prod .long .long) .long true
-  | leq {m : USize} (U : Arr .long m) : Tm .long .long false
-  | lt {m : USize} (U : Arr .long m) : Tm .long .long false
+  /-- `succ`, the kernel's value verb `k` (`plus`, `times`, …), `≤`, `<` on the number universe `U`: a declared
+      object's (`uni`), or the one a constant is given for an object variable (`var`). -/
+  | succ (U : Tm .long .long false) : Tm .long .long true
+  | arith (k : UInt8) (U : Tm .long .long false) : Tm (.prod .long .long) .long true
+  | leq (U : Tm .long .long false) : Tm .long .long false
+  | lt (U : Tm .long .long false) : Tm .long .long false
   /-- `⦇e,S⦈` on the arrays in demand, `S` run on the pairs each round meets. -/
   | fold {E V : Obj} {d : Bool} (e : Tm V V false) (S : Tm (.prod E V) V d) : Tm (.arr E) V true
   /-- `R`, closed, numbered `k` among the expansion's sub-terms (`Expand.number`): its code is built once
@@ -102,11 +103,11 @@ inductive Tm : Obj → Obj → Bool → Type where
   | flat {I A B : Obj} {d : Bool} (R : Tm I (.prod A B) d) : Tm (.prod I A) B true
   /-- The variable `k` of the fixed point that binds it: its value in the round being run. -/
   | var {A B : Obj} (k : Nat) : Tm A B false
-  /-- The constant `c` a definition of another program was elaborated once to, before its arguments (`arg`):
-      called, its body not expanded. -/
-  | call {A B : Obj} (c : Lean.Name) : Tm A B false
+  /-- The constant `c` a parametric definition was elaborated once to, before its arguments (`arg`): called, its
+      body not expanded; its plan runs on the keys in demand when `d`. -/
+  | call {A B : Obj} (d : Bool) (c : Lean.Name) : Tm A B d
   /-- `f` given one more argument `x`: a relation, or the universe of one of its object variables. -/
-  | arg {A B C D : Obj} (f : Tm A B false) (x : Tm C D false) : Tm A B false
+  | arg {A B C D : Obj} {d : Bool} (f : Tm A B d) (x : Tm C D false) : Tm A B d
   /-- `νX : φ`, `X` the variable `k`: rounds of `body` from `S`, the conjuncts of `φ` without `X`, down to the
       greatest fixed point. -/
   | nu {A B : Obj} (k : Nat) (S body : Tm A B false) : Tm A B false
@@ -1192,8 +1193,11 @@ def convTm {A B : Obj} {d : Bool} (t : Tm A B d) : Except String ((e : Bool) × 
   | .cat => pure ⟨_, .uncat⟩
   | .uncat => pure ⟨_, .cat⟩
   -- the number verbs are closed on their universe: their converse is read whole there
-  | .succ U => pure ⟨false, .conv (.comp (.uni (A := .long) U) (.succ U))⟩
-  | .arith k U => pure ⟨false, .conv (.comp (.uni (Alg.prod (idU U) (idU U)).key) (.arith k U))⟩
+  | .succ U => pure ⟨false, .conv (.comp U (.succ U))⟩
+  | .arith k U => pure ⟨false, .conv (.comp (.prod U U) (.arith k U))⟩
+  -- a constant's plan on demand: its converse is read whole, on its source's universe
+  | .call _ c => throw s!"`{c}`"
+  | .arg f _ => (convTm f).bind fun _ => throw "a call"
   | .top _ => throw "⊤"
   | .mem => throw "∋"
   | .outl => throw "π₁"
@@ -1266,19 +1270,27 @@ def closed? {A B : Obj} (r : Res) : Except Err (Tm A B false) := do
   | ⟨false, t⟩ => pure t
   | ⟨true, _⟩ => internal dp "a term that needs keys where none are supplied"
 
-/-- `𝟙` on the universe of `o`, or the error that `o` has none. -/
+/-- `𝟙` on the universe of `o`, or the error that `o` has none: a declared one's literal (`uniOf`); else built
+    from its parts, an object variable's being the universe its constant is given (`uniVar`). -/
 def uniTm (p : Pos) (o : OTy) (A : Obj) (what : String) : Except Err (Tm A A false) := do
-  if let .base n := zonk st o then if let some k := (objs.lookup n).bind (·.uniVar) then return .var k
-  match uniOf objs (zonk st o) with
-  | some ⟨A', _, U⟩ => if h : A' = A then pure (.uni (h ▸ U)) else internal dp "universe objects disagree"
-  | none => throw ⟨p, s!"{what}: {zonk st o} has no universe; compose a set of its elements before it (§a)"⟩
+  if let some ⟨A', _, U⟩ := uniOf objs (zonk st o) then
+    return ← if h : A' = A then pure (.uni (h ▸ U)) else internal dp "universe objects disagree"
+  match zonk st o, A with
+  | .base n, .atom .long => match (objs.lookup n).bind (·.uniVar) with
+    | some k => pure (.var k)
+    | none => throw ⟨p, s!"{what}: {n} has no universe; compose a set of its elements before it (§a)"⟩
+  | .prod a b, .prod A B => return .prod (← uniTm p a A what) (← uniTm p b B what)
+  | .sum a b, .sum A B => return .junc (.comp (← uniTm p a A what) .inl) (.comp (← uniTm p b B what) .inr)
+  | o, _ => throw ⟨p, s!"{what}: {o} has no universe; compose a set of its elements before it (§a)"⟩
 
-/-- The universe of a declared base object, for `succ`, the value verbs (`plus`, …), `≤`, `<`. -/
-def numU (p : Pos) (o : OTy) (op : String) : Except Err ((m : USize) × Arr .long m) :=
+/-- The universe of a number object, for `succ`, the value verbs (`plus`, …), `≤`, `<`: a declared object's,
+    or the one a constant is given for an object variable. -/
+def numU (p : Pos) (o : OTy) (op : String) : Except Err (Tm .long .long false) :=
   match zonk st o with
-  | .base n => match (objs.lookup n).bind (·.uni) with
-    | some u => pure u
-    | none => throw ⟨p, s!"{op} on {n}: no universe"⟩
+  | .base n => match objs.lookup n with
+    | some { uni := some ⟨_, U⟩, .. } => pure (.uni (A := .long) U)
+    | some { uniVar := some k, .. } => pure (.var k)
+    | _ => throw ⟨p, s!"{op} on {n}: no universe"⟩
   | o => throw ⟨p, s!"{op} runs on a declared object, found {o}"⟩
 
 /-- The element `w` of the declared base object `o`: its position among the named elements, or the number. -/
@@ -1462,10 +1474,10 @@ def build : Pre → Except Err Res
     match ← build p with
     | r@⟨.prod X Y, _, _, _⟩ => do let ⟨_, F⟩ ← at? dp (A := .prod X Y) (B := X) r; pure ⟨_, _, true, .loop F⟩
     | _ => internal dp "loop's argument"
-  | .succ p n => do let ⟨_, U⟩ ← numU objs st p n "succ"; pure ⟨_, _, true, .succ U⟩
-  | .arith p k n => do let ⟨_, U⟩ ← numU objs st p n (Op.arith k).sym; pure ⟨_, _, true, .arith k U⟩
-  | .leq p n => do let ⟨_, U⟩ ← numU objs st p n "≤"; pure ⟨_, _, false, .leq U⟩
-  | .lt p n => do let ⟨_, U⟩ ← numU objs st p n "<"; pure ⟨_, _, false, .lt U⟩
+  | .succ p n => return ⟨_, _, true, .succ (← numU objs st p n "succ")⟩
+  | .arith p k n => return ⟨_, _, true, .arith k (← numU objs st p n (Op.arith k).sym)⟩
+  | .leq p n => return ⟨_, _, false, .leq (← numU objs st p n "≤")⟩
+  | .lt p n => return ⟨_, _, false, .lt (← numU objs st p n "<")⟩
   | .fold e s => do
     let r ← build e; let ⟨V, _, _, _⟩ := r
     match ← build s with
