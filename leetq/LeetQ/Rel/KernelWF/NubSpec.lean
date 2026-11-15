@@ -35,6 +35,113 @@ theorem mem_firstsOf_iff {α : Type} [DecidableEq α] {g : Nat → α} {m p : Na
   unfold firstsOf
   simp only [List.mem_filter, List.mem_range, List.all_eq_true, Bool.not_eq_true', decide_eq_false_iff_not]
 
+/-! ## `eraseDups`: first occurrences as a list
+
+What `nub` keeps, read as `List.eraseDups` (each value once, first occurrences in order), and how it passes
+through `filter`, `map` and `flatten`; core states none of these. -/
+
+theorem mem_eraseDups {α : Type _} [BEq α] [LawfulBEq α] (a : α) : ∀ l : List α, a ∈ l.eraseDups ↔ a ∈ l
+  | [] => Iff.rfl
+  | b :: l => by
+    have := List.length_filter_le (fun c => !c == b) l
+    rw [List.eraseDups_cons, List.mem_cons, List.mem_cons, mem_eraseDups a, List.mem_filter]
+    by_cases e : a = b <;> simp [e]
+termination_by l => l.length
+
+theorem nodup_eraseDups {α : Type _} [BEq α] [LawfulBEq α] : ∀ l : List α, l.eraseDups.Nodup
+  | [] => List.nodup_nil
+  | b :: l => by
+    have := List.length_filter_le (fun c => !c == b) l
+    rw [List.eraseDups_cons, List.nodup_cons, mem_eraseDups, List.mem_filter]
+    exact ⟨by simp, nodup_eraseDups _⟩
+termination_by l => l.length
+
+theorem eraseDups_filter {α : Type _} [BEq α] [LawfulBEq α] (p : α → Bool) :
+    ∀ l : List α, (l.filter p).eraseDups = l.eraseDups.filter p
+  | [] => rfl
+  | a :: l => by
+    have := List.length_filter_le (fun b => !b == a) l
+    rw [List.eraseDups_cons, List.filter_cons]
+    by_cases hp : p a = true
+    · rw [if_pos hp, List.eraseDups_cons, List.filter_cons_of_pos hp, List.filter_filter, ← eraseDups_filter p,
+        List.filter_filter]
+      congr 3; funext b; exact Bool.and_comm ..
+    · rw [if_neg hp, List.filter_cons_of_neg hp, ← eraseDups_filter p, List.filter_filter]
+      congr 1
+      refine (List.filter_congr fun b _ => ?_).symm
+      by_cases hb : p b = true
+      · have : (b == a) = false := beq_eq_false_iff_ne.2 fun e => hp (e ▸ hb)
+        simp [hb, this]
+      · simp [hb]
+termination_by l => l.length
+
+theorem eraseDups_map {α β : Type _} [BEq α] [LawfulBEq α] [BEq β] [LawfulBEq β] (f : α → β)
+    (hf : ∀ a b, f a = f b → a = b) : ∀ l : List α, (l.map f).eraseDups = l.eraseDups.map f
+  | [] => rfl
+  | a :: l => by
+    have := List.length_filter_le (fun b => !b == a) l
+    rw [List.map_cons, List.eraseDups_cons, List.eraseDups_cons, List.map_cons, List.filter_map,
+      ← eraseDups_map f hf]
+    congr 3; refine List.filter_congr fun b _ => ?_
+    simp only [Function.comp_apply]
+    by_cases e : b = a
+    · simp [e]
+    · have : f b ≠ f a := fun h => e (hf _ _ h)
+      rw [beq_eq_false_iff_ne.2 this, beq_eq_false_iff_ne.2 e]
+termination_by l => l.length
+
+/-- A tail whose values all occur before adds nothing. -/
+theorem eraseDups_append_sub {α : Type _} [BEq α] [LawfulBEq α] (l m : List α) (h : ∀ x ∈ m, x ∈ l) :
+    (l ++ m).eraseDups = l.eraseDups := by
+  rw [List.eraseDups_append]
+  have : m.removeAll l = [] := by
+    simp only [List.removeAll, List.filter_eq_nil_iff, Bool.not_eq_true', List.elem_eq_mem,
+      decide_eq_false_iff_not, Decidable.not_not]
+    exact h
+  rw [this]; simp
+
+/-- **`firstsOf` read through `g` is `eraseDups`**: the first positions of each key, in order, give each key once,
+    in order of first occurrence. -/
+theorem firstsOf_map_eq {α : Type} [DecidableEq α] [BEq α] [LawfulBEq α] (g : Nat → α) :
+    ∀ m, (firstsOf g m).map g = ((List.range m).map g).eraseDups
+  | 0 => rfl
+  | m + 1 => by
+    have ih := firstsOf_map_eq g m; simp only [firstsOf] at ih ⊢
+    simp only [List.range_succ, List.filter_append, List.map_append]
+    rw [ih, List.eraseDups_append]
+    congr 1
+    by_cases h : g m ∈ (List.range m).map g
+    · have hr : [g m].removeAll ((List.range m).map g) = [] := by simp only [List.removeAll]; simpa using h
+      obtain ⟨j, hj, e⟩ := List.mem_map.1 h
+      have : ((List.range m).all fun j => !decide (g j = g m)) = false := by
+        simp only [List.all_eq_false, Bool.not_eq_true', decide_eq_false_iff_not, Decidable.not_not]
+        exact ⟨j, hj, e⟩
+      simp [List.filter_cons, this, hr, List.eraseDups_cons]
+    · have hr : [g m].removeAll ((List.range m).map g) = [g m] := by simp [List.removeAll]; simpa using h
+      have : ((List.range m).all fun j => !decide (g j = g m)) = true := by
+        simp only [List.all_eq_true, Bool.not_eq_true', decide_eq_false_iff_not]
+        exact fun j hj e => h (List.mem_map.2 ⟨j, hj, e⟩)
+      simp [List.filter_cons, this, hr, List.eraseDups_cons]
+
+/-- **Copies of one list, with empty lists between**, erase to that list's first occurrences. -/
+theorem eraseDups_flatten_copies {α : Type _} [BEq α] [LawfulBEq α] (P : List α) :
+    ∀ L : List (List α), (∀ c ∈ L, c = P ∨ c = []) → P ∈ L → L.flatten.eraseDups = P.eraseDups
+  | [], _, h => absurd h List.not_mem_nil
+  | c :: L, hL, hP => by
+    by_cases e : c = P
+    · subst e
+      rw [List.flatten_cons, eraseDups_append_sub]
+      intro x hx
+      obtain ⟨d, hd, hx⟩ := List.mem_flatten.1 hx
+      rcases hL d (List.mem_cons_of_mem _ hd) with rfl | rfl
+      · exact hx
+      · exact absurd hx List.not_mem_nil
+    · have hc : c = [] := (hL c List.mem_cons_self).resolve_left e
+      subst hc
+      rw [List.flatten_cons, List.nil_append]
+      exact eraseDups_flatten_copies P L (fun d hd => hL d (List.mem_cons_of_mem _ hd))
+        ((List.mem_cons.1 hP).resolve_left (Ne.symm e))
+
 /-- **The first rows `tupleIds` answers for two columns are the first positions of their pairs of codes**:
     `a`, `b` well formed of one count, codes below a byte under their bound (`pairCode_spec`). -/
 theorem tupleIds_firsts (a b : Code) (hn : b.n = a.n)
@@ -183,6 +290,29 @@ theorem nub_row (hk : Vals.PickFits k R.key (List.range R.n.toNat)) (hv : Vals.P
   rw [dif_pos (hget ▸ hp), Prod.mk.injEq] at e
   exact ⟨hI, hp, e.1.trans (congrArg R.key.row (Fin.ext hget.symm)),
     e.2.trans (congrArg R.val.row (Fin.ext hget.symm))⟩
+
+include hK hV in
+/-- **`nub`'s rows, as a list, are `R`'s with repeats erased**, first occurrences in order: `nub_row` at the first
+    positions (`nub_ids`, the codes read as the rows by `hK`, `hV`), which `firstsOf_map_eq` reads as `eraseDups`. -/
+theorem nub_rows [DecidableEq k.El] [DecidableEq v.El] (hk : Vals.PickFits k R.key (List.range R.n.toNat)) (hv : Vals.PickFits v R.val (List.range R.n.toNat)) :
+    (List.finRange R.nub.n.toNat).map (fun t => (R.nub.key.row t, R.nub.val.row t)) =
+      ((List.range R.n.toNat).map fun i =>
+        if h : i < R.n.toNat then (R.key.row ⟨i, h⟩, R.val.row ⟨i, h⟩) else (k.dflt, v.dflt)).eraseDups := by
+  obtain ⟨hn, hrow⟩ := nub_row R hK hV hk hv
+  let g : Nat → k.El × v.El := fun i =>
+    if h : i < R.n.toNat then (R.key.row ⟨i, h⟩, R.val.row ⟨i, h⟩) else (k.dflt, v.dflt)
+  have hf : ids nubI = firstsOf g R.n.toNat := by
+    rw [nub_ids R hK hV]
+    refine firstsOf_congr fun i hi j hj => ?_
+    simp only [g, dif_pos hi, dif_pos hj, Prod.mk.injEq]
+    exact and_congr (hK.1 hi hj) (hV.1 hi hj)
+  show _ = ((List.range R.n.toNat).map g).eraseDups
+  rw [← firstsOf_map_eq, ← hf]
+  refine List.ext_getElem (by simp [hn]) fun t h1 h2 => ?_
+  have ht : t < R.nub.n.toNat := by simpa using h1
+  obtain ⟨hI, hp, e1, e2⟩ := hrow t ht
+  simp only [List.getElem_map, List.getElem_finRange, g, dif_pos hp]
+  rw [← e1, ← e2]; rfl
 
 include hK hV in
 /-- **`nub` fits at all its rows where `R` does**: `nub` picks `R` at its first occurrences, a sublist of `R`'s
