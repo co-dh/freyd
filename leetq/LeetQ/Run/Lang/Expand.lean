@@ -356,6 +356,7 @@ def fv : {A B : Obj} → {d : Bool} → Tm A B d → List Nat
   | _, _, _, .nu k S b => fv S ++ (fv b).filter (· != k)
   | _, _, _, .mu k _ _ b => (fv b).filter (· != k)
   | _, _, _, .refold k _ ch b => fv ch ++ (fv b).filter (· != k)
+  | _, _, _, .juncD R S => fv R ++ fv S
   | _, _, _, _ => []
 
 /-- The `μ`s in `t`, each as the failure it reports when its rounds reach the cap. -/
@@ -372,6 +373,7 @@ def mus : {A B : Obj} → {d : Bool} → Tm A B d → List String
   | _, _, _, .mu _ w n b => s!"{w} ran its cap of {n} rounds without reaching a fixed point" :: mus b
   | _, _, _, .refold _ w ch b =>
     s!"{w} met a cycle: a node its coalgebra c reaches from itself, so c is not well-founded there" :: mus ch ++ mus b
+  | _, _, _, .juncD R S => mus R ++ mus S
   | _, _, _, _ => []
 
 /-- A term that needs no keys and reads no fixed-point variable: computed once, its own constant (`share`). -/
@@ -411,6 +413,7 @@ def number : {A B : Obj} → {d : Bool} → Tm A B d → StateM Nat (Tm A B d)
   | _, _, _, .nu k S b => do w (.nu k (← number S) (← number b))
   | _, _, _, .mu k s n b => do w (.mu k s n (← number b))
   | _, _, _, .refold k s ch b => do w (.refold k s (← number ch) (← number b))
+  | _, _, _, .juncD R S => do w (.juncD (← number R) (← number S))
   | _, _, _, .arg f x => do w (.arg (← number f) (← number x))
   | _, _, _, t => w t
 where w {A B : Obj} {d : Bool} (t : Tm A B d) : StateM Nat (Tm A B d) :=
@@ -635,6 +638,7 @@ partial def node (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bo
   | A, B, _, .mu k _ n b => return g ``Gen.mu #[oE A, oE B, toExpr n, ← body pre ρ A B k b]
   | A, B, _, .refold (d := d) (e := e) k _ ch b =>
     return g ``Gen.refold #[oE A, oE B, bE d, bE e, ← c ch, ← body pre ρ A B k b]
+  | .sum A B, C, _, .juncD (d := d) (e := e) R S => return g ``Gen.juncD #[oE A, oE B, oE C, bE d, bE e, ← c R, ← c S]
   | _, _, _, .call c => return mkConst c
   | _, _, _, t@(.arg ..) => spine pre ρ t
 

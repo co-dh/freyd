@@ -245,6 +245,36 @@ def mu (A B : Obj) (cap : Nat) (φ : CRel A B → Fn false A B) : Fn false A B :
   let r := CRel.fixOn cap (fun X => φ X ()) ⟨Alg.zero, true⟩
   also (decide (r.2 < cap)) r.1
 
+/-- `F` read only at the nodes `P`: run on their keys, or closed and composed after `P`; not run on none. -/
+def onNodes {A B : Obj} : (d : Bool) → Fn d A B → CRel A A → CRel A B
+  | true, F, P => if P.rel.n == 0 then ⟨Alg.zero, P.ok⟩ else also P.ok (F P.rel)
+  | false, F, P => if P.rel.n == 0 then ⟨Alg.zero, P.ok⟩ else CRel.comp P (F ())
+
+/-- `[R,S]` on the sum values in demand: `R` on the left values they hold, `S` on the right, joined with them. -/
+def juncD (A B C : Obj) (d e : Bool) (R : Fn d A C) (S : Fn e B C) : Fn true (.sum A B) C := fun D =>
+  let ⟨_, _, _, _, x, y⟩ := D.val
+  CRel.comp ⟨D, true⟩ (CRel.junc (onNodes d R ⟨idU x, true⟩) (onNodes e S ⟨idU y, true⟩))
+
+/-- `refold`'s rounds, at most `f`, from the nodes `pend` not yet valued and the values `X` so far: the nodes
+    of `pend` with no child in `pend` (`chN`, each node's children) are ready, valued by `φ X` there and leave
+    `pend`. The bit: `pend` emptied; none ready while some pend is a cycle of `chN`. -/
+def refoldRounds {A B : Obj} (chN : CRel A A) (φ : CRel A B → CRel A A → CRel A B) :
+    Nat → CRel A A → CRel A B → CRel A B × Bool
+  | 0, _, X => (X, false)
+  | f + 1, pend, X =>
+    if pend.rel.n == 0 then (X, true) else
+    let ready := CRel.diff pend (CRel.dom (CRel.comp (CRel.comp pend chN) pend))
+    if ready.rel.n == 0 then (X, false) else
+    refoldRounds chN φ f (CRel.diff pend ready) (CRel.union X (φ X ready))
+
+/-- `refold(c, S)` = `μX : c G(X) S` on the keys `D`, bottom-up: the nodes `N` the children `ch` reach from `D`
+    (no universe read), then `refoldRounds` over them, each node valued once by `φ` after its children, so no
+    intermediate structure of `G` is built. Not ok where the reach did not settle or `ch` has a cycle on `N`. -/
+def refold (A B : Obj) (d e : Bool) (ch : Fn d A A) (φ : CRel A B → Fn e A B) : Fn true A B := fun D =>
+  let N := CRel.fixOn USize.size (fun N => CRel.union N (CRel.ran (onNodes d ch N))) ⟨D, true⟩
+  let r := refoldRounds (onNodes d ch N.1) (fun X P => onNodes e (φ X) P) (N.1.rel.n.toNat + 1) N.1 ⟨Alg.zero, true⟩
+  also (decide (N.2 < USize.size) && r.2) (CRel.comp ⟨D, true⟩ r.1)
+
 /-! ### Plans: the bit-rule nodes kept, every other sub-term its table -/
 
 def pleaf (A B : Obj) (d : Bool) (f : Fn d A B) : Pl d A B := fun D => let r := f D; (.leaf r.rel, r.ok)
