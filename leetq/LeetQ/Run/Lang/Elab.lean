@@ -86,11 +86,12 @@ inductive Tm : Obj → Obj → Bool → Type where
   | merge {B : Obj} (Q : Tm (.prod B B) (.prod B B) true) : Tm (.prod (.arr B) (.arr B)) (.arr B) true
   /-- `loop(F)` on the pairs (state, array) in demand, `F` run on the pairs (state, element) each round meets. -/
   | loop {X Y : Obj} {d : Bool} (F : Tm (.prod X Y) X d) : Tm (.prod X (.arr Y)) X true
-  /-- `succ`, the kernel's value verb `k` (`plus`, `times`, …), `≤`, `<` on the declared number universe `U`. -/
-  | succ {m : USize} (U : Arr .long m) : Tm .long .long true
-  | arith {m : USize} (k : UInt8) (U : Arr .long m) : Tm (.prod .long .long) .long true
-  | leq {m : USize} (U : Arr .long m) : Tm .long .long false
-  | lt {m : USize} (U : Arr .long m) : Tm .long .long false
+  /-- `succ`, the kernel's value verb `k` (`plus`, `times`, …), `≤`, `<` on the number universe `U`: a declared
+      object's (`uni`), or the one a constant is given for an object variable (`var`). -/
+  | succ (U : Tm .long .long false) : Tm .long .long true
+  | arith (k : UInt8) (U : Tm .long .long false) : Tm (.prod .long .long) .long true
+  | leq (U : Tm .long .long false) : Tm .long .long false
+  | lt (U : Tm .long .long false) : Tm .long .long false
   /-- `⦇e,S⦈` on the arrays in demand, `S` run on the pairs each round meets. -/
   | fold {E V : Obj} {d : Bool} (e : Tm V V false) (S : Tm (.prod E V) V d) : Tm (.arr E) V true
   /-- `R`, closed, numbered `k` among the expansion's sub-terms (`Expand.number`): its code is built once
@@ -103,13 +104,15 @@ inductive Tm : Obj → Obj → Bool → Type where
   /-- `Rᴵ`, the family `R : I ⟶ A×B` as one relation of the key and the source, on the pairs (key, source) in
       demand: `R` at their keys, each row `(i,(a,b))` re-keyed as `((i,a),b)`, then joined with the pairs. -/
   | flat {I A B : Obj} {d : Bool} (R : Tm I (.prod A B) d) : Tm (.prod I A) B true
-  /-- The variable `k` of the fixed point that binds it: its value in the round being run. -/
-  | var {A B : Obj} (k : Nat) : Tm A B false
-  /-- The constant `c` a definition of another program was elaborated once to, before its arguments (`arg`):
-      called, its body not expanded. -/
-  | call {A B : Obj} (c : Lean.Name) : Tm A B false
-  /-- `f` given one more argument `x`: a relation, or the universe of one of its object variables. -/
-  | arg {A B C D : Obj} (f : Tm A B false) (x : Tm C D false) : Tm A B false
+  /-- The variable `k` of the fixed point that binds it: its value in the round being run; or a constant's
+      parameter, on the keys in demand when its argument is a pair test (`Form`). -/
+  | var {A B : Obj} {d : Bool} (k : Nat) : Tm A B d
+  /-- The constant `c` a parametric definition was elaborated once to, before its arguments (`arg`): called, its
+      body not expanded; its plan runs on the keys in demand when `d`. `os`: the objects of the object variables it
+      is generic over; `cv`: its converse's constant and demand bit, when its body has a converse (`convTm`). -/
+  | call {A B : Obj} (d : Bool) (c : Lean.Name) (os : List Obj) (cv : Option (Lean.Name × Bool)) : Tm A B d
+  /-- `f` given one more argument `x`: a relation, a pair test, or the universe of one of its object variables. -/
+  | arg {A B C D : Obj} {d e : Bool} (f : Tm A B d) (x : Tm C D e) : Tm A B d
   /-- `νX : φ`, `X` the variable `k`: rounds of `body` from `S`, the conjuncts of `φ` without `X`, down to the
       greatest fixed point. -/
   | nu {A B : Obj} (k : Nat) (S body : Tm A B false) : Tm A B false
@@ -155,6 +158,17 @@ structure ObjInfo where
   /-- An object variable of a definition elaborated once: its universe is the variable `k`, an argument of the
       definition's constant. -/
   uniVar : Option Nat := none
+  /-- How it is stored: `.long` for a declared object (F6); `varObj k` for the object variable `k` of a constant
+      generic over it. -/
+  obj : Obj := .long
+
+/-- The atoms no declared object is stored as (every one is `.long`, F6): each the placeholder of one object
+    variable while a constant generic over it is built, its binder `(A : Obj)` once emitted. -/
+def varAtoms : List QLean.QAtomicType := [.general, .boolean, .guid, .byte, .short, .int, .real, .float, .char, .symbol,
+  .timestamp, .month, .date, .datetime, .timespan, .minute, .second, .time]
+
+/-- The placeholder of the object variable `k`; none past `varAtoms`, where the variable stays `.long`. -/
+def varObj (k : Nat) : Option Obj := varAtoms[k]?.map .atom
 
 abbrev Objs := List (String × ObjInfo)
 
@@ -251,17 +265,24 @@ inductive Pre
   | flat (p : Pre)
   | lit (pos : Pos) (a b : OTy) (ps : List (Tup × Tup))
   | close (pos : Pos) (p : Pre) (a : OTy) (why : String)
-  /-- The variable `k` of a fixed point `X : a ⟶ b`, at the place `pos` it is used. -/
-  | var (pos : Pos) (k : Nat) (a b : OTy)
+  /-- The variable `k` of a fixed point `X : a ⟶ b`, at the place `pos` it is used; or a constant's parameter,
+      its argument's form (`Form`): closed (`none`), run on demand (`some false`), tested on pairs and never run
+      (`some true`). -/
+  | var (pos : Pos) (k : Nat) (a b : OTy) (tst : Option Bool)
   /-- `μX : body` (`least`) or `νX : body`, `X` the variable `k`; `S` the meet of `body`'s conjuncts that do not
       mention `X`, a `ν`'s start. -/
   | fix (pos : Pos) (least : Bool) (k : Nat) (S : Option Pre) (body : Pre) (a b : OTy)
-  /-- The constant `c` at `pos`, at the objects `us` of its object variables and the arguments `args`; `alt` the
-      definition's body expanded at the use, which every analysis reads and `build` does not. -/
-  | call (pos : Pos) (c : Lean.Name) (us : List OTy) (args : List Pre) (alt : Pre) (a b : OTy)
   /-- `refold(c, S)` at `pos`: `body` the `μX : c G(X) S` it is, `X` the variable `k`; `ch : a ⟶ a` the children
       `c` gives a node, `c` then `G`'s membership. -/
   | refold (pos : Pos) (k : Nat) (ch body : Pre) (a b : OTy)
+  /-- The constant `c` at `pos`, at the objects `us` of its object variables, each with whether `c` is generic
+      over it and whether `c` reads its universe, and the arguments `args`, each passed as its pair test where
+      `ts` says so (`Form`), its plan on keys in demand when `d`;
+      `cv` its converse's constant (`Tm.call`); `tst`: `c` is the pair test of a body that only tests (§a). `alt`
+      the definition's body expanded at the use, which every analysis reads and `build` does not. -/
+  | call (pos : Pos) (c : Lean.Name) (us : List (OTy × Bool × Bool)) (args : List Pre) (ts : List Bool) (alt : Pre)
+      (a b : OTy)
+      (d : Bool) (cv : Option (Lean.Name × Bool)) (tst : Bool)
 
 instance : Inhabited Pre := ⟨.id (.base "")⟩
 
@@ -300,10 +321,10 @@ def Pre.at (p : Pos) : Pre → Pre
   | .flat x => .flat (x.at p)
   | .lit _ a b ps => .lit p a b ps
   | .close _ x a why => .close p (x.at p) a why
-  | .var _ k a b => .var p k a b
+  | .var _ k a b t => .var p k a b t
   | .fix _ l k S x a b => .fix p l k (S.attach.map fun ⟨y, _⟩ => y.at p) (x.at p) a b
-  | .call _ c us xs alt a b => .call p c us (xs.attach.map fun ⟨y, _⟩ => y.at p) (alt.at p) a b
   | .refold _ k ch x a b => .refold p k (ch.at p) (x.at p) a b
+  | .call _ c us xs ts alt a b d cv tst => .call p c us (xs.attach.map fun ⟨y, _⟩ => y.at p) ts (alt.at p) a b d cv tst
   -- no position and no part
   | x@(.tm _) | x@(.zero ..) | x@(.id _) | x@(.mem _) | x@(.outl ..) | x@(.outr ..) | x@(.inl ..) | x@(.inr ..)
   | x@(.tau _) | x@(.nil ..) | x@(.cons _) | x@(.uncons _) | x@(.length ..) | x@(.total _)
@@ -315,13 +336,31 @@ def noLeft : String := "the term here needs keys and has no left context"
 
 /-! ### Object variables -/
 
+/-- The form of an argument at a call (module design §5 M): closed (`none`), run on the keys in demand
+    (`some false`), tested on pairs (`some true`, its pair test, §a); or a family whose index is the class `i` among
+    the call's indices (§e). Part of the constant's signature. -/
+abbrev Form := Option Bool × Option Nat
+
+/-- What a call needs of a constant (the registry): the constant; its plan's demand bit; per object variable,
+    whether it is generic over it and whether it reads its universe; its converse's constant and demand bit;
+    whether it is a pair test. -/
+abbrev Sig := Lean.Name × Bool × List (Bool × Bool) × Option (Lean.Name × Bool) × Bool
+
+/-- A definition elaborated once at its arguments' forms (`once`): its registry key (`formKey`), its constant, per
+    object variable whether the constant is generic over it (the variables' universes are the term variables
+    `0 … n-1`), its parameters' objects and demand bits as the constant takes them (the variables from `n` on), its
+    body, and whether that body is its pair test (it builds no relation, §a). -/
+abbrev Once := Lean.Name × Lean.Name × List Bool × List (Obj × Obj × Bool) × Res × Bool
+
 structure St where
   ms : Array (Option OTy) := #[]
   /-- The fixed points so far: the next one's variable. -/
   fixes : Nat := 0
-  /-- The uses of a definition's constant that expand its body instead (decision M, until step 5): the constant
-      and where and why. -/
-  expanded : List (String × String) := []
+  /-- The constants built so far at the forms the program's calls take, in the order `emit` adds them. -/
+  specs : List Once := []
+  /-- The objects of the program elaborating, where a call tries its arguments' forms (`callDef`): a definition's
+      own scope does not hold the caller's objects nor the universes of its object variables. -/
+  objs : Objs := []
 
 abbrev M := StateT St (Except Err)
 
@@ -376,7 +415,7 @@ def Pre.nilSrcs : Pre → List OTy
   | .comp x y | .meet x y | .join x y | .diff x y | .ldiv _ x y _ _ | .rdiv _ x y _ _ | .pair x y | .prod x y
   | .junc x y | .fold x y | .foldI x y => x.nilSrcs ++ y.nilSrcs
   | .conv x | .dom x | .ran x | .lam x | .E x | .map x | .filter x | .takewhile x | .est x | .thin x | .own x | .thinL x | .merge x
-  | .loop x | .flat x | .close _ x _ _ | .fix _ _ _ _ x _ _ | .call _ _ _ _ x _ _ => x.nilSrcs
+  | .loop x | .flat x | .close _ x _ _ | .fix _ _ _ _ x _ _ | .call _ _ _ _ _ x _ _ _ _ _ => x.nilSrcs
   | .refold _ _ ch x _ _ => ch.nilSrcs ++ x.nilSrcs
   | .var .. | .tm _| .zero .. | .id _ | .mem _ | .outl .. | .outr .. | .inl .. | .inr .. | .tau _ | .cons _
   | .uncons _ | .length .. | .total _ | .inits _ | .tails _ | .«prefix» _ | .suffix _ | .concat _ | .cat _ | .uncat _ | .zip .. | .snoc _ | .unsnoc _ | .setify _
@@ -407,7 +446,7 @@ def Pre.parts : Pre → List (Pre × Pol)
   | .comp x y | .meet x y | .join x y | .pair x y | .prod x y | .junc x y | .fold x y | .foldI x y =>
     [(x, .mono), (y, .mono)]
   | .conv x | .dom x | .ran x | .map x | .filter x | .takewhile x | .est x | .own x | .loop x | .flat x | .close _ x _ _
-  | .fix _ _ _ _ x _ _ | .call _ _ _ _ x _ _ => [(x, .mono)]
+  | .fix _ _ _ _ x _ _ | .call _ _ _ _ _ x _ _ _ _ _ => [(x, .mono)]
   | .refold _ _ ch x _ _ => [(ch, .mono), (x, .mono)]
   | .lam x => [(x, .not "Λ")]
   | .E x => [(x, .not "E")]
@@ -420,13 +459,13 @@ def Pre.parts : Pre → List (Pre × Pol)
 
 /-- Where the variable `k` first occurs in `x`. -/
 partial def Pre.occ (k : Nat) : Pre → Option Pos
-  | .var p j _ _ => if j == k then some p else none
+  | .var p j _ _ _ => if j == k then some p else none
   | x => x.parts.findSome? (·.1.occ k)
 
 /-- The first occurrence of `X`, the variable `k` of `fx` (`μX`, `νX`), where the body is not monotonic in it:
     under an operator that is not, or under an odd number of antitone places, `why` the last of them. -/
 partial def Pre.polarity (k : Nat) (fx x : String) (pos : Bool) (why : String) : Pre → Option Err
-  | .var p j _ _ =>
+  | .var p j _ _ _ =>
     if j == k && !pos then
       some ⟨p, s!"{fx}: {x} occurs in {why} at {p.line}:{p.col} (antitone); {x} must occur only in monotonic positions"⟩
     else none
@@ -814,7 +853,7 @@ def settle (m : Option OTy) (p : Pos) (as : List Arg) : Arg → M Arg
     constant; the terms `μX : c G(X) S` would elaborate to as written. -/
 partial def refoldG (p : Pos) (k : Nat) (a b : OTy) (t s : OTy) : M (Pre × OTy × Option Pre) := do
   let any := match s with | .mv _ => true | _ => false
-  if t == a && (s == b || any) then return (.var p k a b, b, some (.id a))
+  if t == a && (s == b || any) then return (.var p k a b none, b, some (.id a))
   let w := "[R,S] reads its parts whole"
   match t, s with
   | .prod t₁ t₂, .prod s₁ s₂ | .prod t₁ t₂, s₁@(.mv _) =>
@@ -847,7 +886,7 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
   | .name p n => do
     match env.params.lookup n with
     -- a fixed point's variable at the place it is used, which its errors name
-    | some (.rel (.var _ k a b) s t) => pure (.rel (.var p k a b) s t)
+    | some (.rel (.var _ k a b x) s t) => pure (.rel (.var p k a b x) s t)
     | some a => pure a
     | none => match env.def? n with
       | some d =>
@@ -972,7 +1011,7 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
     if m.isSome then notLiftable p fx
     let a ← fresh; let c ← fresh
     let k ← modifyGet fun s => (s.fixes, { s with fixes := s.fixes + 1 })
-    let (q, s, t) := (← elabE { env with params := (x, .rel (.var p k a c) a c) :: env.params } none b).plain
+    let (q, s, t) := (← elabE { env with params := (x, .rel (.var p k a c none) a c) :: env.params } none b).plain
     unify p s!"the source of {fx}'s body" s a; unify p s!"the target of {fx}'s body" t c
     if let some e := q.polarity k fx x true "" then throw e
     let S := q.bound k
@@ -1230,7 +1269,8 @@ def convTm {A B : Obj} {d : Bool} (t : Tm A B d) : Except String ((e : Bool) × 
   if h : d = false then pure ⟨false, .conv (h ▸ t)⟩ else
   match t with
   | .val R => pure ⟨false, .conv (.val R)⟩
-  | .var k => pure ⟨false, .conv (.var k)⟩
+  -- a parameter tested on pairs is a coreflexive, its own converse
+  | .var k => pure ⟨true, .var k⟩
   | .nu k S b => pure ⟨false, .conv (.nu k S b)⟩
   | .mu k w n b => pure ⟨false, .conv (.mu k w n b)⟩
   | .uni U => pure ⟨false, .uni U⟩
@@ -1281,8 +1321,14 @@ def convTm {A B : Obj} {d : Bool} (t : Tm A B d) : Except String ((e : Bool) × 
   | .cat => pure ⟨_, .uncat⟩
   | .uncat => pure ⟨_, .cat⟩
   -- the number verbs are closed on their universe: their converse is read whole there
-  | .succ U => pure ⟨false, .conv (.comp (.uni (A := .long) U) (.succ U))⟩
-  | .arith k U => pure ⟨false, .conv (.comp (.uni (Alg.prod (idU U) (idU U)).key) (.arith k U))⟩
+  | .succ U => pure ⟨false, .conv (.comp U (.succ U))⟩
+  | .arith k U => pure ⟨false, .conv (.comp (.prod U U) (.arith k U))⟩
+  -- a constant's plan on demand: its converse constant at the same arguments; with none, read whole on its
+  -- source's universe
+  | .call d c os cv => match cv with
+    | some (c', e) => pure ⟨e, .call e c' os (some (c, d))⟩
+    | none => throw s!"`{c}`"
+  | .arg f x => do let ⟨_, f⟩ ← convTm f; pure ⟨_, .arg f x⟩
   | .top _ => throw "⊤"
   | .mem => throw "∋"
   | .outl => throw "π₁"
@@ -1353,15 +1399,15 @@ section Build
 
 variable (objs : Objs) (st : St) (dp : Pos)
 
-/-- A solved object's `Obj`: every declared base object is `long`. -/
+/-- A solved object's `Obj`: every declared base object is `long`, an object variable as `ObjInfo.obj` stores it. -/
 def objOf : OTy → Except Err Obj
-  | .base _ => pure .long
+  | .base n => pure ((objs.lookup n).elim .long (·.obj))
   | .prod a b => return .prod (← objOf a) (← objOf b)
   | .sum a b => return .sum (← objOf a) (← objOf b)
   | .arr a => return .arr (← objOf a)
   | .mv _ => throw ⟨dp, "an object is not determined; write the constant's objects, as in ⊤(A,B) or 𝟙(A)"⟩
 
-def toObj (o : OTy) : Except Err Obj := objOf dp (zonk st o)
+def toObj (o : OTy) : Except Err Obj := objOf objs dp (zonk st o)
 
 def internal {α : Type} (what : String) : Except Err α := throw ⟨dp, s!"internal: {what}"⟩
 
@@ -1375,19 +1421,36 @@ def closed? {A B : Obj} (r : Res) : Except Err (Tm A B false) := do
   | ⟨false, t⟩ => pure t
   | ⟨true, _⟩ => internal dp "a term that needs keys where none are supplied"
 
-/-- `𝟙` on the universe of `o`, or the error that `o` has none. -/
+/-- `𝟙` on the universe of `o`, or the error that `o` has none: a declared one's literal (`uniOf`); else built
+    from its parts, an object variable's being the universe its constant is given (`uniVar`). -/
+def uniPart (o : OTy) (A : Obj) : Except Err (Option (Tm A A false)) := do
+  if let some ⟨A', _, U⟩ := uniOf objs o then
+    return ← if h : A' = A then pure (some (.uni (h ▸ U))) else internal dp "universe objects disagree"
+  match o, A with
+  | .base n, _ => pure (((objs.lookup n).bind (·.uniVar)).map .var)
+  | .prod a b, .prod A B => do
+    let (some u, some v) := (← uniPart a A, ← uniPart b B) | pure none
+    pure (some (.prod u v))
+  | .sum a b, .sum A B => do
+    let (some u, some v) := (← uniPart a A, ← uniPart b B) | pure none
+    pure (some (.junc (.comp u .inl) (.comp v .inr)))
+  | _, _ => pure none
+
+/-- `uniPart`, or the error naming the whole object `o` that has no universe. -/
 def uniTm (p : Pos) (o : OTy) (A : Obj) (what : String) : Except Err (Tm A A false) := do
-  if let .base n := zonk st o then if let some k := (objs.lookup n).bind (·.uniVar) then return .var k
-  match uniOf objs (zonk st o) with
-  | some ⟨A', _, U⟩ => if h : A' = A then pure (.uni (h ▸ U)) else internal dp "universe objects disagree"
+  match ← uniPart objs dp (zonk st o) A with
+  | some t => pure t
   | none => throw ⟨p, s!"{what}: {zonk st o} has no universe; compose a set of its elements before it (§a)"⟩
 
-/-- The universe of a declared base object, for `succ`, the value verbs (`plus`, …), `≤`, `<`. -/
-def numU (p : Pos) (o : OTy) (op : String) : Except Err ((m : USize) × Arr .long m) :=
+/-- The universe of a number object, for `succ`, the value verbs (`plus`, …), `≤`, `<`: a declared object's,
+    or the one a constant is given for an object variable. -/
+def numU (p : Pos) (o : OTy) (op : String) : Except Err (Tm .long .long false) :=
   match zonk st o with
-  | .base n => match (objs.lookup n).bind (·.uni) with
-    | some u => pure u
-    | none => throw ⟨p, s!"{op} on {n}: no universe"⟩
+  | .base n => match objs.lookup n with
+    | some { uni := some ⟨_, U⟩, .. } => pure (.uni (A := .long) U)
+    | some { uniVar := some k, obj := .atom .long, .. } => pure (.var k)
+    | some { uniVar := some _, .. } => throw ⟨p, s!"{op} on {n}: a number object, which its constant is not generic over"⟩
+    | _ => throw ⟨p, s!"{op} on {n}: no universe"⟩
   | o => throw ⟨p, s!"{op} runs on a declared object, found {o}"⟩
 
 /-- The element `w` of the declared base object `o`: its position among the named elements, or the number. -/
@@ -1457,19 +1520,19 @@ mutual
     universes, whose absence is the error of §a. -/
 def build : Pre → Except Err Res
   | .tm r => pure r
-  | .zero a b => return ⟨← toObj st dp a, ← toObj st dp b, false, .zero⟩
-  | .id a => return ⟨_, _, true, .id (A := ← toObj st dp a)⟩
+  | .zero a b => return ⟨← toObj objs st dp a, ← toObj objs st dp b, false, .zero⟩
+  | .id a => return ⟨_, _, true, .id (A := ← toObj objs st dp a)⟩
   | .top p a b tgt => do
-    let A ← toObj st dp a; let B ← toObj st dp b
+    let A ← toObj objs st dp a; let B ← toObj objs st dp b
     let V ← match tgt with
       | none => uniTm objs st dp p b B "⊤'s target"
       | some q => do closed? dp (← build q)
     pure ⟨A, B, true, .top V⟩
-  | .mem b => return ⟨_, _, true, .mem (B := ← toObj st dp b)⟩
-  | .outl a b => return ⟨_, _, true, .outl (A := ← toObj st dp a) (B := ← toObj st dp b)⟩
-  | .outr a b => return ⟨_, _, true, .outr (A := ← toObj st dp a) (B := ← toObj st dp b)⟩
-  | .inl a b => return ⟨_, _, true, .inl (A := ← toObj st dp a) (B := ← toObj st dp b)⟩
-  | .inr a b => return ⟨_, _, true, .inr (A := ← toObj st dp a) (B := ← toObj st dp b)⟩
+  | .mem b => return ⟨_, _, true, .mem (B := ← toObj objs st dp b)⟩
+  | .outl a b => return ⟨_, _, true, .outl (A := ← toObj objs st dp a) (B := ← toObj objs st dp b)⟩
+  | .outr a b => return ⟨_, _, true, .outr (A := ← toObj objs st dp a) (B := ← toObj objs st dp b)⟩
+  | .inl a b => return ⟨_, _, true, .inl (A := ← toObj objs st dp a) (B := ← toObj objs st dp b)⟩
+  | .inr a b => return ⟨_, _, true, .inr (A := ← toObj objs st dp a) (B := ← toObj objs st dp b)⟩
   | .comp p q => do
     let ⟨A, B, d, t⟩ ← build p; let ⟨B', C, _, u⟩ ← build q
     if h : B' = B then pure ⟨A, C, d, .comp t (h ▸ u)⟩ else internal dp "composition objects disagree"
@@ -1550,42 +1613,42 @@ def build : Pre → Except Err Res
     if h : B = A then pure ⟨_, _, _, .takewhile (h ▸ t)⟩ else internal dp "takewhile's predicate is not on one object"
   | .est p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .est c⟩
   | .thin p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .thin c⟩
-  | .tau a => return ⟨_, _, true, .tau (A := ← toObj st dp a)⟩
-  | .nil a b => return ⟨_, _, true, .nil (A := ← toObj st dp a) (B := ← toObj st dp b)⟩
-  | .cons b => return ⟨_, _, true, .cons (B := ← toObj st dp b)⟩
-  | .uncons b => return ⟨_, _, true, .uncons (B := ← toObj st dp b)⟩
+  | .tau a => return ⟨_, _, true, .tau (A := ← toObj objs st dp a)⟩
+  | .nil a b => return ⟨_, _, true, .nil (A := ← toObj objs st dp a) (B := ← toObj objs st dp b)⟩
+  | .cons b => return ⟨_, _, true, .cons (B := ← toObj objs st dp b)⟩
+  | .uncons b => return ⟨_, _, true, .uncons (B := ← toObj objs st dp b)⟩
   | .length b n => do
-    if (← toObj st dp n) != .long then internal dp "length's target"
-    pure ⟨_, _, true, .length (B := ← toObj st dp b)⟩
-  | .total n => do if (← toObj st dp n) != .long then internal dp "sum's target"
+    if (← toObj objs st dp n) != .long then internal dp "length's target"
+    pure ⟨_, _, true, .length (B := ← toObj objs st dp b)⟩
+  | .total n => do if (← toObj objs st dp n) != .long then internal dp "sum's target"
                    pure ⟨_, _, true, .total⟩
-  | .inits b => return ⟨_, _, true, .inits (B := ← toObj st dp b)⟩
-  | .tails b => return ⟨_, _, true, .tails (B := ← toObj st dp b)⟩
-  | .«prefix» b => return ⟨_, _, true, .«prefix» (B := ← toObj st dp b)⟩
-  | .suffix b => return ⟨_, _, true, .suffix (B := ← toObj st dp b)⟩
-  | .concat b => return ⟨_, _, true, .concat (B := ← toObj st dp b)⟩
-  | .cat b => return ⟨_, _, true, .cat (B := ← toObj st dp b)⟩
-  | .uncat b => return ⟨_, _, true, .uncat (B := ← toObj st dp b)⟩
-  | .zip a b => return ⟨_, _, true, .zip (A := ← toObj st dp a) (B := ← toObj st dp b)⟩
-  | .snoc b => return ⟨_, _, true, .snoc (B := ← toObj st dp b)⟩
-  | .unsnoc b => return ⟨_, _, true, .unsnoc (B := ← toObj st dp b)⟩
+  | .inits b => return ⟨_, _, true, .inits (B := ← toObj objs st dp b)⟩
+  | .tails b => return ⟨_, _, true, .tails (B := ← toObj objs st dp b)⟩
+  | .«prefix» b => return ⟨_, _, true, .«prefix» (B := ← toObj objs st dp b)⟩
+  | .suffix b => return ⟨_, _, true, .suffix (B := ← toObj objs st dp b)⟩
+  | .concat b => return ⟨_, _, true, .concat (B := ← toObj objs st dp b)⟩
+  | .cat b => return ⟨_, _, true, .cat (B := ← toObj objs st dp b)⟩
+  | .uncat b => return ⟨_, _, true, .uncat (B := ← toObj objs st dp b)⟩
+  | .zip a b => return ⟨_, _, true, .zip (A := ← toObj objs st dp a) (B := ← toObj objs st dp b)⟩
+  | .snoc b => return ⟨_, _, true, .snoc (B := ← toObj objs st dp b)⟩
+  | .unsnoc b => return ⟨_, _, true, .unsnoc (B := ← toObj objs st dp b)⟩
   | .own p => do
     let ⟨A, B, d, t⟩ ← build p
     if h : B = A then pure ⟨A, A, d, .own (h ▸ t)⟩ else internal dp "perm's objects"
-  | .setify b => return ⟨_, _, true, .setify (B := ← toObj st dp b)⟩
-  | .bagify b => return ⟨_, _, true, .bagify (B := ← toObj st dp b)⟩
-  | .tic b => return ⟨_, _, true, .tic (B := ← toObj st dp b)⟩
-  | .atPos k b => return ⟨_, _, true, .atPos k (B := ← toObj st dp b)⟩
+  | .setify b => return ⟨_, _, true, .setify (B := ← toObj objs st dp b)⟩
+  | .bagify b => return ⟨_, _, true, .bagify (B := ← toObj objs st dp b)⟩
+  | .tic b => return ⟨_, _, true, .tic (B := ← toObj objs st dp b)⟩
+  | .atPos k b => return ⟨_, _, true, .atPos k (B := ← toObj objs st dp b)⟩
   | .thinL p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .thinL c⟩
   | .merge p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .merge c⟩
   | .loop p => do
     match ← build p with
     | r@⟨.prod X Y, _, _, _⟩ => do let ⟨_, F⟩ ← at? dp (A := .prod X Y) (B := X) r; pure ⟨_, _, true, .loop F⟩
     | _ => internal dp "loop's argument"
-  | .succ p n => do let ⟨_, U⟩ ← numU objs st p n "succ"; pure ⟨_, _, true, .succ U⟩
-  | .arith p k n => do let ⟨_, U⟩ ← numU objs st p n (Op.arith k).sym; pure ⟨_, _, true, .arith k U⟩
-  | .leq p n => do let ⟨_, U⟩ ← numU objs st p n "≤"; pure ⟨_, _, false, .leq U⟩
-  | .lt p n => do let ⟨_, U⟩ ← numU objs st p n "<"; pure ⟨_, _, false, .lt U⟩
+  | .succ p n => return ⟨_, _, true, .succ (← numU objs st p n "succ")⟩
+  | .arith p k n => return ⟨_, _, true, .arith k (← numU objs st p n (Op.arith k).sym)⟩
+  | .leq p n => return ⟨_, _, false, .leq (← numU objs st p n "≤")⟩
+  | .lt p n => return ⟨_, _, false, .lt (← numU objs st p n "<")⟩
   | .fold e s => do
     let r ← build e; let ⟨V, _, _, _⟩ := r
     match ← build s with
@@ -1613,31 +1676,27 @@ def build : Pre → Except Err Res
     let ⟨B, v⟩ ← litCol objs st dp p n (zonk st b) (ps.map (·.2))
     pure ⟨A, B, false, .val ⟨n, k, v⟩⟩
   | .close p q a why => do closeRes objs st dp p a why (← build q)
-  | .var _ k a b => return ⟨← toObj st dp a, ← toObj st dp b, false, .var k⟩
-  -- the constant takes, per object variable, a declared object's universe, and closed relations (M); any other
-  -- use is refused, since the constant was built with each variable a `.long` object of its own
-  | .call pos c us xs _ a b => do
-    let A ← toObj st dp a; let B ← toObj st dp b
-    let f ← us.foldlM (fun f u => do
-      let u := zonk st u
-      unless (match u with | .base _ => (uniOf objs u).isSome | _ => false) do
-        throw ⟨pos, s!"`{c}`: an object variable is {u} here; its constant takes only a declared object with a universe"⟩
-      return .arg f (← uniTm objs st dp pos u .long "a call")) (Tm.call (A := A) (B := B) c)
-    let f ← xs.attach.foldlM (init := f) fun (f : Tm A B false) ⟨x, h⟩ => do
-      have : sizeOf x < sizeOf xs := List.sizeOf_lt_of_mem h
-      match ← build x with
-      | ⟨_, _, false, t⟩ => pure (.arg f t)
-      | _ => throw ⟨pos, s!"`{c}`: an argument needs keys; its constant takes only closed relations (decision M)"⟩
-    pure ⟨A, B, false, f⟩
   -- the children and the body run on the nodes in demand, no universe read
   | .refold p k ch q a b => do
-    let A ← toObj st dp a; let B ← toObj st dp b
+    let A ← toObj objs st dp a; let B ← toObj objs st dp b
     let ⟨_, c⟩ ← at? dp (A := A) (B := A) (← build ch)
     let ⟨_, t⟩ ← at? dp (A := A) (B := B) (← build q)
     pure ⟨A, B, true, .refold k s!"the refold at {p}" c t⟩
+  | .var _ k a b none => return ⟨← toObj objs st dp a, ← toObj objs st dp b, false, .var k⟩
+  | .var _ k a b (some false) => return ⟨← toObj objs st dp a, ← toObj objs st dp b, true, .var k⟩
+  -- a parameter given a pair test runs nowhere; `test` reads it
+  | .var pos _ _ _ (some true) =>
+    throw ⟨pos, "this parameter is tested on the pairs it compares, not run: its argument is a pair test (§a)"⟩
+  -- a constant that is a pair test runs nowhere; `test` calls it
+  | .call pos c _ _ _ _ _ _ _ _ true =>
+    throw ⟨pos, s!"`{c}` is tested on the pairs it compares, not run: its constant is its pair test (§a)"⟩
+  | .call pos c us xs ts _ a b d cv false => do
+    let A ← toObj objs st dp a; let B ← toObj objs st dp b
+    let os ← (us.filter (·.2.1)).mapM fun (u, _) => toObj objs st dp u
+    pure ⟨A, B, d, ← callArgs pos c us xs ts (Tm.call (A := A) (B := B) d c os cv)⟩
   -- the body read whole each round, on its source's universe when it needs keys
   | .fix p least k S q a b => do
-    let A ← toObj st dp a; let B ← toObj st dp b
+    let A ← toObj objs st dp a; let B ← toObj objs st dp b
     let why := s!"{if least then "μ" else "ν"}'s body is read whole each round"
     let body ← closed? dp (A := A) (B := B) (← closeRes objs st dp p a why (← build q))
     if least then
@@ -1654,6 +1713,22 @@ def build : Pre → Except Err Res
       | none => internal dp "ν without its bound"
 termination_by x => (sizeOf x, 0)
 
+/-- The call `f` given, per object variable `u` of its constant, the universe of `u` where the constant reads it,
+    then the arguments `xs`, each built (closed or run on demand) or, where `ts` says so, its pair test (`Form`). A
+    variable the constant is not generic over is a number object (`.long`). -/
+def callArgs (pos : Pos) (c : Lean.Name) (us : List (OTy × Bool × Bool)) (xs : List Pre) (ts : List Bool) {A B : Obj}
+    {d : Bool} (f : Tm A B d) : Except Err (Tm A B d) := do
+  let f ← us.foldlM (init := f) fun f (u, gen, reads) => do
+    let U ← toObj objs st dp u
+    unless gen || U == .long do
+      throw ⟨pos, s!"`{c}`: an object variable is {zonk st u} here; its constant is not generic over it, a number object"⟩
+    if reads then return .arg f (← uniTm objs st dp pos u U s!"`{c}`") else pure f
+  xs.attach.zipIdx.foldlM (init := f) fun f (⟨x, h⟩, i) => do
+    have : sizeOf x < sizeOf xs := List.sizeOf_lt_of_mem h
+    if ts.getD i false then let ⟨_, _, t⟩ ← test x; return .arg f t
+    let ⟨_, _, _, t⟩ ← build x; pure (.arg f t)
+termination_by (sizeOf xs, 3)
+
 /-- `τ(R)`, the pair test of `R : A ⟶ B` (`Cor`), for `R` that cannot enumerate its targets: a term that
     builds is tested as `dom(π₂ ∩ π₁R)`; otherwise by its form — `R/S`, `R\S`, `frac`, `∼`, `−`, `∩`, `∪`, `°`,
     and a composite with a side that runs. The error is `p`'s own build error. -/
@@ -1662,8 +1737,15 @@ def test (p : Pre) : Except Err Cor :=
   | .ok ⟨A, B, _, t⟩ => pure ⟨A, B, pairTest t⟩
   | .error err => match p with
     | .close _ q _ _ => test q
+    -- a constant that is a pair test, `τ(c(…)) : A×B ⟶ A×B` (`once`)
+    -- a parameter given a pair test (`Form`)
+    | .var _ k a b (some true) => do pure ⟨← toObj objs st dp a, ← toObj objs st dp b, .var k⟩
+    | .call pos c us xs ts _ a b _ _ true => do
+      let A ← toObj objs st dp a; let B ← toObj objs st dp b
+      let os ← (us.filter (·.2.1)).mapM fun (u, _) => toObj objs st dp u
+      pure ⟨A, B, ← callArgs pos c us xs ts (Tm.call (A := .prod A B) (B := .prod A B) true c os none)⟩
     | .conv q => do let ⟨A, B, c⟩ ← test q; pure ⟨B, A, .comp swapTm (.comp c swapTm)⟩
-    | .top _ a b none => do pure ⟨← toObj st dp a, ← toObj st dp b, .id⟩
+    | .top _ a b none => do pure ⟨← toObj objs st dp a, ← toObj objs st dp b, .id⟩
     | .meet q r => do let c ← test q; let ⟨A, B, c₁⟩ := c; pure ⟨A, B, .meet c₁ (← corAt dp A B (← test r))⟩
     | .join q r => do let c ← test q; let ⟨A, B, c₁⟩ := c; pure ⟨A, B, .join c₁ (← corAt dp A B (← test r))⟩
     | .diff q r => do let c ← test q; let ⟨A, B, c₁⟩ := c; pure ⟨A, B, .diff c₁ (← corAt dp A B (← test r))⟩

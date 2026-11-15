@@ -30,7 +30,7 @@ def output (dir : String) (rs : Side × Side) : Bld Unit := do
 
 /-- The plan of `output x to dir` in the program `prog`, read after the programs `chain` (`Expand.read`). -/
 def planOf (chain : List (Lean.Name × Program)) (prog : Program) (x : String) (dir : String) : Except String Plan := do
-  let (ds, _) ← (Expand.read (fun _ => false) chain prog).mapError (s!"{repr ·}")
+  let (ds, _) ← (Expand.read (fun _ => none) chain prog).mapError (s!"{repr ·}")
   let some ⟨_, _, _, t⟩ := ds.lookup x | throw s!"`{x}` is no closed definition of the program"
   Bld.plan (do output dir (← ofTm t))
 

@@ -200,6 +200,13 @@ def arith (k : UInt8) (m : USize) (U : Arr .long m × Bool) : Fn true (.prod .lo
   CRel.comp ⟨Alg.arith k D.val, true⟩ ⟨idU U.1, U.2⟩
 def leq (m : USize) (U : Arr .long m × Bool) : Fn false .long .long := fun _ => also U.2 (CRel.leq U.1)
 def lt (m : USize) (U : Arr .long m × Bool) : Fn false .long .long := fun _ => also U.2 (CRel.lt U.1)
+/-- `succ`, a value verb, `≤`, `<` on the universe `U` a constant is given for an object variable: its keys. -/
+def succF (U : Fn false .long .long) : Fn true .long .long := fun D =>
+  let u := U (); also u.ok (CRel.comp ⟨D, true⟩ (CRel.succ u.rel.key))
+def arithF (k : UInt8) (U : Fn false .long .long) : Fn true (.prod .long .long) .long := fun D =>
+  CRel.comp ⟨Alg.arith k D.val, true⟩ (U ())
+def leqF (U : Fn false .long .long) : Fn false .long .long := fun _ => let u := U (); also u.ok (CRel.leq u.rel.key)
+def ltF (U : Fn false .long .long) : Fn false .long .long := fun _ => let u := U (); also u.ok (CRel.lt u.rel.key)
 def fold (E V : Obj) (d : Bool) (e : Fn false V V) (S : Fn d (.prod E V) V) : Fn true (.arr E) V := fun D =>
   let v := e (); also v.ok (CRel.foldOn v.rel.val (onKeys d S) D.val)
 
@@ -278,6 +285,8 @@ def refold (A B : Obj) (d e : Bool) (ch : Fn d A A) (φ : CRel A B → Fn e A B)
 /-! ### Plans: the bit-rule nodes kept, every other sub-term its table -/
 
 def pleaf (A B : Obj) (d : Bool) (f : Fn d A B) : Pl d A B := fun D => let r := f D; (.leaf r.rel, r.ok)
+/-- The plan `P` run to its relation: a constant's result or argument read where a table is wanted. -/
+def ofPl (A B : Obj) (d : Bool) (P : Pl d A B) : Fn d A B := fun D => let r := P D; also r.2 (ofC (Bits.runC r.1))
 def pcomp (A B C : Obj) (d e : Bool) (R : Pl d A B) (S : Pl e B C) : Pl d A C := fun D =>
   let r := R D; let k := demP e r.1; let s := S k.1; (.comp r.1 s.1, r.2 && k.2 && s.2)
 def pconv (A B : Obj) (R : Pl false A B) : Pl false B A := fun _ => let r := R (); (.conv r.1, r.2)
