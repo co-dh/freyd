@@ -166,3 +166,7 @@ turn it is deleted from the list.
 | 165 | cons stages 1+2: `lengthC` = hi−lo with `rep_lengthC`; `mapC` takes `mapSimpleC` (one find + one pick) when R is simple; f8dffb1 → 9baac09, master gate 842 green |
 | 166 | c2rust trial: doc/c2rust.md (85a32ce) + handover steps (42d7af4); recommendation A+C |
 | 167 | ch07 cite markers re-keyed after S5 (24 markers, 0b43ab5 → 5273e49); cite-check 161 markers verified |
+| 168 | μ on any object (ed44b88 → f77af6d): refusal on array objects removed; cap = max 1024 (n·m+2) per μ, a cap hit clears the ok bit and the error names the μ and its cap; least-fixed-point rests on the runtime check, no theorem; gate 842 green |
+| 169 | cons stage 3 prefix/suffix (e6bf0f0 → 97faca3): `nestMemC` flat slice kernel, `rep_prefixC`/`rep_suffixC`; prefix L=1000 15477 → 8 ms; suffix untimed; gate 842 green |
+| 170 | Party folds by μ (aima 7575d99); cons stage 3b filter/takewhile mask kernels (043b748, rep theorems not proved; L=16000 6734 → 2 ms); concatC kernel (7bf98e5, not wired, proof WIP in /data/tmp/cons3c/wip-rep_concatC.patch); merged 74dff71, gate 842 green |
+| 171 | postfix `R*` (95e3320 → c6053a5): parse-time desugar to `μX : 𝟙 ∪ R X`, same level as °, capture-free fresh variable, `*` reserved; gate green |
