@@ -1,5 +1,5 @@
 import LeetQ.Rel.Lang.Embed
-import LeetQ.Rel.Lang.Eval
+import LeetQ.Rel.Programs.Prelude
 
 /-! # String edit -/
 
@@ -82,6 +82,6 @@ rel_program edit after prelude where
     print spec length 𝟙(N)
     print Ddom(⟨π₁length,π₂length⟩{((2,2),(2,2))})spec
 
-#guard (Lang.runProgram edit).isOk
+#guard edit.ok
 
 end LeetQ.Rel.Programs

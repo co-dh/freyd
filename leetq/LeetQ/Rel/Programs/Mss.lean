@@ -1,5 +1,5 @@
 import LeetQ.Rel.Lang.Embed
-import LeetQ.Rel.Lang.Eval
+import LeetQ.Rel.Programs.Prelude
 
 /-! # The maximum segment sum
 
@@ -42,6 +42,6 @@ rel_program mss after prelude where
     check x mss = {(a,14),(b,9),(c,0),(d,3),(e,0)}
     check x⦇ran(zero⟨𝟙,Λ(𝟙)⟩), ⟨w,Λ(w ∪ (π₂π₂∋))⟩⦈π₂est(≥) = {(a,14),(b,9),(c,0),(d,3),(e,0)}
 
-#guard (Lang.runProgram mss).isOk
+#guard mss.ok
 
 end LeetQ.Rel.Programs

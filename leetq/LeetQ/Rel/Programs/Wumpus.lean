@@ -1,5 +1,5 @@
 import LeetQ.Rel.Lang.Embed
-import LeetQ.Rel.Lang.Eval
+import LeetQ.Rel.Programs.Prelude
 
 /-! # The Wumpus world -/
 
@@ -46,6 +46,6 @@ rel_program wumpus after prelude where
 
     check next(V,B,S) = {(0,(12,12)),(0,(21,21)),(1,(12,12)),(2,(12,12)),(3,(22,22)),(4,(23,23)),(4,(32,32)),(5,(32,32))}
 
-#guard (Lang.runProgram wumpus).isOk
+#guard wumpus.ok
 
 end LeetQ.Rel.Programs

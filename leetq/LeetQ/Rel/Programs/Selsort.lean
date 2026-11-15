@@ -1,5 +1,5 @@
 import LeetQ.Rel.Lang.Embed
-import LeetQ.Rel.Lang.Eval
+import LeetQ.Rel.Programs.Prelude
 
 /-! # Sorting by selection
 
@@ -37,6 +37,6 @@ rel_program selsort after prelude where
     check C X ⊑ C perm ordered(≤)                 -- selection_sort, 06:316
     check C X = C perm ordered(≤)
 
-#guard (Lang.runProgram selsort).isOk
+#guard selsort.ok
 
 end LeetQ.Rel.Programs

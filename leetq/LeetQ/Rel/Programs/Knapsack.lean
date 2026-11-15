@@ -1,5 +1,5 @@
 import LeetQ.Rel.Lang.Embed
-import LeetQ.Rel.Lang.Eval
+import LeetQ.Rel.Programs.Prelude
 
 /-! # The 0/1 knapsack
 
@@ -59,6 +59,6 @@ rel_program knapsack after prelude where
     check p = {(a,(5,4) (6,5)),(b,(2,2) (9,8)),(c,[(1,9)]),(d,(5,4) (5,5)),(d,(5,4) (5,6))}
     check knap = {(a,(5,4) (6,5)),(b,(2,2) (9,8)),(c,[(1,9)]),(d,(5,4) (5,5))}
 
-#guard (Lang.runProgram knapsack).isOk
+#guard knapsack.ok
 
 end LeetQ.Rel.Programs

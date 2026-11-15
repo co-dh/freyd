@@ -38,3 +38,23 @@ rel_program prelude where
     sort(Q : α ⟶ α) : [α] ⟶ [α] ≜ perm ordered(Q)
 
 end LeetQ.Rel.Programs
+
+namespace LeetQ.Rel.Lang
+
+/-- Parse a program's text, after the prelude. -/
+def Parse.parse (src : String) : Except Err Program := Parse.parseIn (Parse.scope Programs.prelude) src
+
+/-- Parse one term after the prelude, with the given names in scope as well: the round-trip checks. -/
+def Parse.parseExpr (src : String) (known : List (String × Nat) := []) (objs : List String := []) :
+    Except Err Expr := Parse.parseExprIn (Parse.scope Programs.prelude) src known objs
+
+/-- The declaration of each definition of the program `src` read after the prelude (`Expand.read`: every
+    declaration elaborated, nothing evaluated), in order; with no program, the prelude's. -/
+def typesOf (src : Option String) : Except Err (List String) := do
+  let prog ← match src with
+    | none => pure Programs.prelude
+    | some s => Parse.parse s
+  let _ ← Expand.read (if src.isSome then some Programs.prelude else none) [] prog
+  pure (prog.filterMap fun | .defn _ n ps _ ty => some (sigOf n ps ty) | _ => none)
+
+end LeetQ.Rel.Lang

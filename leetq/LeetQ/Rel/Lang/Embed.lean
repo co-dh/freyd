@@ -14,7 +14,6 @@ open Lean Parser Elab Command
 open LeetQ.Rel.Lang
 open LeetQ.Rel.Lang.Parse (P)
 
-deriving instance ToExpr for Lang.Pos
 deriving instance ToExpr for OExp
 deriving instance ToExpr for Op
 deriving instance ToExpr for Bin
@@ -130,6 +129,10 @@ syntax (name := sInfix) "_" relWord "_" "(" relParam,+ ")" (relType)? "≜" rel 
 
 -- one block, so the program's lines stay as they are (no per-line keyword) and its scope runs through them
 syntax (name := relProgram) "rel_program " ident (&" after " ident)? " where" (withPosition(relStmt))* : command
+/-- A variant of a program: its definitions, the `where` ones in place of those of their names, its checks dropped
+    (they state the base's own values), and only the declarations up to the definition `upto` names. -/
+syntax (name := relVariant) "rel_program " ident &" from " ident (&" upto " relWord)? " where"
+  (withPosition(relStmt))* : command
 
 /-! ### From syntax to the AST, in the text parser's state -/
 
@@ -385,24 +388,71 @@ unsafe def programOfUnsafe (n : Name) : CommandElabM Program := do
 /-- The value of the program `n`, a `rel_program` elaborated before. -/
 @[implemented_by programOfUnsafe] opaque programOf (n : Name) : CommandElabM Program
 
-/-- `rel_program n where …` is read in the empty scope, `rel_program n after pre where …` in the scope after the
-    prelude `pre` (`Parse.scope`). -/
-@[command_elab relProgram] def elabRelProgram : CommandElab := fun stx => do
-  let pre? ← if stx[2].getNumArgs == 0 then pure none else
-    pure (some (← programOf (← liftCoreM (realizeGlobalConstNoOverloadWithInfo stx[2][1]))))
-  let s₀ := match pre? with | none => { cs := #[] } | some p => Parse.scope p
-  match program (← getFileMap) s₀ stx[4].getArgs with
+/-- What a program is read after: the prelude (its constant, its value) and the programs between (as a term of the
+    constants `n.mid` and the programs, and their value). -/
+abbrev Chain := Name × Lean.Expr × Program × Program
+
+/-- The chain of `rel_program n after pre`: `pre`'s own (`pre.root`, `pre.mid`) with `pre` after it; `pre` alone
+    when it is read after nothing. -/
+def chainOf (pre : Name) : CommandElabM Chain := do
+  let p ← programOf pre
+  if (← getEnv).contains (pre ++ `root) then
+    pure (pre ++ `root, mkApp3 (mkConst ``List.append [0]) (mkConst ``Decl) (mkConst (pre ++ `mid)) (mkConst pre),
+      ← programOf (pre ++ `root), (← programOf (pre ++ `mid)) ++ p)
+  else pure (pre, mkApp (mkConst ``List.nil [0]) (mkConst ``Decl), p, [])
+
+def scopeOf : Option Chain → Parse.S
+  | none => { cs := #[] }
+  | some (_, _, r, m) => Parse.after (Parse.scope r) m
+
+def defConst (n : Name) (v : Lean.Expr) : CoreM Unit :=
+  addAndCompile <| .defnDecl
+    { name := n, levelParams := [], type := mkConst ``Program, value := v, hints := .abbrev, safety := .safe }
+
+/-- The program `n` named by `id`, its chain (`n.root`, `n.mid`), and what it reads (`Expand.emit`): each closed
+    definition as the Lean definition `n.rel.x`, its prints, its checks. -/
+def define (stx id : Syntax) (chain : Option Chain) (prog : Program) : CommandElabM Unit := do
+  let n := (← getCurrNamespace) ++ id.getId
+  liftTermElabM do
+    defConst n (toExpr (α := List Decl) prog)
+    if let some (r, m, _, _) := chain then defConst (n ++ `root) (mkConst r); defConst (n ++ `mid) m
+    Term.addTermInfo' id (mkConst n) (isBinder := true)
+  match Expand.read (chain.map (·.2.2.1)) ((chain.map (·.2.2.2)).getD []) prog with
   | .error e => throwErrorAt stx "{e}"
-  | .ok prog => do
-    let n := (← getCurrNamespace) ++ stx[1].getId
-    liftTermElabM do
-      addAndCompile <| .defnDecl
-        { name := n, levelParams := [], type := mkConst ``Program, value := toExpr (α := List Decl) prog,
-          hints := .abbrev, safety := .safe }
-      Term.addTermInfo' stx[1] (mkConst n) (isBinder := true)
-    -- the expansion: each closed definition as the Lean definition `n.rel.x` (`Expand.emit`)
-    match Expand.defsOf pre? prog with
-    | .error e => throwErrorAt stx "{e}"
-    | .ok ds => liftTermElabM (Expand.emit n ds)
+  | .ok r => liftTermElabM (Expand.emit n r)
+
+/-- `rel_program n where …` is read in the empty scope, `rel_program n after pre where …` in the scope after `pre`
+    and what `pre` is read after (`chainOf`). -/
+@[command_elab relProgram] def elabRelProgram : CommandElab := fun stx => do
+  let chain ← if stx[2].getNumArgs == 0 then pure none else
+    pure (some (← chainOf (← liftCoreM (realizeGlobalConstNoOverloadWithInfo stx[2][1]))))
+  match program (← getFileMap) (scopeOf chain) stx[4].getArgs with
+  | .error e => throwErrorAt stx "{e}"
+  | .ok prog => define stx stx[1] chain prog
+
+/-- `rel_program n from base upto x where …`: the replacements read in the scope of `base`'s chain and objects. -/
+@[command_elab relVariant] def elabRelVariant : CommandElab := fun stx => do
+  let b ← liftCoreM (realizeGlobalConstNoOverloadWithInfo stx[3])
+  let base ← programOf b
+  let chain ← if (← getEnv).contains (b ++ `root) then
+    pure (some (b ++ `root, mkConst (b ++ `mid), ← programOf (b ++ `root), ← programOf (b ++ `mid))) else pure none
+  let s := Parse.after (scopeOf chain) (base.filter fun | .obj .. => true | _ => false)
+  let named : Decl → Option String := fun | .defn _ x .. => some x | _ => none
+  match program (← getFileMap) s stx[6].getArgs with
+  | .error e => throwErrorAt stx "{e}"
+  | .ok news => do
+    for d in news do
+      match named d with
+      | some x => unless base.any (named · == some x) do throwErrorAt stx "`{x}` is no definition of `{b}`"
+      | none => throwErrorAt stx "a variant only replaces definitions"
+    let kept := base.filter fun | .check .. => false | _ => true
+    let kept ← if stx[4].getNumArgs == 0 then pure kept else do
+      let x ← match (wordOf stx[4][1]).run (← getFileMap) |>.run' s with
+        | .ok x => pure x
+        | .error e => throwErrorAt stx[4] "{e}"
+      match kept.findIdx? (named · == some x) with
+      | some k => pure (kept.take (k + 1))
+      | none => throwErrorAt stx[4] "`{x}` is no definition of `{b}`"
+    define stx stx[1] chain (kept.map fun d => ((named d).bind fun x => news.find? (named · == some x)).getD d)
 
 end LeetQ.Rel.Lang.Embed

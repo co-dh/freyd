@@ -1,5 +1,5 @@
 import LeetQ.Rel.Lang.Embed
-import LeetQ.Rel.Lang.Eval
+import LeetQ.Rel.Programs.Prelude
 
 /-! # Mate in one -/
 
@@ -61,6 +61,6 @@ rel_program chess after prelude where
 
     check m = {((1,57),R)}                        -- Rb1-b8 mates
 
-#guard (Lang.runProgram chess).isOk
+#guard chess.ok
 
 end LeetQ.Rel.Programs

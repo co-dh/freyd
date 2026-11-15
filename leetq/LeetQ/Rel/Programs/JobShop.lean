@@ -1,5 +1,5 @@
 import LeetQ.Rel.Lang.Embed
-import LeetQ.Rel.Lang.Eval
+import LeetQ.Rel.Programs.Prelude
 
 /-! # Job-shop scheduling (AIMA §6.1.2)
 
@@ -39,6 +39,6 @@ rel_program jobshop after prelude where
     check ⟨𝟙,s⟩ bad ⟨𝟙,s⟩° = 𝟘                   -- no two assignments of s conflict
     check s = {(AxleF,0),(AxleB,10),(WheelRF,10),(WheelLF,10),(WheelRB,20),(WheelLB,20),(NutsRF,11),(NutsLF,11),(NutsRB,21),(NutsLB,21),(CapRF,13),(CapLF,13),(CapRB,23),(CapLB,23),(Inspect,24)}
 
-#guard (Lang.runProgram jobshop).isOk
+#guard jobshop.ok
 
 end LeetQ.Rel.Programs

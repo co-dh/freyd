@@ -1,5 +1,5 @@
 import LeetQ.Rel.Lang.Embed
-import LeetQ.Rel.Lang.Eval
+import LeetQ.Rel.Programs.Prelude
 
 /-! # The blocks world -/
 
@@ -38,6 +38,6 @@ rel_program blocks after prelude where
 
     check plan = {(0,(C,C)),(1,(B,C)),(2,(A,B))}  -- C to the table, B onto C, A onto B
 
-#guard (Lang.runProgram blocks).isOk
+#guard blocks.ok
 
 end LeetQ.Rel.Programs

@@ -1,5 +1,5 @@
 import LeetQ.Rel.Lang.Embed
-import LeetQ.Rel.Lang.Eval
+import LeetQ.Rel.Programs.Prelude
 
 /-! # Sudoku path consistency (AIMA §6.2.3), 9×9
 
@@ -32,6 +32,6 @@ rel_program sudokupc9 after prelude where
 
     check s' ⊑ s                                  -- PC keeps no digit AC drops
 
-#guard (Lang.runProgram sudokupc9).isOk
+#guard sudokupc9.ok
 
 end LeetQ.Rel.Programs

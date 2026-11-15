@@ -1,5 +1,5 @@
 import LeetQ.Rel.Lang.Embed
-import LeetQ.Rel.Lang.Eval
+import LeetQ.Rel.Programs.Prelude
 
 /-! # Sudoku arc consistency (AIMA §6.2.2)
 
@@ -66,6 +66,6 @@ rel_program sudokuac after prelude where
     check s = s₀ ∩ revise(peer, ≠, s)             -- a fixed point
     check s = sol                                 -- AC-3 alone solves this puzzle
 
-#guard (Lang.runProgram sudokuac).isOk
+#guard sudokuac.ok
 
 end LeetQ.Rel.Programs

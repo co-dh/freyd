@@ -1,5 +1,5 @@
 import LeetQ.Rel.Lang.Embed
-import LeetQ.Rel.Lang.Eval
+import LeetQ.Rel.Programs.Prelude
 
 /-! # The detab-entab problem
 
@@ -79,6 +79,6 @@ rel_program detab after prelude where
     check D entab ⊑ D Λ(H)est(R)                  -- entab_laws, 10:148: the program is a shortest preimage
     check D entab detab = D                       -- detab entab = 𝟙 on detab's outputs
 
-#guard (Lang.runProgram detab).isOk
+#guard detab.ok
 
 end LeetQ.Rel.Programs

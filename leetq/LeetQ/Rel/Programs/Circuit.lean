@@ -1,5 +1,5 @@
 import LeetQ.Rel.Lang.Embed
-import LeetQ.Rel.Lang.Eval
+import LeetQ.Rel.Programs.Prelude
 
 /-! # A full adder
 
@@ -31,6 +31,6 @@ rel_program circuit after prelude where
 
     check answer = {(0 1 1,0),(1 0 1,0),(1 1 0,0)}
 
-#guard (Lang.runProgram circuit).isOk
+#guard circuit.ok
 
 end LeetQ.Rel.Programs
