@@ -6,7 +6,7 @@ Status: design only, nothing built. Every cost below is an estimate from row cou
   `\` its `∧` instance, and `R\(S T)` is the two applied in turn. No pattern is recognised.
 - A closed term over small objects is computed as a **bit matrix** (`Λ` of the relation, each set one bit row)
   instead of a table. `S T` is then `|dom S| · |C|` bits, never rows.
-- `Member.lean` (per-row tests, hash indexes, the Lean driver loop) is deleted; its `TP` plan and `TP.table` stay.
+- `Member.lean` (per-row tests, hash indexes, the Lean driver loop) is deleted; its `Route` (was `TP`) and `Route.table` stay.
 - Needs approval: the bit matrix is a second representation of a relation (below, "The representation").
 
 ## One traced instance
@@ -105,7 +105,7 @@ On relations, in a new `leetq/LeetQ/Rel/RepBits.lean`, each reduced to the exist
 | `rep_compB`    | `rep (ofBits (compB S (bitsOf T))) = rep (S ≫ T)`                       | spec, `rep_comp`       |
 | `rep_ldivB`    | `rep (ofBits (ldivB R (bitsOf S) Ub Uc)) = rep (leftDiv R S Ub Uc)`     | spec, `rep_leftDiv`    |
 | `rep_meetB` …  | `∩`, `∪`, `−` on `Bits` against `rep_inter`, `rep_union`, `rep_diff`    | `Ew` bit spec          |
-| `bits_table`   | for a plan `p`: `rep (ofBits p.bits) = rep p.table`                     | induction on `TP`      |
+| `bits_table`   | for a route `p`: `rep (ofBits p.bits) = rep p.table`                     | induction on `Route`      |
 
 - The pattern's own statement is a corollary of two rows, not a theorem of its own:
   `rep (ofBits (ldivB R (compB S (bitsOf T)) Ub Uc)) = rep (leftDiv R (S ≫ T) Ub Uc)`.

@@ -29,7 +29,7 @@ def plan : Except String Plan := planOf [] native1a "x" "out"
 
 /-- A code's four registers, as `lit`s. -/
 def codeRegs (c : Alg.Code) : Bld (Array Nat) :=
-  #[Val.size c.w.toUSize, .size c.n, .size c.card.toUSize, .bytes c.b].mapM lit
+  (codeVals c).mapM lit
 
 /-- `groupIdsF` applied to each of `cs`; `main`'s last two registers are the last code's answer. -/
 def gplan (cs : List Alg.Code) : Except String Plan := Bld.plan do
@@ -44,7 +44,7 @@ def codes : List Alg.Code :=
 
 /-- `Plan.run` of `gplan [c]` answers `c.groupIds`. -/
 def agrees (c : Alg.Code) : IO Bool := do
-  let rs ← (← IO.ofExcept (gplan [c])).run abiOf
+  let (rs, _) ← IO.ofExcept ((← IO.ofExcept (gplan [c])).run abiOf)
   match rs[rs.size - 2]?, rs[rs.size - 1]? with
   | some (.bytes a), some (.bytes b) => pure (a.data == c.groupIds.1.data && b.data == c.groupIds.2.data)
   | _, _ => pure false
@@ -62,7 +62,7 @@ def main (args : List String) : IO UInt32 := do
     | ["lean", dir] =>
       unless native1a.x.ok do throw (IO.userError "x: an op ran out of capacity")
       writeRel (System.FilePath.mk dir / "out").toString native1a.x.rel
-    | ["plan", dir] => IO.Process.setCurrentDir dir; discard <| (← IO.ofExcept plan).run abiOf
+    | ["plan", dir] => IO.Process.setCurrentDir dir; discard <| (← IO.ofExcept plan).exec abiOf
     | ["g", file] => IO.FS.writeFile file (← IO.ofExcept (gplan codes >>= relc abiOf))
     | _ => throw (IO.userError "usage: relc-1a c FILE | lean DIR | plan DIR | g FILE")
     pure 0

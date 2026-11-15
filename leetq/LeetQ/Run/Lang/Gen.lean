@@ -45,7 +45,7 @@ open QLean QLean.Dep QLean.Kernel
 abbrev Fn (d : Bool) (A B : Obj) := Dem d A → CRel A B
 
 /-- A term's bit-matrix plan on the keys it is given, and the ok bit of the tables at its leaves. -/
-abbrev Pl (d : Bool) (A B : Obj) := Dem d A → Bits.TP A B × Bool
+abbrev Pl (d : Bool) (A B : Obj) := Dem d A → Bits.Route A B × Bool
 
 /-- A definition's value with its objects: what `rel_program n` lists as `n.expanded`. -/
 abbrev Gv := (A : Obj) × (B : Obj) × CRel A B
@@ -103,7 +103,7 @@ def inr (A B : Obj) : Fn true B (.sum A B) := fun D => CRel.inr D.val
 
 /-- The demand of `S` in `R S`: `ran(R)` where `S` takes one, `R`'s plan run for it, `ranC`'s bit kept so the
     demand is proved a coreflexive on `R`'s range (`GenSpec.demP_spec`). -/
-def demP {A B : Obj} : (e : Bool) → Bits.TP A B → Dem e B × Bool
+def demP {A B : Obj} : (e : Bool) → Bits.Route A B → Dem e B × Bool
   | false, _ => ((), true)
   | true, r => let x := Bits.runC r; let k := ranC x.1; (k.1, x.2 && k.2)
 

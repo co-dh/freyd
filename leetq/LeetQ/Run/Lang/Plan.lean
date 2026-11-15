@@ -57,21 +57,24 @@ instance : Reg Scan.Kind := ⟨.u8, fun
   fun k => .u8 (match k with | .bit => 0 | .u8 => 1 | .i16 => 2 | .i32 => 3 | .i64 => 4 | .f32 => 5 | .f64 => 6 | .c8 => 7)⟩
 
 /-- A kernel as its `@[extern]` declaration states it (`kernel%`): the C symbol, each argument's type and whether
-    it is borrowed (`@&`), the result's types (a product flattened), whether it runs in `IO`, whether the toolchain
-    declares it (so `lean.h` defines its symbol, `static inline`), and the Lean call on registers. -/
+    it is borrowed (`@&`), the result's types (a product flattened), whether the toolchain declares it (so `lean.h`
+    defines its symbol, `static inline`), and the Lean call on registers: a pure kernel's answer, or an `IO` kernel's
+    action, which answers no register and runs only at the output edge (`Plan.exec`). -/
 structure Kernel where
   sym : String
   args : Array (Ty × Bool)
   res : Array Ty
-  io : Bool
   std : Bool
-  run : Array Val → IO (Array Val)
+  run : (Array Val → Except String (Array Val)) ⊕ (Array Val → IO Unit)
+
+/-- Whether `k` runs in `IO`. -/
+def Kernel.io (k : Kernel) : Bool := k.run.isRight
 
 /-- Argument `i` of the kernel `sym`, read from its register as the type the declaration asks for. -/
-def arg {α : Type} [Reg α] (sym : String) (vs : Array Val) (i : Nat) : IO α :=
+def arg {α : Type} [Reg α] (sym : String) (vs : Array Val) (i : Nat) : Except String α :=
   match vs[i]?.bind Reg.get? with
   | some a => pure a
-  | none => throw (IO.userError s!"{sym}: argument {i} is not a {repr (Reg.ty α)} register")
+  | none => throw s!"{sym}: argument {i} is not a {repr (Reg.ty α)} register"
 
 /-- A result as registers: none for `Unit`, else one. -/
 class Out (α : Type) where
@@ -112,15 +115,19 @@ elab "kernel% " c:ident : term => do
   let args ← ds.toArray.mapM fun d => return (← tyOf d.consumeMData, isMarkedBorrowed d)
   let (io, r) := if r.isAppOfArity ``IO 1 then (true, r.appArg!) else (false, r)
   let res ← resTys r
+  if io && !res.isEmpty then
+    throwError "kernel%: `{n}` runs in `IO` and answers {res.size} registers; a plan runs `IO` only at its output edge"
   -- the toolchain's own externs are the ones `lean.h` defines; its modules are those of `Init`, `Std`, `Lean`
   let env ← getEnv
   let std := (env.getModuleIdxFor? n >>= (env.header.moduleNames[·.toNat]?)).any ([`Init, `Std, `Lean].contains ·.getRoot)
   let vs := mkIdent `vs
-  let as : Array Term ← (List.range ds.length).toArray.mapM fun i => `((← arg $(quote sym) $vs $(quote i)))
+  let as : Array Term ← (List.range ds.length).toArray.mapM fun i =>
+    if io then `((← IO.ofExcept (arg $(quote sym) $vs $(quote i)))) else `((← arg $(quote sym) $vs $(quote i)))
   let call ← `($(mkIdent n) $as*)
-  let run ← if io then `(fun $vs => do let r ← ($call); pure (Out.out r)) else `(fun $vs => do pure (Out.out $call))
-  let runE ← elabTermAndSynthesize (← `(($run : Array Val → IO (Array Val)))) none
-  return mkAppN (mkConst ``Kernel.mk) #[toExpr sym, toExpr args, toExpr res, toExpr io, toExpr std, ← instantiateMVars runE]
+  let run ← if io then `(Sum.inr fun $vs => do ($call : IO Unit)) else `(Sum.inl fun $vs => do pure (Out.out $call))
+  let runE ← elabTermAndSynthesize
+    (← `(($run : (Array Val → Except String (Array Val)) ⊕ (Array Val → IO Unit)))) none
+  return mkAppN (mkConst ``Kernel.mk) #[toExpr sym, toExpr args, toExpr res, toExpr std, ← instantiateMVars runE]
 
 /-- One step. A `lit` defines one register, a `call` as many as its kernel's results, an `apply` as many as the
     function's, a `global` as many as the global's, an `ite` as many as each branch names, a `fail` none. -/
@@ -161,57 +168,78 @@ def failText (msg : String) (vs : List Val) : String :=
   if vs.isEmpty then msg else msg ++ ": " ++ ", ".intercalate (vs.map Val.show)
 
 /-- Register `a`, read by `who`. -/
-def reg (rs : Array Val) (who : String) (a : Nat) : IO Val := match rs[a]? with
+def reg (rs : Array Val) (who : String) (a : Nat) : Except String Val := match rs[a]? with
   | some v => pure v
-  | none => throw (IO.userError s!"plan: {who} reads register {a}, which no earlier instruction defines")
+  | none => throw s!"plan: {who} reads register {a}, which no earlier instruction defines"
 
-/-- What a function means, given the globals: its parameters' values to its results'. -/
-abbrev Sem := Array (Array Val) → Array Val → IO (Array Val)
+/-- The calls of `IO` kernels a run made, in order: each kernel's symbol and its argument registers. A run is pure;
+    these are performed after it, at the output edge (`Plan.exec`). -/
+abbrev Writes := Array (String × Array Val)
+
+/-- What a function means, given the globals: its parameters' values to its results', after the writes so far. -/
+abbrev Sem := Array (Array Val) → Array Val → Writes → Except String (Array Val × Writes)
 
 mutual
-/-- What a block means after the registers `rs`: each instruction in order, each kernel looked up in `abi`, each
-    function in `fs`, each global in `gs`. -/
+/-- What a block means after the registers `rs` and the writes `ws`: each instruction in order, each kernel looked
+    up in `abi`, each function in `fs`, each global in `gs`. -/
 def runB (abi : String → Option Kernel) (fs : Array Sem) (gs : Array (Array Val)) :
-    List Instr → Array Val → IO (Array Val)
-  | [], rs => pure rs
-  | i :: is, rs => do runB abi fs gs is (← runI abi fs gs i rs)
+    List Instr → Array Val → Writes → Except String (Array Val × Writes)
+  | [], rs, ws => pure (rs, ws)
+  | i :: is, rs, ws => do let (rs, ws) ← runI abi fs gs i rs ws; runB abi fs gs is rs ws
 
 def runI (abi : String → Option Kernel) (fs : Array Sem) (gs : Array (Array Val)) :
-    Instr → Array Val → IO (Array Val)
-  | .lit v, rs => pure (rs.push v)
-  | .call sym as, rs => do
-    let some k := abi sym | throw (IO.userError s!"plan: no kernel `{sym}` in the ABI table")
-    let out ← k.run (← as.mapM (reg rs sym))
-    unless out.size == k.res.size do
-      throw (IO.userError s!"plan: `{sym}` answered {out.size} registers, its declaration {k.res.size}")
-    pure (rs ++ out)
-  | .fail msg as, rs => do throw (IO.userError (failText msg (← as.mapM (reg rs "fail")).toList))
-  | .apply f as, rs => do
-    let some g := fs[f]? | throw (IO.userError s!"plan: apply f{f}, which is not an earlier function")
-    pure (rs ++ (← g gs (← as.mapM (reg rs s!"apply f{f}"))))
-  | .global g, rs => do
-    let some v := gs[g]? | throw (IO.userError s!"plan: global g{g} read before it is computed")
-    pure (rs ++ v)
-  | .ite c t rt e re, rs => do
+    Instr → Array Val → Writes → Except String (Array Val × Writes)
+  | .lit v, rs, ws => pure (rs.push v, ws)
+  | .call sym as, rs, ws => do
+    let some k := abi sym | throw s!"plan: no kernel `{sym}` in the ABI table"
+    let vs ← as.mapM (reg rs sym)
+    match k.run with
+    | .inl f =>
+      let out ← f vs
+      unless out.size == k.res.size do throw s!"plan: `{sym}` answered {out.size} registers, its declaration {k.res.size}"
+      pure (rs ++ out, ws)
+    | .inr _ => pure (rs, ws.push (sym, vs))
+  | .fail msg as, rs, _ => do throw (failText msg (← as.mapM (reg rs "fail")).toList)
+  | .apply f as, rs, ws => do
+    let some g := fs[f]? | throw s!"plan: apply f{f}, which is not an earlier function"
+    let (out, ws) ← g gs (← as.mapM (reg rs s!"apply f{f}")) ws
+    pure (rs ++ out, ws)
+  | .global g, rs, ws => do
+    let some v := gs[g]? | throw s!"plan: global g{g} read before it is computed"
+    pure (rs ++ v, ws)
+  | .ite c t rt e re, rs, ws => do
     match ← reg rs "if" c with
-    | .bit true => let xs ← runB abi fs gs t rs; pure (rs ++ (← rt.mapM (reg xs "then")))
-    | .bit false => let xs ← runB abi fs gs e rs; pure (rs ++ (← re.mapM (reg xs "else")))
-    | _ => throw (IO.userError s!"plan: if reads register {c}, which is not a bit")
+    | .bit true => let (xs, ws) ← runB abi fs gs t rs ws; pure (rs ++ (← rt.mapM (reg xs "then")), ws)
+    | .bit false => let (xs, ws) ← runB abi fs gs e rs ws; pure (rs ++ (← re.mapM (reg xs "else")), ws)
+    | _ => throw s!"plan: if reads register {c}, which is not a bit"
 end
 
 /-- What function `f` means where the functions before it mean `fs`. -/
-def Fun.sem (abi : String → Option Kernel) (fs : Array Sem) (f : Fun) : Sem := fun gs args => do
-  let xs ← runB abi fs gs f.body args; f.res.mapM (reg xs "result")
+def Fun.sem (abi : String → Option Kernel) (fs : Array Sem) (f : Fun) : Sem := fun gs args ws => do
+  let (xs, ws) ← runB abi fs gs f.body args ws; pure (← f.res.mapM (reg xs "result"), ws)
 
 /-- The functions' meanings, each seeing only the ones before it. -/
 def sems (abi : String → Option Kernel) (funs : Array Fun) : Array Sem :=
   funs.foldl (fun fs f => fs.push (f.sem abi fs)) #[]
 
-/-- What `p` means: the globals in order, then `main`'s registers. -/
-def Plan.run (abi : String → Option Kernel) (p : Plan) : IO (Array Val) := do
+/-- What `p` means, pure (decision D of `doc/rel-native-design.md` §13): the globals in order, then `main`'s
+    registers, and the writes to perform. -/
+def Plan.run (abi : String → Option Kernel) (p : Plan) : Except String (Array Val × Writes) := do
   let fs := sems abi p.funs
-  let gs ← p.globals.foldlM (fun gs g => return gs.push (← g.sem abi fs gs #[])) #[]
-  runB abi fs gs p.main #[]
+  let (gs, ws) ← p.globals.foldlM (fun (gs, ws) g => do
+    let (v, ws) ← g.sem abi fs gs #[] ws; pure (gs.push v, ws)) (#[], #[])
+  runB abi fs gs p.main #[] ws
+
+/-- `p` run, then its writes performed in order by their `IO` kernels: the output edge. A run that fails writes
+    nothing, where the C has written what came before its `fail`; the gates compare runs that succeed. -/
+def Plan.exec (abi : String → Option Kernel) (p : Plan) : IO (Array Val) := do
+  let (rs, ws) ← IO.ofExcept (p.run abi)
+  for (sym, vs) in ws do
+    let some k := abi sym | throw (IO.userError s!"plan: no kernel `{sym}` in the ABI table")
+    match k.run with
+    | .inr act => act vs
+    | .inl _ => throw (IO.userError s!"plan: `{sym}` is no `IO` kernel")
+  pure rs
 
 /-! ### Building a plan -/
 
@@ -219,8 +247,11 @@ def Plan.run (abi : String → Option Kernel) (p : Plan) : IO (Array Val) := do
     functions and globals. -/
 abbrev Bld := StateT (Array Instr × Nat × Array Fun × Array Fun) (Except String)
 
+/-- A one-register instruction's register. -/
+def emit1 (i : Instr) : Bld Nat := modifyGet fun (is, n, fg) => (n, (is.push i, n + 1, fg))
+
 /-- `r = lit v`: the new register. -/
-def lit (v : Val) : Bld Nat := modifyGet fun (is, n, fg) => (n, (is.push (.lit v), n + 1, fg))
+def lit (v : Val) : Bld Nat := emit1 (.lit v)
 
 /-- An instruction defining `nres` registers: the new registers. -/
 def emit (i : Instr) (nres : Nat) : Bld (Array Nat) :=
@@ -297,8 +328,8 @@ def ofTm : {A B : Obj} → {d : Bool} → Tm A B d → Bld (Side × Side)
 
 /-! ### Builders of `Alg`'s defs (stage 1b) -/
 
-/-- A one-register instruction's register. -/
-def emit1 (i : Instr) : Bld Nat := modifyGet fun (is, n, fg) => (n, (is.push i, n + 1, fg))
+/-- A code's four registers `w`, `n`, `card`, `b`; `card` as `card.toUSize`, what `idGroups` reads. -/
+def codeVals (c : Alg.Code) : Array Val := #[.size c.w.toUSize, .size c.n, .size c.card.toUSize, .bytes c.b]
 
 /-- `Code.groupIds` on a code's registers `w`, `n`, `card` (as `card.toUSize`, all `idGroups` reads), `b`: one `if`
     per lane `laneKind` names, tested at run time on `w`, `groupIds` at that layout; `idGroups` past the last. -/

@@ -23,7 +23,7 @@
 | 8  | `Elab.lean:1006 inferSig`、`1029 mkDef`、`339-391 polarity`    | 同上(泛化、签名推断)                  | 随 #7                                 | ≈110  | 高   |
 | 9  | 每个 builtin 的类型写四遍,见 1.2                              | CRel op 的 Lean 签名                    | 一张表生成其余三份                    | ≈350  | 中   |
 | 10 | `Elab.lean:156-217 Pre` 与 `21-100 Tm` 同一 constructor 列表   | 彼此                                    | 一个 inductive,对象参数化            | ≈60   | 中   |
-| 11 | `Bits.lean:28-35 TP` + `Gen.lean:109-118,232-245`              | `Tm` 的 `comp/meet/diff/ldiv` 四个结点  | `TP` 做成 `Tm` 的一个谓词             | ≈40   | 中   |
+| 11 | `Bits.lean:28-35 Route` + `Gen.lean:109-118,232-245`              | `Tm` 的 `comp/meet/diff/ldiv` 四个结点  | `Route` 做成 `Tm` 的一个谓词             | ≈40   | 中   |
 | 12 | `Elab.lean:434-478 keyed`                                      | `482-563 lComp/lThen/lPair/lProd/lDom`  | 构造和识别从一张 row 表出             | ≈45   | 中   |
 | 13 | `Elab.lean:117-123 OTy.render`                                 | `Syntax.lean:186-191 OExp.render`       | 一个 render,另一个经转换调用         | 7     | 低   |
 | 14 | `Expand.lean:45 arrText`                                       | `Syntax.lean:99-106 Tup.render`         | 调 `Tup.render`                       | 5     | 低   |
@@ -80,7 +80,7 @@
 | 一对                                             | 为什么不是                                                        |
 |--------------------------------------------------|-------------------------------------------------------------------|
 | `Calc.toTerm` 与 `Expand.node`                   | 一个到 AOP 的 spec 项,一个到可执行的 `Gen`;目标不同             |
-| `BitsSpec.lean` 的 `TP.den` 与 `Rep.rep`         | `den` 是证明用的指称,`bits_table` 把两者连起来                   |
+| `BitsSpec.lean` 的 `Route.den` 与 `Rep.rep`         | `den` 是证明用的指称,`bits_table` 把两者连起来                   |
 | `CRel.*` 与 `Alg.*C`                             | `CRel` 多带 `ok` 位并串接它                                       |
 | `Expand.lean:250 hex` 与 `Gen.lean:58 unhex`     | 编码和解码,一对                                                  |
 | `Expand.lean:50-82 showEl/cmpEl/showRel`         | 按程序里的元素名打印,Lean 的 `Repr` 不知道这些名字               |

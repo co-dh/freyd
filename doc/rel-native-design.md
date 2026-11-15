@@ -42,7 +42,7 @@
 | `Expand.code`/`node` | `Run/Lang/Expand.lean`                                 | `Tm` → `Gen.*` 的应用                       | 783 行     |
 | `Gen.*`              | `Run/Lang/Gen.lean`                                    | 每个 `Tm` constructor 一个函数              | 257 行     |
 | `CRel.*` / `Alg.*C`  | `Run/{Alg,Code,Core,AC3Def}.lean`、`Run/CRel*Def.lean` | 关系运算，对 `Obj` 递归，带 ok bit          | 3919 行    |
-| bit-matrix           | `Run/Lang/Bits.lean`                                   | 闭的 `≫`/`∩`/`∪`/`−`/`\`/`°` 的计划 `TP`    | 250 行     |
+| bit-matrix           | `Run/Lang/Bits.lean`                                   | 闭的 `≫`/`∩`/`∪`/`−`/`\`/`°` 的 route `Route`    | 250 行     |
 | qlean Lean 分派      | `QLean/Kernel/*.lean`、`QLean/Dep`                     | `Enc` 各 payload 上的 match                 | —          |
 | qlean C              | `c/*.c`、`c/*.h`                                       | 266 个 `LEAN_EXPORT`                        | 21024 行   |
 
@@ -52,7 +52,7 @@
   `addAndCompile`（`:376`）加入并编译。
 - 循环都是 Lean 循环，全部落到 `Alg.hylo`（`Run/Alg.lean:506`，well-founded recursion）：`iter`（`:514`）、`fixOn`
   （`:521`）、`foldRound`/`foldRowsC`/`foldByC`（`:677`–`:720`）、`iterC`/`fixOnC`（`:946`/`:952`）、`loopOnC`
-  （`:1397`）、`acFixC`（`Run/AC3Def.lean:57`）。除 `hylo` 和对 `Obj`/`TP` 的结构递归外，run path 没有别的递归。
+  （`:1397`）、`acFixC`（`Run/AC3Def.lean:57`）。除 `hylo` 和对 `Obj`/`Route` 的结构递归外，run path 没有别的递归。
 - 证明：`Expand.prf`/`prfNode`（`:612`）按节点拼 `Gen.Sound`；拼不出的定义进 `n.unproved`。
 - 文字量只重建 `bytes`/`bits` 两种 payload（`Expand.atomE`，`:390`）。
 - 最小程序的依赖锥（`dep.in_value` 的传递闭包，只数 `LeetQ.*` 的 `def`；qlean 的声明不在这个索引里）：
@@ -66,7 +66,7 @@
 | `Bits.runC`                                   | 155          |
 | `Gen.compB` + `Gen.arith` + `Gen.val`（`{…} plus` 实际 elaborate 出来的） | 173 |
 
-- 闭的 `R S` 由 `Expand.node`（`:475`）选 `Gen.compB`，不是 `Gen.comp`：最小的带复合的程序已经走 `TP`，
+- 闭的 `R S` 由 `Expand.node`（`:475`）选 `Gen.compB`，不是 `Gen.comp`：最小的带复合的程序已经走 `Route`，
   比只数 `Alg.plus` 的旧数字（93）大出 bit 路径的 65 个 def。
 - 任何带一个算子的程序都带上 `Code`（grade、groupIds、find、`codesC`、`razeC`）：约 85 个 def 的底座。
 
@@ -140,7 +140,7 @@ emit 时静态（`Expand` 选的节点，emitter 照着生成）：
 | 手法                                         | 位置                          | 在 C 里                                             |
 |----------------------------------------------|-------------------------------|-----------------------------------------------------|
 | 闭子项共享成常量                             | `Expand:310`、`:418`、`:429`  | 一个 global，启动后算一次                           |
-| 闭的 `≫ ∩ − \` 选 bit 节点，plan 的形状      | `Expand:437`、`:475`          | 一个 plan root 两条分支的代码（第 6 节）            |
+| 闭的 `≫ ∩ − \` 选 bit 节点，route 的形状      | `Expand:437`、`:475`          | 一个 plan root 两条分支的代码（第 6 节）            |
 | AC-3 形状的识别（`nuAC`）                    | `Expand:349`、`:356`          | delta 循环，arc 的列表在 emit 时展开                |
 | converse 是视图（`convArr`，字段互换）       | `Run/Alg.lean:93`             | 寄存器改名，不产生一行 C                            |
 | `𝟙` 返回 demand 本身，universe 上 key、val 同列 | `Run/Alg.lean:85`          | 寄存器别名                                          |
@@ -154,7 +154,7 @@ emit 时静态（`Expand` 选的节点，emitter 照着生成）：
 | `⊤`：demand 的 key 和 `V` 做 cross                         | `Gen:97`、`Alg:80`                    | demand 参数                                |
 | `−`：joint pair code 上的 anti-join，不展开操作数          | `Alg:167`、`Code:989`                 | kernel 调用                                |
 | bit matrix 还是 table                                      | `Bits:215`、`:241`                    | `if`（第 6 节）                            |
-| plan 里 `≫`/`\` 的左叶读成排好序的 code pair，不建矩阵     | `Bits:200`                            | bit 分支里的 kernel 调用                   |
+| route 里 `≫`/`\` 的左叶读成排好序的 code pair，不建矩阵     | `Bits:200`                            | bit 分支里的 kernel 调用                   |
 | 左除：bit 路径是行的 ∧；table 路径是 join 加计数比较；空真部分只在 `anti(Ub, ran R) × Uc` 上 | `Bits:168`、`Alg:230`、`:216` | 两条分支各自的 kernel 调用 |
 | `Λ`：每个 cell 是同一个扁平 payload 里的 lo/hi 切片        | `Alg:313`、`Core:440`                 | `arr` 的寄存器是 `lo`、`hi`、payload       |
 | `∋`：只展开 demand 里的 array                              | `Gen:98`、`Alg:333`、`Code:85`        | demand 参数                                |
@@ -216,13 +216,13 @@ plan   fun f7(D) =
   `tag`、`idx` 和两支），`Vals.pick`、`Obj.razeC`、`codesC` 这类对 `Obj` 的递归在建 plan 时跑完，C 里看不到 `Obj`。
 - 运行时选的分支，全部是 `if`：demand 为空就不跑（`comp`、`onKeys`）；`guard` 看输入的 ok bit；`need` 的容量条件；
   bit matrix 还是 table；`loop` 的结束条件。
-- bit-matrix plan（`TP`）：树的形状由 `Gen.pleaf`/`pcomp`/… 的静态表达式决定，emitter 读得到，所以运行时没有
-  `TP` 这个值。每个 plan root 生成：
+- bit-matrix route（`Route`，原名 `TP`；"plan" 只指 native 的 `Plan`）：树的形状由 `Gen.pleaf`/`pcomp`/… 的静态表达式决定，emitter 读得到，所以运行时没有
+  `Route` 这个值。每个 route root 生成：
   - 叶子各算一次（`apply`），两条分支共用；
-  - 条件 `codeAll` 成功 `&&` `TP.fits`（每个节点的矩阵 ≤ 2²⁷ bit）`&&` `capsOK`，是 size 寄存器上的静态公式；
-  - then 支：每个节点一个 bit kernel，根上转成 table（`Bits.table`）；左叶走 `TP.pairs`，不建矩阵；
-  - else 支：`TP.tableC`，也就是普通的 `compC`/`interC`/… 序列。
-  - 代价：每个 plan root 两份代码。`LEETQ_CHECK` 的两路对比模式不进 C（那道门在 exe 外面做，第 13 节）。
+  - 条件 `codeAll` 成功 `&&` `Route.fits`（每个节点的矩阵 ≤ 2²⁷ bit）`&&` `capsOK`，是 size 寄存器上的静态公式；
+  - then 支：每个节点一个 bit kernel，根上转成 table（`Bits.table`）；左叶走 `Route.pairs`，不建矩阵；
+  - else 支：`Route.tableC`，也就是普通的 `compC`/`interC`/… 序列。
+  - 代价：每个 route root 两份代码。`LEETQ_CHECK` 的两路对比模式不进 C（那道门在 exe 外面做，第 13 节）。
 - `loop`：`hylo`/`iter`/`iterC`/`fixOn`/`fixOnC` 这一串的 done 和 step 在每个调用点都是源码里写死的 lambda，
   builder 把它们合成一条 `loop`。上限是 `Nat`，C 里用饱和乘法（`μ` 的 `|UA|·|UB|+1`）。
 - 调用图没有环：`apply` 的方向跟着 `Tm` 树走，Rel 没有递归定义（迭代只有 `μ`/`ν` 和 fold，都是 `loop`）。
@@ -230,7 +230,8 @@ plan   fun f7(D) =
 - 参数化的常量（module 设计 2.4：`csp.AC3 : (α β : Obj) → … → Pl … → Pl …`）：它的值改成 plan builder，一个
   `Obj` 和实参 builder 的 Lean 函数。调用叶子在建 plan 时调它，每个调用点得到按具体 `Obj` 展开的函数，
   结构相同的共用。Lean 只 elaborate 一次；C 里是每个 instantiation 一份代码。
-- Lean backend：`Plan.run : Plan → Regs → Regs × Bool`，逐条调同一批 `@[extern]`。它是 plan 的语义，
+- Lean backend：`Plan.run : Plan → Except String (Array Val × Writes)`，纯函数，逐条调同一批 `@[extern]`；
+  `IO` kernel 的调用只记进 `Writes`，由 `Plan.exec` 在输出边界按序执行。它是 plan 的语义，
   不是 compiler 旁边的第二个 interpreter —— 没有别的东西定义 plan 的意思。
 - C backend：`relc`（Lean 写的 emitter）把 plan 打印成一个 `.c`：每个 `Fun` 一个 `static` 函数，`call` 一行，
   `loop` 是 `for`，`if` 是 `if`。C 里没有 plan interpreter。
@@ -242,18 +243,18 @@ plan   fun f7(D) =
 ## 7. 8 种运行时 closure 逐条
 
 前提（已对源码核对）：`Tm` 树在 elaboration 时定死；`Gen.*` 的函数实参都是另一个 `Gen.*` 表达式或源码里写死的
-lambda；没有任何一处从运行时数据造出函数。唯一在运行时造的树是 `TP`，它的形状也是静态的（第 6 节）。
+lambda；没有任何一处从运行时数据造出函数。唯一在运行时造的树是 `Route`，它的形状也是静态的（第 6 节）。
 
 | # | closure（`Run/` 下的位置）                                             | 成立吗 | emit 时变成什么                                                   |
 |---|------------------------------------------------------------------------|--------|-------------------------------------------------------------------|
 | 1 | `Gen.Fn d A B`（`Lang/Gen.lean:45`），每个节点一个                     | 成立   | 每个非闭节点一个 `Fun`，demand 是参数；闭节点是 global            |
-| 2 | `Gen.Pl d A B`（`:48`），运行时造 `TP`                                 | 成立   | 不造 `TP`：形状在 emit 时读出，生成两条分支                       |
+| 2 | `Gen.Pl d A B`（`:48`），运行时造 `Route`                                 | 成立   | 不造 `Route`：形状在 emit 时读出，生成两条分支                       |
 | 3 | fixed point 的 body `φ : CRel A B → Fn false A B`（`:218`、`:234`）    | 成立   | `Fun φᵢ(X, 捕获的寄存器)`，`loop` 里直接调用                      |
 | 4 | 序的 test `fun P => Q P.rel`（`:153`–`:179`）→ `testC` → `estOnC` 等的 `qC` | 成立 | `Fun qᵢ(D)`；`estOnC` 等的 builder 收一个 `Fun` 名，每个使用点展开一份，直接调用 |
 | 5 | `onKeys d F` 里的 step（`:183`）：`loop`、fold、`foldI`                | 成立   | `Fun stepᵢ(P)`，外加 `if P.n == 0` 跳过                           |
 | 6 | AC-3：`acFixC` 的 `iterC` lambda、`foldlC (deltaStepC …)`（`AC3Def.lean:19`–`:60`） | 成立 | 一条 `loop`；arc 的 `List` 长度在 elab 时已知，逐个展开 |
 | 7 | continuation：`need … model k`、`longCount k`、`expand … k`、`CRel.guard b k` | 成立 | 不是 closure conversion：builder 把 `k` 就地接在后面，`need` 是 `if … fail`，`guard` 是 `if` |
-| 8 | `TP.bits`/`TP.pairs` 的 `StateM Nat`（`Lang/Bits.lean:187`、`:200`）   | 成立   | 计数器是叶子在 `TP.cols` 里的序号，emit 时是常数，状态消失        |
+| 8 | `Route.bits`/`Route.pairs` 的 `StateM Nat`（`Lang/Bits.lean:187`、`:200`）   | 成立   | 计数器是叶子在 `Route.cols` 里的序号，emit 时是常数，状态消失        |
 
 没有不成立的。四点要记住，都不是 closure：
 
@@ -286,7 +287,7 @@ lambda；没有任何一处从运行时数据造出函数。唯一在运行时�
 | 改动                                                                        | 位置                                        |
 |-----------------------------------------------------------------------------|---------------------------------------------|
 | 新增 `Plan`、`Plan.run`、寄存器与 `Rel A B` 的摊平/读回                     | 新文件 `Run/Lang/Plan.lean`                 |
-| `Gen.Fn d A B` 改成 "建 plan 的 monad 里：demand 寄存器 → 结果寄存器"；`Gen.Pl` 改成 "emit 时的 `TP` 形状，叶子是寄存器" | `Run/Lang/Gen.lean` |
+| `Gen.Fn d A B` 改成 "建 plan 的 monad 里：demand 寄存器 → 结果寄存器"；`Gen.Pl` 改成 "emit 时的 `Route` 形状，叶子是寄存器" | `Run/Lang/Gen.lean` |
 | 每个 `Gen.*` 的体从调 `CRel.*` 改成发指令；没迁的发 `host`                  | `Run/Lang/Gen.lean`，约 70 个 def           |
 | `Gen.fold`/`foldI`/`loop`/`nu`/`mu`/`nuAC` 发 `loop`，step 和 `φ` 是 `Fun`  | `Run/Lang/Gen.lean`、`Expand.body`          |
 | `n.rel.x := 读回 (Plan.run n.plan.x)`；`n.c.c<i>` 是 plan 的 global         | `Expand.addConst`/`share`/`emit`            |
@@ -362,7 +363,7 @@ output y to "out.csv"                            -- y 是本 program 的一个�
 ## 12. 风险
 
 - 粒度：最大的一项。`{…} plus` 的锥是 173 个 LeetQ def；先用 spike 量出每个 def 的 builder 加定理的代价再承诺。
-- 代码大小：每个 plan root 两条分支，每个 `est`/`thin` 使用点一份，每个参数化常量的 instantiation 一份。
+- 代码大小：每个 route root 两条分支，每个 `est`/`thin` 使用点一份，每个参数化常量的 instantiation 一份。
   SudokuPC9 这种程序的 `.c` 有多大，spike 之后量。
 - `Rep*` 证明都陈述在今天的 `Alg` 定义上。builder 是第二份文本，即使有定理绑着也是两处改动（J 对 K）。
 - 依赖类型：`Arr t n` 的 `n` 是运行时值，`need`、`longCount … fun r hr =>` 把证明传给后续代码；
@@ -411,7 +412,7 @@ owner：`Run/*`、`Rel/Lang/*`、`Rel/Rep*` = ffreyd；`Rel/Programs/*` = aima�
 
 ### 阶段 1b — 第一个带 demand 的程序（约 1900 行）
 - 程序：`{…} plus`。elaborate 出来是 `Gen.compB`：文字量叶子、`ranC` 给出 demand、`arith` 的 demand 函数、
-  plan root 的 bit/table 两条分支。第 6 节的每一种构造除了 `loop` 都出现一次。
+  route root 的 bit/table 两条分支。第 6 节的每一种构造除了 `loop` 都出现一次。
 - 交付和估计：`Fun`/`apply`/`if`/global 和 last-use 释放（350）；173 个 def 的锥的 builder —— `Code` 的底座、
   `compC`、`ranC`、`arith`、`Bits` 的 `comp` 一条 bit 规则（约 1200）；`Plan.run (builder) = compC` 一条定理，
   用来量代价（约 300）；测试（50）。
@@ -419,6 +420,15 @@ owner：`Run/*`、`Rel/Lang/*`、`Rel/Rep*` = ffreyd；`Rel/Programs/*` = aima�
   owner：ffreyd。
 - 门：四条；另外两个测试输入各逼出一条分支（一个 universe 小到走 bit，一个超过 2²⁷ bit 走 table）。
 - 判断点：这里量出每个 def 的 builder 加定理的代价。若明显贵于它的旧定义，停下来把范围缩到他点名的程序。
+- 已定：
+  - D — `Plan.run` 是 `Except String` 里的纯函数，写盘在边界（`Plan.exec`）。失败的 run 什么都不写；C 在
+    `fail` 之前已经写了的照样留下，所以门只比较成功的 run。
+  - G — `Kernel.std` 保留：toolchain 自己的 extern 由 `lean.h` 定义，C 里不另声明。
+  - I — bit-matrix 的树叫 `Route`（原名 `TP`）；"plan" 只指 native 的 `Plan`。
+- 证明的做法（`Rel/Lang/PlanSpec.lean`）：`Builds abi fs gs b rs out` 说 `b` 在寄存器 `rs` 之后追加的指令
+  跑完得到 `out`。每个 builder 原语一条引理 —— `Builds.emit1`（`lit` 就是 `emit1 (.lit v)`）、`Builds.emit`
+  （`call`）、`Builds.ite`，加 `runI_call` —— builder 的定理只用它们改写，不展开 `runB`。第一条是
+  `groupIdsB_builds`（`= Code.groupIds`）。
 
 ### 阶段 2 — 输入和输出（约 900 行）
 - 交付：`input`/`output` 声明；`c/relio.c`（csv/txt 的 reader 和 writer，`col` 的目录读写，universe 检查）；

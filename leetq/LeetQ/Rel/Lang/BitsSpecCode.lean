@@ -630,7 +630,7 @@ theorem codeAll_leaf (cs : Array Col) {out : Array ByteArray} {sps : Array Col} 
     (ek : cs[j] = ⟨A, ⟨R.n, R.key⟩⟩) (ev : cs[j'] = ⟨B, ⟨R.n, R.val⟩⟩) :
     ∃ qa qb, sps.find? (·.1 == A) = some ⟨A, qa⟩ ∧ sps.find? (·.1 == B) = some ⟨B, qb⟩ ∧
       (qa.1.toNat * qb.1.toNat ≤ 2 ^ 27 → (Bits.ofCodes qa.1.toNat qb.1.toNat (out.getD j .empty)
-        (out.getD j' .empty)).Enc (uOf cs A) (uOf cs B) (TP.leaf R).den) := by
+        (out.getD j' .empty)).Enc (uOf cs A) (uOf cs B) (Route.leaf R).den) := by
   obtain ⟨-, hany, hcol, -⟩ := codeAll_inv cs h
   have hin : ∀ i (hi : i < cs.size), (sps.any (·.1 == cs[i].1)) = true := fun i hi => by
     have := hany _ (List.getElem_mem (l := cs.toList) (by simpa using hi)); simpa using this
