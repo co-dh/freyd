@@ -24,6 +24,12 @@ def inits (X : Vals (.arr B) n) : CRel (.arr B) (.arr (.arr B)) := let r := init
 /-- `tails` on the arrays `X`, ok where `tailsC` ran within capacity. -/
 def tails (X : Vals (.arr B) n) : CRel (.arr B) (.arr (.arr B)) := let r := tailsC X; ⟨r.1, r.2⟩
 
+/-- `prefix` on the arrays `X`, ok where `prefixC` ran within capacity. -/
+def «prefix» (X : Vals (.arr B) n) : CRel (.arr B) (.arr B) := let r := prefixC X; ⟨r.1, r.2⟩
+
+/-- `suffix` on the arrays `X`, ok where `suffixC` ran within capacity. -/
+def suffix (X : Vals (.arr B) n) : CRel (.arr B) (.arr B) := let r := suffixC X; ⟨r.1, r.2⟩
+
 /-- `cat°` on the arrays `X`, ok where `uncatC` ran within capacity. -/
 def uncat (X : Vals (.arr B) n) : CRel (.arr B) (.prod (.arr B) (.arr B)) := let r := uncatC X; ⟨r.1, r.2⟩
 

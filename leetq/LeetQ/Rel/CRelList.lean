@@ -235,6 +235,40 @@ theorem rep_tailsC {B : Obj} {n : USize} (X : Vals (.arr B) n) (hb : (tailsC X).
   obtain ⟨hS, hU, hK, hV⟩ := nestC_bits X _ hb
   exact rep_tails X _ rfl hS hU _ rfl _ rfl _ rfl hK hV
 
+/-- **`nestMemC`'s bit is `nestC`'s, and the keys' pick fitting**: the two run the one `expand` with the one
+    slice pick; `nestMemC` adds the keys' pick at the copies (`pickC_fits`). -/
+theorem nestMemC_bits {B : Obj} {n : USize} (X : Vals (.arr B) n)
+    (f : (m : USize) → ByteArray × ByteArray → (i r : ByteArray) → len i = m.toNat → Arr .long m × Arr .long m)
+    (hb : (nestMemC X f).2 = true) :
+    (nestC X f).2 = true ∧ Vals.PickFits (.arr B) X
+      ((List.range (len (expandBytes 8 0 (tilLongs n) (addc n (slicesOf X).2 1))).toUSize.toNat).map fun q =>
+        (Column.bitsAt (expandBytes 8 0 (tilLongs n) (addc n (slicesOf X).2 1)) (q * 8) 8).toNat) := by
+  simp only [nestMemC, expand, need, okbit] at hb
+  obtain ⟨⟨hp1, hK⟩, hb⟩ := hb
+  split at hb
+  · rename_i hx
+    simp only [okbit] at hb
+    obtain ⟨⟨h63, hv⟩, hk⟩ := hb
+    refine ⟨?_, Vals.pickC_fits (.arr B) X _ _ _ hk⟩
+    simp only [nestC, expand, need, okbit, hp1, hK, hx, h63, hv, dite_true, Bool.and_self, decide_true]
+  · exact absurd hb Bool.false_ne_true
+
+/-- **`prefix` under `prefixC`'s bit**: an array `xs` of `X` goes to exactly its prefixes, B&dM's
+    `prefix = ⦇[nil, nil ∪ cons]⦈` (p.126): `rep_prefix` at `nestMemC_bits`' and `nestC_bits`' premises. -/
+theorem rep_prefixC {B : Obj} {n : USize} (X : Vals (.arr B) n) (hb : (prefixC X).2 = true) :
+    ∀ xs ys, rep (prefixC X).1 xs ys ↔ (∃ j, X.row j = xs) ∧ ys <+: xs := by
+  obtain ⟨hn, hk⟩ := nestMemC_bits X _ hb
+  obtain ⟨hS, hU, hK, hV⟩ := nestC_bits X _ hn
+  exact rep_prefix X _ rfl hS hU _ rfl _ rfl _ rfl hK hV hk
+
+/-- **`suffix` under `suffixC`'s bit**: an array `xs` of `X` goes to exactly its suffixes (B&dM p.127):
+    `rep_suffix` at `nestMemC_bits`' and `nestC_bits`' premises. -/
+theorem rep_suffixC {B : Obj} {n : USize} (X : Vals (.arr B) n) (hb : (suffixC X).2 = true) :
+    ∀ xs ys, rep (suffixC X).1 xs ys ↔ (∃ j, X.row j = xs) ∧ ys <:+ xs := by
+  obtain ⟨hn, hk⟩ := nestMemC_bits X _ hb
+  obtain ⟨hS, hU, hK, hV⟩ := nestC_bits X _ hn
+  exact rep_suffix X _ rfl hS hU _ rfl _ rfl _ rfl hK hV hk
+
 /-- `compC_ok` in `cmpOK`'s form, the codes bound by their equation. -/
 theorem compC_cmpOK {A B C : Obj} (R : Rel A B) (S : Rel B C) (hb : (compC R S).2 = true) : cmpOK(B, R, S) := by
   obtain ⟨hcf, h⟩ := compC_ok R S hb
@@ -319,6 +353,14 @@ theorem rep_tails (X : Vals (.arr B) n) (hb : (tails X).ok = true) :
     ∀ xs yss, rep (tails X).rel xs yss ↔ (∃ j, X.row j = xs) ∧
       yss = (List.range (xs.length + 1)).map fun k => xs.drop k :=
   rep_tailsC X hb
+
+theorem rep_prefix (X : Vals (.arr B) n) (hb : («prefix» X).ok = true) :
+    ∀ xs ys, rep («prefix» X).rel xs ys ↔ (∃ j, X.row j = xs) ∧ ys <+: xs :=
+  rep_prefixC X hb
+
+theorem rep_suffix (X : Vals (.arr B) n) (hb : (suffix X).ok = true) :
+    ∀ xs ys, rep (suffix X).rel xs ys ↔ (∃ j, X.row j = xs) ∧ ys <:+ xs :=
+  rep_suffixC X hb
 
 theorem rep_uncat (X : Vals (.arr B) n) (hb : (uncat X).ok = true) :
     ∀ xs ys zs, rep (uncat X).rel xs (ys, zs) ↔ (∃ j, X.row j = xs) ∧ xs = ys ++ zs :=

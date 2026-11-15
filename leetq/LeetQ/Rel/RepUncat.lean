@@ -154,6 +154,103 @@ theorem nest_rep {B : Obj} {n : USize} (X : Vals (.arr B) n)
   · rintro ⟨r, hr, hx, rfl⟩
     exact ⟨⟨r, hr⟩, (hkey _).trans hx, hrow _ _ r hr⟩
 
+/-- **`nestMemC`, read back as `nestC X f ∋`**: copy `pc(r) + t` of `expand` is row `r`'s array (the key,
+    `pick_row` at `xi`) beside the slice `[L r t, H r t)`, the `t`-th of the list `nest_rep` gives row `r`.
+    Hypotheses: `nest_rep`'s, and `Vals.PickFits` of `X` at the copies' rows (the keys). -/
+theorem nestMem_rep {B : Obj} {n : USize} (X : Vals (.arr B) n)
+    (f : (m : USize) → ByteArray × ByteArray → (i r : ByteArray) → len i = m.toNat → Arr .long m × Arr .long m)
+    (c : ByteArray) (hc : c = addc n (slicesOf X).2 1)
+    (hS : pn(n.toNat) + n.toNat < 2 ^ 63) (hU : pn(n.toNat) + n.toNat < USize.size)
+    (xi : ByteArray) (hxi : xi = expandBytes 8 0 (tilLongs n) c)
+    (m : USize) (hm : m = (len xi).toUSize)
+    (xr : ByteArray) (hxr : xr = sub m (tilLongs m) (gather 8 (sub n (sums n c) c) xi))
+    (L H : Nat → Nat → Nat)
+    (hLH : ∀ r t, r < n.toNat → t ≤ cn(r) → L r t ≤ H r t ∧ H r t ≤ X.1.toNat)
+    (hL : ∀ h d (hd : d < m.toNat), ix(d) < n.toNat → rk(d) ≤ cn(ix(d)) →
+      ((f m (slicesOf X) xi xr h).1.get ⟨d, hd⟩).toInt = ((L (ix(d)) (rk(d)) : Nat) : Int))
+    (hH : ∀ h d (hd : d < m.toNat), ix(d) < n.toNat → rk(d) ≤ cn(ix(d)) →
+      ((f m (slicesOf X) xi xr h).2.get ⟨d, hd⟩).toInt = ((H (ix(d)) (rk(d)) : Nat) : Int))
+    (hK : Vals.PickFits (.arr B) X
+      ((List.range n.toNat).map fun q => (Column.bitsAt (tilLongs n) (q * 8) 8).toNat))
+    (hV : ∀ h, Vals.PickFits (.arr B)
+      (⟨X.1, (f m (slicesOf X) xi xr h).1, (f m (slicesOf X) xi xr h).2, X.2.2.2⟩ : Vals (.arr B) m)
+      ((List.range m.toNat).map fun q => (Column.bitsAt (tilLongs m) (q * 8) 8).toNat))
+    (hk : Vals.PickFits (.arr B) X ((List.range m.toNat).map fun q => ix(q)))
+    (R : Rel (.arr B) (.arr B)) (hR : R = (nestMemC X f).1) :
+    ∀ xs ys, rep R xs ys ↔ ∃ yss, rep (nestC X f).1 xs yss ∧ ys ∈ yss := by
+  have hN := nest_rep X f c hc hS hU xi hxi m hm xr hxr L H hLH hL hH hK hV _ rfl
+  intro xs ys
+  simp only [hN]
+  subst hm
+  have hcl : len c = n.toNat := by rw [hc, addc, len_val]
+  have hpre_le : ∀ a b, a ≤ b → pc(a) ≤ pc(b) := fun a b h => sum_range_le _ h
+  have hpre_succ : ∀ r, pc(r + 1) = pc(r) + (Column.bitsAt c (r * 8) 8).toNat := fun r => sum_range_succ' _ r
+  have hpn_le : ∀ a b, a ≤ b → pn(a) ≤ pn(b) := fun a b h => sum_range_le _ h
+  have hpn_succ : ∀ r, pn(r + 1) = pn(r) + cn(r) := fun r => sum_range_succ' _ r
+  have hcg : ∀ r, r < n.toNat → (Column.bitsAt c (r * 8) 8).toNat = cn(r) + 1 := fun r hr => by
+    have := hpn_le (r + 1) n.toNat (by omega); rw [hpn_succ] at this
+    rw [hc, addc, val_va_get _ _ _ _ hr, bitsAt_one, addOne_toNat (by omega)]
+  have hcsum : ∀ r, r ≤ n.toNat → pc(r) = pn(r) + r := by
+    intro r
+    induction r with
+    | zero => intro _; simp
+    | succ r ih => intro hr; rw [hpre_succ, hpn_succ, ih (by omega), hcg r (by omega)]; omega
+  have hS' : pc(n.toNat) < 2 ^ 63 := by rw [hcsum _ (Nat.le_refl _)]; exact hS
+  obtain ⟨hxl, hin, hall⟩ := expand_at c hcl hS' (by rw [hcsum _ (Nat.le_refl _)]; exact hU) xi hxi xr hxr
+  have hxU : len xi < USize.size := by rw [hxl, hcsum _ (Nat.le_refl _)]; exact hU
+  have hmN : ((len xi).toUSize).toNat = len xi := USize.toNat_ofNat_of_lt' hxU
+  have hq : ∀ (V : Vals (.arr B) (len xi).toUSize) k (hk : k < ((len xi).toUSize).toNat) d
+      (hd : d < ((len xi).toUSize).toNat), k = d → V.row ⟨k, hk⟩ = V.row ⟨d, hd⟩ :=
+    fun V k hk d hd e => congrArg _ (Fin.ext e)
+  -- copy `pc(r) + t`: row `r`'s array beside the slice `[L r t, H r t)`
+  have hkey : ∀ (h1 : len xi = ((len xi).toUSize).toNat) r t (hr : r < n.toNat)
+      (ht : t < (Column.bitsAt c (r * 8) 8).toNat) (hd : pc(r) + t < ((len xi).toUSize).toNat),
+      (Vals.pick (.arr B) X xi _ h1).row ⟨pc(r) + t, hd⟩ = X.row ⟨r, hr⟩ := fun h1 r t hr ht hd => by
+    rw [pick_row (.arr B) X xi _ h1 hk, dif_pos (by rw [(hin r t hr ht).1]; exact hr)]
+    exact congrArg X.row (Fin.ext (hin r t hr ht).1)
+  have hval : ∀ (h1 : len xi = ((len xi).toUSize).toNat) r t (hr : r < n.toNat) (ht : t ≤ cn(r))
+      (hd : pc(r) + t < ((len xi).toUSize).toNat),
+      (Vals.pick (.arr B) (⟨X.1, (f (len xi).toUSize (slicesOf X) xi xr h1).1,
+        (f (len xi).toUSize (slicesOf X) xi xr h1).2, X.2.2.2⟩ : Vals (.arr B) (len xi).toUSize)
+        (tilLongs _) _ (len_tilLongs _)).row ⟨pc(r) + t, hd⟩ =
+      (List.range (H r t - L r t)).map fun j =>
+        if h : L r t + j < X.1.toNat then Vals.row X.2.2.2 ⟨_, h⟩ else B.dflt := by
+    intro h1 r t hr ht hd
+    obtain ⟨hx, hy⟩ := hin r t hr (by rw [hcg r hr]; omega)
+    rw [pick_row (.arr B) _ (tilLongs _) _ (len_tilLongs _) (hV h1),
+      dif_pos (show (Column.bitsAt (tilLongs (len xi).toUSize) ((pc(r) + t) * 8) 8).toNat <
+        ((len xi).toUSize).toNat by rw [tilLongs_get hd]; exact hd),
+      hq _ _ _ _ hd (tilLongs_get hd), arr_row]
+    dsimp only
+    have hLt := hL h1 (pc(r) + t) hd (by rw [hx]; exact hr) (by rw [hx, hy]; exact ht)
+    have hHt := hH h1 (pc(r) + t) hd (by rw [hx]; exact hr) (by rw [hx, hy]; exact ht)
+    rw [hx, hy] at hLt hHt
+    rw [hLt, hHt]
+    obtain ⟨hlh, hhx⟩ := hLH r t hr ht
+    have g1 : min (max ((L r t : Nat) : Int) 0).toNat X.1.toNat = L r t := by omega
+    have g2 : min (max ((H r t : Nat) : Int) 0).toNat X.1.toNat = H r t := by omega
+    simp only [g1, g2]
+  have hdl : ∀ r t, r < n.toNat → t < cn(r) + 1 → pc(r) + t < ((len xi).toUSize).toNat := fun r t hr ht => by
+    rw [hmN, hxl]; have := hpre_le (r + 1) n.toNat (by omega); rw [hpre_succ, hcg r hr] at this; omega
+  subst hxr hxi hc hR
+  rw [rep_apply]
+  simp only [nestMemC, expand, need_fst, pickC_fst]
+  simp only [need]
+  rw [dif_pos hxU]
+  simp only [Rel.Holds]
+  constructor
+  · rintro ⟨⟨d, hd⟩, hkd, hvd⟩
+    obtain ⟨r, t, hr, ht, rfl⟩ := hall d (by rw [← hmN]; exact hd)
+    rw [hkey _ r t hr ht hd] at hkd
+    rw [hcg r hr] at ht
+    rw [hval _ r t hr (by omega) hd] at hvd
+    exact ⟨_, ⟨r, hr, hkd, rfl⟩, List.mem_map.2 ⟨t, List.mem_range.2 ht, hvd⟩⟩
+  · rintro ⟨_, ⟨r, hr, hx, rfl⟩, hy⟩
+    obtain ⟨t, ht, rfl⟩ := List.mem_map.1 hy
+    rw [List.mem_range] at ht
+    have hd := hdl r t hr ht
+    exact ⟨⟨_, hd⟩, (hkey _ r t hr (by rw [hcg r hr]; exact ht) hd).trans hx, hval _ r t hr (by omega) hd⟩
+
 /-- **`inits`, read back**: an array `xs` of `X` goes to its prefixes by increasing length, `[]` first. The counts
     plus one `c`, `expand`'s index and rank columns `xi`, `xr` (at `m` copies) are bound by their equations.
     Hypotheses: the counts plus one summed below `2^63` and a `USize`; `Vals.PickFits` where `X` and the
@@ -267,6 +364,91 @@ theorem rep_tails {B : Obj} {n : USize} (X : Vals (.arr B) n)
   · rintro ⟨⟨⟨r, hr⟩, hx⟩, rfl⟩
     exact ⟨r, hr, hx, by rw [hsuf r hr, hx]⟩
 
+/-- **`prefix`, read back**: an array `xs` of `X` goes to each of its prefixes — `nestMem_rep` at `inits`' slice
+    kernel, each slice a member of the list `rep_inits` reads back. Hypotheses: `rep_inits`', and `Vals.PickFits`
+    of `X` at the copies' rows (the keys). -/
+theorem rep_prefix {B : Obj} {n : USize} (X : Vals (.arr B) n)
+    (c : ByteArray) (hc : c = addc n (slicesOf X).2 1)
+    (hS : pn(n.toNat) + n.toNat < 2 ^ 63) (hU : pn(n.toNat) + n.toNat < USize.size)
+    (xi : ByteArray) (hxi : xi = expandBytes 8 0 (tilLongs n) c)
+    (m : USize) (hm : m = (len xi).toUSize)
+    (xr : ByteArray) (hxr : xr = sub m (tilLongs m) (gather 8 (sub n (sums n c) c) xi))
+    (hK : Vals.PickFits (.arr B) X
+      ((List.range n.toNat).map fun q => (Column.bitsAt (tilLongs n) (q * 8) 8).toNat))
+    (hV : ∀ h : len xi = m.toNat, Vals.PickFits (.arr B)
+      (⟨X.1, longsN m (gather 8 (slicesOf X).1 xi) (Nat.le_of_eq ((gather_len _ _).trans h).symm),
+        valCol Ew.add Ew.vv (gather 8 (slicesOf X).1 xi) xr, X.2.2.2⟩ : Vals (.arr B) m)
+      ((List.range m.toNat).map fun q => (Column.bitsAt (tilLongs m) (q * 8) 8).toNat))
+    (hk : Vals.PickFits (.arr B) X ((List.range m.toNat).map fun q => ix(q))) :
+    ∀ xs ys, rep («prefix» X) xs ys ↔ (∃ j, X.row j = xs) ∧ ys <+: xs := by
+  have hp := (pickFits_payload _ hK).1
+  have hb := fun r (hr : r < n.toNat) => slicesOf_row X hp hr
+  have hsl : len (slicesOf X).1 = n.toNat := (len_slices _ _ _ _).1
+  have hI := rep_inits X c hc hS hU xi hxi m hm xr hxr hK hV
+  intro xs ys
+  show rep (nestMemC X initsK).1 xs ys ↔ _
+  rw [nestMem_rep X initsK c hc hS hU xi hxi m hm xr hxr (fun r _ => st(r)) (fun r t => st(r) + t)
+    (fun r t hr ht => by dsimp only; have := (hb r hr).1; omega)
+    (fun h d hd hx _ => by
+      dsimp only [initsK]; have := (hb _ hx).1
+      exact gather_longsN_toInt _ hd h (by rw [hsl]; exact hx) (by omega))
+    (fun h d hd hx hy => by
+      dsimp only [initsK]; have := (hb _ hx).1; exact gather_add_toInt hd h (by rw [hsl]; exact hx) (by omega))
+    hK hV hk _ rfl]
+  constructor
+  · rintro ⟨yss, h1, h2⟩
+    obtain ⟨hx, rfl⟩ := (hI xs yss).1 h1
+    obtain ⟨k, -, rfl⟩ := List.mem_map.1 h2
+    exact ⟨hx, List.take_prefix k xs⟩
+  · rintro ⟨hx, h⟩
+    exact ⟨_, (hI xs _).2 ⟨hx, rfl⟩, List.mem_map.2 ⟨ys.length, List.mem_range.2 (Nat.lt_succ_of_le h.length_le),
+      (List.prefix_iff_eq_take.1 h).symm⟩⟩
+
+/-- **`suffix`, read back**: an array `xs` of `X` goes to each of its suffixes — `nestMem_rep` at `tails`' slice
+    kernel, each slice a member of the list `rep_tails` reads back. Hypotheses: `rep_tails`', and `Vals.PickFits`
+    of `X` at the copies' rows (the keys). -/
+theorem rep_suffix {B : Obj} {n : USize} (X : Vals (.arr B) n)
+    (c : ByteArray) (hc : c = addc n (slicesOf X).2 1)
+    (hS : pn(n.toNat) + n.toNat < 2 ^ 63) (hU : pn(n.toNat) + n.toNat < USize.size)
+    (xi : ByteArray) (hxi : xi = expandBytes 8 0 (tilLongs n) c)
+    (m : USize) (hm : m = (len xi).toUSize)
+    (xr : ByteArray) (hxr : xr = sub m (tilLongs m) (gather 8 (sub n (sums n c) c) xi))
+    (hK : Vals.PickFits (.arr B) X
+      ((List.range n.toNat).map fun q => (Column.bitsAt (tilLongs n) (q * 8) 8).toNat))
+    (hV : ∀ h : len xi = m.toNat, Vals.PickFits (.arr B)
+      (⟨X.1, valCol Ew.add Ew.vv (gather 8 (slicesOf X).1 xi) xr,
+        longsN m (gather 8 (add n (slicesOf X).1 (slicesOf X).2) xi) (Nat.le_of_eq ((gather_len _ _).trans h).symm),
+        X.2.2.2⟩ : Vals (.arr B) m)
+      ((List.range m.toNat).map fun q => (Column.bitsAt (tilLongs m) (q * 8) 8).toNat))
+    (hk : Vals.PickFits (.arr B) X ((List.range m.toNat).map fun q => ix(q))) :
+    ∀ xs ys, rep (suffix X) xs ys ↔ (∃ j, X.row j = xs) ∧ ys <:+ xs := by
+  have hp := (pickFits_payload _ hK).1
+  have hb := fun r (hr : r < n.toNat) => slicesOf_row X hp hr
+  have hsl : len (slicesOf X).1 = n.toNat := (len_slices _ _ _ _).1
+  have hal : len (add n (slicesOf X).1 (slicesOf X).2) = n.toNat := len_val ..
+  have hend : ∀ r, r < n.toNat → (Column.bitsAt (add n (slicesOf X).1 (slicesOf X).2) (r * 8) 8).toNat =
+      st(r) + cn(r) := fun r hr => by
+    have := (hb r hr).1; exact add_get hr (by omega)
+  have hI := rep_tails X c hc hS hU xi hxi m hm xr hxr hK hV
+  intro xs ys
+  show rep (nestMemC X (tailsK n)).1 xs ys ↔ _
+  rw [nestMem_rep X (tailsK n) c hc hS hU xi hxi m hm xr hxr (fun r t => st(r) + t) (fun r _ => st(r) + cn(r))
+    (fun r t hr ht => by dsimp only; exact ⟨by omega, (hb r hr).1⟩)
+    (fun h d hd hx hy => by
+      dsimp only [tailsK]; have := (hb _ hx).1; exact gather_add_toInt hd h (by rw [hsl]; exact hx) (by omega))
+    (fun h d hd hx _ => by
+      dsimp only [tailsK]; have := (hb _ hx).1
+      rw [gather_longsN_toInt _ hd h (by rw [hal]; exact hx) (by rw [hend _ hx]; omega), hend _ hx])
+    hK hV hk _ rfl]
+  constructor
+  · rintro ⟨yss, h1, h2⟩
+    obtain ⟨hx, rfl⟩ := (hI xs yss).1 h1
+    obtain ⟨k, -, rfl⟩ := List.mem_map.1 h2
+    exact ⟨hx, List.drop_suffix k xs⟩
+  · rintro ⟨hx, h⟩
+    exact ⟨_, (hI xs _).2 ⟨hx, rfl⟩, List.mem_map.2 ⟨xs.length - ys.length, List.mem_range.2 (by omega),
+      (List.suffix_iff_eq_drop.1 h).symm⟩⟩
+
 section Uncat
 
 open FoldN OpsN
@@ -371,4 +553,7 @@ end LeetQ.Rel.Rep
 #print axioms LeetQ.Rel.Rep.nest_rep
 #print axioms LeetQ.Rel.Rep.rep_inits
 #print axioms LeetQ.Rel.Rep.rep_tails
+#print axioms LeetQ.Rel.Rep.nestMem_rep
+#print axioms LeetQ.Rel.Rep.rep_prefix
+#print axioms LeetQ.Rel.Rep.rep_suffix
 #print axioms LeetQ.Rel.Rep.rep_uncat
