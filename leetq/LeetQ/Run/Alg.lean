@@ -1014,6 +1014,63 @@ def tailsC {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr (.ar
 /-- `tails`: `tailsC`'s relation. -/
 def tails {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr (.arr B)) := (tailsC X).1
 
+/-! ## Keeping cells by a predicate: masks on the payload, no round -/
+
+/-- `src@idx` on longs, an index past `src` reading `t`: one long per index (`gatherBytes_size`). -/
+def gatherT (t : Nat) (src idx : ByteArray) : ByteArray := gatherBytes (8 : Nat).toUSize t.toUInt64 src idx
+
+theorem len_gatherT (t : Nat) (src idx : ByteArray) : len (gatherT t src idx) = len idx := by
+  have h8 : (Nat.toUSize 8).toNat = 8 := KernelWF.toNat_small 8 (by decide)
+  simp only [len, gatherT, KernelWF.gatherBytes_size, h8]; omega
+
+/-- The cells of the payload `F` whose value is a key of `P`, as `M` bits, and whether the joint codes ran within
+    capacity: `member` on the codes of `F` and of `P`'s keys, coded together (`codesC`). -/
+def keyBitsC {B : Obj} {M : USize} (F : Vals B M) (P : Rel B B) : ByteArray × Bool :=
+  let c := B.codesC #v[⟨M, F⟩, ⟨_, P.key⟩]; (c.1[0].member c.1[1], c.2)
+
+/-- The set bits of `b` before each cell of `M`, read at the positions `idx`: `sums` of the bits less the bits, a
+    position past the cells (only `M` among slice bounds) reading the total `t`. -/
+def countBefore (M : USize) (b : ByteArray) (t : Nat) (idx : ByteArray) : ByteArray :=
+  let w := Kernel.Ew.widen Ew.bits Ew.i64 nul nul b M
+  gatherT t (sub M (sums M w) w) idx
+
+/-- `filter(p) : arr B ⟶ arr B` on the arrays `X`, `P` the relation `p` (B&dM p.66 `⦇[nil, p outl → cons, outr]⦈`): each
+    array to its cells that are keys of `P`. One mask on the payload (`keyBitsC`), its kept cells picked once
+    (`whereBits`), each row's slice bounds moved to the kept cells before them (`countBefore`). The bit: the codes',
+    the payload count below `2^63`, the pick's (`pickC`). -/
+def filterC {B : Obj} {n : USize} (P : Rel B B) (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) × Bool :=
+  let k := keyBitsC X.2.2.2 P
+  let K := whereBits X.1 k.1
+  let s := slicesOf X
+  need (len K < USize.size) (fun _ => s!"filter: {len K} cells do not fit a USize") (fun _ => (zero, false)) fun h =>
+    let v := Vals.pickC B X.2.2.2 K (len K).toUSize (USize.toNat_ofNat_of_lt' h).symm
+    let lo := countBefore X.1 k.1 (len K) s.1
+    let hi := countBefore X.1 k.1 (len K) (add n s.1 s.2)
+    ((⟨n, X, ⟨(len K).toUSize, longsN n lo (by show n.toNat ≤ len (gatherT _ _ (slicesOf X).1); rw [len_gatherT]; exact Nat.le_of_eq (len_slices ..).1.symm),
+      longsN n hi (by show n.toNat ≤ len (gatherT _ _ (add n _ _)); rw [len_gatherT]; exact Nat.le_of_eq (len_val ..).symm), v.1⟩⟩ : Rel (.arr B) (.arr B)),
+      k.2 && decide (X.1.toNat < 2 ^ 63) && Vals.fitsN (.arr B) X n.toNat && v.2)
+
+/-- `filter`: `filterC`'s relation. -/
+def filter {B : Obj} {n : USize} (P : Rel B B) (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) := (filterC P X).1
+
+/-- `takewhile(p) : arr B ⟶ arr B` on the arrays `X`, `P` the relation `p` (B&dM p.174 `⦇[nil, p outl → cons, nil]⦈`):
+    each array to its longest prefix of keys of `P`. The cells failing the mask (`keyBitsC`, `notBits`) listed once
+    (`whereBits`, the payload count after them); a row's first failing cell at or after its start is that list
+    read at the failing cells before the start (`countBefore`), its end the lesser of that cell and its own end.
+    No cell copied: the payload is shared. The bit: the codes', the payload count below `2^63`. -/
+def takewhileC {B : Obj} {n : USize} (P : Rel B B) (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) × Bool :=
+  let k := keyBitsC X.2.2.2 P
+  let f := Ew.notBits X.1 k.1
+  let fp := whereBits X.1 f
+  let s := slicesOf X
+  let hi := Kernel.Ew.val Ew.lesser Ew.i64 Ew.vv nul (add n s.1 s.2) (gatherT X.1.toNat fp (countBefore X.1 f (len fp) s.1)) n
+  ((⟨n, X, ⟨X.1, longsN n s.1 (by show n.toNat ≤ len (slicesOf X).1; exact Nat.le_of_eq (len_slices ..).1.symm),
+    longsN n hi (by rw [len_val]; exact Nat.le_refl _), X.2.2.2⟩⟩ : Rel (.arr B) (.arr B)),
+    k.2 && decide (X.1.toNat < 2 ^ 63) && Vals.fitsN (.arr B) X n.toNat)
+
+/-- `takewhile`: `takewhileC`'s relation. -/
+def takewhile {B : Obj} {n : USize} (P : Rel B B) (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) := (takewhileC P X).1
+
 /-- `cat : arr B × arr B ⟶ arr B` on the rows of `P`, each `(xs, ys)` to `xs` then `ys` under its key (`cat`,
     AOP/A5_6_ListCombinators.lean:224, the graph of `cappend`). `cons` with an array for a head: the new arrays
     laid out one after another (`sums` of the two counts), each side's cells gathered by the `expand` of its
