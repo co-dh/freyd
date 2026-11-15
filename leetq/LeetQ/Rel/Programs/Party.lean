@@ -23,15 +23,13 @@ rel_program partyPlan after prelude where
     cost(r : α ⟶ β) : [α] ⟶ β ≜ F(r)sum
     R(r : α ⟶ β) : [α] ⟶ [α] ≜ cost(r) ≥ cost(r)°
 
-    /- The book's fold ⦇S⦈ (p. 177) as the greatest solution below B, the pairs of subsets of the subtree; μ is
-       refused for a target with no universe. -/
+    /- The book's fold ⦇S⦈ (p. 177), written as μ over the array objects [E]. -/
 
     choose : [E]×[E] ⟶ [E] ≜ π₁ ∪ π₂
     include : E×[[E]×[E]] ⟶ [E] ≜ ⟨π₁τ τ, π₂F(π₂)⟩cat union
     exclude : E×[[E]×[E]] ⟶ [E] ≜ π₂F(choose)union
     S : E×[[E]×[E]] ⟶ [E]×[E] ≜ ⟨include, exclude⟩
-    B : E ⟶ [E]×[E] ≜ ⟨Λ(under)subseq, Λ(under)subseq⟩
-    fold : E ⟶ [E]×[E] ≜ νX : B ∩ (⟨𝟙, kids F(X)⟩S)
+    fold : E ⟶ [E]×[E] ≜ μX : ⟨𝟙, kids F(X)⟩S
     party : E ⟶ [E] ≜ fold choose
     best : E ⟶ [E] ≜ Λ(party)est(R(rating))
 
@@ -41,7 +39,7 @@ rel_program partyPlan after prelude where
     /- The greedy form (p. 178): exclude keeps only the best party of each child. -/
 
     exclude₁ : E×[[E]×[E]] ⟶ [E] ≜ π₂F(Λ(choose)est(R(rating)))union
-    gfold : E ⟶ [E]×[E] ≜ νX : B ∩ (⟨𝟙, kids F(X)⟩⟨include, exclude₁⟩)
+    gfold : E ⟶ [E]×[E] ≜ μX : ⟨𝟙, kids F(X)⟩⟨include, exclude₁⟩
     check gfold Λ(choose)est(R(rating)) ⊑ best
 
     /- The efficient form: c is (cost with e, cost without e), win the employees whose best party holds them, ties
