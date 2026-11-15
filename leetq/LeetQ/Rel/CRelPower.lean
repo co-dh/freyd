@@ -53,7 +53,7 @@ theorem rep_τC {n : USize} (X : Vals A n) (hb : (τC X).2 = true) :
 theorem rep_lamOnC {m : USize} (R : Rel A B) (U : Vals A m) (hb : (lamOnC R U).2 = true) :
     (∀ a Y, rep (lamOnC R U).1 a Y → ∀ y, y ∈ Y ↔ rep R a y) ∧
       (∀ a, (∃ Y, rep (lamOnC R U).1 a Y) ↔ (∃ b, rep R a b) ∨ ∃ i, Vals.row U i = a) := by
-  simp only [lamOnC, Bool.and_eq_true] at hb
+  simp only [lamOnC, lamOnByC, Bool.and_eq_true] at hb
   obtain ⟨⟨⟨⟨ht, -⟩, hd⟩, hn⟩, hu⟩ := hb
   obtain ⟨hK, hV, hk, hv, hWk, hW, h63⟩ := transposeC_ok R ht
   simp only [diffC, Bool.and_eq_true] at hd
@@ -93,7 +93,7 @@ theorem transposeC_asc (R : Rel A B) (hB : B.Ordered) (hb : (transposeC R).2 = t
     ∀ a X, rep (transposeC R).1 a X → X.Nodup ∧ X.Pairwise fun x y => ¬ B.lt y x := by
   obtain ⟨hK, hV, hk, hv, hWk, hW, h63⟩ := transposeC_ok R hb
   intro a X h
-  obtain ⟨hnd, -, L, hL, -, rfl⟩ := (rep_transpose_list R hK hV hk hv hWk hW h63).1 a X h
+  obtain ⟨hnd, -, L, hL, -, rfl⟩ := (rep_transpose_list R hK hV hk hv hWk _ (sortBy_nub_perm _ hW) _ (transpose_eq _) h63).1 a X h
   refine ⟨hnd, ?_⟩
   have hs := (sortBy_asc (sortsAsc_all B hB) (Rel.nub R).val
     (small_of_pickFits B _ _ (nub_pickFits R hK hV hk hv).2) (tilLongs (Rel.nub R).n)
@@ -106,10 +106,10 @@ theorem transposeC_asc (R : Rel A B) (hB : B.Ordered) (hb : (transposeC R).2 = t
     the empty arrays of the elements of `U` that `R` relates to nothing. -/
 theorem lamOnC_asc {m : USize} (R : Rel A B) (U : Vals A m) (hB : B.Ordered) (hb : (lamOnC R U).2 = true) :
     ∀ a Y, rep (lamOnC R U).1 a Y → Y.Nodup ∧ Y.Pairwise fun x y => ¬ B.lt y x := by
-  simp only [lamOnC, Bool.and_eq_true] at hb
+  simp only [lamOnC, lamOnByC, Bool.and_eq_true] at hb
   obtain ⟨⟨⟨⟨ht, -⟩, -⟩, hn⟩, hu⟩ := hb
   intro a Y h
-  simp only [lamOnC] at h
+  simp only [lamOnC, lamOnByC] at h
   rw [rep_unionC _ _ hu] at h
   rcases h with h | h
   · exact transposeC_asc R hB ht a Y h

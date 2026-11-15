@@ -1,5 +1,5 @@
 /-
-  `bagify`'s two grades read back: `gradeColumn .long false` lists the rows in a stable ascending sort by
+  `asc`'s two grades read back: `gradeColumn .long false` lists the rows in a stable ascending sort by
   value, and the grade of `Code.ofLongs` of longs below `2^63` lists them in a stable sort by those longs — at
   row numbers, each row's cells in one block, rows ascending, the incoming order kept inside a block.
 -/
@@ -102,7 +102,7 @@ theorem grade_ofLongs (b : ByteArray) (hN : len b < USize.size)
 
 /-- **A sort `v` regrouped stably by row**: `v` lists `til (len i)` in `R` order, `i` gives each position its
     row (below `2^63`); `v@grade(i@v)` lists every position once, by row ascending and, inside a row, in `v`'s
-    `R` order — `bagify`'s `p`, each row's cells one block, sorted by value. -/
+    `R` order — `asc`'s `p`, each row's cells one block, sorted by value. -/
 theorem grade_group (i v : ByteArray) (hv : (ids v).Perm (List.range (len i))) (R : Nat → Nat → Prop)
     (hsv : (ids v).Pairwise R) (hN : len i < USize.size)
     (h63 : ∀ c, c < len i → (Column.bitsAt i (c * 8) 8).toNat < 2 ^ 63) :

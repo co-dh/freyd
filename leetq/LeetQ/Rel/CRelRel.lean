@@ -132,7 +132,7 @@ theorem transposeC_ok (R : Rel A B) (hb : (transposeC R).2 = true) :
       Vals.PickFits B R.val (List.range R.n.toNat) ∧
       A.CodesFit (#v[⟨(Rel.nub R).n, (Rel.nub R).key⟩] : Vector (Part A) 1) ∧
       B.CodesFit (#v[⟨(Rel.nub R).n, (Rel.nub R).val⟩] : Vector (Part B) 1) ∧ R.n.toNat < 2 ^ 63 := by
-  simp only [transposeC, nubC_fst, Obj.sortByC_snd] at hb
+  simp only [transposeC, transposeByC, nubC_fst, Obj.sortByC_snd] at hb
   simp only [keyPart, valPart, valSortC, Obj.sortByC_snd, nubC, okbit] at hb
   exact ⟨oneOK_of_codesC A R.key (by simp only [hb]), oneOK_of_codesC B R.val (by simp only [hb]),
     by simp only [okbit, hb]⟩
@@ -143,7 +143,7 @@ theorem rep_transposeC (R : Rel A B) (hb : (transposeC R).2 = true) :
     (∀ a X, rep (transposeC R).1 a X → ∀ x, x ∈ X ↔ rep R a x) ∧
       (∀ a, (∃ X, rep (transposeC R).1 a X) ↔ ∃ b, rep R a b) := by
   obtain ⟨hK, hV, hk, hv, hWk, hW, h63⟩ := transposeC_ok R hb
-  exact rep_transpose R hK hV hk hv hWk hW h63
+  exact rep_transpose R hK hV hk hv hWk _ (sortBy_nub_perm _ hW) _ (transpose_eq _) h63
 
 /-- **`rep (R /ₛ S)` under `symDivC`'s bit**: `rep_symDiv` at the intermediates `symDivC` builds (the codes twins'
     `.1` read as `Obj.codes` by `simp`, sitting as arguments of `segments`/`symDivIds`/`symDivTailC`; then `joinC`'s

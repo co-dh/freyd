@@ -16,6 +16,9 @@ def lamOn {m : USize} (R : CRel A B) (U : Vals A m) : CRel A (.arr B) :=
 /-- `setify` on `X`, ok where `setifyC` ran within capacity. -/
 def setify {n : USize} (X : Vals (.arr B) n) : CRel (.arr B) (.arr B) := let r := setifyC X; ⟨r.1, r.2⟩
 
+/-- `distinct` on `X`, ok where `distinctC` ran within capacity. -/
+def distinct {n : USize} (X : Vals (.arr B) n) : CRel (.arr B) (.arr B) := let r := distinctC X; ⟨r.1, r.2⟩
+
 /-- `E(R)` on `X`, ok where `R` is and `EC` ran within capacity. -/
 def E {n : USize} (R : CRel A B) (X : Vals (.arr A) n) : CRel (.arr A) (.arr B) :=
   guard R.ok fun _ => let r := EC R.rel X; ⟨r.1, r.2⟩

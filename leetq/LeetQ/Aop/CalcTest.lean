@@ -91,8 +91,8 @@ example {f : D ⟶ B} (hf : Map f) (R : A ⟶ C) (S : B ⟶ C) : rel(R / (f S)) 
 /-- error: `snoc` has no AOP reading: AOP's `snoc` is on snoc lists (`SL.snoc`), not on the cons lists `[α]` reads
 as -/
 #guard_msgs (whitespace := lax) in example (R : A ⟶ A) : A ⟶ A := rel(R snoc)
-/-- error: `bagify` has no AOP reading: AOP's `bagify` is on snoc lists of jobs only (`Tardy.bagify`) -/
-#guard_msgs in example (R : A ⟶ A) : A ⟶ A := rel(R bagify)
+/-- error: `asc` has no AOP reading: AOP's sorts take their order as a relation (`ISort.sortSpec R`); `asc` sorts by q's -/
+#guard_msgs in example (R : A ⟶ A) : A ⟶ A := rel(R asc)
 /-- error: `tic` has no AOP reading: AOP declares no non-empty prefixes of `a::xs` -/
 #guard_msgs in example (R : A ⟶ A) : A ⟶ A := rel(R tic)
 /-- error: `loop(R)` has no AOP reading: AOP declares no iteration to a fixed point from the left -/

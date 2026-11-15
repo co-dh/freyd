@@ -31,8 +31,8 @@ def leq {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (h : t ≠ .general
 /-- `succ` on `U`, ok where `succC` ran within capacity. -/
 def succ {n : USize} (U : Vals (.atom .long) n) : CRel (.atom .long) (.atom .long) := let r := succC U; ⟨r.1, r.2⟩
 
-/-- `bagify` on the arrays `X`, ok where `bagifyC` ran within capacity. -/
-def bagify {B : Obj} {n : USize} (X : Vals (.arr B) n) : CRel (.arr B) (.arr B) := let r := bagifyC X; ⟨r.1, r.2⟩
+/-- `asc` on the arrays `X`, ok where `ascC` ran within capacity. -/
+def asc {B : Obj} {n : USize} (X : Vals (.arr B) n) : CRel (.arr B) (.arr B) := let r := ascC X; ⟨r.1, r.2⟩
 
 end CRel
 end LeetQ.Rel

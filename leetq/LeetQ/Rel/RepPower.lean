@@ -52,7 +52,7 @@ theorem rep_tau {n : USize} (X : Vals A n)
     (hW : A.CodesFit (#v[⟨(Rel.nub (idU X)).n, (Rel.nub (idU X)).val⟩] : Vector (Part A) 1))
     (h63 : n.toNat < 2 ^ 63) :
     (∀ a Y, rep (τ X) a Y → ∀ x, x ∈ Y ↔ x = a) ∧ (∀ a, (∃ Y, rep (τ X) a Y) ↔ ∃ i, Vals.row X i = a) := by
-  obtain ⟨h1, h2⟩ := rep_transpose (idU X) hX hX hx hx hWk hW h63
+  obtain ⟨h1, h2⟩ := rep_transpose (idU X) hX hX hx hx hWk _ (sortBy_nub_perm _ hW) _ (transpose_eq _) h63
   have hid : ∀ a b, rep (idU X) a b ↔ a = b ∧ ∃ i, X.row i = a := idU_holds X
   refine ⟨fun a Y h x => ?_, fun a => (h2 a).trans
     ⟨fun ⟨b, hb⟩ => ((hid a b).1 hb).2, fun hi => ⟨a, (hid a a).2 ⟨rfl, hi⟩⟩⟩⟩
@@ -129,7 +129,7 @@ theorem rep_lamOn {B : Obj} {m : USize} (R : Rel A B) (U : Vals A m)
       (∀ a, (∃ Y, rep (LeetQ.Rel.Alg.lamOn R U) a Y) ↔ (∃ b, rep R a b) ∨ ∃ i, Vals.row U i = a) := by
   subst hku hvu hL hN0 hD hT hpc hkc hvc
   obtain ⟨htN, htA, htB⟩ := lamOn_top_fits R U hc hdU
-  obtain ⟨h1, h2⟩ := rep_transpose R hK hV hk hv hWk hW h63
+  obtain ⟨h1, h2⟩ := rep_transpose R hK hV hk hv hWk _ (sortBy_nub_perm _ hW) _ (transpose_eq _) h63
   have hu := rep_union_full (lT(R)) (lN(R, U, B)) hN hFk hFv huK huV huk huv
   have hL : ∀ a Y, rep (LeetQ.Rel.Alg.lamOn R U) a Y ↔ rep (lT(R)) a Y ∨ rep (lN(R, U, B)) a Y := fun a Y => by
     rw [show LeetQ.Rel.Alg.lamOn R U = lT(R) ∪ lN(R, U, B) from rfl, hu]; exact Iff.rfl
@@ -203,7 +203,7 @@ theorem rep_tau_list {n : USize} (X : Vals A n)
     (hW : A.CodesFit (#v[⟨(Rel.nub (idU X)).n, (Rel.nub (idU X)).val⟩] : Vector (Part A) 1))
     (h63 : n.toNat < 2 ^ 63) :
     ∀ a Y, rep (τ X) a Y ↔ (∃ i, Vals.row X i = a) ∧ Y = [a] := by
-  obtain ⟨h1, h2⟩ := rep_transpose_list (idU X) hX hX hx hx hWk hW h63
+  obtain ⟨h1, h2⟩ := rep_transpose_list (idU X) hX hX hx hx hWk _ (sortBy_nub_perm _ hW) _ (transpose_eq _) h63
   have hid : ∀ a b, rep (idU X) a b ↔ a = b ∧ ∃ i, X.row i = a := idU_holds X
   -- a row of `τ X`: `a` listed in `X`, the array `[a]`
   have fwd : ∀ a Y, rep (τ X) a Y → (∃ i, Vals.row X i = a) ∧ Y = [a] := fun a Y h => by

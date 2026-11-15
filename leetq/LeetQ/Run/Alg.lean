@@ -307,14 +307,18 @@ def transposeRuns (d : Rel A B) (kc : Code) (vp : ByteArray) : Rel A (.arr B) :=
   longCount "Λ" lo fun m hm => ⟨m, Vals.pick A dk.2 lo m hm,
     ⟨dv.1, toUSize_eq hm ▸ longCol lo, toUSize_eq (h.trans hm) ▸ longCol (o.extract 8 o.size), dv.2⟩⟩
 
-/-- `Λ(R)` and whether it ran within capacity: `transposeRuns` on `nubC`'s relation, its key codes (`codesC`) and
-    its values sorted (`sortByC`), the bit `nubC`'s `&&` those codes' `&&` the sort's (the nub values' codes',
-    `sortByC_snd`, from the one pass that sorts by them) `&&` `rep_transpose`'s count decided. -/
-def transposeC (R : Rel A B) : Rel A (.arr B) × Bool :=
+/-- `Λ(R)` with each key's values in the order `o` lists the nub's rows, and whether it ran within capacity:
+    `transposeRuns` on `nubC`'s relation, its key codes (`codesC`) and `o` of it, the bit `nubC`'s `&&` those
+    codes' `&&` `o`'s `&&` `rep_transpose`'s count decided. -/
+def transposeByC (o : Rel A B → ByteArray × Bool) (R : Rel A B) : Rel A (.arr B) × Bool :=
   let d := nubC R
   let kc := A.codesC #v[keyPart d.1]
-  let vp := valSortC d.1
+  let vp := o d.1
   (transposeRuns d.1 kc.1[0] vp.1, d.2 && kc.2 && vp.2 && decide (R.n.toNat < 2 ^ 63))
+
+/-- `Λ(R)` and whether it ran within capacity: `transposeByC` with the values sorted (`valSortC`), whose bit is the
+    nub values' codes' (`sortByC_snd`, from the one pass that sorts by them). -/
+def transposeC (R : Rel A B) : Rel A (.arr B) × Bool := transposeByC valSortC R
 
 /-- `Λ(R)`: `transposeC`'s relation. -/
 def transpose (R : Rel A B) : Rel A (.arr B) := (transposeC R).1
@@ -323,7 +327,12 @@ def transpose (R : Rel A B) : Rel A (.arr B) := (transposeC R).1
     read as their ops. -/
 theorem transpose_eq (R : Rel A B) :
     transpose R = transposeRuns R.nub (A.codes #v[⟨_, R.nub.key⟩])[0] (B.sortBy R.nub.val (tilLongs R.nub.n)) := by
-  simp only [transpose, transposeC, nubC_fst, Obj.codesC_fst]; simp only [keyPart, valSortC, Obj.sortBy]
+  simp only [transpose, transposeC, transposeByC, nubC_fst, Obj.codesC_fst]; simp only [keyPart, valSortC, Obj.sortBy]
+
+/-- `transposeByC o R`'s relation is `transposeRuns` on `R.nub`, its key codes and `o`'s order of its rows. -/
+theorem transposeBy_eq (o : Rel A B → ByteArray × Bool) (R : Rel A B) :
+    (transposeByC o R).1 = transposeRuns R.nub (A.codes #v[⟨_, R.nub.key⟩])[0] (o R.nub).1 := by
+  simp only [transposeByC, nubC_fst, Obj.codesC_fst]; simp only [keyPart]
 
 /-- `∋ : arr B ⟶ B` on the arrays `X`: each array to each of its elements, one row per element (an array
     holding a value twice relates to it twice). `expand` of the clamped slice counts, each copy's rank
@@ -893,15 +902,20 @@ def alpha {K B : Obj} {n : USize} (I : Vals K 1) (P : Vals (.prod B (.arr B)) n)
     Rel (.sum K (.prod B (.arr B))) (.arr B) :=
   (alphaC I P).1
 
-/-- `Λ(R)` total on `U`: each element of `U` that `R` relates to nothing goes to the empty array, which `Λ(R)`,
-    one row per key of `R`, has no row for: `Λ(R) ∪ ⊤` from `(idU U − dom R)`'s keys to `nilVal B`. Whether it ran
-    within capacity: the `&&` of the bits of the twins it runs (`transposeC`, `domC`, `diffC`, `topC`, `unionC`). -/
-def lamOnC {A B : Obj} {m : USize} (R : Rel A B) (U : Vals A m) : Rel A (.arr B) × Bool :=
-  let t := transposeC R; let d := domC R
+/-- `Λ(R)` total on `U`, each array in the order `o` lists the nub's rows (`transposeByC`): each element of `U` that
+    `R` relates to nothing goes to the empty array, which `Λ(R)`, one row per key of `R`, has no row for: `Λ(R) ∪ ⊤`
+    from `(idU U − dom R)`'s keys to `nilVal B`. Whether it ran within capacity: the `&&` of the bits of the twins it
+    runs (`transposeByC`, `domC`, `diffC`, `topC`, `unionC`). -/
+def lamOnByC {A B : Obj} {m : USize} (o : Rel A B → ByteArray × Bool) (R : Rel A B) (U : Vals A m) :
+    Rel A (.arr B) × Bool :=
+  let t := transposeByC o R; let d := domC R
   let D := diffC (idU U) d.1
   let N := topC D.1.key (nilVal B)
   let u := unionC t.1 N.1
   (u.1, t.2 && d.2 && D.2 && N.2 && u.2)
+
+/-- `Λ(R)` total on `U`, each array ascending: `lamOnByC` with the values sorted (`valSortC`). -/
+def lamOnC {A B : Obj} {m : USize} (R : Rel A B) (U : Vals A m) : Rel A (.arr B) × Bool := lamOnByC valSortC R U
 
 /-- `Λ(R)` total on `U`: `lamOnC`'s relation. -/
 def lamOn {A B : Obj} {m : USize} (R : Rel A B) (U : Vals A m) : Rel A (.arr B) := (lamOnC R U).1
@@ -1260,29 +1274,39 @@ def setifyC {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) 
 /-- `setify` on the arrays `X`: `setifyC`'s relation. -/
 def setify {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) := (setifyC X).1
 
-/-- `bagify : arr B ⟶ bag(B)` on the arrays `X` (`bagify`, AOP/A10_3_Tardy.lean:232, the quotient map of
-    `perm`). A bag is the `arr` of its elements ascending in `Obj.sortBy`'s order, repeats kept: the one member
+/-- `distinct : arr B ⟶ arr B` on the arrays `X`, each array to its values in first-occurrence order, each once
+    (`List.eraseDups`): `setifyC`'s `Λ(∋)` total on `X`, the nub's rows in row order (`til`) instead of sorted —
+    `∋`'s rows list each array's copies in position order, so each key's run keeps first occurrences in order.
+    Whether it ran within capacity: the bits of `memC`, `lamOnByC`. -/
+def distinctC {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) × Bool :=
+  let m := memC X; let l := lamOnByC (fun d => (tilLongs d.n, true)) m.1 X
+  (l.1, m.2 && l.2)
+
+/-- `distinct` on the arrays `X`: `distinctC`'s relation. -/
+def distinct {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) := (distinctC X).1
+
+/-- `asc : arr B ⟶ arr B` on the arrays `X`, each array sorted ascending — B&dM's `bagify`
+    (AOP/A10_3_Tardy.lean:232, the quotient map of `perm`) with a bag kept as its sorted array. A bag is the `arr` of its elements ascending in `Obj.sortBy`'s order, repeats kept: the one member
     of its `perm` class no type records. Each row's cells gathered contiguous (`expand` of the clamped counts),
     graded by value, then stably by row, so the rows keep their `lo`/`hi`. A per-row grade, not `sort`:
-    `sort ≜ perm ordered` enumerates the permutations. It is `asc` as well: `Obj.sortBy` lists by `Obj.lt`
-    (`sortBy_asc`). Whether it ran within capacity: `rep_bagify`'s count bounds decided — the payload, the rows,
+    `sort ≜ perm ordered` enumerates the permutations. `Obj.sortBy` lists by `Obj.lt` (`sortBy_asc`). Whether it ran within capacity: `rep_asc`'s count bounds decided — the payload, the rows,
     and, out of `expand` in the pair, the copies' count `m` (the windows' counts summed, `len_expand_slicesOf`;
     `need` already bounds it by a `USize`) — `&&` the fits of `X` at its rows and of its payload at the `m` copies
     (`fitsN`), which a nested or interned `B` needs. -/
-def bagifyC {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) × Bool :=
+def ascC {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) × Bool :=
   let s := slicesOf X
   let hi := sums n s.2
   let e := expand n s.2 (fun _ => default) fun m i r _ _ =>
     let cells := Vals.pick B X.2.2.2 (add m (gather 8 s.1 i) r) m (len_val ..)
     let v := Obj.sortBy B cells (tilLongs m)
     let p := gather 8 v (Code.ofLongs (gather 8 i v)).grade
-    ((longCount "bagify" p fun q hq => (⟨n, Vals.compact (.arr B) X,
+    ((longCount "asc" p fun q hq => (⟨n, Vals.compact (.arr B) X,
       ⟨q, valCol Ew.sub Ew.vv hi s.2, longsN n hi (sums_le (len_slices ..).2), Vals.pick B cells p q hq⟩⟩ :
         Rel (.arr B) (.arr B))), decide (m.toNat < 2 ^ 63) && Vals.fitsN B X.2.2.2 m.toNat)
   (e.1, decide (X.1.toNat < 2 ^ 63) && decide (n.toNat < 2 ^ 63) && Vals.fitsN (.arr B) X n.toNat && e.2)
 
-/-- `bagify : arr B ⟶ bag(B)` on the arrays `X`: `bagifyC`'s relation. -/
-def bagify {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) := (bagifyC X).1
+/-- `asc : arr B ⟶ arr B` on the arrays `X`: `ascC`'s relation. -/
+def asc {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) := (ascC X).1
 
 /-- `ordered(Q)`, the coreflexive on the arrays `X` that are `Q`-ordered, each element `Q`-below every later
     one (`orderedP`, AOP/A5_6_ListCombinators.lean:162): the arrays with no non-empty suffix `y :: ys` and `z`
