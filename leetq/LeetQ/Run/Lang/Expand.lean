@@ -571,7 +571,7 @@ partial def node (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bo
   | A, .prod B C, _, .pair (d := d) (e := e) R S => return g ``Gen.pair #[oE A, oE B, oE C, bE d, bE e, ← c R, ← c S]
   | .prod A C, .prod B D, _, .prod R S => return g ``Gen.prod #[oE A, oE B, oE C, oE D, ← c R, ← c S]
   | .sum A B, C, _, .junc R S => return g ``Gen.junc #[oE A, oE B, oE C, ← c R, ← c S]
-  | A, .arr B, d, .lam R => return g ``Gen.lam #[oE A, oE B, bE d, ← c R]
+  | A, .arr B, _, .lam (d := d) R => return g ``Gen.lam #[oE A, oE B, bE d, ← c R]
   | .arr A, .arr B, _, .E (d := d) R => return g ``Gen.E #[oE A, oE B, bE d, ← c R]
   | .arr A, .arr B, _, .map (d := d) R => return g ``Gen.map #[oE A, oE B, bE d, ← c R]
   | .arr B, _, _, .filter (d := d) R => return g ``Gen.filter #[oE B, bE d, ← c R]

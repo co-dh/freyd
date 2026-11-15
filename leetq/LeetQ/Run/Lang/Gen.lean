@@ -143,7 +143,8 @@ def prod (A B C D : Obj) (R : Fn false A B) (S : Fn false C D) : Fn false (.prod
   CRel.prod (R ()) (S ())
 def junc (A B C : Obj) (R : Fn false A C) (S : Fn false B C) : Fn false (.sum A B) C := fun _ =>
   CRel.junc (R ()) (S ())
-def lam (A B : Obj) (d : Bool) (R : Fn d A B) : Fn d A (.arr B) := fun D => CRel.transpose (R D)
+/-- `Λ(R)` total on the keys `D`: `[]` at a key `R` relates to nothing (`CRel.lamOn`, `rep_lamOn`). -/
+def lam (A B : Obj) (d : Bool) (R : Fn d A B) : Fn true A (.arr B) := fun D => CRel.lamOn (R (Dem.of d D)) D.val
 def E (A B : Obj) (d : Bool) (R : Fn d A B) : Fn true (.arr A) (.arr B) := fun D =>
   let k := CRel.ran (CRel.mem D.val); also k.ok (CRel.E (R (Dem.of d k.rel)) D.val)
 def filter (B : Obj) (d : Bool) (R : Fn d B B) : Fn true (.arr B) (.arr B) := fun D =>

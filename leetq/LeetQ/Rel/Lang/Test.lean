@@ -392,7 +392,7 @@ rel_program lists where
   "x sort(≤) = {(a, 1 2 3), (b, 1 5)}",
   "y subseq = {(a, []), (a, [7]), (b, []), (b, [8]), (b, 8 9), (b, [9])}",
   "x thinL(≤) = {(a, [1]), (b, [1])}",
-  "⟨Λ({(a, 1), (a, 5)}), Λ({(a, 2), (a, 3)})⟩ merge(≤) = {(a, 1 2 3 5)}",
+  "⟨Λ({(a, 1), (a, 5)}), Λ({(a, 2), (a, 3)})⟩ merge(≤) = {(a, 1 2 3 5), (b, [])}",
   "⟨{(a, 0), (b, 1)}, x⟩ loop(plus) = {(a, 6), (b, 7)}",
   "⟨{(a, 5)}, Λ({(a, 1), (a, 2)})⟩ tic = {(a, [5] [5 1] [5 1 2])}"]
 
@@ -533,7 +533,7 @@ rel_program digits where
     dg : N ⟶ N ≜ dom(<{(10,10)})
     op : N×N ⟶ N ≜ ⟨⟨π₁,π₁ ten⟩times,π₂ dg⟩plus
     x : N ⟶ N ≜ {(107,107)}
-    r : N ⟶ [K] ≜ Λ(x⊤(N,K))
+    r : N ⟶ [K] ≜ xΛ(⊤(N,K))
     nz : N ⟶ N ≜ 𝟙(N) − {(0,0)}
     step : N×[N] ⟶ N×[N] ≜ ⟨π₁{(0,0)},π₂⟩ ∪ ⟨π₁ nz op° π₁,⟨π₁ nz op° π₂,π₂⟩cons⟩
     ds : N ⟶ [N] ≜ r⦇ran(x⟨𝟙,nil⟩),π₂ step⦈π₂
@@ -940,7 +940,7 @@ def afterErr (pre src : String) : CM Err := do
     ("⇝", "S'((π₁ ∋), π₂)"),
     ("t", "(c Λ(⇝))"),
     ("s₀", "ran(Λ((⊤(X, X) ⟨𝟙, S₀⟩)))"),
-    ("r", "Λ((s₀ ⊤))"),
+    ("r", "(dom(s₀) Λ(⊤))"),
     ("L", "ran((r ⦇ran(⟨D, ((D ⊤) {(0, 0)})⟩), (π₂ ∪ (π₂ ⟨(π₁ B), (π₂ succ)⟩))⦈))"),
     ("Q", "ran((L(s₀, t) π₁))"),
     ("H", "(Q h(∋))"),
@@ -1029,7 +1029,7 @@ rel_program muArr where
     check f = s ∪ d ∪ e
     print f
 #guard muArr.ok
-#guard muArr.prints == ["f = {(0, [0]), (0, 0 1), (0, 0 1 2), (0, 0 2), (0, [1]), (0, 1 2), (0, [2])}"]
+#guard muArr.prints == ["f = {(0, [0]), (0, 0 1), (0, 0 1 2), (0, 0 2), (0, [1]), (0, 1 2), (0, [2]), (1, []), (2, [])}"]
 -- a `μ` whose arrays grow every round: no fixed point, so its rounds reach `muCap` and the program reports it
 open LeetQ.Rel.Programs.prelude in
 rel_program muGrow where
