@@ -1,4 +1,4 @@
-import LeetQ.Rel.Lang.Calc
+import LeetQ.Aop.Calc
 import AOP.A4_1
 import AOP.A6_2
 
