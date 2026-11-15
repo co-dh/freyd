@@ -603,22 +603,22 @@ private def Tp : LL := top (tilCol 120) (tilCol 10)
   [((5, [1, 2]), [[5], [5, 1], [5, 1, 2]]), ((6, []), [[6]])]
 
 -- `bagify` against `mergeSort`, a map, idempotent; `[3 1 3]` and `[1 3 3]` one bag, also each on its own
-#guard onArrs Xp (bagify Xp) (fun xs => [sorted xs]) && onArrs Xl (bagify Xl) (fun xs => [sorted xs]) &&
-  onArrs Xc (bagify Xc) (fun xs => [sorted xs]) && onArrs Xs (bagify Xs) (fun xs => [sorted xs]) && isMap (bagify Xp) Xp
-#guard let B := bagify Xp; seteq (B ≫ bagify B.val).toList B.toList
+#guard onArrs Xp (asc Xp) (fun xs => [sorted xs]) && onArrs Xl (asc Xl) (fun xs => [sorted xs]) &&
+  onArrs Xc (asc Xc) (fun xs => [sorted xs]) && onArrs Xs (asc Xs) (fun xs => [sorted xs]) && isMap (asc Xp) Xp
+#guard let B := asc Xp; seteq (B ≫ asc B.val).toList B.toList
 private def X3 : Vals (.arr L) 2 := ⟨6, col [0, 3], col [3, 6], col [3, 1, 3, 1, 3, 3]⟩
 private def X31 : Vals (.arr L) 1 := ⟨3, col [0], col [3], col [3, 1, 3]⟩
-#guard seteq ((bagify X3).toList : List (List Int64 × List Int64)) [([3, 1, 3], [1, 3, 3]), ([1, 3, 3], [1, 3, 3])] &&
-  ((bagify X31).toList : List (List Int64 × List Int64)) == [([3, 1, 3], [1, 3, 3])]
+#guard seteq ((asc X3).toList : List (List Int64 × List Int64)) [([3, 1, 3], [1, 3, 3]), ([1, 3, 3], [1, 3, 3])] &&
+  ((asc X31).toList : List (List Int64 × List Int64)) == [([3, 1, 3], [1, 3, 3])]
 -- `bagify bagify° = perm` (B&dM's `bagify° · bagify`) among the rearrangements of `Xp`, and of the arrays of
 -- arrays `XX`; `bagify setify = setify`; the empty column
-#guard let Y := (perm Xp).val; seteq (bagify Y ≫ (bagify Y)°).toList (perm Y).toList
-#guard let Y := (perm XX).val; seteq (bagify Y ≫ (bagify Y)°).toList (perm Y).toList && isMap (bagify XX) XX
-#guard seteq (bagify Xp ≫ setify (bagify Xp).val).toList (setify Xp).toList
-#guard (bagify (Vals.empty (.arr L))).n == 0
+#guard let Y := (perm Xp).val; seteq (asc Y ≫ (asc Y)°).toList (perm Y).toList
+#guard let Y := (perm XX).val; seteq (asc Y ≫ (asc Y)°).toList (perm Y).toList && isMap (asc XX) XX
+#guard seteq (asc Xp ≫ setify (asc Xp).val).toList (setify Xp).toList
+#guard (asc (Vals.empty (.arr L))).n == 0
 -- an array of pairs, lexicographic: `[(2,5) (1,7) (2,3)]`, `[(9,1) (0,1)]`, `[]`
 private def Xq : Vals (.arr (.prod L L)) 3 := ⟨5, col [0, 3, 5], col [3, 5, 5], (col [2, 1, 2, 9, 0], col [5, 7, 3, 1, 1])⟩
-#guard seteq ((bagify Xq).toList : List (List (Int64 × Int64) × List (Int64 × Int64)))
+#guard seteq ((asc Xq).toList : List (List (Int64 × Int64) × List (Int64 × Int64)))
   [([(2, 5), (1, 7), (2, 3)], [(1, 7), (2, 3), (2, 5)]), ([(9, 1), (0, 1)], [(0, 1), (9, 1)]), ([], [])]
 
 -- `arith` against `Int`: each pair of `W` to `f(u, v)` where the operands are not q's null, `ok(v)`, and `f(u, v)`

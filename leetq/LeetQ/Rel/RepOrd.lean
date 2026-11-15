@@ -199,11 +199,11 @@ local notation "cc(" r ")" => (Column.bitsAt (slicesOf X).2 (r * 8) 8).toNat
 set_option hygiene false in
 local notation "pc(" r ")" => ((List.range r).map fun u => (Column.bitsAt (slicesOf X).2 (u * 8) 8).toNat).sum
 
-/-- **`bagify`'s row `r`, read back**: under `rep_bagify`'s bound pieces and hypotheses, the result's row `r` is a
+/-- **`asc`'s row `r`, read back**: under `rep_asc`'s bound pieces and hypotheses, the result's row `r` is a
     permutation of row `r` of `X`, `S`-ordered where `sortBy` lists every fitting `m` cells in an order `R` that
     `S` reads on their values (`hsort`, `hRS`); the copies fit a `USize` (`expand_at`). The pieces: `expand`'s
     index and rank columns `xi`, `xr` at `m` copies, the cells `cells`, the regrouped grade `p`. -/
-theorem bag_row {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 2 ^ 63) (hn : n.toNat < 2 ^ 63)
+theorem asc_row {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 2 ^ 63) (hn : n.toNat < 2 ^ 63)
     (hS : pc(n.toNat) < 2 ^ 63) (hU : pc(n.toNat) < USize.size)
     (xi : ByteArray) (hxi : xi = expandBytes 8 0 (tilLongs n) (slicesOf X).2)
     (m : USize) (hm : m = (len xi).toUSize) (hf : Vals.fitsN B X.2.2.2 m.toNat = true)
@@ -354,11 +354,11 @@ theorem bag_row {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 2 
     rw [dif_pos ham, dif_pos hbm]
     exact hRS cells a b ham hbm h
 
-/-- **`rep (bagify X)`**: an array of `X` goes to a permutation of it, `S`-ordered under `bag_row`'s `hsort`,
+/-- **`rep (asc X)`**: an array of `X` goes to a permutation of it, `S`-ordered under `asc_row`'s `hsort`,
     `hRS`, and every array of `X` goes somewhere. Hypotheses: the payload count, the row count and the summed
     counts below `2^63` (`xi`'s rows are graded as longs), the summed counts a `USize` (`expand`'s copies), the
-    fits `bagifyC` decides: `X` at its rows, its payload at the copies. -/
-theorem rep_bagify {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 2 ^ 63)
+    fits `ascC` decides: `X` at its rows, its payload at the copies. -/
+theorem rep_asc {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 2 ^ 63)
     (hn : n.toNat < 2 ^ 63) (hS : pc(n.toNat) < 2 ^ 63) (hU : pc(n.toNat) < USize.size)
     (hfX : Vals.fitsN (.arr B) X n.toNat = true)
     (hf : Vals.fitsN B X.2.2.2 (len (expandBytes 8 0 (tilLongs n) (slicesOf X).2)).toUSize.toNat = true)
@@ -367,8 +367,8 @@ theorem rep_bagify {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat <
       (ids (Obj.sortBy B c (tilLongs m))).Perm (List.range m.toNat) ∧ (ids (Obj.sortBy B c (tilLongs m))).Pairwise (R c))
     (hRS : ∀ {m : USize} (c : Vals B m) a b (ha : a < m.toNat) (hb : b < m.toNat), R c a b →
       S (c.row ⟨a, ha⟩) (c.row ⟨b, hb⟩)) :
-    (∀ xs ys, rep (bagify X) xs ys → (∃ j, X.row j = xs) ∧ ys.Perm xs ∧ ys.Pairwise S) ∧
-      ∀ xs, (∃ j, X.row j = xs) → ∃ ys, rep (bagify X) xs ys := by
+    (∀ xs ys, rep (asc X) xs ys → (∃ j, X.row j = xs) ∧ ys.Perm xs ∧ ys.Pairwise S) ∧
+      ∀ xs, (∃ j, X.row j = xs) → ∃ ys, rep (asc X) xs ys := by
   have hKf : Vals.PickFits (.arr B) X
       ((List.range n.toNat).map fun q => (Column.bitsAt (tilLongs n) (q * 8) 8).toNat) :=
     pickFits_of_fitsN _ X n.toNat hfX _ (by simp)
@@ -377,8 +377,8 @@ theorem rep_bagify {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat <
       pick_row _ X (tilLongs n) n (len_tilLongs _) hKf,
       dif_pos (show (Column.bitsAt (tilLongs n) (q.1 * 8) 8).toNat < n.toNat by rw [tilLongs_get q.2]; exact q.2)]
     exact congrArg (Vals.row X) (Fin.ext (tilLongs_get q.2))
-  obtain ⟨hxU, hlp, hrow⟩ := bag_row X hp hn hS hU _ rfl _ rfl hf R S hsort hRS _ rfl _ rfl _ rfl
-  unfold bagify bagifyC expand need
+  obtain ⟨hxU, hlp, hrow⟩ := asc_row X hp hn hS hU _ rfl _ rfl hf R S hsort hRS _ rfl _ rfl _ rfl
+  unfold asc ascC expand need
   dsimp only
   rw [dif_pos hxU]
   try dsimp only
@@ -387,8 +387,8 @@ theorem rep_bagify {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat <
   obtain ⟨⟨r, hr⟩, hk, hv⟩ := h
   exact ⟨⟨⟨r, hr⟩, (hkey _).symm.trans hk⟩, hk ▸ (hkey _).symm ▸ hrow _ _ _ r hr ys hv.symm⟩
 
-#print axioms bag_row
-#print axioms rep_bagify
+#print axioms asc_row
+#print axioms rep_asc
 #print axioms cmp_lt_small
 #print axioms lt_rows_holds
 #print axioms rep_lt

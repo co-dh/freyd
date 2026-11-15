@@ -1260,29 +1260,28 @@ def setifyC {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) 
 /-- `setify` on the arrays `X`: `setifyC`'s relation. -/
 def setify {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) := (setifyC X).1
 
-/-- `bagify : arr B ⟶ bag(B)` on the arrays `X` (`bagify`, AOP/A10_3_Tardy.lean:232, the quotient map of
-    `perm`). A bag is the `arr` of its elements ascending in `Obj.sortBy`'s order, repeats kept: the one member
+/-- `asc : arr B ⟶ arr B` on the arrays `X`, each array sorted ascending — B&dM's `bagify`
+    (AOP/A10_3_Tardy.lean:232, the quotient map of `perm`) with a bag kept as its sorted array. A bag is the `arr` of its elements ascending in `Obj.sortBy`'s order, repeats kept: the one member
     of its `perm` class no type records. Each row's cells gathered contiguous (`expand` of the clamped counts),
     graded by value, then stably by row, so the rows keep their `lo`/`hi`. A per-row grade, not `sort`:
-    `sort ≜ perm ordered` enumerates the permutations. It is `asc` as well: `Obj.sortBy` lists by `Obj.lt`
-    (`sortBy_asc`). Whether it ran within capacity: `rep_bagify`'s count bounds decided — the payload, the rows,
+    `sort ≜ perm ordered` enumerates the permutations. `Obj.sortBy` lists by `Obj.lt` (`sortBy_asc`). Whether it ran within capacity: `rep_asc`'s count bounds decided — the payload, the rows,
     and, out of `expand` in the pair, the copies' count `m` (the windows' counts summed, `len_expand_slicesOf`;
     `need` already bounds it by a `USize`) — `&&` the fits of `X` at its rows and of its payload at the `m` copies
     (`fitsN`), which a nested or interned `B` needs. -/
-def bagifyC {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) × Bool :=
+def ascC {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) × Bool :=
   let s := slicesOf X
   let hi := sums n s.2
   let e := expand n s.2 (fun _ => default) fun m i r _ _ =>
     let cells := Vals.pick B X.2.2.2 (add m (gather 8 s.1 i) r) m (len_val ..)
     let v := Obj.sortBy B cells (tilLongs m)
     let p := gather 8 v (Code.ofLongs (gather 8 i v)).grade
-    ((longCount "bagify" p fun q hq => (⟨n, Vals.compact (.arr B) X,
+    ((longCount "asc" p fun q hq => (⟨n, Vals.compact (.arr B) X,
       ⟨q, valCol Ew.sub Ew.vv hi s.2, longsN n hi (sums_le (len_slices ..).2), Vals.pick B cells p q hq⟩⟩ :
         Rel (.arr B) (.arr B))), decide (m.toNat < 2 ^ 63) && Vals.fitsN B X.2.2.2 m.toNat)
   (e.1, decide (X.1.toNat < 2 ^ 63) && decide (n.toNat < 2 ^ 63) && Vals.fitsN (.arr B) X n.toNat && e.2)
 
-/-- `bagify : arr B ⟶ bag(B)` on the arrays `X`: `bagifyC`'s relation. -/
-def bagify {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) := (bagifyC X).1
+/-- `asc : arr B ⟶ arr B` on the arrays `X`: `ascC`'s relation. -/
+def asc {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) := (ascC X).1
 
 /-- `ordered(Q)`, the coreflexive on the arrays `X` that are `Q`-ordered, each element `Q`-below every later
     one (`orderedP`, AOP/A5_6_ListCombinators.lean:162): the arrays with no non-empty suffix `y :: ys` and `z`
