@@ -1005,7 +1005,6 @@ theorem codes_guid_wf (x : Part (.atom .guid)) :
 #print axioms codes_boolean_wf
 #print axioms codes_small_int_faithful
 #print axioms codes_small_int_wf
-#print axioms codes_long_one_faithful
 #print axioms codes_long_one_wf
 #print axioms codes_guid_faithful
 #print axioms codes_guid_wf

@@ -155,7 +155,7 @@ theorem and_ite_self {P A B C : Prop} {c₁ c₂ c₃ : Prop} [Decidable c₁] [
 -- the one rewrite set reading `arith`'s row test and answer at the position `t` (below the count, `ht`)
 set_option hygiene false in
 local macro "arith_simp" loc:(Lean.Parser.Tactic.location)? : tactic => `(tactic| simp only [bitAt_bit _ _ _ ht, bitAt_cmp _ _ _ _ ht, bitAt_ite,
-  ite_eq_true_iff, bitStep_lesser, bitStep_greater, bitStep_same, elem_one, elem_i64, Ew.shapeIdx, bitsAt_one,
+  ite_eq_true_iff, bitStep_lesser, bitStep_greater, bitStep_same, elem_atomBytes_i64, elem_i64, Ew.shapeIdx, bitsAt_one,
   Nat.zero_mul, show (Ew.va == Ew.vv) = false by decide, show (Ew.va == Ew.va) = true by decide,
   show (Ew.vv == Ew.vv) = true by decide, if_true, if_false, Bool.false_eq_true, val_vv_get _ _ _ _ ht,
   longsOf_get W.1 ht, longsOf_get W.2 ht, valStep_i64, Bool.and_eq_true, Bool.or_eq_true, cmp_ne_i64,
@@ -363,143 +363,6 @@ section FoldOn
 open QLean.Dep
 
 open FoldN OpsN
--- `rep_ran`'s hypotheses at `R`, its value codes `c` bound by their equation
-set_option hygiene false in
-local notation "ranOK(" R ")" =>
-  ∀ c : Code, c = (Obj.codes (.prod E V) (#v[⟨Rel.n R, Rel.val R⟩] : Vector (Part (.prod E V)) 1))[0]'Nat.zero_lt_one →
-    (∀ {i j : Nat} (hi : i < (Rel.n R).toNat) (hj : j < (Rel.n R).toNat),
-      Column.idAt c.b c.w i = Column.idAt c.b c.w j ↔ Vals.row (Rel.val R) ⟨i, hi⟩ = Vals.row (Rel.val R) ⟨j, hj⟩) ∧
-    (laneOK(c.w) ∧ c.n = Rel.n R ∧
-      c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
-      (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)) ∧
-    Vals.PickFits (.prod E V) (Rel.val R) (List.range (Rel.n R).toNat)
-
-/-- **`foldOn` of a family that only restricts to the pairs a round meets**: where `Sf (D k)` is `S'` on the pairs
-    of `D k` (`hSf`), the array `xs` goes to `w` along a chain `ys` of `S'`-steps — the family's dependence on the
-    other arrays drops out, because the pair `(xs[t], ys[t+1])` a round meets is itself in `D k`. Bound values and
-    hypotheses as `rep_foldOn`'s, and `rep_ran`'s at each round's pairs (`hran`, a per-round bundle). -/
-theorem foldOn_on {E V : Obj} {m n : USize} (e : Vals V m) (Sf : Rel (.prod E V) (.prod E V) → Rel (.prod E V) V)
-    (X : Vals (.arr E) n)
-    (T : Rel .long (.arr E)) (hT : T = num (idU X) 0) (hn : n.toNat < 2 ^ 63)
-    (hv : Vals.PickFits (.arr E) X (List.range n.toNat))
-    (pend₀ : Rel .long V) (hpend : pend₀ = top (A := .long) (Rel.key T) e)
-    (hN : (Rel.n T).toNat * m.toNat < USize.size) (h63 : (Rel.n T).toNat * m.toNat < 2 ^ 63)
-    -- generic seed: an input fit; `nilVal`, atoms fit outright
-    (hB : Vals.PickFits V e ((List.range ((Rel.n T).toNat * m.toNat)).map (· % m.toNat)))
-    (step : Rel .long E → Rel .long V → Rel .long V) (hstep : step = demandStep Sf)
-    (elK : Nat → Rel .long E) (hE : ∀ k, elK k = elR(T, k))
-    (f : Rel .long V × Rel .long V × Nat → Rel .long V × Rel .long V × Nat) (hf : ∀ st, f st = rnd(st))
-    (D : Nat → Rel (.prod E V) (.prod E V)) (hD : ∀ k, D k = ran (pair (elK k) (f^[k] (pend₀, Alg.zero, 0)).1))
-    -- kept: CodesFit/RazeFits of each round's step output and `P ∪ Q`, intermediates no input bounds
-    (hR : ∀ i (el : Rel .long E) (pend P S : Rel .long V), el = elK i → pend = (f^[i] (pend₀, Alg.zero, 0)).1 →
-      P = (f^[i] (pend₀, Alg.zero, 0)).2.1 → S = step el pend → roundOK)
-    (hS : ∀ i (el : Rel .long E) (pend : Rel .long V), el = elK i → pend = (f^[i] (pend₀, Alg.zero, 0)).1 →
-      stepOn)
-    (F : Rel .long V) (hF : F = foldRows T pend₀ step)
-    -- kept (hjO..hjA): `F` is the fold output, its count and fits grow with the rounds; no input bounds them
-    (jc : Vector Code 2) (hjc : jc = Obj.codes .long ck2(T°, F)) (hjO : codesOK(jc, ck2(T°, F)))
-    (hjn : (Rel.n F).toNat < 2 ^ 63) (hjM : (Rel.n (T°)).toNat * (Rel.n F).toNat < min (2 ^ 63) USize.size)
-    (hjA : Vals.PickFits (.arr E) (Rel.key (T°)) ((mpairs(jc, T°, F)).map Prod.fst))
-    (hjC : Vals.PickFits V (Rel.val F) ((mpairs(jc, T°, F)).map Prod.snd))
-    -- kept: `rep_ran`'s fits at each round's pairs, built from the round's state, an intermediate
-    (hran :∀ k, k < (Rel.val T).1.toNat → ∀ P : Rel .long (.prod E V),
-      P = pair (elK k) (f^[k] (pend₀, Alg.zero, 0)).1 → ranOK(P))
-    (S' : E.El × V.El → V.El → Prop)
-    (hSf : ∀ k, k < (Rel.val T).1.toNat → ∀ p w, rep (Sf (D k)) p w ↔ (∃ a, rep (D k) a p) ∧ S' p w) :
-    ∀ (xs : List E.El) w, rep (foldOn e Sf X) xs w ↔ (∃ i, X.row i = xs) ∧
-      ∃ ys : List V.El, ∃ hy : ys.length = xs.length + 1,
-        (∃ p, e.row p = ys[xs.length]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_self _) hy.symm)) ∧
-        (∀ t (ht : t < xs.length), S' (xs[t]'ht, ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm))
-          (ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm))) ∧
-        w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) := by
-  intro xs w
-  rw [rep_foldOn e Sf X T hT hn hv pend₀ hpend hN h63 hB step hstep elK hE f hf D hD hR hS F hF jc hjc
-    hjO hjn hjM hjA hjC xs w]
-  have hTv : Vals.PickFits (.arr E) (Rel.val T) (List.range (Rel.n T).toNat) := by
-    subst hT; exact num_pickFits (idU X) 0 hv
-  have hp := (pickFits_payload _ hTv).1
-  have hnum : ∀ r y, rep T r y ↔ ∃ i : Fin n.toNat, r = Int64.ofNat i.1 ∧ X.row i = y := by
-    intro r y; subst hT
-    rw [rep_num (idU X) 0 (by simpa using hn) hv r y]
-    simp only [USize.toNat_zero, Nat.zero_add]; exact Iff.rfl
-  -- array `i` of `X` is a row of `T`, keyed `i`, so no longer than the payload
-  have hrow : ∀ i : Fin n.toNat, ∃ i' : Nat, ∃ hi' : i' < (Rel.n T).toNat,
-      Vals.row (Rel.key T) ⟨i', hi'⟩ = Int64.ofNat i.1 ∧ Vals.row (Rel.val T) ⟨i', hi'⟩ = X.row i ∧
-      (X.row i).length ≤ (Rel.val T).1.toNat := by
-    intro i
-    obtain ⟨⟨i', hi'⟩, hk, hv'⟩ := (hnum _ _).2 ⟨i, rfl, rfl⟩
-    obtain ⟨h1, h2, -⟩ := slicesOf_row (Rel.val T) hp hi'
-    exact ⟨i', hi', hk, hv', by rw [← hv']; omega⟩
-  constructor
-  · rintro ⟨⟨i, hi⟩, ys, hy, h0, hst, hw⟩
-    obtain ⟨-, -, -, -, hL⟩ := hrow i
-    rw [hi] at hL
-    exact ⟨⟨i, hi⟩, ys, hy, h0, fun t ht => ((hSf _ (by omega) _ _).1 (hst t ht)).2, hw⟩
-  · rintro ⟨⟨i, hi⟩, ys, hy, h0, hst, hw⟩
-    refine ⟨⟨i, hi⟩, ys, hy, h0, ?_, hw⟩
-    obtain ⟨i', hi', hk', hv', hL⟩ := hrow i
-    rw [hi] at hv' hL
-    have gi : ∀ a b (ha : a < ys.length) (hb : b < ys.length), a = b → ys[a] = ys[b] := by
-      intro a b ha hb h; subst h; rfl
-    have gx : ∀ a b (ha : a < xs.length) (hb : b < xs.length), a = b → xs[a] = xs[b] := by
-      intro a b ha hb h; subst h; rfl
-    -- round `k` meets `xs[|xs| - 1 - k]` at the row `i`
-    have hel1 : ∀ k (hk : k < xs.length),
-        rep (elK k) (Int64.ofNat i.1) (xs[xs.length - 1 - k]'(by omega)) := by
-      intro k hk
-      obtain ⟨hKf, hVf⟩ := pickFits_round (Rel.key T) (Rel.val T) hTv (k := k) (by omega) _ rfl _ rfl
-      rw [hE, rep_elR T k (by omega) hp _ rfl _ rfl hKf hVf]
-      subst hv'
-      exact ⟨⟨i', hi'⟩, hk', hk, rfl⟩
-    have hst0 : rep pend₀ (Int64.ofNat i.1) (ys[xs.length]'(by omega)) := by
-      subst hpend; rw [rep_top _ _ hN h63 (pickFits_div _ _) hB]
-      exact ⟨_, ⟨rfl, ⟨i', hi'⟩, hk'⟩, _, trivial, rfl, h0⟩
-    have hrr := rounds_rep pend₀ step elK f hf hR
-    -- round `j` read back at the row `i`
-    have hstep1 : ∀ j v, rep (f^[j + 1] (pend₀, Alg.zero, 0)).1 (Int64.ofNat i.1) v ↔
-        ∃ a u, rep (elK j) (Int64.ofNat i.1) a ∧ rep (f^[j] (pend₀, Alg.zero, 0)).1 (Int64.ofNat i.1) u ∧
-          rep (Sf (D j)) (a, u) v := by
-      intro j v
-      rw [(hrr j).2.1]
-      obtain ⟨hkO, hkn, hkM, hkB, hkC, hJ⟩ := hS j _ _ rfl rfl _ rfl
-      obtain ⟨hjO', hjn', hjM', hjC'⟩ := hJ _ rfl _ (congrArg Sf (hD j)) _ rfl
-      subst hstep
-      exact step_rep (elK j) _ Sf _ rfl hkO hkn hkM hkB hkC _ rfl _ (congrArg Sf (hD j)) _ rfl
-        hjO' hjn' hjM' hjC' _ v
-    -- the pair round `j` meets at the row `i` is in `D j`
-    have hmem : ∀ j, j < (Rel.val T).1.toNat → ∀ a u, rep (elK j) (Int64.ofNat i.1) a →
-        rep (f^[j] (pend₀, Alg.zero, 0)).1 (Int64.ofNat i.1) u → ∃ q, rep (D j) q (a, u) := by
-      intro j hj a u ha hu
-      obtain ⟨hkO, hkn, hkM, hkB, hkC, -⟩ := hS j _ _ rfl rfl _ rfl
-      obtain ⟨hK1, hK2, hpk⟩ := hran j hj _ rfl _ rfl
-      refine ⟨(a, u), ?_⟩
-      rw [hD j, rep_ran_corefl _ ⟨hK1, hK2⟩ hpk]
-      refine ⟨rfl, Int64.ofNat i.1, ?_⟩
-      rw [rep_pair _ _ (codesOK_long2 _ _ hkO) hkn hkM (pickFits_atom_fst _) hkB hkC]
-      exact ⟨ha, hu⟩
-    have hstepAt : ∀ j (hj : j < xs.length),
-        rep (f^[j] (pend₀, Alg.zero, 0)).1 (Int64.ofNat i.1) (ys[xs.length - j]'(by omega)) →
-        rep (Sf (D j)) (xs[xs.length - 1 - j]'(by omega), ys[xs.length - j]'(by omega))
-          (ys[xs.length - 1 - j]'(by omega)) := by
-      intro j hj hu
-      have h := hst (xs.length - 1 - j) (by omega)
-      rw [gi (xs.length - 1 - j + 1) (xs.length - j) (by omega) (by omega) (by omega)] at h
-      exact (hSf j (by omega) _ _).2 ⟨hmem j (by omega) _ _ (hel1 j hj) hu, h⟩
-    have hchain : ∀ j (hj : j ≤ xs.length),
-        rep (f^[j] (pend₀, Alg.zero, 0)).1 (Int64.ofNat i.1) (ys[xs.length - j]'(by omega)) := by
-      intro j
-      induction j with
-      | zero => intro _; rw [gi (xs.length - 0) xs.length (by omega) (by omega) (Nat.sub_zero _)]; exact hst0
-      | succ j ih =>
-        intro hj
-        rw [hstep1, gi (xs.length - (j + 1)) (xs.length - 1 - j) (by omega) (by omega) (by omega)]
-        exact ⟨_, _, hel1 j (by omega), ih (by omega), hstepAt j (by omega) (ih (by omega))⟩
-    intro t ht
-    have h := hstepAt (xs.length - 1 - t) (by omega) (hchain _ (by omega))
-    rw [gx (xs.length - 1 - (xs.length - 1 - t)) t (by omega) ht (by omega),
-      gi (xs.length - (xs.length - 1 - t)) (t + 1) (by omega) (by omega) (by omega),
-      gi (xs.length - 1 - (xs.length - 1 - t)) t (by omega) (by omega) (by omega)] at h
-    exact h
 
 /-! ## `sum` -/
 
@@ -695,8 +558,6 @@ theorem length_chain (sc : Rel .long .long) (N : Nat)
     · simp only [List.getElem_map, List.getElem_range]
       rw [hsc' _ _ (by omega)]; congr 1; omega
     · simp only [List.getElem_map, List.getElem_range, Nat.sub_zero]
-
-#print axioms foldOn_on
 #print axioms plus_step
 
 end FoldOn

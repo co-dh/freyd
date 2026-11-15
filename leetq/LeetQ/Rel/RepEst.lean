@@ -285,65 +285,6 @@ theorem rep_thin {A B : Obj} (Q : Rel B B) (G : Rel A B)
 
 end Est
 
-/-! ## `P` -/
-
-section PowerRel
-
-open FoldN OpsN Prim
-
-namespace DivN
-
--- `rep_leftDiv`'s hypotheses at `leftDiv R S Ub Uc` (`R : Rel K B`, `S : Rel K C`; `Ub`, `Uc` of sizes `mb`, `mc`),
--- its codes `kc`, `ycs`, `zc`, rows `y`, kept rows `I` and sides `P`, `Q` bound by their equations
-set_option hygiene false in
-scoped notation "divOK(" K ", " B ", " C ", " R ", " S ", " mb ", " Ub ", " mc ", " Uc ")" =>
-  (Obj.CodesFit K (#v[⟨Rel.n R, Rel.key R⟩] : Vector (Part K) 1) ∧
-    Obj.CodesFit B (#v[⟨Rel.n R, Rel.val R⟩] : Vector (Part B) 1) ∧
-    Vals.PickFits K (Rel.key R) (List.range (Rel.n R).toNat) ∧ Vals.PickFits B (Rel.val R) (List.range (Rel.n R).toNat) ∧
-    Obj.CodesFit K (#v[⟨Rel.n S, Rel.key S⟩] : Vector (Part K) 1) ∧
-    Obj.CodesFit C (#v[⟨Rel.n S, Rel.val S⟩] : Vector (Part C) 1) ∧
-    Vals.PickFits K (Rel.key S) (List.range (Rel.n S).toNat) ∧ Vals.PickFits C (Rel.val S) (List.range (Rel.n S).toNat) ∧
-    Obj.CodesFit K (#v[⟨Rel.n (Rel.nub R), Rel.key (Rel.nub R)⟩, ⟨Rel.n (Rel.nub S), Rel.key (Rel.nub S)⟩] :
-      Vector (Part K) 2) ∧
-    (Rel.n S).toNat < 2 ^ 63 ∧ (Rel.n R).toNat * (Rel.n S).toNat < min (2 ^ 63) USize.size ∧
-    ∀ kc : Vector Code 2, kc = Obj.codes K (#v[⟨Rel.n (Rel.nub R), Rel.key (Rel.nub R)⟩,
-        ⟨Rel.n (Rel.nub S), Rel.key (Rel.nub S)⟩] : Vector (Part K) 2) →
-      Vals.PickFits B (Rel.val (Rel.nub R)) ((jp(kc[0]'Nat.zero_lt_two, kc[1]'Nat.one_lt_two)).map Prod.fst) ∧
-      Vals.PickFits C (Rel.val (Rel.nub S)) ((jp(kc[0]'Nat.zero_lt_two, kc[1]'Nat.one_lt_two)).map Prod.snd) ∧
-      ∀ y : Rel B C, y = yJ(B, C, Rel.nub R, Rel.nub S, kc[0]'Nat.zero_lt_two, kc[1]'Nat.one_lt_two) →
-      Obj.CodesFit B (#v[⟨Rel.n y, Rel.key y⟩, ⟨Rel.n (Rel.nub R), Rel.val (Rel.nub R)⟩, ⟨mb, Ub⟩] :
-        Vector (Part B) 3) ∧
-      Obj.CodesFit C (#v[⟨Rel.n y, Rel.val y⟩] : Vector (Part C) 1) ∧
-      ∀ ycs : Vector Code 3, ycs = Obj.codes B (#v[⟨Rel.n y, Rel.key y⟩, ⟨Rel.n (Rel.nub R), Rel.val (Rel.nub R)⟩,
-          ⟨mb, Ub⟩] : Vector (Part B) 3) →
-      ∀ zc : Vector Code 1, zc = Obj.codes C (#v[⟨Rel.n y, Rel.val y⟩] : Vector (Part C) 1) →
-      Vals.PickFits B Ub (List.range (USize.toNat mb)) ∧
-      USize.toNat mb * USize.toNat mc < min (2 ^ 63) USize.size ∧
-      Vals.PickFits B (vacY(B, Ub, ycs)).2
-        ((List.range ((vacY(B, Ub, ycs)).1.toNat * USize.toNat mc)).map (· / USize.toNat mc)) ∧
-      Vals.PickFits C Uc ((List.range ((vacY(B, Ub, ycs)).1.toNat * USize.toNat mc)).map (· % USize.toNat mc)) ∧
-      ∀ I : ByteArray, I = (longCount "\\" (tuples.tupleIds (ycs[0]'(Nat.zero_lt_succ 2)) #[zc[0]'Nat.zero_lt_one]).2
-          fun g _ => gather 8 (tuples.tupleIds (ycs[0]'(Nat.zero_lt_succ 2)) #[zc[0]'Nat.zero_lt_one]).2
-            (whereEqV g (classSizes (ycs[0]'(Nat.zero_lt_succ 2)).n
-                (tuples.tupleIds (ycs[0]'(Nat.zero_lt_succ 2)) #[zc[0]'Nat.zero_lt_one]))
-              (atCnt (cnt (ycs[1]'(Nat.succ_lt_succ (Nat.zero_lt_succ 1))))
-                ((ycs[0]'(Nat.zero_lt_succ 2)).gather
-                  (tuples.tupleIds (ycs[0]'(Nat.zero_lt_succ 2)) #[zc[0]'Nat.zero_lt_one]).2)))) →
-      ∀ P : Rel B C, P = Rel.rows y I → ∀ Q : Rel B C, Q = top (vacY(B, Ub, ycs)).2 Uc →
-        ∃ hU : (Rel.n P).toNat + (Rel.n Q).toNat < USize.size,
-          Vals.RazeFits B (Rel.key P) (Rel.key Q) ∧ Vals.RazeFits C (Rel.val P) (Rel.val Q) ∧
-          Obj.CodesFit B (#v[⟨(PQ(B, C)).n, (PQ(B, C)).key⟩] : Vector (Part B) 1) ∧
-          Obj.CodesFit C (#v[⟨(PQ(B, C)).n, (PQ(B, C)).val⟩] : Vector (Part C) 1) ∧
-          Vals.PickFits B (PQ(B, C)).key (List.range (PQ(B, C)).n.toNat) ∧
-          Vals.PickFits C (PQ(B, C)).val (List.range (PQ(B, C)).n.toNat))
-
-end DivN
-
-open DivN
-
-end PowerRel
-
-
 #print axioms rep_tail
 #print axioms rep_pairsIn
 #print axioms rep_swapIn

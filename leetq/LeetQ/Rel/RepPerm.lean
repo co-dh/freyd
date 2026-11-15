@@ -74,21 +74,6 @@ scoped notation "catOK(" K ", " B ", " P ")" =>
 end ListN
 open ListN
 
--- `rep_inits`'s hypotheses at the arrays `X` (`n` rows), its pieces bound by their equations
-set_option hygiene false in
-local notation "initsOK(" B ", " n ", " X ")" =>
-  (∀ c : ByteArray, c = addc n (slicesOf X).2 1 →
-    ((List.range (n).toNat).map fun u => (Column.bitsAt (slicesOf X).2 (u * 8) 8).toNat).sum + (n).toNat < 2 ^ 63 ∧
-    ((List.range (n).toNat).map fun u => (Column.bitsAt (slicesOf X).2 (u * 8) 8).toNat).sum + (n).toNat <
-      USize.size ∧
-    ∀ xi : ByteArray, xi = expandBytes 8 0 (tilLongs n) c → ∀ m : USize, m = (len xi).toUSize →
-    ∀ xr : ByteArray, xr = sub m (tilLongs m) (gather 8 (sub n (sums n c) c) xi) →
-    Vals.PickFits (.arr B) X ((List.range (n).toNat).map fun q => (Column.bitsAt (tilLongs n) (q * 8) 8).toNat) ∧
-    ∀ h : len xi = m.toNat, Vals.PickFits (.arr B)
-      (⟨(X).1, longsN m (gather 8 (slicesOf X).1 xi) (Nat.le_of_eq ((gather_len _ _).trans h).symm),
-        valCol Ew.add Ew.vv (gather 8 (slicesOf X).1 xi) xr, (X).2.2.2⟩ : Vals (.arr B) m)
-      ((List.range m.toNat).map fun q => (Column.bitsAt (tilLongs m) (q * 8) 8).toNat))
-
 /-- `rep_cons` with its hypotheses as the bundle `consOK`. -/
 theorem rep_cons_ok {K B : Obj} (P : Rel K (.prod B (.arr B))) (h : consOK(K, B, P)) :
     ∀ k ys, rep (cons P) k ys ↔ ∃ b bs, rep P k (b, bs) ∧ ys = b :: bs := by
