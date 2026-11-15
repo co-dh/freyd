@@ -37,17 +37,17 @@ elab "#rel_parse " s:str : command => do
 #guard_msgs in #rel_parse "f : A ⟶ A ≜ R where x := 1"
 
 -- Lean gives every category the antiquotation `$x`, `$(…)` at any quotation depth, so these parse; reading the
--- program refuses them. Behind `∪`, not juxtaposed: after a juxtaposed antiquotation `sameLine` lets the next line
--- in, so the following command would be read into the program
+-- program refuses them. Only where a term is: an operator's place takes no `$x`, so a juxtaposed one ends the term as
+-- any name does (the statements after it, at the end of this file)
 /-- info: parsed f:A⟶A≜$x -/
 #guard_msgs in #rel_parse "f : A ⟶ A ≜ $x"
 /-- info: parsed f:A⟶A≜$(fun x => x) -/
 #guard_msgs in #rel_parse "f : A ⟶ A ≜ $(fun x => x)"
-/-- error: line 50, col 21: `$` is no term of the Rel language: an antiquotation has no place in a program -/
+/-- error: line 50, col 19: `$` is no term of the Rel language: an antiquotation has no place in a program -/
 #guard_msgs in
 open LeetQ.Rel.Programs.prelude in
 rel_program antiquot where
-    f : 1 ⟶ 1 ≜ 𝟙 ∪ $(fun x => x)
+    f : 1 ⟶ 1 ≜ 𝟙 $x
 
 /-! `theorem n : e = f := calc` (`doc/rel-mss-proof-design.md` §3, §8): each step `_ = x := n` cites a theorem, `≜ n`
     a definition; `on A` evaluates each step as a `check`. -/
@@ -131,5 +131,34 @@ rel_program thmData where
 /-- info: ["line 128, col 7: check failed: x up = {(a, 2)}, x two = {(a, 2), (b, 2)}"] -/
 #guard_msgs in
 #eval thmData.failures.map toString
+
+/-! A juxtaposed antiquotation ends its statement at its line, as a name does: the next line, a statement or a Lean
+    command, is not read into it. `#rel_stmts` shows each statement a program's lines parse to. -/
+
+syntax (name := relStmtsCmd) "#rel_stmts" Embed.relStmts : command
+open Elab Command in
+@[command_elab relStmtsCmd] def elabRelStmts : CommandElab := fun stx => do
+  for s in stx[1].getArgs do logInfo m!"{s}"
+
+/-- info: f:1⟶1≜𝟙$x
+---
+info: g:1⟶1≜𝟙
+---
+info: h:1⟶1≜𝟙$(fun x => x)
+---
+info: k:1⟶1≜𝟙 -/
+#guard_msgs in
+#rel_stmts
+    f : 1 ⟶ 1 ≜ 𝟙 $x
+    g : 1 ⟶ 1 ≜ 𝟙
+    h : 1 ⟶ 1 ≜ 𝟙 $(fun x => x)
+    k : 1 ⟶ 1 ≜ 𝟙
+
+section antiquot
+/-- info: f:1⟶1≜𝟙$x -/
+#guard_msgs in
+#rel_stmts
+    f : 1 ⟶ 1 ≜ 𝟙 $x
+end antiquot
 
 end LeetQ.Rel.Lang.EmbedTest
