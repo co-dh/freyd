@@ -49,7 +49,7 @@ theorem rep_tableC (hat : hatOK) : ∀ {A B : Obj} (p : TP A B), p.tableC.ok = t
       exact absurd i.2 (by omega)
     · rw [if_neg hz] at hb ⊢
       have h := hb
-      simp only [CRel.comp, Bool.and_eq_true] at h
+      simp only [CRel.comp, CRel.guard_ok, Bool.and_eq_true] at h
       rw [CRel.rep_comp _ _ hb]
       have ihR := rep_tableC hat R h.1.1
       have ihS := rep_tableC hat S h.1.2
@@ -61,13 +61,13 @@ theorem rep_tableC (hat : hatOK) : ∀ {A B : Obj} (p : TP A B), p.tableC.ok = t
   | _, _, .meet R S, hb, a, b => by
     unfold TP.tableC at hb ⊢
     have h := hb
-    simp only [CRel.inter, Bool.and_eq_true] at h
+    simp only [CRel.inter, CRel.guard_ok, Bool.and_eq_true] at h
     rw [CRel.rep_inter _ _ hb]
     exact and_congr (rep_tableC hat R h.1.1 a b) (rep_tableC hat S h.1.2 a b)
   | _, _, .join R S, hb, a, b => by
     unfold TP.tableC at hb ⊢
     have h := hb
-    simp only [CRel.union, Bool.and_eq_true] at h
+    simp only [CRel.union, CRel.guard_ok, Bool.and_eq_true] at h
     rw [CRel.rep_union hat _ _ hb]
     exact or_congr (rep_tableC hat R h.1.1 a b) (rep_tableC hat S h.1.2 a b)
   | _, _, .diff R S, hb, a, b => by
@@ -78,7 +78,7 @@ theorem rep_tableC (hat : hatOK) : ∀ {A B : Obj} (p : TP A B), p.tableC.ok = t
   | _, _, .ldiv R S UB UC, hb, b, c => by
     unfold TP.tableC at hb ⊢
     have h := hb
-    simp only [CRel.leftDiv, Bool.and_eq_true] at h
+    simp only [CRel.leftDiv, CRel.guard_ok, Bool.and_eq_true] at h
     rw [CRel.rep_leftDiv _ _ _ _ hb]
     have ihR := rep_tableC hat R h.1.1
     have ihS := rep_tableC hat S h.1.2
