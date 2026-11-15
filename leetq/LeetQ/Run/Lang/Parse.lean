@@ -114,7 +114,7 @@ def S.ext (s : S) (n : String) : Option Ext := match s.res n with | .ext e => so
 /-- `n` is an infix operator: the program's `_n_`, else, unless the program names `n`, a registered infix. -/
 def isInfix (n : String) : P Bool := do
   let s ← get
-  pure (s.known.any (·.1 == infixKey n) || (!s.known.any (·.1 == n) && (s.ext n).any (·.infix)))
+  pure (s.known.any (·.1 == infixKey n) || (!s.known.any (·.1 == n) && (s.ext n).any (·.isInfix)))
 
 /-- The program's name, a builtin, or one the resolver gives (§2.3): what a run of letters is cut at. -/
 def S.inScope (s : S) (n : String) : Bool :=
@@ -261,7 +261,7 @@ def constOf (home : Lean.Name) (k : String) : Lean.Name := home.str ((unInfix k)
 
 /-- The entry of the program `home`'s declaration `d`, when it is a definition or an object. -/
 def extOf (home : Lean.Name) : Decl → Option (String × Ext)
-  | .defn _ k ps .. => some (k, { const := constOf home k, arity := ps.length, infix := (unInfix k).isSome })
+  | .defn _ k ps .. => some (k, { const := constOf home k, arity := ps.length, isInfix := (unInfix k).isSome })
   | .obj _ k _ => some (k, { const := home.str k, obj := true })
   | _ => none
 

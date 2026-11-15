@@ -462,7 +462,7 @@ def Env.def? (env : Env) (n : String) : Option Def :=
 
 /-- The infix operator `n`: the program's `_n_`, else the registered infix the resolver gives. -/
 def Env.infix? (env : Env) (n : String) : Option Def :=
-  (env.defs.lookup s!"_{n}_").orElse fun _ => match env.res n with | .ext e => if e.infix then env.ext.lookup e.const else none | _ => none
+  (env.defs.lookup s!"_{n}_").orElse fun _ => match env.res n with | .ext e => if e.isInfix then env.ext.lookup e.const else none | _ => none
 
 /-- The object `n`: the program's, else the registered object the resolver gives. -/
 def Env.obj? (env : Env) (n : String) : Option ObjInfo :=

@@ -31,7 +31,7 @@ def Err.inProg (n : String) (e : Err) : Err := ⟨default, s!"in the program `{n
 structure Ext where
   const : Lean.Name
   arity : Nat := 0
-  infix : Bool := false
+  isInfix : Bool := false
   obj : Bool := false
   deriving Repr, Inhabited
 

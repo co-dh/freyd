@@ -361,7 +361,7 @@ partial def atomOf (s : Syntax) (p : Lang.Pos) (n : String) (app objs pair : Opt
   -- the program's names, then the kernel table, then the resolver's (§2.3)
   let st ← get
   let ar := (st.known.lookup n).orElse fun _ =>
-    if (Parse.builtin n).isSome then none else (st.ext n).bind fun e => if e.infix || e.obj then none else some e.arity
+    if (Parse.builtin n).isSome then none else (st.ext n).bind fun e => if e.isInfix || e.obj then none else some e.arity
   match ar, Parse.builtin n with
   | some 0, _ => do pure (.name p n :: (← after))
   | some _, _ => match app with
@@ -509,14 +509,19 @@ def defConst (n : Name) (v : Lean.Expr) : CoreM Unit :=
   addAndCompile <| .defnDecl
     { name := n, levelParams := [], type := mkConst ``Program, value := v, hints := .abbrev, safety := .safe }
 
+/-- The constant `c : Decl` of a declaration not built to a constant of its own (not yet elaborated once). -/
+def declConst (c : Name) (d : Decl) : CoreM Unit :=
+  addAndCompile <| .defnDecl
+    { name := c, levelParams := [], type := mkConst ``Decl, value := toExpr d, hints := .abbrev, safety := .safe }
+
 /-- The resolver in the namespace `ns` with the `open`s `opens` (module design §2.3): Lean's `resolveGlobalName`
     gives the candidates of a written name, the registry keeps its own; and whether a written prefix is a
     namespace. -/
-def resolverAt (env : Environment) (reg : Expand.Registry) (ns : Name) (opens : List OpenDecl) :
+def resolverAt (env : Environment) (opts : Options) (reg : Expand.Registry) (ns : Name) (opens : List OpenDecl) :
     (String → Found) × (String → Bool) :=
   let id (t : String) : Name := (Parse.parts t).foldl Name.str .anonymous
   (fun t =>
-    let cs := ((ResolveName.resolveGlobalName env ns opens (id t)).filterMap fun (c, fs) =>
+    let cs := ((ResolveName.resolveGlobalName env opts ns opens (id t)).filterMap fun (c, fs) =>
       if fs.isEmpty then some c else none).eraseDups
     match cs.filterMap (reg.exts[·]?) with
     | [(e, _)] => .ext e
@@ -526,7 +531,7 @@ def resolverAt (env : Environment) (reg : Expand.Registry) (ns : Name) (opens : 
 
 /-- The scope of a program read here: the current namespace and `open`s. -/
 def scopeHere : CommandElabM Parse.S := do
-  let (res, ns) := resolverAt (← getEnv) (Expand.relRegistry.getState (← getEnv)) (← getCurrNamespace) (← getOpenDecls)
+  let (res, ns) := resolverAt (← getEnv) (← getOptions) (Expand.relRegistry.getState (← getEnv)) (← getCurrNamespace) (← getOpenDecls)
   pure { cs := #[], res, ns }
 
 /-- The programs the constants `used` reach, each after the programs its own names reach, in the order they were
@@ -549,13 +554,14 @@ def define (stx id : Syntax) (prog : Program) (used : List Name) (more : List Na
     addDocString' n mkNullNode (stx[0].getOptional?.map (⟨·⟩))
     Term.addTermInfo' id (mkConst n) (isBinder := true)
   let env ← getEnv
+  let opts ← getOptions
   let reg := Expand.relRegistry.getState env
   let homes := (reg.progs.toList.map (·.1)).filter ((more ++ homesOf reg used).contains ·)
   let progs ← homes.mapM fun m => return (m, ← programOf m)
   let resOf (h : Name) : String → Found :=
-    if h == n then (resolverAt env reg ns os).1 else
+    if h == n then (resolverAt env opts reg ns os).1 else
     match reg.progs.find? (·.1 == h) with
-    | some (_, ns, os) => (resolverAt env reg ns os).1
+    | some (_, ns, os) => (resolverAt env opts reg ns os).1
     | none => fun _ => .none
   match Expand.read (reg.calls.contains ·) progs prog n resOf with
   | .error e => throwErrorAt stx "{e}"
@@ -564,8 +570,7 @@ def define (stx id : Syntax) (prog : Program) (used : List Name) (more : List Na
     for d in prog do
       if let some (_, e) := Parse.extOf n d then
         unless (← getEnv).contains e.const do
-          liftTermElabM <| addAndCompile <| .defnDecl { name := e.const, levelParams := [], type := mkConst ``Decl,
-            value := toExpr d, hints := .abbrev, safety := .safe }
+          liftCoreM (declConst e.const d)
         modifyEnv (Expand.relRegistry.addEntry · (.ext e n))
     modifyEnv (Expand.relRegistry.addEntry · (.prog n ns os))
     modifyEnv (Expand.relRegistry.addEntry · (.chain n homes))
@@ -583,7 +588,7 @@ def define (stx id : Syntax) (prog : Program) (used : List Name) (more : List Na
   let base ← programOf b
   let reg := Expand.relRegistry.getState (← getEnv)
   let some (_, bns, bos) := reg.progs.find? (·.1 == b) | throwErrorAt stx[4] "`{b}` is no rel_program"
-  let (res, ns) := resolverAt (← getEnv) reg bns bos
+  let (res, ns) := resolverAt (← getEnv) (← getOptions) reg bns bos
   let s := Parse.after { cs := #[], res, ns } (base.filter fun | .obj .. => true | _ => false)
   let named : Decl → Option String := fun | .defn _ x .. => some x | _ => none
   match program (← getFileMap) s stx[7].getArgs with

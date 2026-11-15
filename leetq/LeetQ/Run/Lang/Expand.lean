@@ -35,8 +35,9 @@ def objInfo (env : Env) (n : String) : ObjDef → Except Err ObjInfo
     line there, at the use; one about the arguments (at the use) passes as it is. -/
 def useDef (c : Lean.Name) (imported : Bool) (d : Def) : Def :=
   { d with apply := fun p as => do
-      let r ← if !imported then d.apply p as else tryCatch (d.apply p as) fun e =>
+      let reword (e : Err) : M Arg :=
         throw (if e.pos == p then e else ⟨p, s!"in `{c}` (its line {e.pos.line}): {e.msg}"⟩)
+      let r ← if imported then tryCatch (d.apply p as) reword else d.apply p as
       -- the body's positions are its program's: at the use, so what `build` raises later is at the use
       match c, r with
       | `LeetQ.Rel.Programs.prelude.perm, .rel q s t => pure (.rel (.own (q.at p)) s t)
@@ -319,8 +320,10 @@ def read (calls : Lean.Name → Bool) (homes : List (Lean.Name × Program)) (pro
       (Err.inProg h.toString)).1
     for d in hp do
       if let some (k, x) := Parse.extOf h d then
-        if x.obj then (if let some i := e.objs.lookup x.const.toString then xo := (x.const, i) :: xo)
-        else if let some df := e.defs.lookup k then ext := (x.const, df) :: ext
+        match x.obj, e.objs.lookup x.const.toString, e.defs.lookup k with
+        | true, some i, _ => xo := (x.const, i) :: xo
+        | false, _, some df => ext := (x.const, df) :: ext
+        | _, _, _ => pure ()
   let env : Env := { res := res own, ext, extObjs := xo, objs := xo.map fun (c, i) => (c.toString, i) }
   let (e, ds, ps, cs, os, xs, ex) ← walk prog env (fun k => useDef (Parse.constOf own k) false) own calls true
   pure (ds, ps, cs, e.objs, os, xs, ex)
