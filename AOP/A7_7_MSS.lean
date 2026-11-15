@@ -900,6 +900,14 @@ public theorem mssPre_eq_oplus_cata :
     | inr q => rw [junc_sum_inr]; exact Iff.rfl
   rw [mssPre_eq_cata, halg]
 
+/-- **The greedy row as an equation**: `Λ(⦇S⦈) est(≥) = ⦇Λ(S) est(≥)⦈`.  `mss_greedy` is the `⊑`;
+    both sides are `⦇[zero,⊕]⦈`, the specification by `mssPre_eq_oplus_cata` and the fold by `mss_step`. -/
+public theorem mss_greedy_eq : (cataR Salg)%∋ ≫ est(geq) = cataR (Salg%∋ ≫ est(geq)) :=
+  calc (cataR Salg)%∋ ≫ est(geq)
+      = mssPre := by rw [← mss_prefix_sum]; rfl                                      -- prefix sum = ⦇S⦈
+    _ = cataR (junc (sumCop (dL Unit) ⟨Int × Int⟩) zero oplus) := mssPre_eq_oplus_cata  -- Λ(prefix sum)est(≥) = ⦇[zero,⊕]⦈
+    _ = cataR (Salg%∋ ≫ est(geq)) := by rw [mss_step]                                 -- Λ(S)est(≥) = [zero,⊕]
+
 /-- `⦇k⦈` is the program `scanFn`: `Kalg_eq_prog` is `k`'s recursion and `scan_emerges` the fold
     law that produced the program from it. -/
 public theorem cata_Kalg_eq_graph :
