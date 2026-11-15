@@ -33,26 +33,25 @@ def TP.den : {A B : Obj} → TP A B → A.El → B.El → Prop
   | _, _, .ldiv R S UB UC => fun b c =>
     (∀ a, R.den a b → S.den a c) ∧ ((∃ a, R.den a b) ∨ ((∃ p, UB.val.row p = b) ∧ ∃ j, UC.val.row j = c))
 
-/-- **The table side**: under `tableC`'s bit the plan's table denotes `TP.den`, each node by its `CRel` op's
-    read-back (`rep_comp`, `rep_inter`, `rep_union`, `rep_diffC`, `rep_leftDiv`, `rep_conv`). -/
-theorem rep_tableC (hat : hatOK) : ∀ {A B : Obj} (p : TP A B), p.tableC.ok = true →
-    ∀ a b, rep p.tableC.rel a b ↔ p.den a b
+/-- **The table side**: under `tableC`'s bit the plan's table denotes `TP.den`, each node by its C twin's read-back
+    (`rep_compC`, `rep_interC`, `rep_unionC`, `rep_diffC`, `rep_leftDivC`, `rep_conv`). -/
+theorem rep_tableC (hat : hatOK) : ∀ {A B : Obj} (p : TP A B), p.tableC.2 = true →
+    ∀ a b, rep p.tableC.1 a b ↔ p.den a b
   | _, _, .leaf _, _, _, _ => Iff.rfl
   | _, _, .comp R S, hb, a, c => by
     unfold TP.tableC at hb ⊢
-    by_cases hz : (R.tableC.rel.n == 0) = true
+    by_cases hz : (R.tableC.1.n == 0) = true
     · rw [if_pos hz] at hb ⊢
       have ih := rep_tableC hat R hb
-      have h0 : R.tableC.rel.n.toNat = 0 := by simp [beq_iff_eq.1 hz]
+      have h0 : R.tableC.1.n.toNat = 0 := by simp [beq_iff_eq.1 hz]
       refine ⟨fun ⟨i, _⟩ => i.elim0, fun ⟨b, hR, _⟩ => ?_⟩
       obtain ⟨i, -⟩ := (ih a b).2 hR
       exact absurd i.2 (by omega)
     · rw [if_neg hz] at hb ⊢
-      have h := hb
-      simp only [CRel.comp, CRel.guard_ok, Bool.and_eq_true] at h
-      rw [CRel.rep_comp _ _ hb]
-      have ihR := rep_tableC hat R h.1.1
-      have ihS := rep_tableC hat S h.1.2
+      simp only [opC, Bool.and_eq_true] at hb ⊢
+      rw [rep_compC _ _ hb.2]
+      have ihR := rep_tableC hat R hb.1.1
+      have ihS := rep_tableC hat S hb.1.2
       exact ⟨fun ⟨b, h1, h2⟩ => ⟨b, (ihR a b).1 h1, (ihS b c).1 h2⟩,
         fun ⟨b, h1, h2⟩ => ⟨b, (ihR a b).2 h1, (ihS b c).2 h2⟩⟩
   | _, _, .conv R, hb, b, a => by
@@ -60,32 +59,29 @@ theorem rep_tableC (hat : hatOK) : ∀ {A B : Obj} (p : TP A B), p.tableC.ok = t
     rw [rep_conv]; exact rep_tableC hat R hb a b
   | _, _, .meet R S, hb, a, b => by
     unfold TP.tableC at hb ⊢
-    have h := hb
-    simp only [CRel.inter, CRel.guard_ok, Bool.and_eq_true] at h
-    rw [CRel.rep_inter _ _ hb]
-    exact and_congr (rep_tableC hat R h.1.1 a b) (rep_tableC hat S h.1.2 a b)
+    simp only [opC, Bool.and_eq_true] at hb ⊢
+    rw [rep_interC _ _ hb.2]
+    exact and_congr (rep_tableC hat R hb.1.1 a b) (rep_tableC hat S hb.1.2 a b)
   | _, _, .join R S, hb, a, b => by
     unfold TP.tableC at hb ⊢
-    have h := hb
-    simp only [CRel.union, CRel.guard_ok, Bool.and_eq_true] at h
-    rw [CRel.rep_union hat _ _ hb]
-    exact or_congr (rep_tableC hat R h.1.1 a b) (rep_tableC hat S h.1.2 a b)
+    simp only [opC, Bool.and_eq_true] at hb ⊢
+    rw [rep_unionC hat _ _ hb.2]
+    exact or_congr (rep_tableC hat R hb.1.1 a b) (rep_tableC hat S hb.1.2 a b)
   | _, _, .diff R S, hb, a, b => by
     unfold TP.tableC at hb ⊢
-    simp only [Bool.and_eq_true] at hb
+    simp only [opC, Bool.and_eq_true] at hb ⊢
     rw [rep_diffC _ _ hb.2]
     exact and_congr (rep_tableC hat R hb.1.1 a b) (not_congr (rep_tableC hat S hb.1.2 a b))
   | _, _, .ldiv R S UB UC, hb, b, c => by
     unfold TP.tableC at hb ⊢
-    have h := hb
-    simp only [CRel.leftDiv, CRel.guard_ok, Bool.and_eq_true] at h
-    rw [CRel.rep_leftDiv _ _ _ _ hb]
-    have ihR := rep_tableC hat R h.1.1
-    have ihS := rep_tableC hat S h.1.2
+    simp only [opC, Bool.and_eq_true] at hb ⊢
+    rw [rep_leftDivC _ _ _ _ hb.2]
+    have ihR := rep_tableC hat R hb.1.1
+    have ihS := rep_tableC hat S hb.1.2
     simp only [TP.den, ihR, ihS]
 
 /-- `TP.table` denotes `TP.den` under `tableC`'s bit. -/
-theorem rep_table (hat : hatOK) {A B : Obj} (p : TP A B) (hb : p.tableC.ok = true) (a : A.El) (b : B.El) :
+theorem rep_table (hat : hatOK) {A B : Obj} (p : TP A B) (hb : p.tableC.2 = true) (a : A.El) (b : B.El) :
     rep p.table a b ↔ p.den a b := rep_tableC hat p hb a b
 
 #print axioms rep_tableC

@@ -1,5 +1,5 @@
 import Std.Data.HashMap
-import LeetQ.Rel.AC3
+import LeetQ.Rel.AC3Def
 import LeetQ.Rel.Lang.Elab
 import LeetQ.Rel.Lang.Bits
 import LeetQ.Rel.Lang.Parse
