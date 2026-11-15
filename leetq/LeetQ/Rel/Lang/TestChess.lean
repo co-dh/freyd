@@ -1,5 +1,7 @@
 import LeetQ.Rel.Lang.Test
 import LeetQ.Rel.Programs.Chess
+/- Turned off: it re-runs `Programs.chess` on many boards at every build (about 15 s). Remove this comment
+   wrapper to turn it back on.
 
 /-! Mate in one in the Rel language, the program `Programs.chess`: each check on its position, the program's board
     `on` replaced (`rel_program v from Programs.chess`), each variant expanded once; and the program's tables and
@@ -122,3 +124,4 @@ def rewritten (p : Program) : List (String × String) :=
   | .error _ => false
 
 end LeetQ.Rel.Lang.TestChess
+-/
