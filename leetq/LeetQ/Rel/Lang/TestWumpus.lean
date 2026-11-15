@@ -14,7 +14,8 @@ def tables : List (String × Bool) := [("V", false), ("B", false), ("S", false),
   ("wcand", true), ("wumpus", false), ("noWumpus", false), ("safe", false), ("frontier", false), ("next", false)]
 
 -- one family `fₖ` per table of `tables`, in its order; `next(V,B,S)` printed is the table `page` states
-rel_program given after Programs.wumpus where
+open LeetQ.Rel.Programs.prelude Programs.wumpus in
+rel_program given where
     f0 : N ⟶ C×C ≜ V
     f1 : N ⟶ C×C ≜ B
     f2 : N ⟶ C×C ≜ S

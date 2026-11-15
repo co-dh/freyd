@@ -7,7 +7,8 @@ assignments are related by bad, the union of the violated binary constraints as 
 
 namespace LeetQ.Rel.Programs
 
-rel_program jobshop after prelude where
+open LeetQ.Rel.Programs.prelude in
+rel_program jobshop where
     obj Job = {AxleF,AxleB,WheelRF,WheelLF,WheelRB,WheelLB,NutsRF,NutsLF,NutsRB,NutsLB,CapRF,CapLF,CapRB,CapLB,Inspect}
     obj N = 0…30                                  -- start times; plus has no value past 30, so 30 is the deadline
 

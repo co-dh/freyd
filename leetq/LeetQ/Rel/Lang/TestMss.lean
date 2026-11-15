@@ -10,7 +10,8 @@ namespace LeetQ.Rel.Lang.TestMss
 open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Lang.Test
 
 -- the specification and the derived fold on every array of `A`, named `s` and `p`; printed, `x mss` and `x` then the fold
-rel_program given after Programs.mss where
+open LeetQ.Rel.Programs.prelude Programs.mss in
+rel_program given where
     s : [N] ⟶ N ≜ A mss
     p : [N] ⟶ N ≜ A scan
     print x mss

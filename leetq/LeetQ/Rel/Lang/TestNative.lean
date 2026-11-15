@@ -60,8 +60,8 @@ def main (args : List String) : IO UInt32 := do
     match args with
     | ["c", file] => IO.FS.writeFile file (← IO.ofExcept (plan >>= relc abiOf))
     | ["lean", dir] =>
-      unless native1a.rel.x.ok do throw (IO.userError "x: an op ran out of capacity")
-      writeRel (System.FilePath.mk dir / "out").toString native1a.rel.x.rel
+      unless native1a.x.ok do throw (IO.userError "x: an op ran out of capacity")
+      writeRel (System.FilePath.mk dir / "out").toString native1a.x.rel
     | ["plan", dir] => IO.Process.setCurrentDir dir; discard <| (← IO.ofExcept plan).run abiOf
     | ["g", file] => IO.FS.writeFile file (← IO.ofExcept (gplan codes >>= relc abiOf))
     | _ => throw (IO.userError "usage: relc-1a c FILE | lean DIR | plan DIR | g FILE")

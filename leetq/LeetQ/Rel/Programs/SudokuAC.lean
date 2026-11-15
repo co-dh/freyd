@@ -41,7 +41,8 @@ forced to 4, so its column peer cell 8 loses 4. The rounds stop when one removes
 
 namespace LeetQ.Rel.Programs
 
-rel_program sudokuac after csp where
+open LeetQ.Rel.Programs.prelude csp in
+rel_program sudokuac where
     obj Cell = 0…80                               -- the cell in row r, column k is 9r+k
     obj Unit = 0…26                               -- rows 0…8, columns 9…17, boxes 18…26
     obj D = 1…9

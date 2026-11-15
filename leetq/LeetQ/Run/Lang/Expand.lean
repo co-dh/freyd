@@ -1,8 +1,9 @@
 import Lean
 import LeetQ.Run.Lang.Gen
 import LeetQ.Run.Lang.Elab
+import LeetQ.Run.Lang.Parse
 
-/-! The expander of `rel_program n`: each closed definition `x ≜ …` becomes the Lean definition `n.rel.x : CRel A B`,
+/-! The expander of `rel_program n`: each closed definition `x ≜ …` becomes the Lean definition `n.x : CRel A B`,
     a composition of `CRel` ops (`Gen`), so its ok bit is the `&&` of the ops it runs. At elaboration time the
     program is elaborated (`elabE`, `build`) to its core term `Tm`, as a run does; the term is then read into a
     Lean `Expr` constructor by constructor. Every closed sub-term (no keys, no fixed-point variable) becomes one
@@ -25,27 +26,30 @@ def objInfo (env : Env) (n : String) : ObjDef → Except Err ObjInfo
     pure { ty := .base n, range := some (lo, hi), uni := some ⟨_, col ((List.range (hi + 1 - lo).toNat).map fun k : Nat => Int64.ofInt (lo + k))⟩ }
   | .alias o => do let (t, _) ← (oty env [] o).run {}; pure { ty := t }
 
-/-- A prelude definition as a program sees it: an error raised in its body at a use names the definition and its
-    line in the prelude, at the use; one about the arguments (at the use) passes as it is. `perm` is its own
-    converse, the one converse rule kept for a definition (`Tm.own`): `perm° = perm` is a theorem the
-    language cannot derive from the fold `perm` is. `tails`, `prefix`, `suffix` run as their slice forms, each
-    read back against the list function the prelude's fold is (`rep_tailsC`, `rep_prefixC`, `rep_suffixC`);
-    `filter(p)`, `takewhile(p)` (given one relation, not a family) as their mask forms, whose read-back theorems
-    (`rep_filterC`, `rep_takewhileC`) are not proved yet. -/
-def preludeDef (n : String) (d : Def) : Def :=
+/-- The definition `d` whose constant is `c`, as a use sees it. `prelude.perm` is its own converse, the one converse
+    rule kept for a definition (`Tm.own`): `perm° = perm` is a theorem the language cannot derive from the fold
+    `perm` is. `prelude.tails`, `prefix`, `suffix` run as their slice forms, each read back against the list
+    function the prelude's fold is (`rep_tailsC`, `rep_prefixC`, `rep_suffixC`); `filter(p)`, `takewhile(p)` (given
+    one relation, not a family) as their mask forms, whose read-back theorems (`rep_filterC`, `rep_takewhileC`) are
+    not proved yet. `imported`: `d` is another program's, so an error its body raises at a use names `c` and its
+    line there, at the use; one about the arguments (at the use) passes as it is. -/
+def useDef (c : Lean.Name) (imported : Bool) (d : Def) : Def :=
   { d with apply := fun p as => do
-      let r ← tryCatch (d.apply p as) fun e =>
-        throw (if e.pos == p then e else ⟨p, s!"in the prelude's `{n}` (its line {e.pos.line}): {e.msg}"⟩)
-      -- the body's positions are the prelude's: at the use, so what `build` raises later is at the use
-      match n, r with
-      | "perm", .rel q s t => pure (.rel (.own (q.at p)) s t)
-      | "tails", .rel _ s@(.arr b) t => pure (.rel (.tails b) s t)
-      | "prefix", .rel _ s@(.arr b) t => pure (.rel (.«prefix» b) s t)
-      | "suffix", .rel _ s@(.arr b) t => pure (.rel (.suffix b) s t)
-      | "filter", .rel q s t => pure (.rel (match as with | [.rel a _ _] => .filter a | _ => q.at p) s t)
-      | "takewhile", .rel q s t => pure (.rel (match as with | [.rel a _ _] => .takewhile a | _ => q.at p) s t)
-      | _, .rel q s t => pure (.rel (q.at p) s t)
-      | _, .fam q i a b => pure (.fam (q.at p) i a b) }
+      let reword (e : Err) : M Arg :=
+        throw (if e.pos == p then e else ⟨p, s!"in `{c}` (its line {e.pos.line}): {e.msg}"⟩)
+      let r ← if imported then tryCatch (d.apply p as) reword else d.apply p as
+      -- the body's positions are its program's: at the use, so what `build` raises later is at the use
+      match c, r with
+      | `LeetQ.Rel.Programs.prelude.perm, .rel q s t => pure (.rel (.own (q.at p)) s t)
+      | `LeetQ.Rel.Programs.prelude.tails, .rel _ s@(.arr b) t => pure (.rel (.tails b) s t)
+      | `LeetQ.Rel.Programs.prelude.prefix, .rel _ s@(.arr b) t => pure (.rel (.«prefix» b) s t)
+      | `LeetQ.Rel.Programs.prelude.suffix, .rel _ s@(.arr b) t => pure (.rel (.suffix b) s t)
+      | `LeetQ.Rel.Programs.prelude.filter, .rel q s t =>
+        pure (.rel (match as with | [.rel a _ _] => .filter a | _ => if imported then q.at p else q) s t)
+      | `LeetQ.Rel.Programs.prelude.takewhile, .rel q s t =>
+        pure (.rel (match as with | [.rel a _ _] => .takewhile a | _ => if imported then q.at p else q) s t)
+      | _, .rel q s t => pure (.rel (if imported then q.at p else q) s t)
+      | _, .fam q i a b => pure (.fam (if imported then q.at p else q) i a b) }
 
 /-! ### Printing a relation with the program's names -/
 
@@ -154,7 +158,7 @@ def once (env : Env) (p : Pos) (n : String) (qs : List Param) (e : Expr) (ty : O
     let r ← elabE env' none e
     let (q, s, t) := r.plain
     declared env' p n rigid ty s t
-    settleNil p q
+    settleNil env'.one p q
     pure (r, os) : M (Arg × List (Obj × Obj))).run { fixes := nv + qs.length }
   -- a body that needs keys is read on its source's universe, a variable's when the source is one, as a top-level
   -- term is (`top`): the constant returns a closed relation (decision M)
@@ -207,7 +211,7 @@ def checkOf (env : Env) (p : Pos) (e f : Expr) (eq : Bool) : Except Err (Chk × 
     let st ← get
     try unify p "" s' s; unify p "" t' t
     catch _ => throw ⟨p, s!"check: the sides have types {zonk st s} ⟶ {zonk st t} and {zonk st s'} ⟶ {zonk st t'}"⟩
-    settleNil p r.plain.1; settleNil p r'.plain.1
+    settleNil env.one p r.plain.1; settleNil env.one p r'.plain.1
     pure (r, r') : M (Arg × Arg)).run {}
   let (⟨A, B, R⟩, s, t) ← top env st p e r
   let (⟨A', B', S⟩, s', t') ← top env st p f r'
@@ -219,7 +223,7 @@ def checkOf (env : Env) (p : Pos) (e f : Expr) (eq : Bool) : Except Err (Chk × 
     term. A parametric definition is called where `calls` holds its constant `own.x`; else, when `emitting`, it is
     built once for `emit` (`once`), and expanded at each use here, where its constant does not exist yet. -/
 def walk (prog : Program) (env : Env) (wrap : String → Def → Def) (own : Lean.Name) (calls : Lean.Name → Bool)
-    (emitting : Bool) :
+    (emitting : Bool) (imported : Bool := false) :
     Except Err (Env × List (String × Res) × List (String × Top) × List Chk × List Once × List (String × String) ×
       List (String × String)) := do
   let mut env := env
@@ -231,7 +235,13 @@ def walk (prog : Program) (env : Env) (wrap : String → Def → Def) (own : Lea
   let mut cs : List Chk := []
   for d in prog do
     match d with
-    | .obj _ n od => env := { env with objs := (n, ← objInfo env n od) :: env.objs }
+    | .obj _ n od =>
+      -- an imported program's object is its constant's, so the importer's types name the same object (§2.3)
+      if imported then
+        let c := (Parse.constOf own n).toString
+        let i := { ← objInfo env c od with ty := .base c }
+        env := { env with objs := (n, i) :: (c, i) :: env.objs }
+      else env := { env with objs := (n, ← objInfo env n od) :: env.objs }
     | .defn p n ps b ty =>
       let missing := ps.any (·.ty.isNone) || match b with | .rel _ => ty.isNone | .test .. => false
       if missing then throw ⟨p, s!"`{n}` has no type; it is {← (inferSig env n ps b).run' {}}"⟩
@@ -241,7 +251,7 @@ def walk (prog : Program) (env : Env) (wrap : String → Def → Def) (own : Lea
         let (r, st) ← (do
           let r ← elabE env none e
           if let some ty := ty then let (_, s, t) := r.plain; declared env p n rigid ty s t
-          settleNil p r.plain.1
+          settleNil env.one p r.plain.1
           pure r).run {}
         ex := ex ++ st.expanded
         let (q, s, t) := r.plain
@@ -260,7 +270,7 @@ def walk (prog : Program) (env : Env) (wrap : String → Def → Def) (own : Lea
         match b, ty with
         | .rel e, some ty =>
           let vs := varsOf qs ty
-          let c := own ++ Lean.Name.mkSimple n
+          let c := Parse.constOf own n
           if calls c then env := { env with defs := (n, wrap n (callDef env qs ty vs c d)) :: env.defs }; continue
           if emitting then
             -- a body the spike cannot make a constant (arithmetic or a universe on an object variable: step 5) stays
@@ -271,7 +281,7 @@ def walk (prog : Program) (env : Env) (wrap : String → Def → Def) (own : Lea
         | _, _ => pure ()
         env := { env with defs := (n, wrap n d) :: env.defs }
     | .print p e =>
-      let (r, st) ← (do let r ← elabE env none e; settleNil p r.plain.1; pure r).run {}
+      let (r, st) ← (do let r ← elabE env none e; settleNil env.one p r.plain.1; pure r).run {}
       ex := ex ++ st.expanded
       pr := pr ++ [(e.show, ← top env st p e r)]
     | .check p e f eq => let (c, e') ← checkOf env p e f eq; cs := cs ++ [c]; ex := ex ++ e'
@@ -295,20 +305,27 @@ def walk (prog : Program) (env : Env) (wrap : String → Def → Def) (own : Lea
           cs := cs ++ [c]; ex := ex ++ e'; x := y
   pure (env, ds, pr, cs, os, xs, ex)
 
-/-- What the program `own` declares, `prog`, read after the programs of `chain`, each with its constant, root
-    first: the prelude, then the programs between (whose own prints and checks are not `prog`'s); a program with
-    no chain is the prelude (`rel_program prelude`), its definitions seen as a prelude's (`preludeDef`). A
-    definition of the chain whose constant `calls` holds is called, not expanded. -/
-def read (calls : Lean.Name → Bool) (chain : List (Lean.Name × Program)) (prog : Program) (own : Lean.Name := .anonymous) :
-    Except Err Read := do
-  let keep : String → Def → Def := fun _ d => d
-  let mut env : Env := {}
-  let mut wrap := preludeDef
-  if let (r, rp) :: mid := chain then
-    env := (← (walk rp {} preludeDef r calls false).mapError Err.inPrelude).1
-    wrap := keep
-    for (m, mp) in mid do env := (← walk mp env keep m calls false).1
-  let (e, ds, ps, cs, os, xs, ex) ← walk prog env wrap own calls true
+/-- What the program `own` declares, `prog`, read after the programs `homes` its names reach (their definitions
+    and objects), each read in order with its own resolver `res h` (module design §2.3), its definitions in scope
+    for the next by constant. A definition whose constant `calls` holds is called, not expanded. With no `res`, a
+    text read outside any Lean scope: each program sees those before it unqualified (`Parse.openAll`). -/
+def read (calls : Lean.Name → Bool) (homes : List (Lean.Name × Program)) (prog : Program)
+    (own : Lean.Name := .anonymous)
+    (res : Lean.Name → String → Found := fun h => Parse.openAll (homes.takeWhile (·.1 != h))) : Except Err Read := do
+  let mut ext : List (Lean.Name × Def) := []
+  let mut xo : List (Lean.Name × ObjInfo) := []
+  for (h, hp) in homes do
+    let env : Env := { res := res h, ext, extObjs := xo, objs := xo.map fun (c, i) => (c.toString, i) }
+    let e := (← (walk hp env (fun k => useDef (Parse.constOf h k) true) h calls false true).mapError
+      (Err.inProg h.toString)).1
+    for d in hp do
+      if let some (k, x) := Parse.extOf h d then
+        match x.obj, e.objs.lookup x.const.toString, e.defs.lookup k with
+        | true, some i, _ => xo := (x.const, i) :: xo
+        | false, _, some df => ext := (x.const, df) :: ext
+        | _, _, _ => pure ()
+  let env : Env := { res := res own, ext, extObjs := xo, objs := xo.map fun (c, i) => (c.toString, i) }
+  let (e, ds, ps, cs, os, xs, ex) ← walk prog env (fun k => useDef (Parse.constOf own k) false) own calls true
   pure (ds, ps, cs, e.objs, os, xs, ex)
 
 /-! ### The core term as an `Expr` -/
@@ -720,23 +737,32 @@ def lams (tys : List Lean.Expr) (k : Array Lean.Expr → PM (Lean.Expr × Lean.E
   | [] => do let (t, v) ← k xs; pure (← mkForallFVars xs t, ← mkLambdaFVars xs v)
   | ty :: tys => withLocalDeclD `x ty fun x => lams tys k (xs.push x)
 
-/-- An entry of the registry: a definition's constant (`once`), or a program's chain, the programs it is read
-    after, root first. -/
+/-- An entry of the registry (module design §2.3): a definition elaborated once, its constant (`once`); a program's
+    homes, the programs its names reach, in the order they are read (`read`); a program's scope, its namespace and
+    `open`s, which its names resolve in; a definition or object of the program `home`. -/
 inductive RegEntry
   | call (c : Name)
   | chain (n : Name) (ns : List Name)
+  | prog (n : Name) (ns : Name) (opens : List OpenDecl)
+  | ext (e : Ext) (home : Name)
   deriving Inhabited
 
-/-- The registry, written only by `rel_program`: the constants a program read after the program of one may call
-    (`walk`), and each program's chain (`read`). -/
+/-- The registry, written only by `rel_program`: the constants a use may call (`walk`), each program's homes,
+    the programs in the order they were defined (imported ones first) with their scopes, and every definition and
+    object by its constant, with its program. -/
 structure Registry where
   calls : List Name := []
   chains : List (Name × List Name) := []
-  deriving Inhabited
+  progs : Array (Name × Name × List OpenDecl) := #[]
+  exts : Std.HashMap Name (Ext × Name) := {}
+
+instance : Inhabited Registry := ⟨{}⟩
 
 def Registry.add (r : Registry) : RegEntry → Registry
   | .call c => { r with calls := c :: r.calls }
   | .chain n ns => { r with chains := (n, ns) :: r.chains }
+  | .prog n ns os => { r with progs := r.progs.push (n, ns, os) }
+  | .ext e h => { r with exts := r.exts.insert e.const (e, h) }
 
 initialize relRegistry : SimplePersistentEnvExtension RegEntry Registry ←
   registerSimplePersistentEnvExtension {
@@ -752,7 +778,7 @@ def objsE (objs : Objs) : MetaM Lean.Expr := do
   mkListLit ty (objs.map fun (x, i) => mkApp4 (mkConst ``Prod.mk [0, 0]) (mkConst ``String) (mkConst ``ObjInfo)
     (toExpr x) (g ``infoOf #[toExpr i.ty, toExpr i.elems, toExpr i.range]))
 
-/-- The Lean definitions of what the program `n` reads (`read`): `n.rel.x` for each closed definition, its
+/-- The Lean definitions of what the program `n` reads (`read`): `n.x` for each closed definition, its
     sub-terms' constants `n.c.c<i>`, `n.expanded` (the definitions with their objects), `n.objs`, `n.printed`
     (each `print`'s line and ok bit), `n.prints` (the lines), `n.failures` (`failures`: each `check` that does not
     hold, and an op out of capacity) and `n.ok`, that there is none. -/
@@ -780,16 +806,16 @@ def emit (n : Name) (r : Read) : MetaM Unit := do
       let (ty, v) ← lams tys fun xs => do
         let ρ := xs.toList.zipIdx.map fun (x, k) => (k, mkApp x (mkConst ``Unit.unit))
         pure (fn A B, ← code n ρ t)
-      addConst (n ++ Name.mkSimple x) ty v
-      modifyEnv (relRegistry.addEntry · (.call (n ++ Name.mkSimple x)))
+      addConst (Parse.constOf n x) ty v
+      modifyEnv (relRegistry.addEntry · (.call (Parse.constOf n x)))
     let mut gaps : List (String × String) := []
     let mut es := []
     for (x, ⟨A, B, d, t⟩) in ds do
       let v ← code n [] t
-      let k := n ++ `rel ++ Name.mkSimple x
+      let k := Parse.constOf n x
       unless !d do throwError "rel_program expansion: internal: `{x}` needs keys"
       addConst k (mkApp2 (mkConst ``CRel) (oE A) (oE B)) (app v)
-      -- `n.rep_x : (n.rel.x).ok = true → rep (n.rel.x).rel = ⟦x⟧`, assembled from `GenSpec`'s lemmas
+      -- `n.rep_x : (n.x).ok = true → rep (n.x).rel = ⟦x⟧`, assembled from `GenSpec`'s lemmas
       modify fun (m, _) => (m, none)
       let body : PM (Option String) := do
         match ← prf n [] t with

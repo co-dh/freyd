@@ -10,7 +10,8 @@ namespace LeetQ.Rel.Lang.RelAopTest
 
 open Freyd Freyd.Alg Freyd.Alg.RelSet Freyd.Alg.RelSet.CL PowerAllegory LeetQ.Rel.Programs
 
-rel_program mssLinear after Programs.mss where
+open LeetQ.Rel.Programs.prelude Programs.mss in
+rel_program mssLinear where
     theorem toShape : mss = shape
     theorem toFused : shape = fused
     theorem toGreedy : fused = greedy
@@ -32,8 +33,9 @@ rel_aop mssLinear
 
 #print axioms mssLinear.linear.aop
 
+open LeetQ.Rel.Programs.prelude Programs.mss mssLinear in
 /-- A step that is no instance of the law it cites fails at its Rel line. -/
-rel_program mssBad after mssLinear where
+rel_program mssBad where
     theorem bad : mss = fused := calc
       _ = fused := toShape
 
@@ -52,8 +54,9 @@ h'✝ : Programs.mss.mss.aop = Programs.mss.shape.aop
 #guard_msgs in
 rel_aop mssBad
 
+open LeetQ.Rel.Programs.prelude Programs.mss mssLinear in
 /-- A theorem with neither a calc nor a `proof` item is listed, and nothing is declared. -/
-rel_program mssOwed after mssLinear where
+rel_program mssOwed where
     theorem owedA : greedy = mss
     theorem owedB : scan ⊑ mss
 
