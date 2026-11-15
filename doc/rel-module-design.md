@@ -351,7 +351,7 @@ csp.AC3 : (α β : Obj) → (Uα : CRel α α) → (Uβ : CRel β β)
 | J | 做 `board9` module(第 7 步)                                                                                  |
 | K | native(`precompileModules`)单独做(rel-140b),不并进这项工作                                                 |
 | L | `Tm` 的 index 允许 object variable,并加一个调用叶子(数据结构改动,已批准)                                   |
-| M | 实参按它的形式传给 constant:closed、按需在 demand 的 key 上运行(demand bit = true)、只能按对检验的 pair test(§a)、family(§e,index 是 constant 的一个 object variable);形式是 signature 的一部分,每组形式 elaborate 一次(`formKey`),调用处不展开 body |
+| M | 实参按它的形式传给 constant:closed、按需在 demand 的 key 上运行(demand bit = true)、只能按对检验的 pair test(§a)、family(§e,index 是 constant 的一个 object variable);形式是 signature 的一部分,每组形式 elaborate 一次(`formKey`),调用处不展开 body;实参的 object 要等调用处的上下文才定、或 body 在这组形式下单独 build 不出来(family 被整读,只有调用处的上下文能按 key 跑,§e)时,这次使用展开 body |
 | N | object 是 "`Obj` 加 universe" 的一个 structure,每个 type variable 收一个这样的值(数据结构改动,已批准)       |
 
 ## 6. 证明 `rel_program` 的定义:等式风格(elaborate-once 之后的一步)

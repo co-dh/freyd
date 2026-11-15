@@ -245,7 +245,7 @@ def callDef (env : Env) (dp : Pos) (n : String) (qs : List Param) (e : Expr) (ty
         let (b, j, m) ← bind env p P a m; pure (bs ++ [(b.2, j)], m)) (([], []) : List (Arg × Option OTy) × List (String × OTy))
       -- an argument that needs keys (`≠`) is read on its source's universe, as a top-level term is (`top`); the
       -- universe is looked up at `build`, in the objects of the program making the call, not of the one defining `n`
-      let why := s!"`{c}` takes only closed relations (decision M)"
+      let why := s!"`{c}`'s argument runs in no form it takes: closed, on demand or tested on pairs"
       -- a variable only the declared result names is fixed by the result's type, as `declared` fixes it; first, so
       -- the arguments' objects are as solved as the use makes them when their forms are tried below
       let m ← vs.foldlM (fun m v => do if (m.lookup v).isSome then pure m else return (v, ← fresh) :: m) m
@@ -256,7 +256,11 @@ def callDef (env : Env) (dp : Pos) (n : String) (qs : List Param) (e : Expr) (ty
       let mut fs : List Form := []
       let mut xs : List (Pre × Bool) := []
       for (b, j?) in bs do
-        let (x, a, _) := b.plain
+        let (x, a, a') := b.plain
+        -- an argument whose objects only the use's context solves, after this call returns, has no form yet: the
+        -- use is the expansion, which reads the arguments where `build` has every object solved
+        let st ← get
+        if [zonk st a, zonk st a'].any (!·.mvs.isEmpty) then return r
         let mut k? : Option Nat := none
         if let some j := j? then
           for (i, k) in ix.toList.zipIdx do
@@ -271,20 +275,21 @@ def callDef (env : Env) (dp : Pos) (n : String) (qs : List Param) (e : Expr) (ty
           if (build st.objs st p (Pre.close p x a why)).toOption.isSome then none
           else if (build st.objs st p x).toOption.isSome then some false
           else if (test st.objs st p x).toOption.isSome then some true else none
-        if f.isNone then if let .error e := build st.objs st p (Pre.close p x a why) then if let .error e2 := test st.objs st p x then throw ⟨p, s!"DBG {e.msg} /// {e2.msg} /// {st.objs.map (·.1)}"⟩
         fs := fs ++ [(f, k?)]; xs := xs ++ [(if f.isNone then Pre.close p x a why else x, f == some true)]
       let some us := vs.mapM (m.lookup ·) | throw ⟨p, s!"internal: `{c}` has an object variable no type names"⟩
       let key := formKey c fs
-      let sig ← match calls key, (← get).specs.find? (·.1 == key) with
-        | some g, _ => pure g
-        | none, some o => pure (sigOf o)
+      let sig? ← match calls key, (← get).specs.find? (·.1 == key) with
+        | some g, _ => pure (some g)
+        | none, some o => pure (some (sigOf o))
         | none, none => do
           let k := if c.getPrefix == emitter then key else emitter ++ key
           let vs := vs ++ (List.range ix.size).map idxVar
-          let (o, specs) ← once env dp n qs e ty vs key k fs (← get).specs
-          modify fun st => { st with specs := specs ++ [o] }
-          pure (sigOf o)
-      let (k, dm, fl, cv, tst) := sig
+          -- a body that does not build alone at these forms (a family it reads whole, which only the use's
+          -- context keys, §e) is no constant: the use is the expansion, whose build reports any error in its words
+          match once env dp n qs e ty vs key k fs (← get).specs with
+          | .ok (o, specs) => modify (fun st => { st with specs := specs ++ [o] }); pure (some (sigOf o))
+          | .error _ => pure none
+      let some (k, dm, fl, cv, tst) := sig? | return r
       let us := us ++ ix.toList
       unless us.length == fl.length do
         throw ⟨p, s!"internal: `{k}` has {fl.length} object variables in the registry, {us.length} here"⟩
