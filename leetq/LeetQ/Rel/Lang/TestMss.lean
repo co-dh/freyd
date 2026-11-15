@@ -12,9 +12,9 @@ open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Lang.Test
 -- the specification and the derived fold on every array of `A`, named `s` and `p`; printed, `x mss` and `x` then the fold
 rel_program given after Programs.mss where
     s : [N] ⟶ N ≜ A mss
-    p : [N] ⟶ N ≜ A⦇ran(zero⟨𝟙,Λ(𝟙)⟩), ⟨w,Λ(w ∪ (π₂π₂∋))⟩⦈π₂est(≥)
+    p : [N] ⟶ N ≜ A scan
     print x mss
-    print x⦇ran(zero⟨𝟙,Λ(𝟙)⟩), ⟨w,Λ(w ∪ (π₂π₂∋))⟩⦈π₂est(≥)
+    print x scan
 
 /-- The largest sum over the segments `drop i` then `take j`, the empty one included: no `Rel` operation. -/
 def mssL (xs : List Int64) : Int64 :=
@@ -47,6 +47,6 @@ def rows : String := s!"\{(a, {mssL [3,1,4,1,5]}), (b, {mssL [2,0,7]}), (c, {mss
 -- computes
 #guard Programs.mss.ok && Programs.mss.prints == []
 #guard given.prints == [s!"x mss = {rows}",
-  s!"x ⦇ran(zero ⟨𝟙, Λ(𝟙)⟩), ⟨w, Λ(w ∪ (π₂ π₂ ∋))⟩⦈ π₂ est(≥) = {rows}"]
+  s!"x scan = {rows}"]
 
 end LeetQ.Rel.Lang.TestMss
