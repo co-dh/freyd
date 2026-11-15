@@ -46,7 +46,7 @@ inductive Op
   | dom | ran | lam | E | P | est | thin | map
   | inits | cat | zip | snoc | setify | bagify | tic
   | thinL | merge | loop
-  /-- `at(i)`, the element at position `i` from `0`; `i` a number literal, read by the parser (`Parse.atom`). -/
+  /-- `at(i)`, the element at position `i` from `0`; `i` a number literal, read by `Embed.atomOf`. -/
   | index (i : Nat)
   deriving Repr, BEq, Inhabited
 
