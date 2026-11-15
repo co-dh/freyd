@@ -172,19 +172,28 @@ def elabOnce (env : Env) (p : Pos) (n : String) (qs : List Param) (e : Expr) (ty
     an error (decision M). -/
 def once (env : Env) (p : Pos) (n : String) (qs : List Param) (e : Expr) (ty : OExp × OExp) (vs : List String) :
     Except Err Once := do
-  let run (gen : List Bool) : Except Err Once := do
-    let objs := vs.zipIdx.map (fun (v, k) => (v, ({ ty := .base v, uniVar := some k,
-      obj := if gen[k]?.getD false then (varObj k).getD .long else .long } : ObjInfo))) ++ env.objs
+  -- per variable: generic over its object, and given its universe
+  let run (fl : List (Bool × Bool)) : Except Err Once := do
+    let objs := vs.zipIdx.map (fun (v, k) =>
+      let (gen, uni) := fl.getD k (false, true)
+      let obj := if gen then (varObj k).getD .long else .long
+      (v, ({ ty := .base v, uniVar := if uni then some k else none, obj } : ObjInfo))) ++ env.objs
     let (os, r, st) ← elabOnce env p n qs e ty vs objs
     let (q, _, _) := r.plain
+    let gen := fl.map (·.1)
     match build objs st p q, test objs st p q with
     | .ok res, _ => pure (n, gen, os, res, false)
     | .error _, .ok ⟨A, B, c⟩ => pure (n, gen, os, ⟨.prod A B, .prod A B, true, c⟩, true)
     | .error err, .error _ => throw err
-  let mut out ← run (vs.map fun _ => false)
-  -- with every variable `.long` the body built above, so one whose own object fails the build is a number object
+  let mut fl := vs.map fun _ => (false, true)
+  let mut out ← run fl
+  -- with every variable `.long` the body built above, so one whose own object fails the build is a number object;
+  -- one that builds without its universe takes the routes run on demand or tested on pairs, which every object has,
+  -- where its universe would refuse a call at an array (§a)
   for k in List.range (min vs.length varAtoms.length) do
-    if let .ok o := run (out.2.1.set k true) then out := o
+    for c in [(true, false), (true, true)] do
+      -- a body that built stays built: a pair test runs nowhere (`build`'s `.call`)
+      if let .ok o := run (fl.set k c) then if o.2.2.2.2 ≤ out.2.2.2.2 then fl := fl.set k c; out := o; break
   pure out
 
 /-- `n` elaborated once to the constant `c` (`once`), `sig` what its calls need (`Sig`), its object variables `vs`,
@@ -210,7 +219,7 @@ def callDef (env : Env) (qs : List Param) (ty : OExp × OExp) (vs : List String)
       -- an argument that needs keys (`≠`) is read on its source's universe, as a top-level term is (`top`); the
       -- universe is looked up at `build`, in the objects of the program making the call, not of the one defining `n`
       let why := s!"`{c}` takes only closed relations (decision M)"
-      pure (.rel (.call p c us (bs.map fun (_, b, _) => let (x, a, _) := b.plain; Pre.close p x a why) q s t dm cv tst) s t) }
+      pure (.rel (.call p c (us.zip fl) (bs.map fun (_, b, _) => let (x, a, _) := b.plain; Pre.close p x a why) q s t dm cv tst) s t) }
 
 /-- A top-level term, `r` its elaboration `e` with the objects `st`: closed on its source's universe when it needs
     keys, refused where that object has none. -/

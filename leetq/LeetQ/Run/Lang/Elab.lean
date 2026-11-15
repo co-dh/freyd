@@ -156,7 +156,7 @@ structure ObjInfo where
 
 /-- The atoms no declared object is stored as (every one is `.long`, F6): each the placeholder of one object
     variable while a constant generic over it is built, its binder `(A : Obj)` once emitted. -/
-def varAtoms : List QAtomicType := [.general, .boolean, .guid, .byte, .short, .int, .real, .float, .char, .symbol,
+def varAtoms : List QLean.QAtomicType := [.general, .boolean, .guid, .byte, .short, .int, .real, .float, .char, .symbol,
   .timestamp, .month, .date, .datetime, .timespan, .minute, .second, .time]
 
 /-- The placeholder of the object variable `k`; none past `varAtoms`, where the variable stays `.long`. -/
