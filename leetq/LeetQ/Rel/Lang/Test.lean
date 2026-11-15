@@ -12,7 +12,7 @@ namespace LeetQ.Rel.Lang.Test
 open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Alg QLean
 
 -- the prelude's definitions type-check
-#guard (typesOf none).isOk
+#eval show Lean.Meta.MetaM Unit from do match ← (typesOf none).run with | .error e => throwError "{e}" | .ok _ => pure ()
 #guard Programs.prelude.ok
 
 abbrev CM := Lean.Elab.Command.CommandElabM
@@ -261,15 +261,19 @@ def reach : List St.El := [[(0, 0), (1, 1), (2, 0)], [(0, 0), (1, 2), (2, 0)], [
     evaluated. -/
 
 /-- The program `prog` read after the prelude: its error, if any. -/
-def elabErr (prog : Except Err Program) : Option Err :=
-  match prog >>= (Expand.read (fun _ => none) [(`LeetQ.Rel.Programs.prelude, Programs.prelude)] ·) with | .error e => some e | .ok _ => none
+def elabErr (prog : Except Err Program) : Lean.Meta.MetaM (Option Err) := do
+  match prog with
+  | .error e => pure (some e)
+  | .ok p => match ← (Expand.read (fun _ => none) [(`LeetQ.Rel.Programs.prelude, Programs.prelude)] p).run with
+    | .error e => pure (some e)
+    | .ok _ => pure none
 
 /-- The statements `src` read after the prelude and `prog` fail at `line` (and `col`, when given) with `what` in the
     message. -/
 def errAt (src : String) (line : Nat) (what : String) (col : Option Nat := none) (prog : Program := []) :
     CM Unit := do
   let r ← readIn (Parse.after (preludeScope) prog) src
-  match elabErr (r.map (prog ++ ·)) with
+  match ← Lean.Elab.Command.liftTermElabM (elabErr (r.map (prog ++ ·))) with
   | some e => unless e.pos.line == line && col.all (· == e.pos.col) && (e.msg.splitOn what).length > 1 do
       throwError "expected an error at line {line} with '{what}', got {e}"
   | none => throwError "expected an error at line {line} with '{what}', got none"
@@ -588,7 +592,8 @@ def heads : List String := ["f : X ⟶ X", "g(R : α ⟶ β) : β ⟶ α", "_≼
 def headsSrc : String := "obj X = {A,B}\n" ++
   String.join ((heads.zip ["𝟙", "R°", "R S"]).map fun (h, b) => s!"{h} ≜ {b}\n")
 #eval do
-  match (← readIn (preludeScope) headsSrc) >>= fun p => typesOf (some p) with
+  let p ← match ← readIn (preludeScope) headsSrc with | .ok p => pure p | .error e => throwError "{e}"
+  match ← Lean.Elab.Command.liftTermElabM (typesOf (some p)).run with
   | .ok ts => unless ts == heads do throwError "the heads print as {ts}"
   | .error e => throwError "{e}"
 -- a `where` item; a test takes no type of its own
@@ -936,7 +941,8 @@ rel_program corPairs where
 /-- The text `src` read after the prelude `pre`: its error. -/
 def afterErr (pre src : String) : CM Err := do
   let p ← match ← readIn { cs := #[] } pre with | .ok p => pure p | .error e => throwError "{e}"
-  match (← readIn { cs := #[], res := Parse.openAll [(`pre, p)] } src) >>= (Expand.read (fun _ => none) [(`pre, p)] ·) with
+  let q ← match ← readIn { cs := #[], res := Parse.openAll [(`pre, p)] } src with | .ok q => pure q | .error e => return e
+  match ← Lean.Elab.Command.liftTermElabM (Expand.read (fun _ => none) [(`pre, p)] q).run with
   | .error e => pure e
   | .ok _ => throwError "expected an error, got none"
 -- the prelude's line 1 starts after `rel_program t where `, 20 columns
@@ -1056,7 +1062,7 @@ rel_program muGrow where
     g : B ⟶ [B] ≜ μX : r ∪ (⟨X, r⟩ cat)
 #guard !muGrow.ok
 #guard muGrow.failures.map (·.msg) == ["an op ran out of capacity (its twin's ok bit is false); in g, or the μ at " ++
-  "line 1056, col 19 ran its cap of 1024 rounds without reaching a fixed point"]
+  "line 1062, col 19 ran its cap of 1024 rounds without reaching a fixed point"]
 -- `X` under an operator not monotonic in its argument, or in an antitone place; `ν` with no bound
 #eval errAt "obj B = 0…1\nf : B ⟶ B ≜ νX : ⊤(B,B) ∩ (Λ(X)∋)\n" 2
   "νX: X occurs under Λ at 2:30; Λ is not monotonic in its argument, so the fixed point need not exist"

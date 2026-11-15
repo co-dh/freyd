@@ -46,10 +46,12 @@ target «rel-native-1a» pkg : System.FilePath := do
   let dir := pkg.buildDir / "native"
   let inc := (← getLeanIncludeDir).toString
   let relc ← «relc-1a».fetch
+  -- `relc-1a` elaborates the program, which reads the modules `lake env` puts on `LEAN_PATH` (`TestNative.planIO`)
+  let env ← getAugmentedEnv
   let cJob ← relc.mapM fun exe => do
     let c := dir / "rel-native-1a.c"
     IO.FS.createDirAll dir
-    let out ← IO.Process.output { cmd := exe.toString, args := #["c", c.toString] }
+    let out ← IO.Process.output { cmd := exe.toString, args := #["c", c.toString], env }
     unless out.exitCode == 0 do error s!"{exe} c {c}: exit {out.exitCode}: {out.stderr}"
     return c
   let rtO ← buildO (dir / "rt.o") (← inputTextFile (q.dir / "c" / "rt.c")) #["-I", inc] #["-O2", "-fPIC"]

@@ -18,12 +18,21 @@ rel_program native1a where
     x : X ⟶ N ≜ {(1,A),(2,B),(5,C),(5,A)}°
 
 /-- `output x to "out"`. -/
-def plan : Except String Plan := planOf [] native1a "x" "out"
+def plan : Lean.Meta.MetaM (Except String Plan) := planOf [] native1a "x" "out"
+
+/-- `plan` run outside Lean, in the environment of the modules on `LEAN_PATH` (as `lake env` sets it), where the
+    elaborator's unifier finds the objects' constants (`Obj.named`). -/
+def planIO : IO Plan := do
+  Lean.initSearchPath (← Lean.findSysroot)
+  let env ← Lean.importModules #[{ module := `LeetQ.Rel.Lang.TestNative }] {}
+  let (r, _) ← plan.run'.toIO { fileName := "relc-1a", fileMap := default } { env }
+  IO.ofExcept r
 
 -- two columns, each six `lit`s, a path `lit` and one `qlean_own_write`; nothing else is called
-#guard match plan with
-  | .ok p => p.main.length == 16 && p.main.all fun | .call s _ => s == "qlean_own_write" | .fail .. => false | _ => true
-  | .error _ => false
+#eval show Lean.Meta.MetaM Unit from do
+  let p ← match ← plan with | .ok p => pure p | .error e => throwError e
+  unless p.main.length == 16 && p.main.all fun | .call s _ => s == "qlean_own_write" | .fail .. => false | _ => true do
+    throwError "the plan has {p.main.length} instructions, not sixteen `lit`s and `qlean_own_write` calls"
 
 /-! Stage 1b, `Code.groupIds` (`groupIdsF`): one code per kind of lane, so every branch of its `if`s runs. -/
 
@@ -58,11 +67,11 @@ open LeetQ.Rel.Lang.Plan LeetQ.Rel.Lang.TestNative in
 def main (args : List String) : IO UInt32 := do
   try
     match args with
-    | ["c", file] => IO.FS.writeFile file (← IO.ofExcept (plan >>= relc abiOf))
+    | ["c", file] => IO.FS.writeFile file (← IO.ofExcept (relc abiOf (← planIO)))
     | ["lean", dir] =>
       unless native1a.x.ok do throw (IO.userError "x: an op ran out of capacity")
       writeRel (System.FilePath.mk dir / "out").toString native1a.x.rel
-    | ["plan", dir] => IO.Process.setCurrentDir dir; discard <| (← IO.ofExcept plan).exec abiOf
+    | ["plan", dir] => IO.Process.setCurrentDir dir; discard <| (← planIO).exec abiOf
     | ["g", file] => IO.FS.writeFile file (← IO.ofExcept (gplan codes >>= relc abiOf))
     | _ => throw (IO.userError "usage: relc-1a c FILE | lean DIR | plan DIR | g FILE")
     pure 0

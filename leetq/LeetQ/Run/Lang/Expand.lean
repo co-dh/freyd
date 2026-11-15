@@ -20,7 +20,7 @@ def OTy.poly : OTy → Bool
   | .arr a => a.poly
   | .base _ => false
 
-def objInfo (env : Env) (n : String) : ObjDef → Except Err ObjInfo
+def objInfo (env : Env) (n : String) : ObjDef → EM ObjInfo
   | .elems ws => pure { ty := .base n, elems := ws, uni := some ⟨_, col ((List.range ws.length).map Int64.ofNat)⟩ }
   | .range lo hi =>
     pure { ty := .base n, range := some (lo, hi), uni := some ⟨_, col ((List.range (hi + 1 - lo).toNat).map fun k : Nat => Int64.ofInt (lo + k))⟩ }
@@ -173,7 +173,7 @@ def varsOf (qs : List Param) (ty : OExp × OExp) : List String :=
     its parameters' objects and demand bits as the constant takes them, its elaboration and the objects it solved,
     `specs` the constants built so far. -/
 def elabOnce (env : Env) (p : Pos) (n : String) (qs : List Param) (e : Expr) (ty : OExp × OExp) (vs : List String)
-    (fs : List Form) (objs : Objs) (specs : List Once) : Except Err (List (Obj × Obj × Bool) × Arg × St) := do
+    (fs : List Form) (objs : Objs) (specs : List Once) : EM (List (Obj × Obj × Bool) × Arg × St) := do
   let nv := vs.length
   let rigid := vs.map fun v => (v, OTy.base v)
   let env' := { env with objs }
@@ -206,9 +206,9 @@ def elabOnce (env : Env) (p : Pos) (n : String) (qs : List Param) (e : Expr) (ty
     an error. `k` its registry key, `c` its constant, `fs` its parameters' forms; with the constants built so far
     and on the way (`specs`). -/
 def once (env : Env) (p : Pos) (n : String) (qs : List Param) (e : Expr) (ty : OExp × OExp) (vs : List String)
-    (k c : Lean.Name) (fs : List Form) (specs : List Once) : Except Err (Once × List Once) := do
+    (k c : Lean.Name) (fs : List Form) (specs : List Once) : EM (Once × List Once) := do
   -- per variable: generic over its object, and given its universe
-  let run (fl : List (Bool × Bool)) : Except Err (Once × List Once) := do
+  let run (fl : List (Bool × Bool)) : EM (Once × List Once) := do
     let objs := vs.zipIdx.map (fun (v, k) =>
       let (gen, uni) := fl.getD k (false, true)
       let obj := if gen then (varObj k).getD .long else .long
@@ -216,7 +216,7 @@ def once (env : Env) (p : Pos) (n : String) (qs : List Param) (e : Expr) (ty : O
     let (os, r, st) ← elabOnce env p n qs e ty vs fs objs specs
     let (q, _, _) := r.plain
     let gen := fl.map (·.1)
-    match build objs st p q, test objs st p q with
+    let mc ← Lean.getMCtx; match build objs mc p q, test objs mc p q with
     | .ok res, _ => pure ((k, c, gen, os, res, false), st.specs)
     | .error _, .ok ⟨A, B, t⟩ => pure ((k, c, gen, os, ⟨.prod A B, .prod A B, true, t⟩, true), st.specs)
     | .error err, .error _ => throw err
@@ -228,7 +228,7 @@ def once (env : Env) (p : Pos) (n : String) (qs : List Param) (e : Expr) (ty : O
   for i in List.range (min vs.length varAtoms.length) do
     for b in [(true, false), (true, true)] do
       -- a body that built stays built: a pair test runs nowhere (`build`'s `.call`)
-      if let .ok o := run (fl.set i b) then if o.1.2.2.2.2.2 ≤ out.1.2.2.2.2.2 then fl := fl.set i b; out := o; break
+      if let some o := (← tryCatch (some <$> run (fl.set i b)) fun _ => pure none) then if o.1.2.2.2.2.2 ≤ out.1.2.2.2.2.2 then fl := fl.set i b; out := o; break
   pure out
 
 /-- `n(qs) ≜ e : ty`, defined at `dp` in `env`, `c` its constant, `vs` its object variables, `d` its expansion:
@@ -260,22 +260,21 @@ def callDef (env : Env) (dp : Pos) (n : String) (qs : List Param) (e : Expr) (ty
         let (x, a, a') := b.plain
         -- an argument whose objects only the use's context solves, after this call returns, has no form yet: the
         -- use is the expansion, which reads the arguments where `build` has every object solved
-        let st ← get
-        if [zonk st a, zonk st a'].any (!·.mvs.isEmpty) then return r
+        let mc ← Lean.getMCtx
+        if [zonk mc a, zonk mc a'].any (!·.mvs.isEmpty) then return r
         let mut k? : Option Nat := none
         if let some j := j? then
           for (i, k) in ix.toList.zipIdx do
             if k?.isNone then
-              let st ← get
-              try unify p "" j i; k? := some k catch _ => set st
+              if ← defEq j i then k? := some k
           if k?.isNone then k? := some ix.size; ix := ix.push j
         -- the first form the argument (a family: its relation from the index) builds in: closed, run on demand,
         -- tested on pairs; else closed, whose build reports why
-        let st ← get
+        let st ← get; let mc ← Lean.getMCtx
         let f : Option Bool :=
-          if (build st.objs st p (Pre.close p x a why)).toOption.isSome then none
-          else if (build st.objs st p x).toOption.isSome then some false
-          else if (test st.objs st p x).toOption.isSome then some true else none
+          if (build st.objs mc p (Pre.close p x a why)).toOption.isSome then none
+          else if (build st.objs mc p x).toOption.isSome then some false
+          else if (test st.objs mc p x).toOption.isSome then some true else none
         fs := fs ++ [(f, k?)]; xs := xs ++ [(if f.isNone then Pre.close p x a why else x, f == some true)]
       let some us := vs.mapM (m.lookup ·) | throw ⟨p, s!"internal: `{c}` has an object variable no type names"⟩
       let key := formKey c fs
@@ -287,7 +286,7 @@ def callDef (env : Env) (dp : Pos) (n : String) (qs : List Param) (e : Expr) (ty
           let vs := vs ++ (List.range ix.size).map idxVar
           -- a body that does not build alone at these forms (a family it reads whole, which only the use's
           -- context keys, §e) is no constant: the use is the expansion, whose build reports any error in its words
-          match once env dp n qs e ty vs key k fs (← get).specs with
+          match ← (once env dp n qs e ty vs key k fs (← get).specs).run with
           | .ok (o, specs) => modify (fun st => { st with specs := specs ++ [o] }); pure (some (sigOf o))
           | .error _ => pure none
       let some (k, dm, fl, cv, tst) := sig? | return r
@@ -300,27 +299,28 @@ def callDef (env : Env) (dp : Pos) (n : String) (qs : List Param) (e : Expr) (ty
 
 /-- A top-level term, `r` its elaboration `e` with the objects `st`: closed on its source's universe when it needs
     keys, refused where that object has none. -/
-def top (env : Env) (st : St) (p : Pos) (e : Expr) (r : Arg) : Except Err Top := do
+def top (env : Env) (mc : Lean.MetavarContext) (p : Pos) (e : Expr) (r : Arg) : Except Err Top := do
   let (q, s, t) := r.plain
-  let ⟨A, B, d, tm⟩ ← build env.objs st p (.close p q s noLeft)
+  let ⟨A, B, d, tm⟩ ← build env.objs mc p (.close p q s noLeft)
   match d, tm with
-  | false, tm => pure (⟨A, B, tm⟩, zonk st s, zonk st t)
-  | true, _ => throw ⟨p, s!"{e.show}: {zonk st s} has no universe; compose a set of its elements before it (§a)"⟩
+  | false, tm => pure (⟨A, B, tm⟩, zonk mc s, zonk mc t)
+  | true, _ => throw ⟨p, s!"{e.show}: {zonk mc s} has no universe; compose a set of its elements before it (§a)"⟩
 
 /-- `check e = f` at `p` (`⊑` when `eq` is false): the two sides
     elaborated together, one type, an object one side leaves open being the other's (§c); with the constants
     `specs` built so far, returned with the ones its calls build. -/
-def checkOf (env : Env) (p : Pos) (e f : Expr) (eq : Bool) (specs : List Once) : Except Err (Chk × List Once) := do
+def checkOf (env : Env) (p : Pos) (e f : Expr) (eq : Bool) (specs : List Once) : EM (Chk × List Once) := do
   let ((r, r'), st) ← (do
     let r ← elabE env none e; let r' ← elabE env none f
     let (_, s, t) := r.plain; let (_, s', t') := r'.plain
-    let st ← get
+    let mc ← Lean.getMCtx
     try unify p "" s' s; unify p "" t' t
-    catch _ => throw ⟨p, s!"check: the sides have types {zonk st s} ⟶ {zonk st t} and {zonk st s'} ⟶ {zonk st t'}"⟩
+    catch _ => throw ⟨p, s!"check: the sides have types {zonk mc s} ⟶ {zonk mc t} and {zonk mc s'} ⟶ {zonk mc t'}"⟩
     settleNil env.one p r.plain.1; settleNil env.one p r'.plain.1
     pure (r, r') : M (Arg × Arg)).run { specs, objs := env.objs }
-  let (⟨A, B, R⟩, s, t) ← top env st p e r
-  let (⟨A', B', S⟩, s', t') ← top env st p f r'
+  let mc ← Lean.getMCtx
+  let (⟨A, B, R⟩, s, t) ← top env mc p e r
+  let (⟨A', B', S⟩, s', t') ← top env mc p f r'
   if h : A' = A ∧ B' = B then pure ((p, e.show, f.show, eq, s, t, ⟨A, B, R, h.1 ▸ h.2 ▸ S⟩), st.specs)
   else throw ⟨p, s!"check: the sides have types {s} ⟶ {t} and {s'} ⟶ {t'}"⟩
 
@@ -332,7 +332,7 @@ def checkOf (env : Env) (p : Pos) (e f : Expr) (eq : Bool) (specs : List Once) :
     program that emits those built here; returned with the ones built here. -/
 def walk (prog : Program) (env : Env) (wrap : String → Def → Def) (own : Lean.Name) (calls : Lean.Name → Option Sig)
     (emitting : Bool) (emitter : Lean.Name) (specs : List Once) (imported : Bool := false) :
-    Except Err (Env × List (String × Res) × List (String × Top) × List Chk × List Once) := do
+    EM (Env × List (String × Res) × List (String × Top) × List Chk × List Once) := do
   let mut env := env
   let mut specs := specs
   let mut pend : List (Env × Pos × String × List Param × Expr × (OExp × OExp) × List String × Def) := []
@@ -363,12 +363,12 @@ def walk (prog : Program) (env : Env) (wrap : String → Def → Def) (own : Lea
           settleNil env.one p r.plain.1
           pure r).run { specs, objs := env.objs }
         specs := st.specs
-        let (q, s, t) := r.plain
-        let s := zonk st s; let t := zonk st t
+        let mc ← Lean.getMCtx; let (q, s, t) := r.plain
+        let s := zonk mc s; let t := zonk mc t
         let each := wrap n (mkDef env n p [] (.rel e) ty)
         if !rigid.isEmpty || s.poly || t.poly then env := { env with defs := (n, each) :: env.defs }; continue
         let q := if (uniOf env.objs s).isSome then Pre.close p q s noLeft else q
-        let res@⟨_, _, dm, _⟩ ← match build env.objs st p q, test env.objs st p q with
+        let res@⟨_, _, dm, _⟩ ← match build env.objs mc p q, test env.objs mc p q with
           | .ok r, _ => pure r
           | .error _, .ok _ => env := { env with defs := (n, each) :: env.defs }; continue
           | .error e, .error _ => throw e
@@ -391,7 +391,7 @@ def walk (prog : Program) (env : Env) (wrap : String → Def → Def) (own : Lea
     | .print p e =>
       let (r, st) ← (do let r ← elabE env none e; settleNil env.one p r.plain.1; pure r).run { specs, objs := env.objs }
       specs := st.specs
-      pr := pr ++ [(e.show, ← top env st p e r)]
+      pr := pr ++ [(e.show, ← top env (← Lean.getMCtx) p e r)]
     | .check p e f eq => let (c, sp) ← checkOf env p e f eq specs; specs := sp; cs := cs ++ [c]
     | .«theorem» p n ps e f eq on steps =>
       -- every term of the chain at the statement's type, the parameters at their declared ones (§3)
@@ -400,10 +400,10 @@ def walk (prog : Program) (env : Env) (wrap : String → Def → Def) (own : Lea
         let (_, s, t) := (← elabE env' none e).plain
         for (q, x, what) in (p, f, "its right side") :: steps.map fun (q, _, x, _) => (q, x, "this step") do
           let (_, s', t') := (← elabE env' none x).plain
-          let st ← get
+          let mc ← Lean.getMCtx
           try unify q "" s' s; unify q "" t' t
-          catch _ => throw ⟨q, s!"theorem `{n}`: {what} {x.show} is {zonk st s'} ⟶ {zonk st t'}, " ++
-            s!"the statement's {e.show} is {zonk st s} ⟶ {zonk st t}"⟩
+          catch _ => throw ⟨q, s!"theorem `{n}`: {what} {x.show} is {zonk mc s'} ⟶ {zonk mc t'}, " ++
+            s!"the statement's {e.show} is {zonk mc s} ⟶ {zonk mc t}"⟩
         : M Unit).run { specs, objs := env.objs }
       specs := st.specs
       -- `on A`: each link of the chain (the statement itself when there is none) evaluated as a `check`
@@ -426,14 +426,14 @@ def walk (prog : Program) (env : Env) (wrap : String → Def → Def) (own : Lea
     text read outside any Lean scope: each program sees those before it unqualified (`Parse.openAll`). -/
 def read (calls : Lean.Name → Option Sig) (homes : List (Lean.Name × Program)) (prog : Program)
     (own : Lean.Name := .anonymous)
-    (res : Lean.Name → String → Found := fun h => Parse.openAll (homes.takeWhile (·.1 != h))) : Except Err Read := do
+    (res : Lean.Name → String → Found := fun h => Parse.openAll (homes.takeWhile (·.1 != h))) : EM Read := do
   let mut ext : List (Lean.Name × Def) := []
   let mut xo : List (Lean.Name × ObjInfo) := []
   -- the constants a call builds at a form no registered constant takes (`callDef`), which `own` emits
   let mut specs : List Once := []
   for (h, hp) in homes do
     let env : Env := { res := res h, ext, extObjs := xo, objs := xo.map fun (c, i) => (c.toString, i) }
-    let (e, _, _, _, sp) ← (walk hp env (fun k => useDef (Parse.constOf h k) true) h calls false own specs true).mapError
+    let (e, _, _, _, sp) ← (walk hp env (fun k => useDef (Parse.constOf h k) true) h calls false own specs true).adapt
       (Err.inProg h.toString)
     specs := sp
     for d in hp do
@@ -453,6 +453,7 @@ open Lean Meta
 deriving instance ToExpr for QLean.QAtomicType
 deriving instance ToExpr for LeetQ.Rel.Obj
 deriving instance ToExpr for Lang.Pos
+deriving instance ToExpr for MVarId
 deriving instance ToExpr for OTy
 
 /-- The `μ`s in `t`, each as the failure it reports when its rounds reach the cap. -/
