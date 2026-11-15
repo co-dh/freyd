@@ -590,6 +590,14 @@ theorem rep_thinLOn {B : Obj} {n : USize} (q : CRel (.prod B B) (.prod B B) → 
 #print axioms rep_subseq
 #print axioms rep_thinLOn
 
+/-- `R − S`, ok where both inputs are and `diffC` ran within capacity. -/
+def diff {A B : Obj} (R S : CRel A B) : CRel A B := guard (R.ok && S.ok) fun _ => let r := diffC R.rel S.rel; ⟨r.1, r.2⟩
+
+/-- **`CRel.diff` read back under its bit**: `rep_diffC`. -/
+theorem rep_diff {A B : Obj} (R S : CRel A B) (hb : (diff R S).ok = true) (a : A.El) (b : B.El) :
+    rep (diff R S).rel a b ↔ rep R.rel a b ∧ ¬ rep S.rel a b := by
+  have e : diff R S = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_diffC R.rel S.rel hb a b
+
 end CRel
 
 end LeetQ.Rel

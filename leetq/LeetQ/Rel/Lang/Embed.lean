@@ -1,4 +1,5 @@
 import LeetQ.Rel.Lang.Parse
+import LeetQ.Rel.Lang.Expand
 import Lean
 
 /-! The Rel language as a closed Lean syntax category: `rel_program n where` and the program's lines, unchanged,
@@ -387,15 +388,21 @@ unsafe def programOfUnsafe (n : Name) : CommandElabM Program := do
 /-- `rel_program n where …` is read in the empty scope, `rel_program n after pre where …` in the scope after the
     prelude `pre` (`Parse.scope`). -/
 @[command_elab relProgram] def elabRelProgram : CommandElab := fun stx => do
-  let s₀ ← if stx[2].getNumArgs == 0 then pure { cs := #[] } else
-    pure (Parse.scope (← programOf (← liftCoreM (realizeGlobalConstNoOverloadWithInfo stx[2][1]))))
+  let pre? ← if stx[2].getNumArgs == 0 then pure none else
+    pure (some (← programOf (← liftCoreM (realizeGlobalConstNoOverloadWithInfo stx[2][1]))))
+  let s₀ := match pre? with | none => { cs := #[] } | some p => Parse.scope p
   match program (← getFileMap) s₀ stx[4].getArgs with
   | .error e => throwErrorAt stx "{e}"
-  | .ok prog => liftTermElabM do
+  | .ok prog => do
     let n := (← getCurrNamespace) ++ stx[1].getId
-    addAndCompile <| .defnDecl
-      { name := n, levelParams := [], type := mkConst ``Program, value := toExpr (α := List Decl) prog,
-        hints := .abbrev, safety := .safe }
-    Term.addTermInfo' stx[1] (mkConst n) (isBinder := true)
+    liftTermElabM do
+      addAndCompile <| .defnDecl
+        { name := n, levelParams := [], type := mkConst ``Program, value := toExpr (α := List Decl) prog,
+          hints := .abbrev, safety := .safe }
+      Term.addTermInfo' stx[1] (mkConst n) (isBinder := true)
+    -- the expansion: each closed definition as the Lean definition `n.rel.x` (`Expand.emit`)
+    match Expand.defsOf pre? prog with
+    | .error e => throwErrorAt stx "{e}"
+    | .ok ds => liftTermElabM (Expand.emit n ds)
 
 end LeetQ.Rel.Lang.Embed
