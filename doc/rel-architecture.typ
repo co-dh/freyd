@@ -22,8 +22,9 @@
 
   down, [], [],
 
-  layer[`Lang/`: Parse → Elab → Eval][`Parse`: text → `Program` AST. `Elab`: names resolved, every term typed
-    `A ⟶ B`, definitions expanded → core term `Tm`. `Eval.ev`: runs `Tm` by `Alg`'s ops, each shared sub-term once.
+  layer[`Lang/`: Parse → Elab → Expand][`Parse`: text → `Program` AST. `Elab`: names resolved, every term typed
+    `A ⟶ B`, definitions expanded → core term `Tm`. `Expand` (via `Gen`): at Lean compile time each definition
+    becomes a Lean constant `n.rel.x : CRel A B` that calls `Alg`'s ops directly; there is no interpreter.
     `Bits`: small objects as bit matrices, one kernel per inner node.],
   side,
   proof[`Lang/Calc`, `Lang/BitsSpec*`][`rel(t)` reads a Rel term as a term of the AOP allegory, so a Lean `calc` can
@@ -62,6 +63,7 @@
 #block(inset: 7pt, radius: 4pt, stroke: 0.8pt + rgb("#bb4444"), width: 100%)[
   *Trust boundary.* Every proof is about the Lean body of an `@[extern]` kernel. That the C function computes the
   same as that body is tested (`QLean/Kernel/*Test.lean`), not proved. Above the C line each op is proved:
-  when its ok-bit is true, its answer is the relation the allegory defines. `Lang/Eval.ev` does not yet carry the
-  bit, so a program run does not report it.
+  when its ok-bit is true, its answer is the relation the allegory defines. Each expanded constant `n.rel.x` is a
+  `CRel` whose bit is the AND of its ops' bits, and `n.ok` fails a program when one is false; that `n.rel.x` is the
+  program's relation is not yet a theorem.
 ]
