@@ -233,4 +233,104 @@ theorem block_spec (ps : Array (Part A)) (hp : 0 < ps.size) (hok : (A.codesC (p 
 
 #print axioms block_spec
 
+/-! ### The loop of `codeAll` -/
+
+/-- A column as a part of `A`: its own where it is of `A`, else empty. -/
+def castPart (A : Obj) : Col → Part A
+  | ⟨B, p⟩ => if h : B = A then h ▸ p else ⟨0, Vals.empty A⟩
+
+theorem castPart_eq (A : Obj) (x : Col) :
+    (if h : x.1 = A then h ▸ x.2 else ⟨0, Vals.empty A⟩) = castPart A x := by
+  obtain ⟨B, p⟩ := x; rfl
+
+theorem getD_eq' {α : Type} (xs : Array α) (i : Nat) (v : α) :
+    (if h : i < xs.size then xs.getInternal i h else v) = xs.getD i v := rfl
+
+/-- An object's parts in `cs`, as `codeAll` gathers them while at the column `c`. -/
+def partsOf (cs : Array Col) (A : Obj) (c : Col) : Array (Part A) :=
+  ((Array.range cs.size).filter fun j => (cs.getD j c).1 == A).map fun j => castPart A (cs.getD j c)
+
+theorem getD_lt {α : Type} (xs : Array α) {j : Nat} (hj : j < xs.size) (d : α) : xs.getD j d = xs[j] := by
+  simp [Array.getD, hj]
+
+/-- The gathered parts do not depend on the column the loop is at. -/
+theorem partsOf_congr (cs : Array Col) (A : Obj) (c d : Col) : partsOf cs A c = partsOf cs A d := by
+  have e : ∀ j ∈ (Array.range cs.size).toList, cs.getD j c = cs.getD j d := fun j hj => by
+    have : j < cs.size := by simpa using hj
+    rw [getD_lt cs this, getD_lt cs this]
+  apply Array.toList_inj.1
+  simp only [partsOf, Array.toList_map, Array.toList_filter]
+  rw [List.filter_congr fun j hj => by rw [e j hj]]
+  exact List.map_congr_left fun j hj => by rw [e j (List.mem_filter.1 hj).1]
+
+/-- The decoding map of the object `A`: `blockU` of all its parts in `cs`. -/
+def uOf (cs : Array Col) (A : Obj) : Nat → A.El := blockU (partsOf cs A ⟨A, ⟨0, Vals.empty A⟩⟩)
+
+/-- The longs `b` written for the part `p` of `A` read back against `A`'s picked elements `q`: one code per row,
+    each below `q`'s count, code `a` exactly at the rows that are `uOf cs A a`. -/
+def ColOK (cs : Array Col) {A : Obj} (p : Part A) (b : ByteArray) (q : Part A) : Prop :=
+  (ids b).length = p.1.toNat ∧ ∀ r (hr : r < p.1.toNat) (h : r < (ids b).length), (ids b)[r] < q.1.toNat ∧
+    ∀ a < q.1.toNat, ((ids b)[r] = a ↔ p.2.row ⟨r, hr⟩ = uOf cs A a)
+
+/-- A `for` over a list in `Option` whose body only yields carries an invariant indexed by the prefix done. -/
+theorem forIn_inv {α σ : Type} (L : List α) (f : α → σ → Option (ForInStep σ)) (P : List α → σ → Prop)
+    (hf : ∀ pre a s r, a ∈ L → P pre s → f a s = some r → ∃ s', r = .yield s' ∧ P (pre ++ [a]) s') :
+    ∀ (l : List α), (∀ a ∈ l, a ∈ L) → ∀ pre s t, P pre s → forIn l s f = some t → P (pre ++ l) t
+  | [], _, pre, s, t, hs, h => by simp only [List.forIn_nil] at h; cases h; simpa using hs
+  | a :: l, hl, pre, s, t, hs, h => by
+    rw [List.forIn_cons] at h
+    cases hr : f a s with
+    | none => rw [hr] at h; cases h
+    | some r =>
+      obtain ⟨s', rfl, hs'⟩ := hf pre a s r (hl a (by simp)) hs hr
+      rw [hr] at h
+      have := forIn_inv L f P hf l (fun b hb => hl b (by simp [hb])) (pre ++ [a]) s' t hs' h
+      simpa using this
+
+/-- What the loop of `codeAll` keeps over the columns `pre` done: one long column per column of `cs`, each object
+    met so far picked once in `sps`, and every column of a picked object read back against its pick. -/
+def Inv (cs : Array Col) (pre : List Col) (s : MProd (Array ByteArray) (Array Col)) : Prop :=
+  s.1.size = cs.size ∧ (∀ c ∈ pre, s.2.any (·.1 == c.1) = true) ∧
+  ∀ j (hj : j < cs.size) (A : Obj) (p : Part A), cs[j] = ⟨A, p⟩ → s.2.any (·.1 == A) = true →
+    ∃ q, s.2.find? (·.1 == A) = some ⟨A, q⟩ ∧ ColOK cs p (s.1.getD j .empty) q
+
+/-- The indices of `A`'s columns in `cs`, as `codeAll` gathers them while at the column `c`. -/
+def jsOf (cs : Array Col) (A : Obj) (c : Col) : Array Nat := (Array.range cs.size).filter fun j => (cs.getD j c).1 == A
+
+/-- One step of `codeAll`'s loop, at the column `c`: `codeAll`'s body with its gathered columns named. -/
+def codeStep (cs : Array Col) (c : Col) (r : MProd (Array ByteArray) (Array Col)) :
+    Option (ForInStep (MProd (Array ByteArray) (Array Col))) := do
+  let out := r.1
+  let sps := r.2
+  let A := c.1
+  if sps.any (·.1 == A) then return .yield ⟨out, sps⟩
+  let js := jsOf cs A c
+  let parts := partsOf cs A c
+  let (codes, ok) := A.codesC (p := parts.size) ⟨parts, rfl⟩
+  guard ok
+  let cc := Code.cat codes.toArray
+  let (gid, firsts) := cc.groupIds
+  let ids := gatherPacked cc.n (Column.idWidthOf (len firsts)).toUSize 64 0 gid (tilLongs cc.n)
+  let some (all, ok) := (if h : (parts.toList.map fun c : Part A => c.1.toNat).sum < USize.size then
+    some (A.razeC parts h) else none) | none
+  guard ok
+  let sps := sps.push ⟨A, Vals.pickPart A all firsts⟩
+  let mut out := out
+  let mut o := 0
+  for k in [0:js.size] do
+    let n := (parts.getD k ⟨0, Vals.empty A⟩).1.toNat
+    out := out.set! (js.getD k 0) (ids.extract (8 * o) (8 * (o + n)))
+    o := o + n
+  return .yield ⟨out, sps⟩
+
+theorem codeAll_eq (cs : Array Col) :
+    codeAll cs = (do let r ← forIn cs ⟨Array.replicate cs.size .empty, #[]⟩ (codeStep cs); pure (r.1, r.2)) := rfl
+
+theorem find?_none_of_any {α : Type} {p : α → Bool} {xs : Array α} (h : ¬ xs.any p = true) : xs.find? p = none := by
+  rw [Array.find?_eq_none]; intro x hx hp
+  obtain ⟨i, hi, rfl⟩ := Array.mem_iff_getElem.1 hx
+  exact h (Array.any_eq_true.2 ⟨i, hi, hp⟩)
+
+#print axioms codeAll_eq
+
 end LeetQ.Rel.Lang.Bits
