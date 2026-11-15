@@ -189,7 +189,7 @@ def TP.bits (ids : Array ByteArray) (sz : Obj → Nat) : {A B : Obj} → TP A B 
   | _, _, .diff R S => return (← R.bits ids sz).diff (← S.bits ids sz)
   | A, _, .ldiv R S _ _ => do
     let (y, a) ← R.pairs ids sz true; let s ← S.bits ids sz; let ub ← take ids; let uc ← take ids
-    pure (Bits.ldiv (sz A) y a s ub.1 uc.1)
+    pure (Bits.ldiv (sz A) y a s ub.2 uc.2)
 
 /-- The plan's pairs of codes, the key ascending, of the converse under `flip`: a table's from its codes, sorted,
     with no matrix (so a large table on the left of `≫` or `\` builds none); any other node's from its matrix. -/
@@ -199,15 +199,22 @@ def TP.pairs (ids : Array ByteArray) (sz : Obj → Nat) (flip : Bool) : {A B : O
   | _, _, p => do let x ← p.bits ids sz; pure (if flip then x.conv.pairs else x.pairs)
 end
 
+/-- The capacities the bit run is proved under, read off counts alone: every column's rows below `2^63` (a table
+    sorted or scattered by its codes), every object's codes at most `2²⁷`, and the root's picks at its at most
+    `|A| · |B|` pairs in range (`Vals.fitsN`). -/
+def capsOK {A B : Obj} (cs sps : Array Col) (pa : Part A) (pb : Part B) : Bool :=
+  cs.all (·.2.1.toNat < 2 ^ 63) && sps.all (·.2.1.toNat ≤ 2 ^ 27) &&
+    Vals.fitsN A pa.2 (pa.1.toNat * pb.1.toNat) && Vals.fitsN B pb.2 (pa.1.toNat * pb.1.toNat)
+
 /-- The plan run as bit matrices and turned into a table at the root; `none` where a coding did not run within
-    capacity or a node's matrix is over `2²⁷` bits. -/
+    capacity, a node's matrix is over `2²⁷` bits, or the counts fail `capsOK`. -/
 def run? {A B : Obj} (p : TP A B) : Option (Rel A B) := do
   let (ids, sps) ← codeAll (p.cols #[])
   let sp (X : Obj) : Part X := match sps.find? (·.1 == X) with
     | some ⟨Y, q⟩ => if h : Y = X then h ▸ q else ⟨0, Vals.empty X⟩
     | none => ⟨0, Vals.empty X⟩
   let sz (X : Obj) : Nat := (sp X).1.toNat
-  guard (p.fits sz)
+  guard (p.fits sz && capsOK (p.cols #[]) sps (sp A) (sp B))
   pure ((Id.run ((p.bits ids sz).run' 0)).table (sp A) (sp B))
 
 /-- The plan's relation: `run?`, or its tables where it does not run as bits. -/
