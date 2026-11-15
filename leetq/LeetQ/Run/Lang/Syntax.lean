@@ -65,6 +65,9 @@ inductive Op
   | dom | ran | lam | E | P | est | thin | map
   | inits | cat | zip | snoc | setify | bagify | tic
   | thinL | merge | loop
+  /-- `refold(c, S)`: an unfold by `c : A ⟶ G(A)` then a fold by `S : G(B) ⟶ B`, `μX : c G(X) S`; `fold` is a
+      name programs define (Party), so the builtin is `refold`. -/
+  | refold
   /-- `at(i)`, the element at position `i` from `0`; `i` a number literal, read by `Embed.atomOf`. -/
   | index (i : Nat)
   deriving Repr, BEq, Inhabited
@@ -85,6 +88,7 @@ def Op.table : List (String × Op × Nat) :=
    ("zip", .zip, 0), ("snoc", .snoc, 0),
    ("setify", .setify, 0), ("bagify", .bagify, 0), ("tic", .tic, 0),
    ("thinL", .thinL, 1), ("merge", .merge, 1), ("loop", .loop, 1),
+   ("refold", .refold, 2),
    ("at", .index 0, 0)]
 
 -- `at(i)` prints with its position, which no table row holds

@@ -113,6 +113,10 @@ inductive Tm : Obj → Obj → Bool → Type where
   /-- `μX : φ`: rounds of `body` from `𝟘` up to the least fixed point, at most `cap`; `what` names the `μ` in the
       failure a run that reaches `cap` first reports. -/
   | mu {A B : Obj} (k : Nat) (what : String) (cap : Nat) (body : Tm A B false) : Tm A B false
+  /-- `refold(c, S)` = `μX : c G(X) S`, `X` the variable `k`, on the keys in demand: bottom-up over the nodes `ch`
+      (`c` then `G`'s membership) reaches from them, each node's value `body` run once its children have theirs;
+      `what` names the fold in the failure a cycle of `ch` reports. -/
+  | refold {A B : Obj} {d e : Bool} (k : Nat) (what : String) (ch : Tm A A d) (body : Tm A B e) : Tm A B true
 
 /-- A built term with its objects. -/
 abbrev Res := (A : Obj) × (B : Obj) × (d : Bool) × Tm A B d
@@ -252,6 +256,9 @@ inductive Pre
   /-- The constant `c` at `pos`, at the objects `us` of its object variables and the arguments `args`; `alt` the
       definition's body expanded at the use, which every analysis reads and `build` does not. -/
   | call (pos : Pos) (c : Lean.Name) (us : List OTy) (args : List Pre) (alt : Pre) (a b : OTy)
+  /-- `refold(c, S)` at `pos`: `body` the `μX : c G(X) S` it is, `X` the variable `k`; `ch : a ⟶ a` the children
+      `c` gives a node, `c` then `G`'s membership. -/
+  | refold (pos : Pos) (k : Nat) (ch body : Pre) (a b : OTy)
 
 instance : Inhabited Pre := ⟨.id (.base "")⟩
 
@@ -293,6 +300,7 @@ def Pre.at (p : Pos) : Pre → Pre
   | .var _ k a b => .var p k a b
   | .fix _ l k S x a b => .fix p l k (S.attach.map fun ⟨y, _⟩ => y.at p) (x.at p) a b
   | .call _ c us xs alt a b => .call p c us (xs.attach.map fun ⟨y, _⟩ => y.at p) (alt.at p) a b
+  | .refold _ k ch x a b => .refold p k (ch.at p) (x.at p) a b
   -- no position and no part
   | x@(.tm _) | x@(.zero ..) | x@(.id _) | x@(.mem _) | x@(.outl ..) | x@(.outr ..) | x@(.inl ..) | x@(.inr ..)
   | x@(.tau _) | x@(.nil ..) | x@(.cons _) | x@(.uncons _) | x@(.length ..) | x@(.total _)
@@ -366,6 +374,7 @@ def Pre.nilSrcs : Pre → List OTy
   | .junc x y | .fold x y | .foldI x y => x.nilSrcs ++ y.nilSrcs
   | .conv x | .dom x | .ran x | .lam x | .E x | .map x | .filter x | .takewhile x | .est x | .thin x | .own x | .thinL x | .merge x
   | .loop x | .flat x | .close _ x _ _ | .fix _ _ _ _ x _ _ | .call _ _ _ _ x _ _ => x.nilSrcs
+  | .refold _ _ ch x _ _ => ch.nilSrcs ++ x.nilSrcs
   | .var .. | .tm _| .zero .. | .id _ | .mem _ | .outl .. | .outr .. | .inl .. | .inr .. | .tau _ | .cons _
   | .uncons _ | .length .. | .total _ | .inits _ | .tails _ | .«prefix» _ | .suffix _ | .concat _ | .cat _ | .uncat _ | .zip .. | .snoc _ | .unsnoc _ | .setify _
   | .bagify _ | .tic _ | .atPos .. | .succ .. | .arith .. | .leq .. | .lt .. | .lit .. => []
@@ -396,6 +405,7 @@ def Pre.parts : Pre → List (Pre × Pol)
     [(x, .mono), (y, .mono)]
   | .conv x | .dom x | .ran x | .map x | .filter x | .takewhile x | .est x | .own x | .loop x | .flat x | .close _ x _ _
   | .fix _ _ _ _ x _ _ | .call _ _ _ _ x _ _ => [(x, .mono)]
+  | .refold _ _ ch x _ _ => [(ch, .mono), (x, .mono)]
   | .lam x => [(x, .not "Λ")]
   | .E x => [(x, .not "E")]
   | .thin x => [(x, .not "thin")]
@@ -794,6 +804,36 @@ def settle (m : Option OTy) (p : Pos) (as : List Arg) : Arg → M Arg
     | _, _ => pure (.rel q i (.prod a b))
   | r => pure r
 
+/-- `refold(c, S)`'s functor `G`, read off `c : a ⟶ t` (`t = G(a)`) and `S : s ⟶ b` (`s = G(b)`) along `×`, `+`,
+    `[ ]`: a place where `t` is `a` and `s` is `b` (or not known yet) is `G`'s argument, one where they are one object
+    a constant. Its two terms: `G(X)`, `X` the name `x` (`F` on `[ ]`, `⟨π₁·,π₂·⟩` on `×`, `[· inl,· inr]` on `+`,
+    `𝟙` where `G` is constant), and `G`'s membership `G(a) ⟶ a`, none where `G` is constant. -/
+partial def refoldG (p : Pos) (x : String) (a b : OTy) (t s : OTy) : M (Expr × Option Expr) := do
+  let op (o : Op) (as : List Expr := []) : Expr := .op p o [] as
+  let any := match s with | .mv _ => true | _ => false
+  if t == a && (s == b || any) then return (.name p x, some (op .id))
+  let side (o : Op) (m : Option Expr) : Option Expr := m.map (.comp (op o))
+  match t, s with
+  | .prod t₁ t₂, .prod s₁ s₂ | .prod t₁ t₂, s₁@(.mv _) =>
+    let s₂ := match s with | .prod _ s₂ => s₂ | _ => s₁
+    let (g₁, m₁) ← refoldG p x a b t₁ s₁; let (g₂, m₂) ← refoldG p x a b t₂ s₂
+    if m₁.isNone && m₂.isNone then return (op .id, none)
+    let mem := match side .outl m₁, side .outr m₂ with | some l, some r => some (.bin p .join l r) | l, r => l <|> r
+    return (.pair p (.comp (op .outl) g₁) (.comp (op .outr) g₂), mem)
+  | .sum t₁ t₂, .sum s₁ s₂ | .sum t₁ t₂, s₁@(.mv _) =>
+    let s₂ := match s with | .sum _ s₂ => s₂ | _ => s₁
+    let (g₁, m₁) ← refoldG p x a b t₁ s₁; let (g₂, m₂) ← refoldG p x a b t₂ s₂
+    if m₁.isNone && m₂.isNone then return (op .id, none)
+    return (.junc p (.comp g₁ (op .inl)) (.comp g₂ (op .inr)), some (.junc p (m₁.getD (op .zero)) (m₂.getD (op .zero))))
+  | .arr t₁, .arr s₁ | .arr t₁, s₁@(.mv _) =>
+    let (g₁, m₁) ← refoldG p x a b t₁ s₁
+    if m₁.isNone then return (op .id, none)
+    return (op .map [g₁], side .mem m₁)
+  | _, _ =>
+    if t == s || any then return (op .id, none)
+    throw ⟨p, s!"refold(c, S): c's target and S's source differ at {t} against {s}, which is neither {a} against {b} \
+      (the recursion) nor one object (a constant); G is read off them"⟩
+
 mutual
 
 /-- Elaborate `e` in the mode `m`: plain, or the body of a definition lifted to the index `I`. -/
@@ -808,6 +848,22 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
         if d.arity == 0 then (do settle m p [] (← d.apply p []))
         else throw ⟨p, s!"'{n}' takes {d.arity} arguments, found none"⟩
       | none => throw ⟨p, s!"unknown name '{n}'"⟩
+  -- `μX : c G(X) S` elaborated as written, `G` read off the types of `c` and `S`, and the children `c ∈_G`
+  | .op p .refold _ [c, s] => do
+    if m.isSome then notLiftable p "refold( )"
+    let (_, a, t) := (← elabE env none c).plain; let (_, s', b) := (← elabE env none s).plain
+    let st ← get
+    let ns := c.names ++ s.names
+    let x := Nat.repeat (fun y => if ns.contains y then y ++ "'" else y) (ns.length + 1) "X"
+    let (gx, mem) ← refoldG p x (zonk st a) (zonk st b) (zonk st t) (zonk st s')
+    match ← elabE env none (.fix p true x (.comp (.comp c gx) s)) with
+    | .rel (.fix _ _ k _ q a b) _ _ =>
+      let (ch, a₁, a₂) ← match mem with
+        | some e => do pure (← elabE env none (.comp c e)).plain
+        | none => pure (.zero a a, a, a)
+      unify p "the source of refold's children" a₁ a; unify p "the target of refold's children" a₂ a
+      pure (.rel (.refold p k ch q a b) a b)
+    | _ => throw ⟨p, "refold( ): internal: its μ did not elaborate to a fixed point"⟩
   | .op p o objs args => do
     let as ← elabArgs env m args
     if args.isEmpty then constant env p o objs
@@ -1215,6 +1271,7 @@ def convTm {A B : Obj} {d : Bool} (t : Tm A B d) : Except String ((e : Bool) × 
   | .«prefix» => throw "prefix"
   | .suffix => throw "suffix"
   | .concat => throw "concat"
+  | .refold .. => throw "refold( )"
   | .zip => throw "zip"
   | .setify => throw "setify"
   | .bagify => throw "bagify"
@@ -1508,6 +1565,12 @@ def build : Pre → Except Err Res
       | ⟨_, _, false, t⟩ => pure (.arg f t)
       | _ => throw ⟨pos, s!"`{c}`: an argument needs keys; its constant takes only closed relations (decision M)"⟩
     pure ⟨A, B, false, f⟩
+  -- the children and the body run on the nodes in demand, no universe read
+  | .refold p k ch q a b => do
+    let A ← toObj st dp a; let B ← toObj st dp b
+    let ⟨_, c⟩ ← at? dp (A := A) (B := A) (← build ch)
+    let ⟨_, t⟩ ← at? dp (A := A) (B := B) (← build q)
+    pure ⟨A, B, true, .refold k s!"the refold at {p}" c t⟩
   -- the body read whole each round, on its source's universe when it needs keys
   | .fix p least k S q a b => do
     let A ← toObj st dp a; let B ← toObj st dp b
