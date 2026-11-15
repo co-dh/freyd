@@ -293,6 +293,70 @@ theorem Builds.global {fg fgB fg' : Array Fun × Array Fun} {b : Bld (Array Nat)
       List.singleton_append, runB.eq_2, hi]
     exact (hbk fs gs hE ws).trans (by simp [← Array.append_assoc])
 
+/-- A block of two parts runs as the first, then the second on what it left. -/
+theorem runB_append (l1 l2 : List Instr) (rs : Array Val) (ws : Writes) :
+    runB abi fs gs (l1 ++ l2) rs ws = (runB abi fs gs l1 rs ws >>= fun p => runB abi fs gs l2 p.1 p.2) := by
+  induction l1 generalizing rs ws with
+  | nil => rfl
+  | cons i l ih =>
+    rw [List.cons_append, runB.eq_2, runB.eq_2]
+    cases runI abi fs gs i rs ws with
+    | error e => rfl
+    | ok p => exact ih p.1 p.2
+
+/-- `b`, then `k` on its registers: `k` built after whatever `b` defined, holding `b`'s answer at `b`'s
+    registers. -/
+theorem Builds.bind {fg fg1 fg' : Array Fun × Array Fun} {b : Bld (Array Nat)} {k : Array Nat → Bld (Array Nat)}
+    {rs o out : Array Val} (hb : Builds abi fg fg1 b rs o)
+    (hk : ∀ r xs, (∀ who, r.mapM (reg (rs ++ xs) who) = .ok o) → Builds abi fg1 fg' (k r) (rs ++ xs) out) :
+    Builds abi fg fg' (b >>= k) rs out := by
+  obtain ⟨⟨a1, ha1⟩, ⟨b1, hb1⟩, hb⟩ := hb
+  obtain ⟨_, xs0, r0, -, -, hm0⟩ := hb #[]
+  obtain ⟨⟨a2, ha2⟩, ⟨b2, hb2⟩, -⟩ := hk r0 xs0 hm0
+  refine ⟨⟨a1 ++ a2, by rw [ha2, ha1, Array.append_assoc]⟩, ⟨b1 ++ b2, by rw [hb2, hb1, Array.append_assoc]⟩,
+    fun is => ?_⟩
+  obtain ⟨js, xs, r, hr, hs, hm⟩ := hb is
+  obtain ⟨-, -, hk'⟩ := hk r xs hm
+  obtain ⟨js2, xs2, r2, hr2, hs2, hm2⟩ := hk' (is ++ js)
+  refine ⟨js ++ js2, xs ++ xs2, r2, ?_, fun fs gs hE ws => ?_, fun who => by simpa [Array.append_assoc] using hm2 who⟩
+  · simp only [StateT.run_bind, hr, ok_bind]; simpa [Array.append_assoc] using hr2
+  · rw [Array.toList_append, runB_append, hs fs gs (Env.mono ⟨a2, ha2⟩ ⟨b2, hb2⟩ hE) ws, ok_bind]
+    simpa [Array.append_assoc] using hs2 fs gs hE ws
+
+/-- `if c then t else e` with the bit in `c` set: only `t` runs, so `e` need only build, as many registers wide. -/
+theorem Builds.ite_then {fg fg1 fg2 : Array Fun × Array Fun} {c : Nat} {t e : Bld (Array Nat)} {rs ot : Array Val}
+    (hc : rs[c]? = some (.bit true)) (ht : Builds abi fg fg1 t rs ot)
+    (he : (∃ a, fg2.1 = fg1.1 ++ a) ∧ (∃ a, fg2.2 = fg1.2 ++ a) ∧
+      ∃ re je n', e.run (#[], rs.size, fg1) = .ok (re, je, n', fg2) ∧ ot.size = re.size) :
+    Builds abi fg fg2 (Plan.ite c t e) rs ot := by
+  obtain ⟨⟨a1, ha1⟩, ⟨b1, hb1⟩, ht⟩ := ht
+  obtain ⟨⟨a2, ha2⟩, ⟨b2, hb2⟩, re, je, n', hre, hs⟩ := he
+  obtain ⟨jt, xt, rt, hrt, hbt, hmt⟩ := ht #[]
+  have st : ot.size = rt.size := mapM_ok_size (hmt "")
+  refine ⟨⟨a1 ++ a2, by rw [ha2, ha1, Array.append_assoc]⟩, ⟨b1 ++ b2, by rw [hb2, hb1, Array.append_assoc]⟩,
+    fun is => ⟨#[.ite c jt.toList rt je.toList re], ot, (List.range' rs.size rt.size).toArray,
+    ?_, fun fs gs hE ws => ?_, fun who => st ▸ mapM_reg_range rs _ who⟩⟩
+  · have hrs : rt.size = re.size := by omega
+    simp only [Plan.ite, block, StateT.run_bind, StateT.run_get, StateT.run_set, StateT.run_monadLift, monadLift_self,
+      hrt, hre, ok_bind, pure_bind, bind_assoc]
+    simp [ok_bind, hrs, emit_run, ← st]; omega
+  · have hE1 : Env abi fs gs fg1 := Env.mono ⟨a2, ha2⟩ ⟨b2, hb2⟩ hE
+    rw [show (#[Instr.ite c jt.toList rt je.toList re] : Array Instr).toList = [.ite c jt.toList rt je.toList re]
+      from rfl, runB.eq_2]
+    simp [runI, reg_of hc, hbt fs gs hE1, hmt, runB.eq_1, ok_bind, Functor.map, Except.map]
+
+/-- `guard c` with the bit in `c` set defines no register: `k` runs after the registers so far. -/
+theorem Builds.guard {fg fg' : Array Fun × Array Fun} {c : Nat} {msg : String} {as : Array Nat} {k : Bld (Array Nat)}
+    {rs out : Array Val} (hc : rs[c]? = some (.bit true)) (hk : Builds abi fg fg' k rs out) :
+    Builds abi fg fg' (Plan.guard c msg as >>= fun _ => k) rs out := by
+  have e : (Plan.guard c msg as >>= fun _ => k) =
+      (Plan.emit (.ite c [] #[] [.fail msg as] #[]) (#[] : Array Val).size >>= fun _ => k) := by
+    funext st; rfl
+  rw [e]
+  refine Builds.emit_bind (fun _ _ _ ws => ?_) (by simpa using hk)
+  simp only [runI, reg_of hc, ok_bind, runB.eq_1]
+  simp [ok_bind]; rfl
+
 /-! ### `Code.groupIds` -/
 
 theorem toUSize_eq_iff {a b : Nat} (ha : a < USize.size) (hb : b < USize.size) :

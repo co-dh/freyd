@@ -13,7 +13,8 @@ open QLean
 /-- The kernels a plan may call, each read off its `@[extern]` declaration. -/
 def abi : List Kernel :=
   [kernel% QLean.Db.ownWrite, kernel% QLean.Kernel.Order.groupIds, kernel% QLean.Kernel.Order.idGroups,
-   kernel% USize.decEq, kernel% USize.add]
+   kernel% USize.decEq, kernel% USize.add, kernel% USize.div, kernel% ByteArray.usize, kernel% Kernel.Ew.val,
+   kernel% Kernel.Ew.cmp, kernel% Kernel.Ew.bit, kernel% Kernel.whereBits, kernel% Kernel.gatherBytes]
 
 def abiOf (sym : String) : Option Kernel := abi.find? (·.sym == sym)
 
@@ -50,6 +51,8 @@ def isObj : Ty → Bool
 def cTy (t : Ty) : String := match t with
   | .size => "size_t"
   | .bit | .u8 => "uint8_t"
+  | .u64 => "uint64_t"
+  | .i64 => "int64_t"
   | _ => "lean_object *"
 
 /-- A C string literal of `s`'s bytes, each an octal escape: three digits, so no following byte is absorbed. -/
@@ -84,11 +87,15 @@ def cShow (r : String) : Ty → String
   | .u8 => s!"fprintf(stderr, \"%u\", (unsigned){r});"
   | .str => s!"fputs(lean_string_cstr({r}), stderr);"
   | .parts => s!"fprintf(stderr, \"<%zu parts>\", lean_array_size({r}));"
+  | .u64 => s!"fprintf(stderr, \"%llu\", (unsigned long long){r});"
+  | .i64 => s!"fprintf(stderr, \"%lld\", (long long){r});"
 
 /-- A result register `r` of type `t` read out of the `IO` value `v`. -/
 def cUnbox (t : Ty) (v : String) : String := match t with
   | .size => s!"lean_unbox_usize({v})"
   | .bit | .u8 => s!"(uint8_t)lean_unbox({v})"
+  | .u64 => s!"lean_unbox_uint64({v})"
+  | .i64 => s!"(int64_t)lean_unbox_uint64({v})"
   | _ => v
 
 /-- The registers an instruction reads that were defined before register `base` (an `if`'s first result): a nested
@@ -139,6 +146,9 @@ def litC (x : String) (v : Val) : EM String := do
   | .size n => pure s!"size_t {x} = {n}u;\n"
   | .u8 b => pure s!"uint8_t {x} = {b};\n"
   | .bit b => pure s!"uint8_t {x} = {if b then 1 else 0};\n"
+  -- through the unsigned bits, so `INT64_MIN` (q's null) is no out-of-range literal
+  | .u64 w => pure s!"uint64_t {x} = UINT64_C({w.toNat});\n"
+  | .i64 w => pure s!"int64_t {x} = (int64_t)UINT64_C({w.toUInt64.toNat});\n"
 
 /-- A block as C at indent `ind`, after the scope's registers `rs`, releasing the references it holds: those `owe`
     hands it from the enclosing scope and those its instructions make, each right after its last read (§8); an owned

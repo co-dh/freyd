@@ -13,10 +13,11 @@ open Lean Elab Term Meta QLean QLean.Kernel
 
 /-- A register's type: the argument and result types of the kernels' `@[extern]` declarations. -/
 inductive Ty
-  | bytes | size | bit | u8 | str | parts
+  | bytes | size | bit | u8 | str | parts | u64 | i64
   deriving BEq, Repr, Inhabited, ToExpr
 
-/-- What a register holds: a buffer, a size, a bit, a byte, a string, or an array of buffers (a column's parts). -/
+/-- What a register holds: a buffer, a size, a bit, a byte, a string, an array of buffers (a column's parts), or
+    a 64-bit word, unsigned or signed (a kernel's fill or null). -/
 inductive Val
   | bytes (b : ByteArray)
   | size (n : USize)
@@ -24,10 +25,13 @@ inductive Val
   | u8 (b : UInt8)
   | str (s : String)
   | parts (bs : Array ByteArray)
+  | u64 (x : UInt64)
+  | i64 (x : Int64)
   deriving Inhabited
 
 def Val.ty : Val → Ty
   | .bytes _ => .bytes | .size _ => .size | .bit _ => .bit | .u8 _ => .u8 | .str _ => .str | .parts _ => .parts
+  | .u64 _ => .u64 | .i64 _ => .i64
 
 /-- `v` as `fail` prints it: a scalar or a string as itself, a buffer by its size. -/
 def Val.show : Val → String
@@ -37,6 +41,8 @@ def Val.show : Val → String
   | .u8 b => toString b
   | .str s => s
   | .parts bs => s!"<{bs.size} parts>"
+  | .u64 x => toString x
+  | .i64 x => toString x
 
 /-- The Lean types a register holds, each with its `Ty`; `kernel%` reads an `@[extern]` signature through it. -/
 class Reg (α : Type) where
@@ -50,6 +56,8 @@ instance : Reg Bool := ⟨.bit, fun | .bit b => some b | _ => none, .bit⟩
 instance : Reg UInt8 := ⟨.u8, fun | .u8 b => some b | _ => none, .u8⟩
 instance : Reg String := ⟨.str, fun | .str s => some s | _ => none, .str⟩
 instance : Reg (Array ByteArray) := ⟨.parts, fun | .parts bs => some bs | _ => none, .parts⟩
+instance : Reg UInt64 := ⟨.u64, fun | .u64 x => some x | _ => none, .u64⟩
+instance : Reg Int64 := ⟨.i64, fun | .i64 x => some x | _ => none, .i64⟩
 /-- A layout is an enum, which the C ABI passes as its constructor index in a byte. -/
 instance : Reg Scan.Kind := ⟨.u8, fun
   | .u8 0 => some .bit | .u8 1 => some .u8 | .u8 2 => some .i16 | .u8 3 => some .i32 | .u8 4 => some .i64
@@ -94,6 +102,7 @@ def tyOf (t : Lean.Expr) : MetaM Ty := do
   match (← whnfD (mkApp2 (mkConst ``Reg.ty) t inst)).constName? with
   | some ``Ty.bytes => pure .bytes | some ``Ty.size => pure .size | some ``Ty.bit => pure .bit
   | some ``Ty.u8 => pure .u8 | some ``Ty.str => pure .str | some ``Ty.parts => pure .parts
+  | some ``Ty.u64 => pure .u64 | some ``Ty.i64 => pure .i64
   | _ => throwError "kernel%: `Reg.ty` of `{t}` does not reduce to a `Ty`"
 
 /-- A result's registers' types, as `Out` lays them: none for `Unit`, a product's components', a decision's bit. -/
@@ -350,5 +359,59 @@ where
 
 /-- `Code.groupIds` as a plan function of the code's four registers. -/
 def groupIdsF : Bld Nat := defFun #[.size, .size, .size, .bytes] fun ps => groupIdsB 0 1 2 3
+
+/-- A side's registers, as §6 lays a `Vals` out: a product both sides', an array its payload count, `lo`, `hi`
+    and payload, a sum its two counts, tags, positions and both payloads. An atom column is one register, its
+    dense payload (a boolean's bitmap): the dense stage. Any other encoding has none yet (stage 7). -/
+def arrRegs {t : QAtomicType} {n : USize} (x : Arr t n) : Option (Array Val) :=
+  match x.enc with | .bytes b => some #[.bytes b] | .bits b => some #[.bytes b] | _ => none
+
+@[inherit_doc arrRegs]
+def valsRegs : (A : Obj) → {n : USize} → Vals A n → Option (Array Val)
+  | .atom _, _, x => arrRegs x
+  | .prod a b, _, x => return (← valsRegs a x.1) ++ (← valsRegs b x.2)
+  | .arr b, _, ⟨m, lo, hi, f⟩ => return #[.size m] ++ (← arrRegs lo) ++ (← arrRegs hi) ++ (← valsRegs b f)
+  | .sum a b, _, ⟨l, r, tag, idx, x, y⟩ => return #[.size l, .size r] ++ (← arrRegs tag) ++ (← arrRegs idx) ++
+      (← valsRegs a x) ++ (← valsRegs b y)
+
+/-- A relation's registers: its count, its key side's, its value side's. -/
+def relRegs {A B : Obj} (R : Rel A B) : Option (Array Val) :=
+  return #[.size R.n] ++ (← valsRegs A R.key) ++ (← valsRegs B R.val)
+
+/-- `need`'s test on the bit `c`: set, nothing runs; clear, `fail msg args`. -/
+def guard (c : Nat) (msg : String) (args : Array Nat) : Bld Unit :=
+  discard <| ite c (pure #[]) (do discard <| emit (.fail msg args) 0; pure #[])
+
+/-- A one-register kernel call. -/
+def call1 (k : Kernel) (args : Array Nat) : Bld Nat := emit1 (.call k.sym args)
+
+/-- `len b`, the longs of the payload `b`, as a `size`: its bytes (`lean_sarray_size`) over `8`. -/
+def lenB (b : Nat) : Bld Nat := do
+  let s ← call1 (kernel% ByteArray.usize) #[b]
+  call1 (kernel% USize.div) #[s, ← lit (.size 8)]
+
+/-- `Alg.arith op` on the pair columns `u`, `v` of `n` rows: `Ew.val op`, the bits of the kept rows as `arith`
+    combines them (`op` is static, so its `if`s are decided here), `whereBits`, its count `lenB`, and the three
+    columns gathered there: the relation's count, key columns and value column. -/
+def arithB (op : UInt8) (n u v : Nat) : Bld (Array Nat) := do
+  let i64 ← lit (.u8 Ew.i64); let vv ← lit (.u8 Ew.vv); let va ← lit (.u8 Ew.va); let nl ← lit (.i64 Alg.nul)
+  let val (o sh x y : Nat) := call1 (kernel% Kernel.Ew.val) #[o, i64, sh, nl, x, y, n]
+  let cmp (c : UInt8) (sh x y : Nat) := do call1 (kernel% Kernel.Ew.cmp) #[← lit (.u8 c), i64, sh, x, y, n]
+  let bit (c : UInt8) (x y : Nat) := do call1 (kernel% Kernel.Ew.bit) #[← lit (.u8 c), vv, x, y, n]
+  let s ← val (← lit (.u8 op)) vv u v
+  let pos ← cmp Ew.ge va v (← lit (.bytes (one 0)))
+  let ok ← cmp Ew.ne va s (← lit (.bytes (one Alg.nul.toUInt64)))
+  let exact ←
+    if op == Ew.add then do bit (Ew.bitCmp + Ew.eq) pos (← cmp Ew.ge vv s u)
+    else if op == Ew.sub then do bit (Ew.bitCmp + Ew.eq) pos (← cmp Ew.le vv s u)
+    else if op == Ew.mul then do
+      bit Ew.greater (← cmp Ew.eq vv (← val (← lit (.u8 Ew.idiv)) vv s u) v) (← cmp Ew.eq va u (← lit (.bytes (one 0))))
+    else pure ok
+  let k ← call1 (kernel% Kernel.whereBits) #[n, ← bit Ew.lesser ok exact]
+  let r ← lenB k
+  let w ← lit (.size 8)
+  let g (fill : UInt64) (x : Nat) := do call1 (kernel% Kernel.gatherBytes) #[w, ← lit (.u64 fill), x, k]
+  let nf := (Kernel.nullBits .long).getD 0
+  return #[r, ← g nf u, ← g nf v, ← g 0 s]
 
 end LeetQ.Rel.Lang.Plan
