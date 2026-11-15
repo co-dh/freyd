@@ -100,26 +100,28 @@ def builtins : List (Op × Except String (Option Name)) :=
   [(.id, .ok none), (.zero, .ok none), (.top, .ok none), (.outl, .ok none), (.outr, .ok none), (.inl, .ok none),
    (.inr, .ok none), (.alpha, .ok none), (.map, .ok none), (.dom, .ok none), (.ran, .ok none),
    (.mem, .ok ``PowerAllegory.eps), (.lam, .ok ``Freyd.Alg.Λ), (.E, .ok ``existsImage), (.P, .ok ``powerRel),
-   (.est, .ok ``est), (.thin, .ok ``thinRel), (.tau, .ok ``singletonMap),
+   (.est, .ok ``est), (.thin, .ok ``thinRel),
    (.leq, .ok ``ListRel.leq), (.succ, .ok ``ListRel.succ), (.arith add, .ok ``ListRel.plus),
    (.arith idiv, .error "Rel's div is Int division and ListRel.div is Nat division; \
     the Int reading is added when a proof first needs it"),
-   (.nil, .ok ``ListRel.nilAtUnit), (.cons, .ok ``ListRel.cons),
-   (.length, .ok ``ListRel.length), (.total, .ok ``ListRel.sum), (.inits, .ok ``ListRel.initsR),
-   (.cat, .ok ``ListRel.cat), (.zip, .ok ``Pointfree.zip), (.setify, .ok ``ListRel.setify),
+   (.nil, .ok ``ListRel.nilAtUnit),
    (.thinL, .ok ``ListRel.thinL), (.merge, .ok ``ListRel.merge),
    (.lt, none' "AOP declares no strict order on numbers"), (.arith mul, none' "AOP declares no product of numbers"),
    (.arith sub, none' "AOP declares no difference of numbers"),
    (.arith imod, none' "AOP declares no remainder of numbers"),
    (.arith greater, none' "AOP declares no maximum of two numbers"),
    (.arith lesser, none' "AOP declares no minimum of two numbers"),
-   (.snoc, none' "AOP's `snoc` is on snoc lists (`SL.snoc`), not on the cons lists `[α]` reads as"),
-   (.bagify, none' "AOP's `bagify` is on snoc lists of jobs only (`Tardy.bagify`)"),
-   (.tic, none' "AOP declares no non-empty prefixes of `a::xs`"),
    (.loop, none' "AOP declares no iteration to a fixed point from the left"),
    (.refold, none' "AOP's unfold-then-fold is `(relCata c°)° ≫ relCata S` over an initial algebra of G, \
     which rel(…) never writes"),
-   (.index 0, none' "AOP declares no element at a position")]
+   (.index 0, none' "AOP declares no element at a position")] ++
+  (prims.filter fun r => r.written && !r.prelude).map fun r => (.prim r.sym, r.aop.map some)
+
+-- `prims` names its AOP readings unchecked (Syntax cannot import AOP), so every row's is checked here, where they resolve
+run_cmd do
+  for (o, r) in builtins do
+    if let .ok (some n) := r then
+      unless (← getEnv).contains n do throwError "builtins: the AOP reading of `{o.sym}` is `{n}`, which is not declared"
 
 /-- The prelude's names with a fixed AOP counterpart, each its prelude body in the fragment: `rel(…)` has no
     prelude, and AOP writes `∈` as `∋°`. -/

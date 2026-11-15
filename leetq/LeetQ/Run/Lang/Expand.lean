@@ -39,18 +39,17 @@ def useDef (c : Lean.Name) (imported : Bool) (d : Def) : Def :=
         throw (if e.pos == p then e else ⟨p, s!"in `{c}` (its line {e.pos.line}): {e.msg}"⟩)
       let r ← if imported then tryCatch (d.apply p as) reword else d.apply p as
       -- the body's positions are its program's: at the use, so what `build` raises later is at the use
-      match c, r with
-      | `LeetQ.Rel.Programs.prelude.perm, .rel q s t => pure (.rel (.own (q.at p)) s t)
-      | `LeetQ.Rel.Programs.prelude.tails, .rel _ s@(.arr b) t => pure (.rel (.tails b) s t)
-      | `LeetQ.Rel.Programs.prelude.prefix, .rel _ s@(.arr b) t => pure (.rel (.«prefix» b) s t)
-      | `LeetQ.Rel.Programs.prelude.suffix, .rel _ s@(.arr b) t => pure (.rel (.suffix b) s t)
-      | `LeetQ.Rel.Programs.prelude.concat, .rel _ s t@(.arr b) => pure (.rel (.concat b) s t)
-      | `LeetQ.Rel.Programs.prelude.filter, .rel q s t =>
+      -- a prelude definition with a row of its own runs as that row's constant
+      let row := prims.find? fun x => x.prelude && c == `LeetQ.Rel.Programs.prelude ++ .mkSimple x.sym
+      match c, r, row with
+      | _, .rel _ s t, some x => pure (.rel (.prim x s t) s t)
+      | `LeetQ.Rel.Programs.prelude.perm, .rel q s t, _ => pure (.rel (.own (q.at p)) s t)
+      | `LeetQ.Rel.Programs.prelude.filter, .rel q s t, _ =>
         pure (.rel (match as with | [.rel a _ _] => .filter a | _ => if imported then q.at p else q) s t)
-      | `LeetQ.Rel.Programs.prelude.takewhile, .rel q s t =>
+      | `LeetQ.Rel.Programs.prelude.takewhile, .rel q s t, _ =>
         pure (.rel (match as with | [.rel a _ _] => .takewhile a | _ => if imported then q.at p else q) s t)
-      | _, .rel q s t => pure (.rel (if imported then q.at p else q) s t)
-      | _, .fam q i a b => pure (.fam (if imported then q.at p else q) i a b) }
+      | _, .rel q s t, _ => pure (.rel (if imported then q.at p else q) s t)
+      | _, .fam q i a b, _ => pure (.fam (if imported then q.at p else q) i a b) }
 
 /-! ### Printing a relation with the program's names -/
 
@@ -592,6 +591,23 @@ def litU : Tm .long .long false → Option ((m : USize) × Vals .long m)
   | .share _ R => litU R
   | _ => none
 
+/-- Row `r`'s constant at `A`, `B`, under the wrapper whose argument it fits: its last explicit argument is that
+    argument's, every other is solved by unifying the constant's type with the wrapper's. -/
+def primE (r : Prim) (A B : Obj) : MetaM Lean.Expr := do
+  let c := r.sig.1
+  for w in [``Gen.ofVals, ``Gen.after] do
+    let .forallE _ T _ _ ← whnf (← inferType (g w #[oE A, oE B])) | throwError "internal: `{w}` takes no function"
+    let f? ← forallTelescope T fun ys body => do
+      let k ← mkConstWithFreshMVarLevels c
+      let (ms, _, ty) ← forallMetaTelescope (← inferType k)
+      let (some m, some y) := (ms.back?, ys.back?) | return none
+      unless ← isDefEq (← inferType m) (← inferType y) <&&> isDefEq m y <&&> isDefEq ty body do return none
+      let v ← instantiateMVars (mkAppN k ms)
+      if v.hasMVar then return none
+      return some (← mkLambdaFVars ys v)
+    if let some f := f? then return g w #[oE A, oE B, f]
+  throwError "rel_program expansion: `{c}` at {oE A} → {oE B} fits neither `Gen.ofVals` nor `Gen.after`"
+
 mutual
 
 /-- `t`'s code, `Gen.Fn d A B`: a closed `t` is its constant (`share`), any other its node; a numbered sub-term's
@@ -699,27 +715,10 @@ partial def node (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bo
   | .arr B, _, _, .takewhile (d := d) R => return g ``Gen.takewhile #[oE B, bE d, ← c R]
   | _, B, _, .est Q => return g ``Gen.est #[oE B, ← c Q]
   | _, .arr B, _, .thin Q => return g ``Gen.thin #[oE B, ← c Q]
-  | A, _, _, .tau => return g ``Gen.tau #[oE A]
   | A, .arr B, _, .nil => return g ``Gen.nil #[oE A, oE B]
-  | _, .arr B, _, .cons => return g ``Gen.cons #[oE B]
-  | .arr B, _, _, .uncons => return g ``Gen.uncons #[oE B]
-  | .arr B, _, _, .length => return g ``Gen.length #[oE B]
-  | _, _, _, .total => return mkConst ``Gen.total
-  | .arr B, _, _, .inits => return g ``Gen.inits #[oE B]
-  | .arr B, _, _, .tails => return g ``Gen.tails #[oE B]
-  | .arr B, _, _, .«prefix» => return g ``Gen.«prefix» #[oE B]
-  | .arr B, _, _, .suffix => return g ``Gen.suffix #[oE B]
-  | _, .arr B, _, .concat => return g ``Gen.concat #[oE B]
-  | _, .arr B, _, .cat => return g ``Gen.cat #[oE B]
-  | .arr B, _, _, .uncat => return g ``Gen.uncat #[oE B]
-  | .prod (.arr A) (.arr B), _, _, .zip => return g ``Gen.zip #[oE A, oE B]
-  | _, .arr B, _, .snoc => return g ``Gen.snoc #[oE B]
-  | .arr B, _, _, .unsnoc => return g ``Gen.unsnoc #[oE B]
+  | A, B, _, .prim r => primE r A B
   | .arr B, _, _, .atPos k => return g ``Gen.atPos #[oE B, toExpr k]
   | _, _, _, .own R => c R
-  | .arr B, _, _, .setify => return g ``Gen.setify #[oE B]
-  | .arr B, _, _, .bagify => return g ``Gen.bagify #[oE B]
-  | _, .arr (.arr B), _, .tic => return g ``Gen.tic #[oE B]
   | .arr B, _, _, .thinL Q => return g ``Gen.thinL #[oE B, ← c Q]
   | _, .arr B, _, .merge Q => return g ``Gen.merge #[oE B, ← c Q]
   | .prod X (.arr Y), _, _, .loop (d := d) F => return g ``Gen.loop #[oE X, oE Y, bE d, ← c F]
@@ -860,6 +859,7 @@ partial def prfNode (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d :
   | _, _, _, .prod R S => lem `prod_sound [← p R, ← p S]
   | _, _, _, .junc R S => lem `junc_sound [← p R, ← p S]
   | _, _, _, .own R | _, _, _, .share _ R => p R
+  | _, _, _, .prim r => modify (fun (m, g) => (m, g <|> some r.sig.1)); pure none
   | _, _, _, _ =>
     -- a call is named by its constant, not by the `Gen.ofPl` that runs its plan
     let e ← node pre ρ t

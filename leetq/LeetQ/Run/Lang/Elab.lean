@@ -12,8 +12,6 @@ namespace LeetQ.Rel.Lang
 open LeetQ.Rel LeetQ.Rel.Alg
 open QLean.Kernel (need needSize)
 
-deriving instance DecidableEq for LeetQ.Rel.Obj
-
 /-! ### The core term -/
 
 /-- A core term `A ⟶ B` over `Alg`. `d` says it runs on DEMAND (§a): its value is read only at the keys the
@@ -57,31 +55,14 @@ inductive Tm : Obj → Obj → Bool → Type where
       `τ(Q) : B×B ⟶ B×B` (§a), run on demand on the pairs the operator compares. -/
   | est {B : Obj} (Q : Tm (.prod B B) (.prod B B) true) : Tm (.arr B) B true
   | thin {B : Obj} (Q : Tm (.prod B B) (.prod B B) true) : Tm (.arr B) (.arr B) true
-  | tau {A : Obj} : Tm A (.arr A) true
   | nil {A B : Obj} : Tm A (.arr B) true
-  | cons {B : Obj} : Tm (.prod B (.arr B)) (.arr B) true
-  | uncons {B : Obj} : Tm (.arr B) (.prod B (.arr B)) true
-  | length {B : Obj} : Tm (.arr B) .long true
-  | total : Tm (.arr .long) .long true
-  | inits {B : Obj} : Tm (.arr B) (.arr (.arr B)) true
-  /-- The prelude's folds `tails`, `prefix`, `suffix`, `concat`, run as their slice forms (`Expand.useDef`). -/
-  | tails {B : Obj} : Tm (.arr B) (.arr (.arr B)) true
-  | «prefix» {B : Obj} : Tm (.arr B) (.arr B) true
-  | suffix {B : Obj} : Tm (.arr B) (.arr B) true
-  | concat {B : Obj} : Tm (.arr (.arr B)) (.arr B) true
-  | cat {B : Obj} : Tm (.prod (.arr B) (.arr B)) (.arr B) true
-  | uncat {B : Obj} : Tm (.arr B) (.prod (.arr B) (.arr B)) true
-  | zip {A B : Obj} : Tm (.prod (.arr A) (.arr B)) (.arr (.prod A B)) true
-  | snoc {B : Obj} : Tm (.prod (.arr B) B) (.arr B) true
-  | unsnoc {B : Obj} : Tm (.arr B) (.prod (.arr B) B) true
+  /-- The row `r` of `prims` at `A ⟶ B`, an instance of its constant's type (`build` checks `Prim.fits`). -/
+  | prim {A B : Obj} (r : Prim) : Tm A B true
   /-- `at(k)`, the element at position `k` from `0`, on the arrays in demand. -/
   | atPos {B : Obj} (k : Nat) : Tm (.arr B) B true
   /-- The prelude's `perm`, kept as its own converse (`convTm`): the one converse rule the language has for a
       definition, because `perm° = perm` is a theorem it cannot derive from the fold `perm` is. -/
   | own {A : Obj} {d : Bool} (R : Tm A A d) : Tm A A d
-  | setify {B : Obj} : Tm (.arr B) (.arr B) true
-  | bagify {B : Obj} : Tm (.arr B) (.arr B) true
-  | tic {B : Obj} : Tm (.prod B (.arr B)) (.arr (.arr B)) true
   | thinL {B : Obj} (Q : Tm (.prod B B) (.prod B B) true) : Tm (.arr B) (.arr B) true
   | merge {B : Obj} (Q : Tm (.prod B B) (.prod B B) true) : Tm (.prod (.arr B) (.arr B)) (.arr B) true
   /-- `loop(F)` on the pairs (state, array) in demand, `F` run on the pairs (state, element) each round meets. -/
@@ -232,27 +213,11 @@ inductive Pre
   | takewhile (p : Pre)
   | est (p : Pre)
   | thin (p : Pre)
-  | tau (a : OTy)
   | nil (a b : OTy)
-  | cons (b : OTy)
-  | uncons (b : OTy)
-  | length (b n : OTy)
-  | total (n : OTy)
-  | inits (b : OTy)
-  | tails (b : OTy)
-  | «prefix» (b : OTy)
-  | suffix (b : OTy)
-  | concat (b : OTy)
-  | cat (b : OTy)
-  | uncat (b : OTy)
-  | zip (a b : OTy)
-  | snoc (b : OTy)
-  | unsnoc (b : OTy)
+  /-- The row `r` of `prims` at `s ⟶ t`, an instance of its type. -/
+  | prim (r : Prim) (s t : OTy)
   | atPos (k : Nat) (b : OTy)
   | own (p : Pre)
-  | setify (b : OTy)
-  | bagify (b : OTy)
-  | tic (b : OTy)
   | thinL (p : Pre)
   | merge (p : Pre)
   | loop (p : Pre)
@@ -327,9 +292,7 @@ def Pre.at (p : Pos) : Pre → Pre
   | .call _ c us xs ts alt a b d cv tst => .call p c us (xs.attach.map fun ⟨y, _⟩ => y.at p) ts (alt.at p) a b d cv tst
   -- no position and no part
   | x@(.tm _) | x@(.zero ..) | x@(.id _) | x@(.mem _) | x@(.outl ..) | x@(.outr ..) | x@(.inl ..) | x@(.inr ..)
-  | x@(.tau _) | x@(.nil ..) | x@(.cons _) | x@(.uncons _) | x@(.length ..) | x@(.total _)
-  | x@(.inits _) | x@(.tails _) | x@(.«prefix» _) | x@(.suffix _) | x@(.concat _) | x@(.cat _) | x@(.uncat _) | x@(.zip ..) | x@(.snoc _) | x@(.unsnoc _) | x@(.setify _)
-  | x@(.bagify _) | x@(.tic _) | x@(.atPos ..) => x
+  | x@(.nil ..) | x@(.prim ..) | x@(.atPos ..) => x
 
 /-- The `why` of a top-level term's `close`. -/
 def noLeft : String := "the term here needs keys and has no left context"
@@ -417,9 +380,8 @@ def Pre.nilSrcs : Pre → List OTy
   | .conv x | .dom x | .ran x | .lam x | .E x | .map x | .filter x | .takewhile x | .est x | .thin x | .own x | .thinL x | .merge x
   | .loop x | .flat x | .close _ x _ _ | .fix _ _ _ _ x _ _ | .call _ _ _ _ _ x _ _ _ _ _ => x.nilSrcs
   | .refold _ _ ch x _ _ => ch.nilSrcs ++ x.nilSrcs
-  | .var .. | .tm _| .zero .. | .id _ | .mem _ | .outl .. | .outr .. | .inl .. | .inr .. | .tau _ | .cons _
-  | .uncons _ | .length .. | .total _ | .inits _ | .tails _ | .«prefix» _ | .suffix _ | .concat _ | .cat _ | .uncat _ | .zip .. | .snoc _ | .unsnoc _ | .setify _
-  | .bagify _ | .tic _ | .atPos .. | .succ .. | .arith .. | .leq .. | .lt .. | .lit .. => []
+  | .var .. | .tm _| .zero .. | .id _ | .mem _ | .outl .. | .outr .. | .inl .. | .inr .. | .prim ..
+  | .atPos .. | .succ .. | .arith .. | .leq .. | .lt .. | .lit .. => []
 
 /-- A `nil` whose source no context fixed, once the whole term is elaborated, starts at `1`: B&dM's
     `nil : 1 ⟶ [A]`, `one` the object `1` in scope (`Env.one`). A fold's seed `ran(nil)` drops that source, so only
@@ -453,9 +415,8 @@ def Pre.parts : Pre → List (Pre × Pol)
   | .thin x => [(x, .not "thin")]
   | .thinL x => [(x, .not "thinL")]
   | .merge x => [(x, .not "merge")]
-  | .var .. | .tm _ | .zero .. | .id _ | .mem _ | .outl .. | .outr .. | .inl .. | .inr .. | .tau _
-  | .nil .. | .cons _ | .uncons _ | .length .. | .total _ | .inits _ | .tails _ | .«prefix» _ | .suffix _ | .concat _ | .cat _ | .uncat _ | .zip .. | .snoc _
-  | .unsnoc _ | .setify _ | .bagify _ | .tic _ | .atPos .. | .succ .. | .arith .. | .leq .. | .lt .. | .lit .. => []
+  | .var .. | .tm _ | .zero .. | .id _ | .mem _ | .outl .. | .outr .. | .inl .. | .inr .. | .nil .. | .prim ..
+  | .atPos .. | .succ .. | .arith .. | .leq .. | .lt .. | .lit .. => []
 
 /-- Where the variable `k` first occurs in `x`. -/
 partial def Pre.occ (k : Nat) : Pre → Option Pos
@@ -694,10 +655,21 @@ def Arg.isFam : Arg → Bool
   | .fam .. => true
   | _ => false
 
+/-- The row `r` at fresh objects for its constant's object variables. -/
+def Prim.inst (env : Env) (r : Prim) : M (Pre × OTy × OTy) := do
+  let vs ← r.vars.mapM fun v => return (v, ← fresh)
+  let s ← oty env vs r.sig.2.1; let t ← oty env vs r.sig.2.2
+  pure (.prim r s t, s, t)
+
 /-- A constant: fresh objects for its type, the explicit ones `(A,B)` unified with source and target. -/
 def constant (env : Env) (p : Pos) (o : Op) (objs : List OExp) : M Arg := do
   let a ← fresh; let b ← fresh
-  let (q, s, t) : Pre × OTy × OTy := match o with
+  let row ← match o with
+    | .prim s => match Prim.find? s with
+      | some r => some <$> r.inst env
+      | none => throw ⟨p, s!"internal: no row `{s}` in `prims`"⟩
+    | _ => pure none
+  let (q, s, t) : Pre × OTy × OTy := row.getD <| match o with
     | .id => (.id a, a, a)
     | .zero => (.zero a b, a, b)
     | .top => (.top p a b none, a, b)
@@ -710,19 +682,9 @@ def constant (env : Env) (p : Pos) (o : Op) (objs : List OExp) : M Arg := do
     | .lt => (.lt p a, a, a)
     | .succ => (.succ p a, a, a)
     | .arith k => (.arith p k a, .prod a a, a)
-    | .tau => (.tau a, a, .arr a)
     | .nil => (.nil a b, a, .arr b)
-    | .alpha => (.junc (.close p (.nil a b) a "α") (.close p (.cons b) (.prod b (.arr b)) "α"), .sum a (.prod b (.arr b)), .arr b)
-    | .cons => (.cons b, .prod b (.arr b), .arr b)
-    | .length => (.length b a, .arr b, a)
-    | .total => (.total a, .arr a, a)
-    | .inits => (.inits b, .arr b, .arr (.arr b))
-    | .cat => (.cat b, .prod (.arr b) (.arr b), .arr b)
-    | .zip => (.zip a b, .prod (.arr a) (.arr b), .arr (.prod a b))
-    | .snoc => (.snoc b, .prod (.arr b) b, .arr b)
-    | .setify => (.setify b, .arr b, .arr b)
-    | .bagify => (.bagify b, .arr b, .arr b)
-    | .tic => (.tic b, .prod b (.arr b), .arr (.arr b))
+    | .alpha => (.junc (.close p (.nil a b) a "α") (.close p (.prim consRow (.prod b (.arr b)) (.arr b)) (.prod b (.arr b)) "α"),
+        .sum a (.prod b (.arr b)), .arr b)
     | .index k => (.atPos k b, .arr b, b)
     | _ => (.id a, a, a)
   match objs with
@@ -1314,12 +1276,10 @@ def convTm {A B : Obj} {d : Bool} (t : Tm A B d) : Except String ((e : Bool) × 
         | _, _ => throw l
       | _, _, _ => throw l
   | .share _ R => convTm R
-  | .cons => pure ⟨_, .uncons⟩
-  | .uncons => pure ⟨_, .cons⟩
-  | .snoc => pure ⟨_, .unsnoc⟩
-  | .unsnoc => pure ⟨_, .snoc⟩
-  | .cat => pure ⟨_, .uncat⟩
-  | .uncat => pure ⟨_, .cat⟩
+  -- a row by its converse's row (`cons° = uncons`)
+  | .prim r => match r.conv.bind Prim.find? with
+    | some r' => pure ⟨_, .prim r'⟩
+    | none => throw r.sym
   -- the number verbs are closed on their universe: their converse is read whole there
   | .succ U => pure ⟨false, .conv (.comp U (.succ U))⟩
   | .arith k U => pure ⟨false, .conv (.comp (.prod U U) (.arith k U))⟩
@@ -1342,21 +1302,9 @@ def convTm {A B : Obj} {d : Bool} (t : Tm A B d) : Except String ((e : Bool) × 
   | .takewhile _ => throw "takewhile( )"
   | .est _ => throw "est( )"
   | .thin _ => throw "thin( )"
-  | .tau => throw "τ"
   | .nil => throw "nil"
-  | .length => throw "length"
-  | .total => throw "sum"
-  | .inits => throw "inits"
-  | .tails => throw "tails"
-  | .«prefix» => throw "prefix"
-  | .suffix => throw "suffix"
-  | .concat => throw "concat"
   | .refold .. => throw "refold( )"
   | .juncD .. => throw "[R,S]"
-  | .zip => throw "zip"
-  | .setify => throw "setify"
-  | .bagify => throw "bagify"
-  | .tic => throw "tic"
   | .atPos k => throw s!"at({k})"
   | .thinL _ => throw "thinL( )"
   | .merge _ => throw "merge( )"
@@ -1613,31 +1561,13 @@ def build : Pre → Except Err Res
     if h : B = A then pure ⟨_, _, _, .takewhile (h ▸ t)⟩ else internal dp "takewhile's predicate is not on one object"
   | .est p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .est c⟩
   | .thin p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .thin c⟩
-  | .tau a => return ⟨_, _, true, .tau (A := ← toObj objs st dp a)⟩
   | .nil a b => return ⟨_, _, true, .nil (A := ← toObj objs st dp a) (B := ← toObj objs st dp b)⟩
-  | .cons b => return ⟨_, _, true, .cons (B := ← toObj objs st dp b)⟩
-  | .uncons b => return ⟨_, _, true, .uncons (B := ← toObj objs st dp b)⟩
-  | .length b n => do
-    if (← toObj objs st dp n) != .long then internal dp "length's target"
-    pure ⟨_, _, true, .length (B := ← toObj objs st dp b)⟩
-  | .total n => do if (← toObj objs st dp n) != .long then internal dp "sum's target"
-                   pure ⟨_, _, true, .total⟩
-  | .inits b => return ⟨_, _, true, .inits (B := ← toObj objs st dp b)⟩
-  | .tails b => return ⟨_, _, true, .tails (B := ← toObj objs st dp b)⟩
-  | .«prefix» b => return ⟨_, _, true, .«prefix» (B := ← toObj objs st dp b)⟩
-  | .suffix b => return ⟨_, _, true, .suffix (B := ← toObj objs st dp b)⟩
-  | .concat b => return ⟨_, _, true, .concat (B := ← toObj objs st dp b)⟩
-  | .cat b => return ⟨_, _, true, .cat (B := ← toObj objs st dp b)⟩
-  | .uncat b => return ⟨_, _, true, .uncat (B := ← toObj objs st dp b)⟩
-  | .zip a b => return ⟨_, _, true, .zip (A := ← toObj objs st dp a) (B := ← toObj objs st dp b)⟩
-  | .snoc b => return ⟨_, _, true, .snoc (B := ← toObj objs st dp b)⟩
-  | .unsnoc b => return ⟨_, _, true, .unsnoc (B := ← toObj objs st dp b)⟩
+  | .prim r s t => do
+    let A ← toObj objs st dp s; let B ← toObj objs st dp t
+    if r.fits A B then pure ⟨A, B, true, .prim r⟩ else internal dp s!"{r.sym}'s objects"
   | .own p => do
     let ⟨A, B, d, t⟩ ← build p
     if h : B = A then pure ⟨A, A, d, .own (h ▸ t)⟩ else internal dp "perm's objects"
-  | .setify b => return ⟨_, _, true, .setify (B := ← toObj objs st dp b)⟩
-  | .bagify b => return ⟨_, _, true, .bagify (B := ← toObj objs st dp b)⟩
-  | .tic b => return ⟨_, _, true, .tic (B := ← toObj objs st dp b)⟩
   | .atPos k b => return ⟨_, _, true, .atPos k (B := ← toObj objs st dp b)⟩
   | .thinL p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .thinL c⟩
   | .merge p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .merge c⟩
