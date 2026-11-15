@@ -50,6 +50,18 @@ partial def atomIn (s : Syntax) : String := match s with
 
 def relSym : Parser := { fn := relSymFn, info := { collectTokens := (symToks ++ ·) } }
 
+/-- `p` read with the tokens the program's text has whatever namespaces are open: a token of more than one
+    character that starts with a character of a name (`Parse.isSym`, letter-like) is dropped, so an opened
+    notation's `Λ(` or `∋(` does not swallow the name `Λ` and its parenthesis. The grammar's own tokens are one
+    character each; one starting in ASCII is a Lean keyword, which ends the program (`end`, `def`). -/
+def relTokenTable (tt : TokenTable) : TokenTable :=
+  let keep (t : Token) := t.length == 1 || t.front.toNat < 128 || !(Parse.isSym t.front || isLetterLike t.front)
+  tt.values.foldl (fun r t => if keep t then r.insert t t else r) {}
+
+def relTokensFn (p : ParserFn) : ParserFn := adaptUncacheableContextFn (fun c => { c with tokens := relTokenTable c.tokens }) p
+
+def relTokens (p : Parser) : Parser := { p with fn := relTokensFn p.fn }
+
 /-- A declaration ends at its line (§c): juxtaposition never reaches the next line's name. -/
 def sameLine : Parser := checkLineEq "the declaration's line"
 
@@ -61,6 +73,10 @@ open PrettyPrinter in
 @[combinator_formatter sameLine] def sameLine.formatter : Formatter := pure ()
 open PrettyPrinter in
 @[combinator_parenthesizer sameLine] def sameLine.parenthesizer : Parenthesizer := pure ()
+open PrettyPrinter in
+@[combinator_formatter relTokens] def relTokens.formatter (p : Formatter) : Formatter := p
+open PrettyPrinter in
+@[combinator_parenthesizer relTokens] def relTokens.parenthesizer (p : Parenthesizer) : Parenthesizer := p
 
 declare_syntax_cat relWord
 declare_syntax_cat relHead
@@ -127,13 +143,15 @@ syntax (name := sDefn) relWord ("(" relParam,+ ")")? (relType)? "≜" rel ("⊑"
 syntax (name := sInfix) "_" relWord "_" "(" relParam,+ ")" (relType)? "≜" rel ("⊑" rel)? ("where" relItem,+)? :
   relStmt
 
+/-- A program's statements, each at its own position, read with the program's tokens (`relTokens`). -/
+@[run_parser_attribute_hooks] def relStmts : Parser := relTokens (many (withPosition (categoryParser `relStmt 0)))
+
 -- one block, so the program's lines stay as they are (no per-line keyword) and its scope runs through them
-syntax (name := relProgram) (docComment)? "rel_program " ident (&" after " ident)? " where" (withPosition(relStmt))* :
-  command
+syntax (name := relProgram) (docComment)? "rel_program " ident (&" after " ident)? " where" relStmts : command
 /-- A variant of a program: its definitions, the `where` ones in place of those of their names, its checks dropped
     (they state the base's own values), and only the declarations up to the definition `upto` names. -/
-syntax (name := relVariant) (docComment)? "rel_program " ident &" from " ident (&" upto " relWord)? " where"
-  (withPosition(relStmt))* : command
+syntax (name := relVariant) (docComment)? "rel_program " ident &" from " ident (&" upto " relWord)? " where" relStmts :
+  command
 
 /-! ### From syntax to the AST, in the text parser's state -/
 
