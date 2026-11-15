@@ -1,5 +1,5 @@
 /-
-  The bit-matrix plan (`Bits.lean`) read back. `TP.den` is the plan's relation in `Rel(Set)`; `rep_tableC` says the
+  The bit-matrix route (`Bits.lean`) read back. `Route.den` is the route's relation in `Rel(Set)`; `rep_tableC` says the
   table side computes it under `tableC`'s one bit. The bit side is read at the codes: `Bits.Enc` says a matrix holds,
   at bit `i·w + j`, a relation between the elements `ua i`, `ub j`, and each bit rule maps encodings to encodings.
 -/
@@ -14,10 +14,10 @@ namespace LeetQ.Rel.Lang.Bits
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.Rep Freyd Freyd.Alg Freyd.Alg.RelSet
 
-/-! ### The plan's relation -/
+/-! ### The route's relation -/
 
-/-- The plan's relation in `Rel(Set)`: each node the set-theoretic op on its children's, a leaf its table's `rep`. -/
-def TP.den : {A B : Obj} → TP A B → A.El → B.El → Prop
+/-- The route's relation in `Rel(Set)`: each node the set-theoretic op on its children's, a leaf its table's `rep`. -/
+def Route.den : {A B : Obj} → Route A B → A.El → B.El → Prop
   | _, _, .leaf R => rep R
   | _, _, .comp R S => fun a c => ∃ b, R.den a b ∧ S.den b c
   | _, _, .conv R => fun b a => R.den a b
@@ -27,13 +27,13 @@ def TP.den : {A B : Obj} → TP A B → A.El → B.El → Prop
   | _, _, .ldiv R S UB UC => fun b c =>
     (∀ a, R.den a b → S.den a c) ∧ ((∃ a, R.den a b) ∨ ((∃ p, UB.val.row p = b) ∧ ∃ j, UC.val.row j = c))
 
-/-- **The table side**: under `tableC`'s bit the plan's table denotes `TP.den`, each node by its C twin's read-back
+/-- **The table side**: under `tableC`'s bit the route's table denotes `Route.den`, each node by its C twin's read-back
     (`rep_compC`, `rep_interC`, `rep_unionC`, `rep_diffC`, `rep_leftDivC`, `rep_conv`). -/
-theorem rep_tableC : ∀ {A B : Obj} (p : TP A B), p.tableC.2 = true →
+theorem rep_tableC : ∀ {A B : Obj} (p : Route A B), p.tableC.2 = true →
     ∀ a b, rep p.tableC.1 a b ↔ p.den a b
   | _, _, .leaf _, _, _, _ => Iff.rfl
   | _, _, .comp R S, hb, a, c => by
-    unfold TP.tableC at hb ⊢
+    unfold Route.tableC at hb ⊢
     by_cases hz : (R.tableC.1.n == 0) = true
     · rw [if_pos hz] at hb ⊢
       have ih := rep_tableC R hb
@@ -49,33 +49,33 @@ theorem rep_tableC : ∀ {A B : Obj} (p : TP A B), p.tableC.2 = true →
       exact ⟨fun ⟨b, h1, h2⟩ => ⟨b, (ihR a b).1 h1, (ihS b c).1 h2⟩,
         fun ⟨b, h1, h2⟩ => ⟨b, (ihR a b).2 h1, (ihS b c).2 h2⟩⟩
   | _, _, .conv R, hb, b, a => by
-    unfold TP.tableC at hb ⊢
+    unfold Route.tableC at hb ⊢
     rw [rep_conv]; exact rep_tableC R hb a b
   | _, _, .meet R S, hb, a, b => by
-    unfold TP.tableC at hb ⊢
+    unfold Route.tableC at hb ⊢
     simp only [opC, Bool.and_eq_true] at hb ⊢
     rw [rep_interC _ _ hb.2]
     exact and_congr (rep_tableC R hb.1.1 a b) (rep_tableC S hb.1.2 a b)
   | _, _, .join R S, hb, a, b => by
-    unfold TP.tableC at hb ⊢
+    unfold Route.tableC at hb ⊢
     simp only [opC, Bool.and_eq_true] at hb ⊢
     rw [rep_unionC _ _ hb.2]
     exact or_congr (rep_tableC R hb.1.1 a b) (rep_tableC S hb.1.2 a b)
   | _, _, .diff R S, hb, a, b => by
-    unfold TP.tableC at hb ⊢
+    unfold Route.tableC at hb ⊢
     simp only [opC, Bool.and_eq_true] at hb ⊢
     rw [rep_diffC _ _ hb.2]
     exact and_congr (rep_tableC R hb.1.1 a b) (not_congr (rep_tableC S hb.1.2 a b))
   | _, _, .ldiv R S UB UC, hb, b, c => by
-    unfold TP.tableC at hb ⊢
+    unfold Route.tableC at hb ⊢
     simp only [opC, Bool.and_eq_true] at hb ⊢
     rw [rep_leftDivC _ _ _ _ hb.2]
     have ihR := rep_tableC R hb.1.1
     have ihS := rep_tableC S hb.1.2
-    simp only [TP.den, ihR, ihS]
+    simp only [Route.den, ihR, ihS]
 
-/-- `TP.table` denotes `TP.den` under `tableC`'s bit. -/
-theorem rep_table {A B : Obj} (p : TP A B) (hb : p.tableC.2 = true) (a : A.El) (b : B.El) :
+/-- `Route.table` denotes `Route.den` under `tableC`'s bit. -/
+theorem rep_table {A B : Obj} (p : Route A B) (hb : p.tableC.2 = true) (a : A.El) (b : B.El) :
     rep p.table a b ↔ p.den a b := rep_tableC p hb a b
 
 #print axioms rep_tableC
@@ -94,7 +94,7 @@ def Bits.Enc {A B : Obj} (ua : Nat → A.El) (ub : Nat → B.El) (x : Bits) (r :
 theorem idx_lt {i j na w : Nat} (hi : i < na) (hj : j < w) : i * w + j < na * w := by
   have := Nat.mul_le_mul_right w (Nat.succ_le_of_lt hi); rw [Nat.succ_mul] at this; omega
 
-/-- A matrix `TP.fits` admits (`≤ 2²⁷` bits) counts its bits in a `USize`. -/
+/-- A matrix `Route.fits` admits (`≤ 2²⁷` bits) counts its bits in a `USize`. -/
 theorem toUSize_fit {n : Nat} (h : n ≤ 2 ^ 27) : n.toUSize.toNat = n :=
   USize.toNat_ofNat_of_lt' (Nat.lt_of_le_of_lt h (Nat.lt_of_lt_of_le (by decide) USize.le_size))
 
@@ -112,19 +112,19 @@ theorem enc_bit (op : UInt8) (F : Prop → Prop → Prop) (hF : ∀ p q, Ew.bitS
   simp only [Bits.at, hw] at ex ey ⊢
   rw [bitAt_bit _ _ _ ht, hF, propext ex, propext ey]
 
-/-- **`∩` as bits** (`rep_inter`'s side, `rep_tableC`): the `∧` of the two matrices holds `TP.meet`'s relation. -/
-theorem rep_meetB {R S : TP A B} {x y : Bits} (hx : x.Enc ua ub R.den) (hy : y.Enc ua ub S.den) (hn : y.na = x.na)
-    (hw : y.w = x.w) (hfit : x.na * x.w ≤ 2 ^ 27) : (x.meet y).Enc ua ub (TP.meet R S).den :=
+/-- **`∩` as bits** (`rep_inter`'s side, `rep_tableC`): the `∧` of the two matrices holds `Route.meet`'s relation. -/
+theorem rep_meetB {R S : Route A B} {x y : Bits} (hx : x.Enc ua ub R.den) (hy : y.Enc ua ub S.den) (hn : y.na = x.na)
+    (hw : y.w = x.w) (hfit : x.na * x.w ≤ 2 ^ 27) : (x.meet y).Enc ua ub (Route.meet R S).den :=
   enc_bit _ And (fun p q => by rw [bitStep_lesser, Bool.and_eq_true]) hx hy hn hw hfit
 
-/-- **`∪` as bits**: the `∨` of the two matrices holds `TP.join`'s relation. -/
-theorem rep_joinB {R S : TP A B} {x y : Bits} (hx : x.Enc ua ub R.den) (hy : y.Enc ua ub S.den) (hn : y.na = x.na)
-    (hw : y.w = x.w) (hfit : x.na * x.w ≤ 2 ^ 27) : (x.join y).Enc ua ub (TP.join R S).den :=
+/-- **`∪` as bits**: the `∨` of the two matrices holds `Route.join`'s relation. -/
+theorem rep_joinB {R S : Route A B} {x y : Bits} (hx : x.Enc ua ub R.den) (hy : y.Enc ua ub S.den) (hn : y.na = x.na)
+    (hw : y.w = x.w) (hfit : x.na * x.w ≤ 2 ^ 27) : (x.join y).Enc ua ub (Route.join R S).den :=
   enc_bit _ Or (fun p q => by rw [bitStep_greater, Bool.or_eq_true]) hx hy hn hw hfit
 
-/-- **`−` as bits**: the `∧` with the complement (`notBits`) holds `TP.diff`'s relation. -/
-theorem rep_diffB {R S : TP A B} {x y : Bits} (hx : x.Enc ua ub R.den) (hy : y.Enc ua ub S.den) (hn : y.na = x.na)
-    (hw : y.w = x.w) (hfit : x.na * x.w ≤ 2 ^ 27) : (x.diff y).Enc ua ub (TP.diff R S).den := by
+/-- **`−` as bits**: the `∧` with the complement (`notBits`) holds `Route.diff`'s relation. -/
+theorem rep_diffB {R S : Route A B} {x y : Bits} (hx : x.Enc ua ub R.den) (hy : y.Enc ua ub S.den) (hn : y.na = x.na)
+    (hw : y.w = x.w) (hfit : x.na * x.w ≤ 2 ^ 27) : (x.diff y).Enc ua ub (Route.diff R S).den := by
   have hy' : (⟨y.na, y.w, Ew.notBits (y.na * y.w).toUSize y.b⟩ : Bits).Enc ua ub fun a b => ¬ S.den a b := by
     intro i hi j hj
     have ht : i * y.w + j < (y.na * y.w).toUSize.toNat := by
@@ -133,7 +133,7 @@ theorem rep_diffB {R S : TP A B} {x y : Bits} (hx : x.Enc ua ub R.den) (hy : y.E
     simp only [Bits.at] at ey ⊢
     rw [notBits_bitAt _ _ ht, Bool.not_eq_true', ← ey]; simp
   have := enc_bit _ And (fun p q => by rw [bitStep_lesser, Bool.and_eq_true]) hx hy' hn hw hfit
-  intro i hi j hj; rw [Bits.diff, Bits.meet, this i hi j hj]; simp [TP.den]
+  intro i hi j hj; rw [Bits.diff, Bits.meet, this i hi j hj]; simp [Route.den]
 
 #print axioms rep_diffB
 
@@ -313,15 +313,15 @@ theorem enc_rows {r : A.El → B.El → Prop} {t : B.El → C.El → Prop} {uc :
       have hk' : k < (ids j).length := by rw [hJl]; exact hk
       exact (hbit k hk').2 (h _ ((hR a ha _).2 ⟨k, hk, hk', hka, rfl⟩))
 
-/-- **`≫` as bits** (`rep_comp`'s side, `rep_tableC`): `enc_rows`' `∨`, which holds `TP.comp`'s relation. -/
-theorem rep_compB {R : TP A B} {S : TP B C} {uc : Nat → C.El} (na : Nat) (i j : ByteArray) {s : Bits}
+/-- **`≫` as bits** (`rep_comp`'s side, `rep_tableC`): `enc_rows`' `∨`, which holds `Route.comp`'s relation. -/
+theorem rep_compB {R : Route A B} {S : Route B C} {uc : Nat → C.El} (na : Nat) (i j : ByteArray) {s : Bits}
     (hs : s.Enc ub uc S.den) (hl : len j = len i) (hsort : (ids i).Pairwise (· ≤ ·))
     (hJ : ∀ b ∈ ids j, b < s.na)
     (hR : ∀ a < na, ∀ y, R.den (ua a) y ↔
       ∃ (k : Nat) (hk : k < (ids i).length) (hk' : k < (ids j).length), (ids i)[k]'hk = a ∧ ub ((ids j)[k]'hk') = y)
     (hna : na ≤ 2 ^ 27) (hfit : s.na * s.w ≤ 2 ^ 27) (hsw : s.w ≤ 2 ^ 27)
     (hm : len i < min (2 ^ 63) USize.size) :
-    (Bits.comp na i j s).Enc ua uc (TP.comp R S).den :=
+    (Bits.comp na i j s).Enc ua uc (Route.comp R S).den :=
   enc_rows false na i j hs hl hsort hJ hR hna hfit hsw hm
 
 #print axioms rep_compB
@@ -429,7 +429,7 @@ theorem rep_leafB {R : Rel A B} {na nb : Nat} {k v : ByteArray} (hl : len v = le
     (hv : ∀ x ∈ ids v, x < nb) (hfit : na * nb ≤ 2 ^ 27) (hm : len k < USize.size)
     (hR : ∀ a < na, ∀ b < nb, rep R (ua a) (ub b) ↔
       ∃ (r : Nat) (h1 : r < (ids k).length) (h2 : r < (ids v).length), (ids k)[r]'h1 = a ∧ (ids v)[r]'h2 = b) :
-    (Bits.ofCodes na nb k v).Enc ua ub (TP.leaf R).den := fun a ha b hb =>
+    (Bits.ofCodes na nb k v).Enc ua ub (Route.leaf R).den := fun a ha b hb =>
   (ofCodes_at hl hk hv hfit hm ha hb).trans (hR a ha b hb).symm
 
 #print axioms ofCodes_at

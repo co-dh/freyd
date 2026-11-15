@@ -227,7 +227,7 @@ theorem rdiv_sound {A B C : Obj} {R : Fn false A C} {S : Fn false B C} {UA : Fn 
 
 /-- **`runC`'s answer is the plan's relation** under its bit, on either path, in check mode too (`die` is its
     argument). -/
-theorem rep_runC {A B : Obj} (p : Bits.TP A B) (hb : (Bits.runC p).2 = true) (a : A.El) (b : B.El) :
+theorem rep_runC {A B : Obj} (p : Bits.Route A B) (hb : (Bits.runC p).2 = true) (a : A.El) (b : B.El) :
     rep (Bits.runC p).1 a b ↔ p.den a b := by
   match p with
   | .leaf _ => exact Iff.rfl
@@ -240,7 +240,7 @@ theorem rep_runC {A B : Obj} (p : Bits.TP A B) (hb : (Bits.runC p).2 = true) (a 
       · rw [if_neg hc]; simp only [dbgTrace]; exact fun hb => Bits.rep_table _ hb a b
 
 /-- The demand `demP` hands `S` in `R S`: a coreflexive holding every value of `R`'s plan. -/
-theorem demP_spec {A B : Obj} (e : Bool) (r : Bits.TP A B) (hb : (demP e r).2 = true) :
+theorem demP_spec {A B : Obj} (e : Bool) (r : Bits.Route A B) (hb : (demP e r).2 = true) :
     Cor (demP e r).1 ∧ ∀ a b, r.den a b → keys (demP e r).1 b b := by
   cases e
   · exact ⟨trivial, fun _ _ _ => rfl⟩

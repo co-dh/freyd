@@ -111,9 +111,9 @@ theorem pairs_len_lt (x : Bits) (hfit : x.na * x.w ≤ 2 ^ 27) : len x.pairs.1 <
   Nat.lt_of_le_of_lt ((pairs_spec x hfit).2.1)
     (Nat.lt_of_le_of_lt hfit (Nat.lt_of_lt_of_le (by decide) USize.le_size))
 
-/-- **`°` as bits** (`rep_conv`'s side, `rep_tableC`): the pairs swapped and scattered hold `TP.conv`'s relation. -/
-theorem rep_convB {ua : Nat → A.El} {ub : Nat → B.El} {R : TP A B} {x : Bits} (hx : x.Enc ua ub R.den)
-    (hfit : x.na * x.w ≤ 2 ^ 27) : x.conv.Enc ub ua (TP.conv R).den := by
+/-- **`°` as bits** (`rep_conv`'s side, `rep_tableC`): the pairs swapped and scattered hold `Route.conv`'s relation. -/
+theorem rep_convB {ua : Nat → A.El} {ub : Nat → B.El} {R : Route A B} {x : Bits} (hx : x.Enc ua ub R.den)
+    (hfit : x.na * x.w ≤ 2 ^ 27) : x.conv.Enc ub ua (Route.conv R).den := by
   obtain ⟨hl, -, -, h1, h2, hat⟩ := pairs_spec x hfit
   intro b hb a ha
   change b < x.w at hb

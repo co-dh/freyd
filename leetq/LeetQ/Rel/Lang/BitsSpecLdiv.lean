@@ -1,6 +1,6 @@
 /-
   `\` as bits: `Bits.ldiv`'s `∧` of `S`'s rows over `R`'s segments, masked by `ran R ⊗ ⊤ ∪ Ub ⊗ Uc`, holds
-  `TP.ldiv`'s relation. Each part is `enc_rows` (`∧` for the rows, `∨` for each mask through the one point).
+  `Route.ldiv`'s relation. Each part is `enc_rows` (`∧` for the rows, `∨` for each mask through the one point).
 -/
 import LeetQ.Rel.Lang.BitsSpec
 import LeetQ.Rel.KernelWF.SortSpec
@@ -63,9 +63,9 @@ theorem pt_iff {α : Sort _} {P : Prop} {u : Nat → α} {m : α} {i z : ByteArr
 variable {A B C : Obj} {ua : Nat → A.El} {ub : Nat → B.El}
 
 /-- **`\` as bits** (`rep_leftDiv`'s side, `rep_tableC`): from `R°`'s code pairs `y`, `a` (`y` ascending, `R` read
-    off them), `S`'s matrix and the codes `kb`, `kc` of `UB`'s and `UC`'s elements, `Bits.ldiv` holds `TP.ldiv`'s
+    off them), `S`'s matrix and the codes `kb`, `kc` of `UB`'s and `UC`'s elements, `Bits.ldiv` holds `Route.ldiv`'s
     relation: the `∧` of `S`'s rows answers the `∀` clause, the mask `ran R ⊗ ⊤ ∪ Ub ⊗ Uc` the vacuous one. -/
-theorem rep_ldivB {R : TP A B} {S : TP A C} {UB : Rel B B} {UC : Rel C C} {uc : Nat → C.El} (nb : Nat)
+theorem rep_ldivB {R : Route A B} {S : Route A C} {UB : Rel B B} {UC : Rel C C} {uc : Nat → C.El} (nb : Nat)
     (y a : ByteArray) {s : Bits} (kb kc : ByteArray)
     (hs : s.Enc ua uc S.den) (hl : len a = len y) (hsort : (ids y).Pairwise (· ≤ ·)) (hJ : ∀ x ∈ ids a, x < s.na)
     (hR : ∀ b < nb, ∀ x, R.den x (ub b) ↔
@@ -75,7 +75,7 @@ theorem rep_ldivB {R : TP A B} {S : TP A C} {UB : Rel B B} {UC : Rel C C} {uc : 
     (hnb : nb ≤ 2 ^ 27) (hfit : s.na * s.w ≤ 2 ^ 27) (hsw : s.w ≤ 2 ^ 27) (hout : nb * s.w ≤ 2 ^ 27)
     (hm : len y < min (2 ^ 63) USize.size) (hmb : len kb < min (2 ^ 63) USize.size)
     (hmc : len kc < min (2 ^ 63) USize.size) :
-    (Bits.ldiv nb y a s kb kc).Enc ub uc (TP.ldiv R S UB UC).den := by
+    (Bits.ldiv nb y a s kb kc).Enc ub uc (Route.ldiv R S UB UC).den := by
   have hsw' : 1 * s.w ≤ 2 ^ 27 := by omega
   -- the `∀` clause: `∧` of `S`'s rows over `R`'s segments
   have hd := enc_rows (ua := ub) (ub := ua) (r := fun b x => R.den x b) (t := S.den) true nb y a hs hl hsort hJ hR
@@ -131,7 +131,7 @@ theorem rep_ldivB {R : TP A B} {S : TP A C} {UB : Rel B B} {UC : Rel C C} {uc : 
   have hmeet := enc_bit _ And (fun p q => by rw [bitStep_lesser, Bool.and_eq_true]) hd hjoin rfl rfl hout
   intro b hb c hc
   refine Iff.trans (hmeet b hb c hc) ?_
-  simp [TP.den]
+  simp [Route.den]
 
 #print axioms rep_ldivB
 
