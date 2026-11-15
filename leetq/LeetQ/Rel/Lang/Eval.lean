@@ -1,7 +1,7 @@
 import Std.Data.HashMap
 import LeetQ.Rel.AC3Def
 import LeetQ.Rel.Lang.Elab
-import LeetQ.Rel.Lang.Bits
+import LeetQ.Rel.Lang.Gen
 import LeetQ.Rel.Lang.Parse
 import LeetQ.Rel.Programs.Prelude
 
@@ -16,24 +16,6 @@ open LeetQ.Rel LeetQ.Rel.Alg
 
 deriving instance Hashable for QLean.QAtomicType
 deriving instance Hashable for LeetQ.Rel.Obj
-
-/-- The keys a term reads: a coreflexive when it runs on demand, nothing when it is closed. -/
-@[reducible] def Dem : Bool → Obj → Type
-  | true, A => Rel A A
-  | false, _ => Unit
-
-def Dem.of {A : Obj} : (d : Bool) → Rel A A → Dem d A
-  | true, D => D
-  | false, _ => ()
-
-def Dem.l {A : Obj} : (d e : Bool) → Dem (d || e) A → Dem d A
-  | true, _, D => D
-  | false, _, _ => ()
-
-def Dem.r {A : Obj} : (d e : Bool) → Dem (d || e) A → Dem e A
-  | _, false, _ => ()
-  | true, true, D => D
-  | false, true, D => D
 
 /-- A relation with its objects. -/
 abbrev Val := (A : Obj) × (B : Obj) × Rel A B

@@ -243,6 +243,15 @@ def run {A B : Obj} (p : TP A B) : Rel A B :=
       if R ⊑ T && T ⊑ R then R else if die "LEETQ DIFF: bit path and table path differ" == 0 then R else T
     | none => if checkOn == 0 then p.table else dbgTrace "LEETQ table" fun _ => p.table
 
+/-- `run` with its bit: set where `run?`'s guards (`codeAll`, `fits`, `capsOK`) passed, else the table's
+    (`tableC.2`). In check mode `run` decides the relation and traces, and the bit is the path's. -/
+def runC {A B : Obj} (p : TP A B) : Rel A B × Bool :=
+  match p with
+  | .leaf R => (R, true)
+  | _ => if checkOn != 0 then (run p, (run? p).isSome || p.tableC.2) else match run? p with
+    | some R => (R, true)
+    | none => p.tableC
+
 /-- The plan `p`, or the table `t` as a leaf where there is none. -/
 def orLeaf {m : Type → Type} [Monad m] {A B : Obj} (p : m (Option (TP A B))) (t : m (Rel A B)) : m (TP A B) := do
   match ← p with
