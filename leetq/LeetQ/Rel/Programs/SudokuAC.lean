@@ -1,4 +1,4 @@
-import LeetQ.Rel.Programs.Prelude
+import LeetQ.Rel.Programs.CSP
 
 /-! # Sudoku arc consistency (AIMA §6.2.2)
 
@@ -41,7 +41,7 @@ forced to 4, so its column peer cell 8 loses 4. The rounds stop when one removes
 
 namespace LeetQ.Rel.Programs
 
-rel_program sudokuac after prelude where
+rel_program sudokuac after csp where
     obj Cell = 0…80                               -- the cell in row r, column k is 9r+k
     obj Unit = 0…26                               -- rows 0…8, columns 9…17, boxes 18…26
     obj D = 1…9
@@ -54,7 +54,6 @@ rel_program sudokuac after prelude where
     /- The constraint: peers take different digits. -/
 
     peer : Cell ⟶ Cell ≜ (unit unit°) ∩ ≠     -- 1701 pairs sharing a unit, less the 81 (c,c): 1620; ≠ itself is 81·80 = 6480
-    AC3(A : α ⟶ α, C : β ⟶ β, s : α ⟶ β) : α ⟶ β ≜ νX : s ∩ (A\(X C))   -- AIMA REVISE on every arc of A at once, iterated: AC-3 (arc consistency, Mackworth's algorithm 3): the largest X ⊑ s with every arc of A supported
 
     s₀ : Cell ⟶ D ≜ g°\𝟙(D)                       -- the givens, 1…9 elsewhere; see the module doc
     s : Cell ⟶ D ≜ AC3(peer, ≠, s₀)

@@ -220,7 +220,7 @@ def reach : List St.El := [[(0, 0), (1, 1), (2, 0)], [(0, 0), (1, 2), (2, 0)], [
 
 /-- The program `prog` read after the prelude: its error, if any. -/
 def elabErr (prog : Except Err Program) : Option Err :=
-  match prog >>= Expand.read (some Programs.prelude) [] with | .error e => some e | .ok _ => none
+  match prog >>= (Expand.read (fun _ => false) [(`prelude, Programs.prelude)] ·) with | .error e => some e | .ok _ => none
 
 /-- The statements `src` read after the prelude and `prog` fail at `line` (and `col`, when given) with `what` in the
     message. -/
@@ -838,7 +838,7 @@ rel_program corPairs after Programs.prelude where
 /-- The text `src` read after the prelude `pre`: its error. -/
 def afterErr (pre src : String) : CM Err := do
   let p ← match ← readIn { cs := #[] } pre with | .ok p => pure p | .error e => throwError "{e}"
-  match (← readIn (Parse.scope p) src) >>= Expand.read (some p) [] with
+  match (← readIn (Parse.scope p) src) >>= (Expand.read (fun _ => false) [(`pre, p)] ·) with
   | .error e => pure e
   | .ok _ => throwError "expected an error, got none"
 -- the prelude's line 1 starts after `rel_program t where `, 20 columns

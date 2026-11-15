@@ -45,7 +45,7 @@ namespace LeetQ.Rel.Lang
     declaration elaborated, nothing evaluated), in order; with no program, the prelude's. -/
 def typesOf (src : Option Program) : Except Err (List String) := do
   let prog := src.getD Programs.prelude
-  let _ ← Expand.read (if src.isSome then some Programs.prelude else none) [] prog
+  let _ ← Expand.read (fun _ => false) (if src.isSome then [(`prelude, Programs.prelude)] else []) prog
   pure (prog.filterMap fun | .defn _ n ps _ ty => some (sigOf n ps ty) | _ => none)
 
 end LeetQ.Rel.Lang

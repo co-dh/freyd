@@ -93,6 +93,11 @@ inductive Tm : Obj → Obj → Bool → Type where
   | flat {I A B : Obj} {d : Bool} (R : Tm I (.prod A B) d) : Tm (.prod I A) B true
   /-- The variable `k` of the fixed point that binds it: its value in the round being run. -/
   | var {A B : Obj} (k : Nat) : Tm A B false
+  /-- The constant `c` a definition of another program was elaborated once to, before its arguments (`arg`):
+      called, its body not expanded. -/
+  | call {A B : Obj} (c : Lean.Name) : Tm A B false
+  /-- `f` given one more argument `x`: a relation, or the universe of one of its object variables. -/
+  | arg {A B C D : Obj} (f : Tm A B false) (x : Tm C D false) : Tm A B false
   /-- `νX : φ`, `X` the variable `k`: rounds of `body` from `S`, the conjuncts of `φ` without `X`, down to the
       greatest fixed point. -/
   | nu {A B : Obj} (k : Nat) (S body : Tm A B false) : Tm A B false
@@ -130,6 +135,9 @@ structure ObjInfo where
   elems : List String := []
   range : Option (Int × Int) := none
   uni : Option ((m : USize) × Arr .long m) := none
+  /-- An object variable of a definition elaborated once: its universe is the variable `k`, an argument of the
+      definition's constant. -/
+  uniVar : Option Nat := none
 
 abbrev Objs := List (String × ObjInfo)
 
@@ -215,6 +223,9 @@ inductive Pre
   /-- `μX : body` (`least`) or `νX : body`, `X` the variable `k`; `S` the meet of `body`'s conjuncts that do not
       mention `X`, a `ν`'s start. -/
   | fix (pos : Pos) (least : Bool) (k : Nat) (S : Option Pre) (body : Pre) (a b : OTy)
+  /-- The constant `c` at `pos`, at the objects `us` of its object variables and the arguments `args`; `alt` the
+      definition's body expanded at the use, which every analysis reads and `build` falls back to. -/
+  | call (pos : Pos) (c : Lean.Name) (us : List OTy) (args : List Pre) (alt : Pre) (a b : OTy)
 
 instance : Inhabited Pre := ⟨.id (.base "")⟩
 
@@ -253,6 +264,7 @@ def Pre.at (p : Pos) : Pre → Pre
   | .close _ x a why => .close p (x.at p) a why
   | .var _ k a b => .var p k a b
   | .fix _ l k S x a b => .fix p l k (S.attach.map fun ⟨y, _⟩ => y.at p) (x.at p) a b
+  | .call _ c us xs alt a b => .call p c us (xs.attach.map fun ⟨y, _⟩ => y.at p) (alt.at p) a b
   -- no position and no part
   | x@(.tm _) | x@(.zero ..) | x@(.id _) | x@(.mem _) | x@(.outl ..) | x@(.outr ..) | x@(.inl ..) | x@(.inr ..)
   | x@(.union _) | x@(.tau _) | x@(.nil ..) | x@(.cons _) | x@(.uncons _) | x@(.length ..) | x@(.total _)
@@ -322,7 +334,7 @@ def Pre.nilSrcs : Pre → List OTy
   | .comp x y | .meet x y | .join x y | .diff x y | .ldiv _ x y _ _ | .rdiv _ x y _ _ | .pair x y | .prod x y
   | .junc x y | .fold x y | .foldI x y => x.nilSrcs ++ y.nilSrcs
   | .conv x | .dom x | .ran x | .lam x | .E x | .map x | .est x | .thin x | .own x | .thinL x | .merge x
-  | .loop x | .flat x | .close _ x _ _ | .fix _ _ _ _ x _ _ => x.nilSrcs
+  | .loop x | .flat x | .close _ x _ _ | .fix _ _ _ _ x _ _ | .call _ _ _ _ x _ _ => x.nilSrcs
   | .var .. | .tm _| .zero .. | .id _ | .mem _ | .outl .. | .outr .. | .inl .. | .inr .. | .union _ | .tau _ | .cons _
   | .uncons _ | .length .. | .total _ | .inits _ | .cat _ | .uncat _ | .zip .. | .snoc _ | .unsnoc _ | .setify _
   | .bagify _ | .tic _ | .atPos .. | .succ .. | .arith .. | .leq .. | .lt .. | .lit .. => []
@@ -351,7 +363,7 @@ def Pre.parts : Pre → List (Pre × Pol)
   | .comp x y | .meet x y | .join x y | .pair x y | .prod x y | .junc x y | .fold x y | .foldI x y =>
     [(x, .mono), (y, .mono)]
   | .conv x | .dom x | .ran x | .map x | .est x | .own x | .loop x | .flat x | .close _ x _ _
-  | .fix _ _ _ _ x _ _ => [(x, .mono)]
+  | .fix _ _ _ _ x _ _ | .call _ _ _ _ x _ _ => [(x, .mono)]
   | .lam x => [(x, .not "Λ")]
   | .E x => [(x, .not "E")]
   | .thin x => [(x, .not "thin")]
@@ -1195,7 +1207,8 @@ def closed? {A B : Obj} (r : Res) : Except Err (Tm A B false) := do
   | ⟨true, _⟩ => internal dp "a term that needs keys where none are supplied"
 
 /-- `𝟙` on the universe of `o`, or the error that `o` has none. -/
-def uniTm (p : Pos) (o : OTy) (A : Obj) (what : String) : Except Err (Tm A A false) :=
+def uniTm (p : Pos) (o : OTy) (A : Obj) (what : String) : Except Err (Tm A A false) := do
+  if let .base n := zonk st o then if let some k := (objs.lookup n).bind (·.uniVar) then return .var k
   match uniOf objs (zonk st o) with
   | some ⟨A', _, U⟩ => if h : A' = A then pure (.uni (h ▸ U)) else internal dp "universe objects disagree"
   | none => throw ⟨p, s!"{what}: {zonk st o} has no universe; compose a set of its elements before it (§a)"⟩
@@ -1412,6 +1425,18 @@ def build : Pre → Except Err Res
     pure ⟨A, B, false, .val ⟨n, k, v⟩⟩
   | .close p q a why => do closeRes objs st dp p a why (← build q)
   | .var _ k a b => return ⟨← toObj st dp a, ← toObj st dp b, false, .var k⟩
+  -- the constant's object variables must be base objects with a universe and its arguments need no keys (M); a
+  -- use that is not expands the body, as a definition of the program itself does
+  | .call pos c us xs alt a b => do
+    let A ← toObj st dp a; let B ← toObj st dp b
+    let us := us.map (zonk st)
+    let rs ← xs.attach.mapM fun ⟨x, h⟩ =>
+      have : sizeOf x < sizeOf xs := List.sizeOf_lt_of_mem h
+      build x
+    let base (u : OTy) := match u with | .base _ => (uniOf objs u).isSome | _ => false
+    if !us.all base || rs.any (·.2.2.1) then build alt else
+    let f ← us.foldlM (fun f u => return .arg f (← uniTm objs st dp pos u .long "a call")) (Tm.call (A := A) (B := B) c)
+    pure ⟨A, B, false, rs.foldl (fun f r => match r with | ⟨_, _, false, t⟩ => .arg f t | _ => f) f⟩
   -- the body read whole each round, on its source's universe when it needs keys
   | .fix p least k S q a b => do
     let A ← toObj st dp a; let B ← toObj st dp b

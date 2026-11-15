@@ -434,25 +434,33 @@ def defConst (n : Name) (v : Lean.Expr) : CoreM Unit :=
 /-- The program `n` named by `id`, its chain (`n.root`, `n.mid`), and what it reads (`Expand.emit`): each closed
     definition as the Lean definition `n.rel.x`, its prints, its checks; the doc comment `stx[0]`, when written, is
     `n`'s. -/
-def define (stx id : Syntax) (chain : Option Chain) (prog : Program) : CommandElabM Unit := do
+def define (stx id : Syntax) (chain : Option Chain) (prog : Program) (names : List Name) : CommandElabM Unit := do
   let n := (← getCurrNamespace) ++ id.getId
   liftTermElabM do
     defConst n (toExpr (α := List Decl) prog)
     if let some (r, m, _, _) := chain then defConst (n ++ `root) (mkConst r); defConst (n ++ `mid) m
     addDocString' n mkNullNode (stx[0].getOptional?.map (⟨·⟩))
     Term.addTermInfo' id (mkConst n) (isBinder := true)
-  match Expand.read (chain.map (·.2.2.1)) ((chain.map (·.2.2.2)).getD []) prog with
+  let reg := Expand.relRegistry.getState (← getEnv)
+  let progs ← names.mapM fun m => return (m, ← programOf m)
+  match Expand.read (reg.calls.contains ·) progs prog n with
   | .error e => throwErrorAt stx "{e}"
-  | .ok r => liftTermElabM (Expand.emit n r)
+  | .ok r => liftTermElabM (Expand.emit n r); modifyEnv (Expand.relRegistry.addEntry · (.chain n names))
+
+/-- The programs `pre`'s successor is read after: `pre`'s own chain, then `pre`. -/
+def namesAfter (pre : Name) : CommandElabM (List Name) := do
+  pure ((((Expand.relRegistry.getState (← getEnv)).chains.lookup pre).getD []) ++ [pre])
 
 /-- `rel_program n where …` is read in the empty scope, `rel_program n after pre where …` in the scope after `pre`
     and what `pre` is read after (`chainOf`). -/
 @[command_elab relProgram] def elabRelProgram : CommandElab := fun stx => do
-  let chain ← if stx[3].getNumArgs == 0 then pure none else
-    pure (some (← chainOf (← liftCoreM (realizeGlobalConstNoOverloadWithInfo stx[3][1]))))
+  let pre ← if stx[3].getNumArgs == 0 then pure none else
+    pure (some (← liftCoreM (realizeGlobalConstNoOverloadWithInfo stx[3][1])))
+  let chain ← pre.mapM chainOf
+  let names ← match pre with | some p => namesAfter p | none => pure []
   match program (← getFileMap) (scopeOf chain) stx[5].getArgs with
   | .error e => throwErrorAt stx "{e}"
-  | .ok prog => define stx stx[2] chain prog
+  | .ok prog => define stx stx[2] chain prog names
 
 /-- `rel_program n from base upto x where …`: the replacements read in the scope of `base`'s chain and objects. -/
 @[command_elab relVariant] def elabRelVariant : CommandElab := fun stx => do
@@ -478,5 +486,6 @@ def define (stx id : Syntax) (chain : Option Chain) (prog : Program) : CommandEl
       | some k => pure (kept.take (k + 1))
       | none => throwErrorAt stx[5] "`{x}` is no definition of `{b}`"
     define stx stx[2] chain (kept.map fun d => ((named d).bind fun x => news.find? (named · == some x)).getD d)
+      (((Expand.relRegistry.getState (← getEnv)).chains.lookup b).getD [])
 
 end LeetQ.Rel.Lang.Embed
