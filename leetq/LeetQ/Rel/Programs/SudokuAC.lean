@@ -17,9 +17,9 @@ other cells in its row, column and box.
 Cell 2 is given nothing, so no path starts with `{g°} 2` and `s₀` holds all of 1…9 there, with no complement
 needed to name the empty cells.
 
-## AC-3: `s ≜ νX : s₀ ∩ revise(peer, ≠, X)`
+## AC-3: `s ≜ νX : s₀ ∩ (peer\(X ≠))`
 
-`revise(A,C,X) ≜ A\(X C)` is the largest `Y` with `A Y ⊑ X C`. Take cell 2 and its peer cell 0, given 5:
+`A\(X C)` is the largest `Y` with `A Y ⊑ X C`. Take cell 2 and its peer cell 0, given 5:
 
 ```
 0 {peer} 2 {X} d     must imply     0 {s₀} 5 {≠} d,  i.e.  d ∈ {1,2,3,4,6,7,8,9}
@@ -55,15 +55,14 @@ rel_program sudokuac after prelude where
     /- The constraint: peers take different digits. -/
 
     peer : Cell ⟶ Cell ≜ (unit unit°) ∩ ≠     -- 1701 pairs sharing a unit, less the 81 (c,c): 1620; ≠ itself is 81·80 = 6480
-    revise(A : α ⟶ α, C : β ⟶ β, X : α ⟶ β) : α ⟶ β ≜ A\(X C)   -- AIMA REVISE on every arc of A at once
-    AC3(A : α ⟶ α, C : β ⟶ β, s : α ⟶ β) : α ⟶ β ≜ νX : s ∩ revise(A,C,X)   -- AC-3 (arc consistency, Mackworth's algorithm 3): the largest X ⊑ s with every arc of A supported
+    AC3(A : α ⟶ α, C : β ⟶ β, s : α ⟶ β) : α ⟶ β ≜ νX : s ∩ (A\(X C))   -- AIMA REVISE on every arc of A at once, iterated: AC-3 (arc consistency, Mackworth's algorithm 3): the largest X ⊑ s with every arc of A supported
 
     s₀ : Cell ⟶ D ≜ g°\𝟙(D)                       -- the givens, 1…9 elsewhere; see the module doc
     s : Cell ⟶ D ≜ AC3(peer, ≠, s₀)
 
     sol : Cell ⟶ D ≜ {(0,5),(1,3),(2,4),(3,6),(4,7),(5,8),(6,9),(7,1),(8,2),(9,6),(10,7),(11,2),(12,1),(13,9),(14,5),(15,3),(16,4),(17,8),(18,1),(19,9),(20,8),(21,3),(22,4),(23,2),(24,5),(25,6),(26,7),(27,8),(28,5),(29,9),(30,7),(31,6),(32,1),(33,4),(34,2),(35,3),(36,4),(37,2),(38,6),(39,8),(40,5),(41,3),(42,7),(43,9),(44,1),(45,7),(46,1),(47,3),(48,9),(49,2),(50,4),(51,8),(52,5),(53,6),(54,9),(55,6),(56,1),(57,5),(58,3),(59,7),(60,2),(61,8),(62,4),(63,2),(64,8),(65,7),(66,4),(67,1),(68,9),(69,6),(70,3),(71,5),(72,3),(73,4),(74,5),(75,2),(76,8),(77,6),(78,1),(79,7),(80,9)}
     check g ⊑ s                                   -- the givens survive
-    check s = s₀ ∩ revise(peer, ≠, s)             -- a fixed point
+    check s = s₀ ∩ (peer\(s ≠))           -- a fixed point
     check s = sol                                 -- AC-3 alone solves this puzzle
 
 #guard sudokuac.ok
