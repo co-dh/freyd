@@ -16,7 +16,8 @@ name = "Freyd"           # book core: curated aggregator Freyd.lean stays the si
 
 [[lean_lib]]
 name = "AOP"             # Algebra-of-Programming layer; glob so every AOP/*.lean is in the default build
-globs = ["AOP.+"]
+globs = ["AOP", "AOP.+"]   # AOP.lean is the root module whose initializer a precompiled dependent loads
+moreLinkArgs = ["-L.lake/build/lib", "-lfreyd_Freyd", "-Wl,-rpath,$ORIGIN"]   # AOP imports Freyd: its .so needs Freyd's initializers at dlopen
 
 # `leet` (LeetCode case studies) and `rel` (the auto-derivation drivers) are declared but left out of `defaultTargets`: nothing in `Freyd`
 # or `AOP` imports them, so a default build skips them, while `lake build leet rel` still checks them.

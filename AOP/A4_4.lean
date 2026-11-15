@@ -19,6 +19,7 @@
 module
 
 public import Freyd.S2_22
+public import AOP.A4_1
 import AOP.A4_2
 import Freyd.S2_147_MapCat
 

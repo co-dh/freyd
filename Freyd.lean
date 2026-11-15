@@ -203,70 +203,7 @@ import Freyd.S2_158e_InstanceBound
 import Freyd.S2_158f_SPWallProof
 import Freyd.S2_33
 import Freyd.S1_631_CapitalProjective
--- Bird & de Moor, Algebra of Programming, ch. 4 (only material not already in Freyd S2_*)
-import AOP.A4_1
-import AOP.A4_2
-import AOP.A4_3
-import AOP.A4_4
-import AOP.A4_5
-import AOP.A4_6
--- Bird & de Moor ch. 5: relators and datatypes in allegories
-import AOP.A5_1
-import AOP.A5_2
-import AOP.A5_3
-import AOP.A5_4
-import AOP.A5_5
-import AOP.A5_6
-import AOP.A5_7
--- Bird & de Moor ch. 6: recursive programs (fixed points, hylomorphisms, closure)
-import AOP.A6_2
-import AOP.A6_3
-import AOP.A6_5
-import AOP.A6_7
--- Bird & de Moor ch. 7: optimisation problems (min/max, monotonic algebras, greedy theorem)
-import AOP.A7_1
-import AOP.A7_2
--- Bird & de Moor ch. 8: thinning algorithms (thin, thinning theorem)
-import AOP.A8_1
--- Bird & de Moor ch. 9: dynamic programming (principle of optimality, DP + thinning theorems)
-import AOP.A9_1
--- Beyond B&dM: ∞-completed dynamic programming (dead branches via a top-valued fallback;
--- fixes Theorem 9.1's Egli–Milner gap on value-axis DPs — instantiated in leet.L322_dp)
-import AOP.A9_2
--- Bird & de Moor ch. 10: greedy algorithms (Theorem 10.1 — greedy as extreme dynamic programming)
-import AOP.A10_1
--- Concrete model Rel(Set) for the AoP case studies (objects = types, morphisms = relations):
--- the full allegory stack (power/LCDA/tabular/unitary) in which the §6.1+ programs actually run.
-import AOP.A6_1_RelSet
--- The §5.7 category of MONOTONE relations, refuted in that model: no meet on the hom-sets
--- (`inter_not_monotonic`) and no monotone merge out of the tensor (`merge_not_monotonic`).
-import AOP.A6_1_OrdRelSet
--- Bird & de Moor §6.1: Digits of a number — Decimal as an initial algebra of `F A = Digit⁺ + A×Digit`,
--- the reading catamorphism `val`, and the recursive equation for `val°` (first worked AoP program).
-import AOP.A6_1_Digits
--- Generic snoc-list datatype `SnocList L E = L + (·)×E` as an initial algebra (reusable engine).
-import AOP.A6_SnocList
--- Bird & de Moor §6.4: fast exponentiation/modulus — `exp`/`mod` as hylomorphisms over the binary
--- datatype `Bin = SnocList Unit Bit`, giving the O(log) divide-and-conquer least fixed point.
-import AOP.A6_4_FastExp
--- Generic cons-list `ConsList L E = L + E×(·)` (head/tail) as an initial algebra; `list A = ConsList Unit A`.
-import AOP.A6_ConsList
--- Bird & de Moor §6.6: sorting by selection — `sort = ⦇[nil, select°]⦈°` (converse of a catamorphism)
--- with its recursion; correctness `sort ⊆ ordered·perm` by fusion (given the select proviso).
-import AOP.A6_6_Sort
--- Bird & de Moor §7.3: planning a company party — `choose` monotonicity (the greedy conclusion is
--- `greedy` itself); the rose-tree datatype `tree A = node(A, list(tree A))` deferred.
-import AOP.A7_3_Party
--- Bird & de Moor §5.6: combinatorial list relations — perm/prefix/subseq/inlist over `list A = ConsList
--- Unit A`, with reflexivity/symmetry/transitivity (the coalgebra/spec layer for the case studies).
-import AOP.A5_6_ListCombinators
--- Bird & de Moor §6.6 FULLY CONCRETE: selection sort correctness with NO hypotheses — concrete
--- `select`/ordered algebra + the fusion proviso discharged via the §5.6 `perm`/`inlist`.
-import AOP.A6_6b_SortConcrete
--- Bird & de Moor §10.2: detab-entab — the tupled catamorphism `(detab, col·detab) = ⦇[base,step]⦈`
--- over snoc-lists of chars, with its loop recursion (base/step case).
-import AOP.A10_2_Detab
--- The copied `exacts` tactic (leet/rel use it; those libs build only by `lake build leet rel`).
+import Freyd.S1_38
 import Freyd.Exacts
 
 /-! ## Axiom hygiene

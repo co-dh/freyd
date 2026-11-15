@@ -35,23 +35,6 @@ public theorem inter_comp_le {A B C : 𝒜} (S T : A ⟶ B) (R : B ⟶ C) :
     (S ∩ T) ≫ R ⊑ (S ≫ R) ∩ (T ≫ R) :=
   le_inter (comp_mono_right (inter_lb_left S T) R) (comp_mono_right (inter_lb_right S T) R)
 
-/-! ## Dual (right) form of the modular law
-
-  Freyd's `modular_le` puts the mediator on the left: `(R≫S)∩T ⊑ (R∩T≫S°)≫S`.
-  B&dM 4.8's proof also needs the mirror image with the mediator on the right.
-  This is the CANONICAL home of that fact: S2_3's over-scoped copy `modular_le'` was
-  deduped into it at wave collection (only `S2_165_Spl`'s file-private `dual_modular_le`
-  remains, kept to preserve that file's import footprint). -/
-
-/-- Dual form of the modular law (B&dM p.83 proof step): `(R≫S) ∩ T ⊑ R ≫ (S ∩ R°≫T)`. -/
-public theorem modular_le_right {A B C : 𝒜} (R : A ⟶ B) (S : B ⟶ C) (T : A ⟶ C) :
-    (R ≫ S) ∩ T ⊑ R ≫ (S ∩ R° ≫ T) := by
-  have hr := recip_mono (modular_le S° R° T°)
-  rw [Allegory.recip_comp, Allegory.recip_inter, Allegory.recip_comp, Allegory.recip_recip,
-      Allegory.recip_recip] at hr
-  rw [Allegory.recip_inter, Allegory.recip_comp, Allegory.recip_recip, Allegory.recip_recip] at hr
-  exact hr
-
 /-! ## §4.1  Symmetric modular law (B&dM 4.8) -/
 
 /-- **Symmetric modular law** (B&dM 4.8): `(R≫S) ∩ T ⊑ (R∩T≫S°) ≫ (S∩R°≫T)`.
@@ -80,14 +63,6 @@ theorem recip_comp_inter_id_le {A B : 𝒜} (R S : A ⟶ B) :
   simp only [Cat.id_comp, Allegory.recip_recip, Cat.comp_id] at h
   rw [← Allegory.recip_inter, Allegory.inter_comm S R] at h
   exact h
-
-/-- **B&dM 4.10**: `R ⊑ R≫R°≫R`, for any `R`.  Canonical home — S2_22's identical
-    `self_le_comp_recip_comp` was deduped into this lemma at wave collection. -/
-public theorem le_comp_recip_comp {A B : 𝒜} (R : A ⟶ B) : R ⊑ (R ≫ R°) ≫ R := by
-  have h := modular_le (Cat.id A) R R
-  have h1 : R ⊑ (Cat.id A ∩ R ≫ R°) ≫ R := by
-    simpa [Cat.id_comp, Allegory.inter_idem] using h
-  exact le_trans h1 (comp_mono_right (inter_lb_right (Cat.id A) (R ≫ R°)) R)
 
 /-! ## §4.1  Refinement of an intersection through a factor (B&dM Exercise 4.5) -/
 
