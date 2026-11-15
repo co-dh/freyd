@@ -259,8 +259,9 @@ inductive Pre
   | lit (pos : Pos) (a b : OTy) (ps : List (Tup × Tup))
   | close (pos : Pos) (p : Pre) (a : OTy) (why : String)
   /-- The variable `k` of a fixed point `X : a ⟶ b`, at the place `pos` it is used; or a constant's parameter,
-      tested on pairs and never run when `tst` (its argument's form, `Form`). -/
-  | var (pos : Pos) (k : Nat) (a b : OTy) (tst : Bool)
+      its argument's form (`Form`): closed (`none`), run on demand (`some false`), tested on pairs and never run
+      (`some true`). -/
+  | var (pos : Pos) (k : Nat) (a b : OTy) (tst : Option Bool)
   /-- `μX : body` (`least`) or `νX : body`, `X` the variable `k`; `S` the meet of `body`'s conjuncts that do not
       mention `X`, a `ν`'s start. -/
   | fix (pos : Pos) (least : Bool) (k : Nat) (S : Option Pre) (body : Pre) (a b : OTy)
@@ -312,7 +313,7 @@ def Pre.at (p : Pos) : Pre → Pre
   | .close _ x a why => .close p (x.at p) a why
   | .var _ k a b t => .var p k a b t
   | .fix _ l k S x a b => .fix p l k (S.attach.map fun ⟨y, _⟩ => y.at p) (x.at p) a b
-  | .call _ c us xs alt a b d cv tst => .call p c us (xs.attach.map fun ⟨y, _⟩ => y.at p) (alt.at p) a b d cv tst
+  | .call _ c us xs ts alt a b d cv tst => .call p c us (xs.attach.map fun ⟨y, _⟩ => y.at p) ts (alt.at p) a b d cv tst
   -- no position and no part
   | x@(.tm _) | x@(.zero ..) | x@(.id _) | x@(.mem _) | x@(.outl ..) | x@(.outr ..) | x@(.inl ..) | x@(.inr ..)
   | x@(.tau _) | x@(.nil ..) | x@(.cons _) | x@(.uncons _) | x@(.length ..) | x@(.total _)
@@ -324,9 +325,10 @@ def noLeft : String := "the term here needs keys and has no left context"
 
 /-! ### Object variables -/
 
-/-- The form of an argument at a call (module design §5 M): tested on pairs (its pair test, §a), or a family whose
-    index is the class `i` among the call's indices (§e); closed otherwise. Part of the constant's signature. -/
-abbrev Form := Bool × Option Nat
+/-- The form of an argument at a call (module design §5 M): closed (`none`), run on the keys in demand
+    (`some false`), tested on pairs (`some true`, its pair test, §a); or a family whose index is the class `i` among
+    the call's indices (§e). Part of the constant's signature. -/
+abbrev Form := Option Bool × Option Nat
 
 /-- What a call needs of a constant (the registry): the constant; its plan's demand bit; per object variable,
     whether it is generic over it and whether it reads its universe; its converse's constant and demand bit;
@@ -951,7 +953,7 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
     if m.isSome then notLiftable p fx
     let a ← fresh; let c ← fresh
     let k ← modifyGet fun s => (s.fixes, { s with fixes := s.fixes + 1 })
-    let (q, s, t) := (← elabE { env with params := (x, .rel (.var p k a c false) a c) :: env.params } none b).plain
+    let (q, s, t) := (← elabE { env with params := (x, .rel (.var p k a c none) a c) :: env.params } none b).plain
     unify p s!"the source of {fx}'s body" s a; unify p s!"the target of {fx}'s body" t c
     if let some e := q.polarity k fx x true "" then throw e
     let S := q.bound k
@@ -1550,9 +1552,10 @@ def build : Pre → Except Err Res
     let ⟨B, v⟩ ← litCol objs st dp p n (zonk st b) (ps.map (·.2))
     pure ⟨A, B, false, .val ⟨n, k, v⟩⟩
   | .close p q a why => do closeRes objs st dp p a why (← build q)
-  | .var _ k a b false => return ⟨← toObj objs st dp a, ← toObj objs st dp b, false, .var k⟩
+  | .var _ k a b none => return ⟨← toObj objs st dp a, ← toObj objs st dp b, false, .var k⟩
+  | .var _ k a b (some false) => return ⟨← toObj objs st dp a, ← toObj objs st dp b, true, .var k⟩
   -- a parameter given a pair test runs nowhere; `test` reads it
-  | .var pos _ _ _ true =>
+  | .var pos _ _ _ (some true) =>
     throw ⟨pos, "this parameter is tested on the pairs it compares, not run: its argument is a pair test (§a)"⟩
   -- a constant that is a pair test runs nowhere; `test` calls it
   | .call pos c _ _ _ _ _ _ _ _ true =>
@@ -1581,8 +1584,8 @@ def build : Pre → Except Err Res
 termination_by x => (sizeOf x, 0)
 
 /-- The call `f` given, per object variable `u` of its constant, the universe of `u` where the constant reads it,
-    then the arguments `xs`, each closed or, where `ts` says so, its pair test (`Form`). A variable the constant is
-    not generic over is a number object (`.long`). -/
+    then the arguments `xs`, each built (closed or run on demand) or, where `ts` says so, its pair test (`Form`). A
+    variable the constant is not generic over is a number object (`.long`). -/
 def callArgs (pos : Pos) (c : Lean.Name) (us : List (OTy × Bool × Bool)) (xs : List Pre) (ts : List Bool) {A B : Obj}
     {d : Bool} (f : Tm A B d) : Except Err (Tm A B d) := do
   let f ← us.foldlM (init := f) fun f (u, gen, reads) => do
@@ -1593,9 +1596,7 @@ def callArgs (pos : Pos) (c : Lean.Name) (us : List (OTy × Bool × Bool)) (xs :
   xs.attach.zipIdx.foldlM (init := f) fun f (⟨x, h⟩, i) => do
     have : sizeOf x < sizeOf xs := List.sizeOf_lt_of_mem h
     if ts.getD i false then let ⟨_, _, t⟩ ← test x; return .arg f t
-    match ← build x with
-    | ⟨_, _, false, t⟩ => pure (.arg f t)
-    | _ => throw ⟨pos, s!"`{c}`: an argument needs keys; its constant takes only closed relations (decision M)"⟩
+    let ⟨_, _, _, t⟩ ← build x; pure (.arg f t)
 termination_by (sizeOf xs, 3)
 
 /-- `τ(R)`, the pair test of `R : A ⟶ B` (`Cor`), for `R` that cannot enumerate its targets: a term that
@@ -1608,7 +1609,7 @@ def test (p : Pre) : Except Err Cor :=
     | .close _ q _ _ => test q
     -- a constant that is a pair test, `τ(c(…)) : A×B ⟶ A×B` (`once`)
     -- a parameter given a pair test (`Form`)
-    | .var _ k a b true => do pure ⟨← toObj objs st dp a, ← toObj objs st dp b, .var k⟩
+    | .var _ k a b (some true) => do pure ⟨← toObj objs st dp a, ← toObj objs st dp b, .var k⟩
     | .call pos c us xs ts _ a b _ _ true => do
       let A ← toObj objs st dp a; let B ← toObj objs st dp b
       let os ← (us.filter (·.2.1)).mapM fun (u, _) => toObj objs st dp u
