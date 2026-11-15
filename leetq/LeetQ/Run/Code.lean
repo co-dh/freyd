@@ -898,12 +898,36 @@ where
       decide (t = .guid) ||
       (decide (t = .general) && cs.toArray.all fun c => match c.2.enc with | .gen xs => xs.all cellFree | _ => true))
 
-/-- The permutation `p` refined stably by the values of `A` at its rows, ascending: `gradeColumn` of each
-    atom (a symbol by its string, so the order is the value's, the same in every call), the last component
-    first so a product sorts lexicographically. Where no kernel orders the values — a general list, an
-    array — by the codes of the whole column, read at `p`: an order of this call only. And whether it ran within
-    capacity: the codes' bit of `c` (`sortByC_snd`), taken from the one `codesC` pass whose codes it grades at
-    an `.arr` or `.sum` side, and at an atom from the counts alone (`atomFit`), so no side is coded twice. -/
+theorem gather_len (s i : ByteArray) : len (gather 8 s i) = len i := by
+  have h8 : (Nat.toUSize 8).toNat = 8 := KernelWF.toNat_small 8 (by decide)
+  simp only [len, gather, KernelWF.gatherBytes_size, h8]; omega
+
+/-- The rows `q` reordered stably by the values of `B` they read, row `r` reading `x` at the position `ps[r]`:
+    `srt` of `til |q|` over `x` picked at those positions (`pickShared`, no payload copied), read back through
+    `q`. A side of no values reads one value (`Obj.dflt`) at every row, so `q` stays as it is. -/
+def sortSide {B : Obj} {s : USize} (x : Vals B s) (srt : {k : USize} → Vals B k → ByteArray → ByteArray)
+    (ps q : ByteArray) : ByteArray :=
+  if h : 0 < s.toNat ∧ len q < USize.size then
+    gather 8 q (srt (Vals.pickShared B x (gather 8 ps q) (len q).toUSize
+      (by rw [gather_len]; exact (USize.toNat_ofNat_of_lt' h.2).symm)) (tilLongs (len q).toUSize))
+  else q
+
+/-- The least `t ≥ t₀` (at most `t₀ + fuel`) past which none of the `n` longs `cnt` is: the passes an array
+    sort makes. -/
+def longest (n : USize) (cnt : ByteArray) (t₀ : Nat) : (fuel : Nat) → Nat
+  | 0 => t₀
+  | fuel + 1 => if len (whereBits n (Ew.cmp Ew.gt Ew.i64 Ew.va cnt (one t₀.toUInt64) n)) = 0 then t₀
+    else longest n cnt (t₀ + 1) fuel
+
+/-- The permutation `p` refined stably by the values of `A` at its rows, ascending by `Obj.lt`:
+    - an atom: `gradeColumn` (a symbol by its string, so the order is the value's, the same in every call);
+    - a product: the last component first, so it sorts lexicographically;
+    - an array: one stable pass per element position, the last first (least significant digit first), each
+      putting the rows with no element there first and the rest by that element (`sortSide`);
+    - a sum: the `inl` rows, then the `inr` rows (`whereBits` of the tags), each by its own side (`sortSide` at
+      `Vals.row`'s clamped position, `place`).
+    And whether it ran within capacity: the codes' bit of `c` (`sortByC_snd`), at an atom from the counts alone
+    (`atomFit`). -/
 def _root_.LeetQ.Rel.Obj.sortByC : (A : Obj) → {n : USize} → Vals A n → ByteArray → ByteArray × Bool
   | .atom t, _, c, p =>
     let x := Alg.pick t ⟨_, c⟩ p
@@ -911,9 +935,25 @@ def _root_.LeetQ.Rel.Obj.sortByC : (A : Obj) → {n : USize} → Vals A n → By
       | some (.bytes g) => gather 8 p g
       | _ => gather 8 p (codes t #v[x])[0].grade, Obj.codesC.atomFit t #v[⟨_, c⟩])
   | .prod a b, _, c, p => let r := Obj.sortByC b c.2 p; let l := Obj.sortByC a c.1 r.1; (l.1, l.2 && r.2)
-  -- the input's codes gathered at `p`, not the codes of the picked part: a pick can outgrow the bounds the input fits
-  | .arr b, _, c, p => let k := Obj.codesC (.arr b) #v[⟨_, c⟩]; (gather 8 p (k.1[0].gather p).grade, k.2)
-  | .sum a b, _, c, p => let k := Obj.codesC (.sum a b) #v[⟨_, c⟩]; (gather 8 p (k.1[0].gather p).grade, k.2)
+  | .arr b, n, c, p =>
+    let s := slicesOf c
+    -- the pass at element position `t`: rows with no element there first, kept in order, then the others by it
+    let pass (t : Nat) (q : ByteArray) : ByteArray :=
+      if len q < USize.size then
+        let m := (len q).toUSize
+        let gt := Ew.cmp Ew.gt Ew.i64 Ew.va (gather 8 s.2 q) (one t.toUInt64) m
+        concatBytes #[gather 8 q (whereBits m (Ew.notBits m gt)),
+          sortSide c.2.2.2 (fun v r => (Obj.sortByC b v r).1) (addc n s.1 t) (gather 8 q (whereBits m gt))]
+      else q
+    ((List.range (longest n s.2 0 c.1.toNat)).foldr pass p, (Obj.codesC (.arr b) #v[⟨_, c⟩]).2)
+  | .sum a b, _, c, p =>
+    let ps := longsOf (place c ((c.1.toNat : Int) - 1) ((c.2.1.toNat : Int) - c.1.toNat) 0 0)
+    (if h : len p < USize.size then
+      let m := (len p).toUSize
+      let tb := tagBits (pickArr .boolean ⟨_, c.2.2.1⟩ p m (USize.toNat_ofNat_of_lt' h).symm)
+      concatBytes #[sortSide c.2.2.2.2.1 (fun v r => (Obj.sortByC a v r).1) ps (gather 8 p (whereBits m (Ew.notBits m tb))),
+        sortSide c.2.2.2.2.2 (fun v r => (Obj.sortByC b v r).1) ps (gather 8 p (whereBits m tb))]
+    else p, (Obj.codesC (.sum a b) #v[⟨_, c⟩]).2)
 
 /-- `p` refined stably by the values of `A`: `sortByC`'s permutation. -/
 def _root_.LeetQ.Rel.Obj.sortBy (A : Obj) {n : USize} (c : Vals A n) (p : ByteArray) : ByteArray := (A.sortByC c p).1
@@ -951,10 +991,6 @@ def join (l r : Code) : ByteArray × ByteArray :=
 
 /-- `join`'s right index column is no longer than its left: equal wherever the count fits a `USize`, which
     `add` takes (`Ew.val_size`, `gatherBytes_size`). -/
-theorem gather_len (s i : ByteArray) : len (gather 8 s i) = len i := by
-  have h8 : (Nat.toUSize 8).toNat = 8 := KernelWF.toNat_small 8 (by decide)
-  simp only [len, gather, KernelWF.gatherBytes_size, h8]; omega
-
 theorem join_len (l r : Code) : len (join l r).2 ≤ len (join l r).1 := by
   unfold join expand longCount; dsimp only; simp only [need]
   split
