@@ -8,34 +8,48 @@ namespace LeetQ.Rel.Lang.TestWumpus
 
 open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Lang.Test LeetQ.Rel.Alg QLean
 
-/-- Each table: its name, the program's term for it, and whether its key is `∗ : 1` rather than a cell. -/
-def tables : List (String × String × Bool) := [("V", "V", false), ("B", "B", false), ("S", "S", false),
-  ("G", "G", false), ("noB", "noB(V,B)", false), ("noPit", "noPit(V,B)", false), ("cand", "cand(V,B)", false),
-  ("pit", "pit(V,B)", false), ("noS", "noS(V,S)", false), ("noW", "noW(V,S)", false), ("wmay", "wmay(S)", true),
-  ("wcand", "wcand(V,S)", true), ("wumpus", "wumpus(V,S)", false), ("noWumpus", "noWumpus(V,S)", false),
-  ("safe", "safe(V,B,S)", false), ("frontier", "frontier(V)", false), ("next", "next(V,B,S)", false)]
+/-- Each table `fₖ` of `given`: its name, and whether its key is `∗ : 1` rather than a cell. -/
+def tables : List (String × Bool) := [("V", false), ("B", false), ("S", false), ("G", false), ("noB", false),
+  ("noPit", false), ("cand", false), ("pit", false), ("noS", false), ("noW", false), ("wmay", true),
+  ("wcand", true), ("wumpus", false), ("noWumpus", false), ("safe", false), ("frontier", false), ("next", false)]
 
-/-- The program with one family `fₖ ≜ …` per table: `fₖ : N ⟶ C×C`, or `N ⟶ 1×C`. -/
-def given : Except Err Out :=
-  runExt Programs.wumpus (String.join (tables.zipIdx.map fun ((_, e, one), k) =>
-    s!"f{k} : N ⟶ {if one then "1" else "C"}×C ≜ {e}\n"))
+-- one family `fₖ` per table of `tables`, in its order; `next(V,B,S)` printed is the table `page` states
+rel_program given after Programs.wumpus where
+    f0 : N ⟶ C×C ≜ V
+    f1 : N ⟶ C×C ≜ B
+    f2 : N ⟶ C×C ≜ S
+    f3 : N ⟶ C×C ≜ G
+    f4 : N ⟶ C×C ≜ noB(V,B)
+    f5 : N ⟶ C×C ≜ noPit(V,B)
+    f6 : N ⟶ C×C ≜ cand(V,B)
+    f7 : N ⟶ C×C ≜ pit(V,B)
+    f8 : N ⟶ C×C ≜ noS(V,S)
+    f9 : N ⟶ C×C ≜ noW(V,S)
+    f10 : N ⟶ 1×C ≜ wmay(S)
+    f11 : N ⟶ 1×C ≜ wcand(V,S)
+    f12 : N ⟶ C×C ≜ wumpus(V,S)
+    f13 : N ⟶ C×C ≜ noWumpus(V,S)
+    f14 : N ⟶ C×C ≜ safe(V,B,S)
+    f15 : N ⟶ C×C ≜ frontier(V)
+    f16 : N ⟶ C×C ≜ next(V,B,S)
+    print next(V,B,S)
 
 /-- A cell's code `10x + y`: the element at its position among `C`'s named elements. -/
 def cell (x : Int64) : Int64 :=
   ([11, 12, 13, 14, 21, 22, 23, 24, 31, 32, 33, 34, 41, 42, 43, 44] : List Int64).getD x.toInt.toNat 0
 
 /-- The table `k` at step `i`, its cells coded `10x + y`. -/
-def at? (o : Out) (k i : Nat) : Option (Rel .long .long) := do
-  let (_, _, one) ← tables[k]?
-  let R ← get o s!"f{k}" .long XX
+def at? (k i : Nat) : Option (Rel .long .long) := do
+  let (_, one) ← tables[k]?
+  let R ← get given.expanded s!"f{k}" .long XX
   pure (ofPairs ((R.toList.filter (·.1 == Int64.ofNat i)).map fun (_, a, b) => (if one then a else cell a, cell b))).nub
 
 /-- The program's views after each step. -/
-def views (o : Out) : List (List (String × Rel .long .long)) :=
-  (List.range 6).map fun i => tables.zipIdx.filterMap fun ((n, _, _), k) => (at? o k i).map (n, ·)
+def views : List (List (String × Rel .long .long)) :=
+  (List.range 6).map fun i => tables.zipIdx.filterMap fun ((n, _), k) => (at? k i).map (n, ·)
 
-#guard given.isOk
-#guard (views (ok given)).length == 6 && (views (ok given)).all (·.length == tables.length)
+#guard given.ok
+#guard views.length == 6 && views.all (·.length == tables.length)
 
 -- row order is not part of a table, so rows compare sorted
 def showT (X : Rel .long .long) : String :=
@@ -65,12 +79,12 @@ def page : List String := [
    23:33; pit 31; noS 11 21 22; noW 11 12 21 22 23 31 32; wmay 0:13 0:22; wcand 0:13; wumpus 13; noWumpus 11 \
    12 14 21 22 23 24 31 32 33 34 41 42 43 44; safe 11 12 21 22 23 32; frontier 13 24 31 32 33; next 32"]
 
-#guard (views (ok given)).map showS == page
+#guard views.map showS == page
 
--- the program's own `check next(V,B,S) = …` holds (a failed one is an error) and it prints nothing; printed here,
--- `next(V,B,S)` is the table `page` states
-#guard (ok given).prints == []
-#guard (ok (runExt Programs.wumpus "print next(V,B,S)\n")).prints == ["next(V, B, S) = {(0, (12, 12)), (0, (21, 21)), " ++
+-- the program's own `check next(V,B,S) = …` holds and it prints nothing; printed here, `next(V,B,S)` is the table
+-- `page` states
+#guard Programs.wumpus.ok && Programs.wumpus.prints == []
+#guard given.prints == ["next(V, B, S) = {(0, (12, 12)), (0, (21, 21)), " ++
   "(1, (12, 12)), (2, (12, 12)), (3, (22, 22)), (4, (23, 23)), (4, (32, 32)), (5, (32, 32))}"]
 
 /-! The parser on each line of `Programs.wumpus`: every composite and infix term in parentheses (§c). -/
