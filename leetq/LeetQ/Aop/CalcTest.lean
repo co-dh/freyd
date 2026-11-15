@@ -72,19 +72,36 @@ example {f : D ⟶ B} (hf : Map f) (R : A ⟶ C) (S : B ⟶ C) : rel(R / (f S)) 
 
 /-- error: a literal `{…}` has no AOP counterpart -/
 #guard_msgs in example (R : A ⟶ B) : A ⟶ B := rel(R {(a,b)})
-/-- error: `at(0)` has no AOP counterpart -/
+/-- error: `at(0)` has no AOP reading: AOP declares no element at a position -/
 #guard_msgs in example (R : A ⟶ B) : A ⟶ B := rel(R at(0))
-/-- error: `⦇e,S⦈` is the program fold: its seed is a coreflexive `V ⟶ V`; write the book's `⦇[e,S]⦈` with
-`e : 1 ⟶ V` instead -/
-#guard_msgs (whitespace := lax) in example (R : A ⟶ A) : A ⟶ A := rel(⦇R,R⦈)
+/-- error: `μX : …` is outside the allegory fragment of rel(…) -/
+#guard_msgs in example (R : A ⟶ A) : A ⟶ A := rel(μX : R ∪ (X R))
+/-- error: `<` has no AOP reading: AOP declares no strict order on numbers -/
+#guard_msgs in example (R : A ⟶ A) : A ⟶ A := rel(R <)
+/-- error: `times` has no AOP reading: AOP declares no product of numbers -/
+#guard_msgs in example (R : A ⟶ A) : A ⟶ A := rel(R times)
+/-- error: `minus` has no AOP reading: AOP declares no difference of numbers -/
+#guard_msgs in example (R : A ⟶ A) : A ⟶ A := rel(R minus)
+/-- error: `mod` has no AOP reading: AOP declares no remainder of numbers -/
+#guard_msgs in example (R : A ⟶ A) : A ⟶ A := rel(R mod)
+/-- error: `max` has no AOP reading: AOP declares no maximum of two numbers -/
+#guard_msgs in example (R : A ⟶ A) : A ⟶ A := rel(R max)
+/-- error: `min` has no AOP reading: AOP declares no minimum of two numbers -/
+#guard_msgs in example (R : A ⟶ A) : A ⟶ A := rel(R min)
+/-- error: `snoc` has no AOP reading: AOP's `snoc` is on snoc lists (`SL.snoc`), not on the cons lists `[α]` reads
+as -/
+#guard_msgs (whitespace := lax) in example (R : A ⟶ A) : A ⟶ A := rel(R snoc)
+/-- error: `bagify` has no AOP reading: AOP's `bagify` is on snoc lists of jobs only (`Tardy.bagify`) -/
+#guard_msgs in example (R : A ⟶ A) : A ⟶ A := rel(R bagify)
+/-- error: `tic` has no AOP reading: AOP declares no non-empty prefixes of `a::xs` -/
+#guard_msgs in example (R : A ⟶ A) : A ⟶ A := rel(R tic)
+/-- error: `loop(R)` has no AOP reading: AOP declares no iteration to a fixed point from the left -/
+#guard_msgs in example (R : A ⟶ A) : A ⟶ A := rel(loop(R))
 /-- error: `⊤` needs an instance `LocallyCompleteDistributiveAllegory` (AOP's `topHom`) or
 `TabularUnitaryDivisionAllegory` (AOP's `topMor`): AOP's `⊤` is one of these -/
 #guard_msgs (whitespace := lax) in example (R : A ⟶ B) : A ⟶ B := rel(R ∩ ⊤)
 /-- error: `Λ(R)` needs an instance `PowerAllegory 𝒜`: AOP defines `Freyd.Alg.Λ` over it -/
 #guard_msgs in example (R : A ⟶ B) : Prop := rel(Λ(R) ∋) = R
-/-- error: `setify` has no AOP counterpart: Rel's list and set are both an array `[α]`, AOP's power object `P A`
-is no list -/
-#guard_msgs (whitespace := lax) in example (R : A ⟶ A) : A ⟶ A := rel(R setify)
 /-- error: `F(R)` needs a hypothesis `Relator 𝒜 𝒜`: rel(…) never writes the relator
 ---
 error: `F(R)` needs a hypothesis `Relator 𝒜 𝒜`: rel(…) never writes the relator -/
@@ -225,6 +242,13 @@ example (R : F.obj A ⟶ A) (S : A ⟶ B) (K : Coproduct (F.obj A) U W) (e : U �
   guard_expr rel(α ⦇R⦈) =ₛ I.α ≫ relCata R
   guard_expr rel(F(⦇R⦈) R) =~ F.map (relCata R) ≫ R
   guard_expr rel(⦇[e,V]⦈) =ₛ relCata (junc K e V)
+  -- the program fold: the base from `1` whose range is the seed
+  guard_expr rel(⦇ran(e),V⦈) =ₛ relCata (junc K e V)
+  trivial
+
+set_option linter.unusedVariables false in
+example (K : Coproduct (F.obj A) U W) (c : A ⟶ A) (V : W ⟶ A) : True := by
+  guard_expr rel(⦇c,V⦈) =ₛ relCata (junc K (topHom U A ≫ c) V)
   trivial
 
 /-- B&dM fold fusion (`relCata_fusion`): `⦇R⦈ S` satisfies the fold's equation at `Q`, then uniqueness. -/
@@ -341,7 +365,36 @@ variable {𝒜 : Type u} [PowerAllegory 𝒜] {A B : 𝒜}
 
 end PowerOnly
 
-/-- error: line 347, col 7: one-argument fold is for rel(…) proofs: a program folds a list with `⦇e,S⦈` -/
+section RelSet
+
+open Freyd.Alg.RelSet
+
+-- every builtin has exactly one row: a reading, `toTerm`'s own clause, or why it has none
+#guard Op.table.all (fun (_, o, _) => (Calc.builtins.lookup o).isSome) && Calc.builtins.length == Op.table.length
+
+/-! ### The list and number builtins, each its `Rel(Set)` declaration -/
+
+set_option linter.unusedVariables false in
+example (Q : (⟨Int⟩ : RelSet.{0}) ⟶ ⟨Int⟩) : True := by
+  guard_expr (rel(plus) : type_of% (ListRel.plus (A := Int))) =ₛ ListRel.plus (A := Int)
+  guard_expr (rel(div) : type_of% ListRel.div) =ₛ ListRel.div
+  guard_expr (rel(sum) : type_of% (ListRel.sum (A := Int))) =ₛ ListRel.sum (A := Int)
+  guard_expr (rel(≤) : type_of% ListRel.leq) =ₛ ListRel.leq
+  guard_expr (rel(succ) : type_of% ListRel.succ) =ₛ ListRel.succ
+  guard_expr (rel(nil) : type_of% (ListRel.nilAtUnit (A := Int))) =ₛ ListRel.nilAtUnit (A := Int)
+  guard_expr (rel(cons) : type_of% (ListRel.cons (A := Int))) =ₛ ListRel.cons (A := Int)
+  guard_expr (rel(length) : type_of% (ListRel.length (A := Int))) =ₛ ListRel.length (A := Int)
+  guard_expr (rel(inits) : type_of% (ListRel.initsR (A := Int))) =ₛ ListRel.initsR (A := Int)
+  guard_expr (rel(cat) : type_of% (ListRel.cat (A := Int))) =ₛ ListRel.cat (A := Int)
+  guard_expr (rel(zip) : type_of% (Pointfree.zip (A := Int) (B := Int))) =ₛ Pointfree.zip (A := Int) (B := Int)
+  guard_expr (rel(setify) : type_of% (ListRel.setify (A := Int))) =ₛ ListRel.setify (A := Int)
+  guard_expr rel(thinL(Q)) =ₛ ListRel.thinL Q
+  guard_expr rel(merge(Q)) =ₛ ListRel.merge Q
+  trivial
+
+end RelSet
+
+/-- error: line 400, col 7: one-argument fold is for rel(…) proofs: a program folds a list with `⦇e,S⦈` -/
 #guard_msgs (whitespace := lax) in
 rel_program oneFold where
   r ≜ ⦇𝟙⦈

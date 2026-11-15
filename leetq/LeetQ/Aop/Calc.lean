@@ -9,6 +9,8 @@ import AOP.A5_5
 import AOP.A6_2
 import AOP.A5_4_PowerRel
 import AOP.A8_1
+import AOP.A8_3
+import AOP.A1_7_Pointfree
 
 /-! `rel(t)`: the Rel term `t` read as a term of the AOP allegory, so that an ordinary Lean statement, and the steps
     of a plain `calc`, can be written in Rel. `t` is the `rel` category of `Embed`, read to `Lang.Expr` by
@@ -21,8 +23,10 @@ import AOP.A8_1
     a `RelProd` instance; `[R,S]`, `inl`, `inr` over a `Coproduct` hypothesis; `∼R`, `R − S` in a
     `BooleanAllegory`; the book's fold `⦇R⦈` and `α` over an `InitialAlgebra` instance, `F(R)` over a `Relator`
     hypothesis; the power group `∋`, `∈`, `Λ(R)`, `E(R)`, `P(R)`, `est(R)`, `thin(Q)`, `union`, `τ` as the book's
-    power-object operators (`powers`), each over the class AOP defines it in. `⊑` and `=` are Lean's, between
-    `rel(…)` terms. Every other construct is an error naming it.
+    power-object operators, each over the class AOP defines it in; the list and number builtins as their `Rel(Set)`
+    declarations; the program fold `⦇e,S⦈` as the book's `⦇[e',S]⦈` (`toTerm`). `builtins` holds every builtin's
+    reading or why it has none. `⊑` and `=` are Lean's, between `rel(…)` terms. Every other construct is an error
+    naming it. The translation is `toTerm` and its elaboration `elabExpr`, functions of the Rel term, not of `rel(…)`.
 
     A product, a coproduct, an initial algebra, a relator, a power allegory or the Boolean instance is never
     written in the term: each is a metavariable that unification gives its objects, then `fill` takes from the
@@ -86,11 +90,32 @@ def coprod (hs : Holes) (p : Lang.Pos) (what : String) : TermElabM Term := do
 def initial (hs : Holes) (p : Lang.Pos) (what : String) : TermElabM Term := do
   hole hs p what "rel(…) never writes the initial algebra, nor its relator" (← `(Freyd.Alg.InitialAlgebra _))
 
-/-- The power group: each builtin and the AOP declaration it means on the proof side (Rel's arrays `[α]` are a
-    program's reading of `𝒫A`, untouched). -/
-def powers : List (Op × Name) :=
-  [(.mem, ``PowerAllegory.eps), (.lam, ``Freyd.Alg.Λ), (.E, ``existsImage), (.P, ``powerRel), (.est, ``est),
-   (.thin, ``thinRel), (.union, ``Freyd.Alg.union), (.tau, ``singletonMap)]
+/-- The one table of builtin readings, a row per `Op.table` entry (`CalcTest` guards that none lacks one), keyed
+    as `Op.table` keys it (`at(i)` by `.index 0`): `.ok none`, `toTerm`'s own clause, over any allegory; `.ok f`, the
+    AOP declaration `f`, applied by `power` (the power group over its class, the list and number builtins in
+    `Rel(Set)`, where `[α]` is a cons list and a set the power object); `.error why`, no AOP reading. -/
+def builtins : List (Op × Except String (Option Name)) :=
+  open QLean.Kernel.Ew in open Freyd.Alg.RelSet in
+  let none' (why : String) : Except String (Option Name) := .error why
+  [(.id, .ok none), (.zero, .ok none), (.top, .ok none), (.outl, .ok none), (.outr, .ok none), (.inl, .ok none),
+   (.inr, .ok none), (.alpha, .ok none), (.map, .ok none), (.dom, .ok none), (.ran, .ok none),
+   (.mem, .ok ``PowerAllegory.eps), (.lam, .ok ``Freyd.Alg.Λ), (.E, .ok ``existsImage), (.P, .ok ``powerRel),
+   (.est, .ok ``est), (.thin, .ok ``thinRel), (.union, .ok ``Freyd.Alg.union), (.tau, .ok ``singletonMap),
+   (.leq, .ok ``ListRel.leq), (.succ, .ok ``ListRel.succ), (.arith add, .ok ``ListRel.plus),
+   (.arith idiv, .ok ``ListRel.div), (.nil, .ok ``ListRel.nilAtUnit), (.cons, .ok ``ListRel.cons),
+   (.length, .ok ``ListRel.length), (.total, .ok ``ListRel.sum), (.inits, .ok ``ListRel.initsR),
+   (.cat, .ok ``ListRel.cat), (.zip, .ok ``Pointfree.zip), (.setify, .ok ``ListRel.setify),
+   (.thinL, .ok ``ListRel.thinL), (.merge, .ok ``ListRel.merge),
+   (.lt, none' "AOP declares no strict order on numbers"), (.arith mul, none' "AOP declares no product of numbers"),
+   (.arith sub, none' "AOP declares no difference of numbers"),
+   (.arith imod, none' "AOP declares no remainder of numbers"),
+   (.arith greater, none' "AOP declares no maximum of two numbers"),
+   (.arith lesser, none' "AOP declares no minimum of two numbers"),
+   (.snoc, none' "AOP's `snoc` is on snoc lists (`SL.snoc`), not on the cons lists `[α]` reads as"),
+   (.bagify, none' "AOP's `bagify` is on snoc lists of jobs only (`Tardy.bagify`)"),
+   (.tic, none' "AOP declares no non-empty prefixes of `a::xs`"),
+   (.loop, none' "AOP declares no iteration to a fixed point from the left"),
+   (.index 0, none' "AOP declares no element at a position")]
 
 /-- The prelude's names with a fixed AOP counterpart, each its prelude body in the fragment: `rel(…)` has no
     prelude, and AOP writes `∈` as `∋°`. -/
@@ -113,7 +138,12 @@ def power (p : Lang.Pos) (what : String) (f : Name) (args : List Term) : TermEla
   let (ms, bis, _) ← forallMetaTelescope (← inferType (← mkConstWithFreshMVarLevels f))
   let c? ← allegory
   let (_, xs) ← (ms.zip bis).foldlM (init := (args, #[])) fun (as, xs) (m, bi) => do
-    match bi.isExplicit, bi.isInstImplicit, as, c? with
+    -- an instance binder over the allegory has an argument of the allegory's type; `[Add A]` is a plain instance
+    let t ← inferType m
+    let over ← match c?, bi.isInstImplicit && t.isApp with
+      | some c, true => isDefEq (← inferType t.appArg!) (← inferType c)
+      | _, _ => pure false
+    match bi.isExplicit, bi.isInstImplicit && over, as, c? with
     | true, _, a :: as, _ => pure (as, xs.push a)
     | _, true, _, some c => do
       let ty ← inferType m
@@ -121,8 +151,9 @@ def power (p : Lang.Pos) (what : String) (f : Name) (args : List Term) : TermEla
       let ty ← instantiateMVars ty
       let some i ← synthInstance? ty | outside p what m!"needs an instance `{ty}`: AOP defines `{f}` over it"
       pure (as, xs.push (← exprToSyntax i))
-    | _, true, _, none => pure (as, xs.push (← withRef (← refAt p) `(_)))
-    | _, _, _, _ => pure (as, xs.push (← exprToSyntax m))
+    | _, _, _, _ => do
+      let s ← if bi.isInstImplicit then do withRef (← refAt p) `(_) else exprToSyntax m
+      pure (as, xs.push s)
   `(@$(mkIdent f) $xs*)
 
 /-- The two `⊤` of AOP, each with the class it is defined in: the instance found decides. -/
@@ -163,7 +194,7 @@ def top (w : Lean.Expr) (p : Lang.Pos) : TermElabM Unit := do
 partial def toTerm (vars : List String) (folds : List (String × Lang.Expr)) (hs : Holes) :
     Lang.Expr → TermElabM Term
   | .name p n => match folds.lookup n, prelude.lookup n with
-    | some r, _ => do let i ← initial hs p "`⦇R⦈`"; `(Freyd.Alg.relCata (I := $i) $(← toTerm vars folds hs r))
+    | some r, _ => do cata hs p "`⦇R⦈`" (← toTerm vars folds hs r)
     | none, some e => toTerm vars folds hs (e p)
     | none, none => if vars.contains n then pure (mkIdent (.mkSimple n)) else
       outside p s!"`{n}`" "is not a local variable: a name in rel(…) is a variable or hypothesis of the statement"
@@ -201,18 +232,24 @@ partial def toTerm (vars : List String) (folds : List (String × Lang.Expr)) (hs
     let f ← hole hs p "`F(R)`" "rel(…) never writes the relator" (← `(Freyd.Alg.Relator $c $c))
     `(Freyd.Functor.map (Freyd.Alg.Relator.toFunctor $f) $(← toTerm vars folds hs a))
   | .op p o (_ :: _) _ => outside p s!"`{o.sym}(…)`" "names Rel objects: rel(…) takes its objects from the Lean types"
-  | .op p (.index i) _ _ => outside p s!"`at({i})`" "has no AOP counterpart"
-  | .op p .setify _ _ => outside p "`setify`" ("has no AOP counterpart: Rel's list and set are both an array " ++
-      "`[α]`, AOP's power object `P A` is no list")
-  | .op p o [] as => match powers.lookup o with
-    | some f => do power p s!"`{o.sym}{if as.isEmpty then "" else "(R)"}`" f (← as.mapM (toTerm vars folds hs))
-    | none => outside p s!"`{o.sym}`" "is outside the allegory fragment of rel(…)"
+  | .op p o [] as =>
+    let what := s!"`{o.sym}{if as.isEmpty then "" else "(R)"}`"
+    match builtins.lookup (match o with | .index _ => .index 0 | o => o) with
+    | some (.ok (some f)) => do power p what f (← as.mapM (toTerm vars folds hs))
+    | some (.error why) => outside p what s!"has no AOP reading: {why}"
+    | _ => outside p what "has no row in `Calc.builtins` that toTerm can read"
   | .lit p _ => outside p "a literal `{…}`" "has no AOP counterpart"
-  | .fold p .. => outside p "`⦇e,S⦈`" ("is the program fold: its seed is a coreflexive `V ⟶ V`; write the book's " ++
-      "`⦇[e,S]⦈` with `e : 1 ⟶ V` instead")
+  -- Rel folds from the values of the coreflexive seed `e`; the book's base is the `e' : 1 ⟶ V` with `ran(e') = e`:
+  -- `b` where `e` is written `ran(b)` (the base's type fixes `b`'s source to `1`), else `⊤e`
+  | .fold p e s => do
+    let e' := match e with | .op _ .ran [] [b] => b | e => .comp (.op p .top [] []) e
+    cata hs p "`⦇e,S⦈`" (← toTerm vars folds hs (.junc p e' s))
   | .app p n _ | .inf p n .. => outside p s!"`{n}`" "is a Rel definition, and rel(…) has none"
   | .fix p l x _ => outside p s!"`{if l then "μ" else "ν"}{x} : …`" "is outside the allegory fragment of rel(…)"
 where
+  /-- The book's fold of the algebra `r`, over the initial algebra the context holds. -/
+  cata (hs : Holes) (p : Lang.Pos) (what : String) (r : Term) : TermElabM Term := do
+    `(Freyd.Alg.relCata (I := $(← initial hs p what)) $r)
   /-- The operand `a` of a complement elaborated, its allegory `𝒜` (the type of its target) and the instance
       `BooleanAllegory 𝒜`, found before the complement is: AOP's `∼R` is the Heyting `R ⇨ 𝟘`, which is the
       complement Rel means only in a Boolean allegory. -/
@@ -227,6 +264,22 @@ where
     let some i ← synthInstance? ty | outside p what (m!"needs an instance `{tys}`: AOP's `∼R` is the Heyting " ++
       m!"`R ⇨ 𝟘`, the complement only in a Boolean allegory")
     pure (← exprToSyntax c, ← exprToSyntax i, ← exprToSyntax e)
+
+/-- The Rel term `e` elaborated as its AOP reading at the expected type `ty?`, each hole filled: the one entry for
+    every caller of the translation (`rel(…)`, and any command or proof step that holds a `Lang.Expr`). -/
+def elabExpr (vars : List String) (folds : List (String × Lang.Expr)) (e : Lang.Expr) (ty? : Option Lean.Expr) :
+    TermElabM Lean.Expr := do
+  let hs ← IO.mkRef #[]
+  let r ← elabTermEnsuringType (← toTerm vars folds hs e) ty?
+  synthesizeSyntheticMVars (postpone := .yes)
+  -- each hole that fills fixes objects of the others (a coproduct, the relator of its fold): retry until none moves
+  let mut todo ← hs.get
+  repeat
+    let n := todo.size
+    todo ← todo.filterM fun h => catchInternalId postponeExceptionId (h *> pure false) fun _ => pure true
+    if todo.size == n then break
+  for h in todo do h
+  pure r
 
 /-- AOP's delimited notations make `est(`, `thin(`, `P(` one Lean token where `rel` reads a name then `(`: each is
     a production here, read back (`lift`) as the builtin it spells. -/
@@ -269,16 +322,7 @@ syntax (name := relTerm) "rel(" withoutPosition(rel) ")" : term
   let e ← read t
   let folds ← fs.toList.mapM fun (n, s) => do pure (n, ← read s)
   withRef stx do
-    let hs ← IO.mkRef #[]
-    let r ← elabTermEnsuringType (← toTerm vars folds hs e) ty?
-    synthesizeSyntheticMVars (postpone := .yes)
-    -- each hole that fills fixes objects of the others (a coproduct, the relator of its fold): retry until none moves
-    let mut todo ← hs.get
-    repeat
-      let n := todo.size
-      todo ← todo.filterM fun h => catchInternalId postponeExceptionId (h *> pure false) fun _ => pure true
-      if todo.size == n then break
-    for h in todo do h
+    let r ← elabExpr vars folds e ty?
     -- the term names its locals by synthetic identifiers or by `fill`: a use the unused-variable linter cannot see
     for f in (collectFVars {} (← instantiateMVars r)).fvarIds do addTermInfo' stx (.fvar f)
     pure r
