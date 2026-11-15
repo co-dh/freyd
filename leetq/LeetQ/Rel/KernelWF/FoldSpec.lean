@@ -30,23 +30,20 @@ theorem slicesOf_row {B : Obj} {n : USize} (x : Vals (.arr B) n) (hp : x.1.toNat
     dif_pos (by rw [← hL]; exact hl)]
   exact congrArg (Vals.row x.2.2.2) (Fin.ext (show _ + j = _ + j by rw [hL]))
 
-/-- **`whereBits` of `Ew.cmp gt` against the constant `k`, read back**: the ascending positions below `n`
-    whose long is greater than `k`, every long and `k` below `2^63`. -/
-theorem whereGt_ids (n : USize) (c : ByteArray) {k : Nat} (hk : k < 2 ^ 63)
-    (hc : ∀ i < n.toNat, (Column.bitsAt c (i * 8) 8).toNat < 2 ^ 63) :
-    ids (whereBits n (Ew.cmp Ew.gt Ew.i64 Ew.va c (one k.toUInt64) n)) =
-      (List.range n.toNat).filter fun i => decide (k < (Column.bitsAt c (i * 8) 8).toNat) := by
+/-- **`Ew.cmp gt` against the constant `k`, read back at `i`**: whether the long `i` is greater than `k`, it and
+    `k` below `2^63`. -/
+theorem gtConst_bitAt (n : USize) (c : ByteArray) {k : Nat} (hk : k < 2 ^ 63) {i : Nat} (hi : i < n.toNat)
+    (hc : (Column.bitsAt c (i * 8) 8).toNat < 2 ^ 63) :
+    Column.bitAt (Ew.cmp Ew.gt Ew.i64 Ew.va c (one k.toUInt64) n) i =
+      decide (k < (Column.bitsAt c (i * 8) 8).toNat) := by
   have hw : Ew.width Ew.i64 = 8 := by decide
   have hs : ∀ i, Ew.shapeIdx Ew.va i = (i, 0) := fun i => by simp (config := {decide := true}) [Ew.shapeIdx]
   have ek : (k.toUInt64).toInt64.toInt = k :=
     (toInt64_toInt (x := k.toUInt64) (by rw [UInt64.toNat_ofNat_of_lt' (Nat.lt_trans hk (by decide))]; exact hk)).trans
       (by rw [UInt64.toNat_ofNat_of_lt' (Nat.lt_trans hk (by decide))])
-  rw [(whereBits_ids n _).1]
-  refine List.filter_congr fun i hi => ?_
-  have hi := List.mem_range.1 hi
   rw [(Verify.cmp_bitAt _ _ _ _ _ n).2 i (by omega)]
   simp only [Ew.elem, hw, hs, decide_eq_true hi, Bool.true_and, Nat.zero_mul, LeetQ.Rel.bitsAt_one]
-  have ex := toInt64_toInt (hc i hi)
+  have ex := toInt64_toInt hc
   generalize Column.bitsAt c (i * 8) 8 = x at ex ⊢
   simp (config := {decide := true}) only [Ew.cmpStep, Ew.signed, ↓reduceIte]
   rw [Bool.eq_iff_iff, beq_iff_eq, decide_eq_true_iff]
@@ -65,6 +62,24 @@ theorem whereGt_ids (n : USize) (c : ByteArray) {k : Nat} (hk : k < 2 ^ 63)
       have e : x.toInt64.toInt ≠ (k.toUInt64).toInt64.toInt := fun e => h2 (Int64.toInt_inj.1 e)
       rw [ex, ek] at e
       exact ⟨fun _ => by omega, fun _ => rfl⟩
+
+/-- **`whereBits` of `Ew.cmp gt` against the constant `k`, read back**: the ascending positions below `n`
+    whose long is greater than `k`, every long and `k` below `2^63`. -/
+theorem whereGt_ids (n : USize) (c : ByteArray) {k : Nat} (hk : k < 2 ^ 63)
+    (hc : ∀ i < n.toNat, (Column.bitsAt c (i * 8) 8).toNat < 2 ^ 63) :
+    ids (whereBits n (Ew.cmp Ew.gt Ew.i64 Ew.va c (one k.toUInt64) n)) =
+      (List.range n.toNat).filter fun i => decide (k < (Column.bitsAt c (i * 8) 8).toNat) := by
+  rw [(whereBits_ids n _).1]
+  exact List.filter_congr fun i hi => gtConst_bitAt n c hk (List.mem_range.1 hi) (hc i (List.mem_range.1 hi))
+
+/-- **`addc` of a long and the constant `v`**, at element `q` below the count: the natural sum, below `2^63`. -/
+theorem addc_get {g : ByteArray} {m : USize} {v q : Nat} (hq : q < m.toNat)
+    (h : (Column.bitsAt g (q * 8) 8).toNat + v < 2 ^ 63) :
+    (Column.bitsAt (addc m g v) (q * 8) 8).toNat = (Column.bitsAt g (q * 8) 8).toNat + v := by
+  have ev : (v.toUInt64).toNat = v := UInt64.toNat_ofNat_of_lt' (Nat.lt_of_le_of_lt (Nat.le_add_left v _) (Nat.lt_trans h (by decide)))
+  unfold addc
+  rw [val_va_get _ _ _ _ hq, LeetQ.Rel.bitsAt_one, (valStep_add_sub (by omega) (by rw [ev]; omega)).1 (by rw [ev]; exact h), ev]
+  exact UInt64.toNat_ofNat_of_lt' (Nat.lt_trans h (by decide))
 
 /-- **`Ew.val sub` of a long less the constant `v`**, at element `q` below the count: the natural difference,
     the long below `2^63` and not below `v`. -/

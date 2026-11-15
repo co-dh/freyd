@@ -4,6 +4,7 @@
   order they came in, and a product of two such sides sorts lexicographically.
 -/
 import LeetQ.Rel.KernelWF.SortSpec
+import LeetQ.Rel.KernelWF.FoldSpec
 import LeetQ.Rel.KernelWF.PickSpec
 import LeetQ.Rel.KernelWF.RazeSpec
 import LeetQ.Rel.ObjOrder
@@ -673,6 +674,191 @@ theorem sortsAsc_sum {a b : Obj} (ha : SortsAsc a) (hb : SortsAsc b) : SortsAsc 
     show Obj.lt _ (Vals.row _ _) (Vals.row _ _)
     simp only [Vals.row, ti, tj]
     exact Obj.lt_inl_inr a b _ _
+
+/-- `longest` stops at its fuel: at most `t₀ + fuel` passes. -/
+theorem longest_le (n : USize) (cnt : ByteArray) : ∀ fuel t₀, longest n cnt t₀ fuel ≤ t₀ + fuel
+  | 0, _ => Nat.le_refl _
+  | fuel + 1, t₀ => by
+    unfold longest; split
+    · omega
+    · have := longest_le n cnt fuel (t₀ + 1); omega
+
+/-- **`longest` passes every count**: each of the `n` longs `cnt`, all at most `t₀ + fuel < 2^63`, is at most
+    the passes `longest` answers. -/
+theorem le_longest (n : USize) (cnt : ByteArray) : ∀ (fuel t₀ : Nat), t₀ + fuel < 2 ^ 63 →
+    (∀ i < n.toNat, (Column.bitsAt cnt (i * 8) 8).toNat ≤ t₀ + fuel) →
+    ∀ i < n.toNat, (Column.bitsAt cnt (i * 8) 8).toNat ≤ longest n cnt t₀ fuel
+  | 0, _, _, h => h
+  | fuel + 1, t₀, hb, h => by
+    unfold longest
+    split
+    next he =>
+      intro i hi
+      have hz := List.eq_nil_of_length_eq_zero (by rw [← len_eq_ids]; exact he)
+      rw [whereGt_ids n cnt (by omega) fun j hj => by have := h j hj; omega, List.filter_eq_nil_iff] at hz
+      have := hz i (List.mem_range.2 hi)
+      simp only [decide_eq_true_eq, Nat.not_lt] at this
+      exact this
+    next => exact le_longest n cnt fuel (t₀ + 1) (by omega) fun i hi => by have := h i hi; omega
+
+/-- A property `I t` that holds of `p` at `T` and that the step at `t < T` takes from `t + 1` to `t` holds at
+    `0` of the steps folded from `T - 1` down to `0`. -/
+theorem foldr_range_inv {α : Type} (F : Nat → α → α) (I : Nat → α → Prop) (T : Nat) (p : α) (h0 : I T p)
+    (hs : ∀ t q, t < T → I (t + 1) q → I t (F t q)) : I 0 ((List.range T).foldr F p) := by
+  have key : ∀ k t, t + k = T → I t ((List.range' t k).foldr F p) := by
+    intro k; induction k with
+    | zero => intro t ht; rw [Nat.add_zero] at ht; subst ht; exact h0
+    | succ k ih =>
+      intro t ht; rw [List.range'_succ, List.foldr_cons]; exact hs t _ (by omega) (ih (t + 1) (by omega))
+  rw [List.range_eq_range']; exact key T 0 (Nat.zero_add T)
+
+/-- **An array sorts lexicographically**: the passes from the last element position down to the first, each
+    stable, leave the rows ascending by their suffix from that position — the rows with no element there first,
+    then the rest by the element, ties by the suffix after it. -/
+theorem sortsAsc_arr {b : Obj} (hb : SortsAsc b) : SortsAsc (.arr b) := by
+  intro n c hc p hl hp R hR
+  refine ⟨sortBy_permutes _ _ p hl, ?_⟩
+  obtain ⟨hM, hx⟩ := hc
+  have hS := fun i (hi : i < n.toNat) => slicesOf_row c hM hi
+  have hn2 : len (slicesOf c).2 = n.toNat := (len_slices _ _ _ _).2
+  have hgd : ∀ (a : ByteArray) k, k < len a → (ids a).getD k 0 = (Column.bitsAt a (k * 8) 8).toNat := fun a k hk => by
+    have hk' : k < (ids a).length := by rw [← len_eq_ids]; exact hk
+    rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hk', Option.getD_some, ids_getElem hk']
+  have hcT : ∀ i (hi : i < n.toNat),
+      (Column.bitsAt (slicesOf c).2 (i * 8) 8).toNat ≤ longest n (slicesOf c).2 0 c.1.toNat := fun i hi =>
+    le_longest n _ c.1.toNat 0 (by omega) (fun j hj => by have := (hS j hj).1; omega) i hi
+  have hT : longest n (slicesOf c).2 0 c.1.toNat ≤ c.1.toNat := by
+    have := longest_le n (slicesOf c).2 c.1.toNat 0; omega
+  have hdrop : ∀ i (hi : i < n.toNat) t, (Column.bitsAt (slicesOf c).2 (i * 8) 8).toNat ≤ t →
+      (c.row ⟨i, hi⟩).drop t = [] := fun i hi t h => List.drop_eq_nil_of_le (by rw [(hS i hi).2.1]; exact h)
+  have hcons : ∀ i (hi : i < n.toNat) t (h : t < (Column.bitsAt (slicesOf c).2 (i * 8) 8).toNat),
+      (c.row ⟨i, hi⟩).drop t = (c.row ⟨i, hi⟩)[t]'(by rw [(hS i hi).2.1]; exact h) :: (c.row ⟨i, hi⟩).drop (t + 1) :=
+    fun i hi t h => List.drop_eq_getElem_cons _
+  have kc : ∀ (x : b.El) (xs : List b.El), (Obj.arr b).key (x :: xs) = 1 :: (b.key x ++ (Obj.arr b).key xs) :=
+    fun _ _ => rfl
+  -- rows `i` before `j` ordered by their suffixes from element position `t`
+  let D (t i j : Nat) : Prop := ∀ (hi : i < n.toNat) (hj : j < n.toNat),
+    (Obj.arr b).lt ((c.row ⟨i, hi⟩).drop t) ((c.row ⟨j, hj⟩).drop t) ∨
+      (Obj.arr b).key ((c.row ⟨i, hi⟩).drop t) = (Obj.arr b).key ((c.row ⟨j, hj⟩).drop t) ∧ R i j
+  let I (t : Nat) (q : ByteArray) : Prop := (ids q).Perm (ids p) ∧ (ids q).Pairwise (D t)
+  have step : ∀ t q, t < longest n (slicesOf c).2 0 c.1.toNat → I (t + 1) q →
+      I t (arrPass c (slicesOf c) (fun v r => (b.sortByC v r).1) t q) := by
+    intro t q htT ⟨hqp, hqD⟩
+    have hql : len q < USize.size := by rw [len_eq_ids, hqp.length_eq, ← len_eq_ids]; exact hl
+    have hqn : ∀ i ∈ ids q, i < n.toNat := fun i hi => hp i (hqp.mem_iff.1 hi)
+    have hm : ((len q).toUSize).toNat = len q := USize.toNat_ofNat_of_lt' hql
+    have ht63 : t < 2 ^ 63 := by omega
+    have hin : ∀ s ∈ ids q, s < len (slicesOf c).2 := fun s hs => by rw [hn2]; exact hqn s hs
+    -- position `k` of `q`: a row, its count read through `q`
+    have hk : ∀ k, k < len q → (ids q).getD k 0 < n.toNat ∧
+        (Column.bitsAt (gather 8 (slicesOf c).2 q) (k * 8) 8).toNat =
+          (Column.bitsAt (slicesOf c).2 (((ids q).getD k 0) * 8) 8).toNat := by
+      intro k hkq
+      have hk' : k < (ids q).length := by rw [← len_eq_ids]; exact hkq
+      have e : (ids q).getD k 0 = (ids q)[k]'hk' := by
+        rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hk', Option.getD_some]
+      rw [e]
+      refine ⟨hqn _ (List.getElem_mem hk'), ?_⟩
+      have hg : k < len (gather 8 (slicesOf c).2 q) := by rw [gather_len]; exact hkq
+      rw [← hgd _ _ hg, ids_gather8 hin, List.getD_eq_getElem?_getD, List.getElem?_map, List.getElem?_eq_getElem hk']
+      exact hgd _ _ (by rw [hn2]; exact hqn _ (List.getElem_mem hk'))
+    have hbit : ∀ k, k < len q → Column.bitAt (Ew.cmp Ew.gt Ew.i64 Ew.va (gather 8 (slicesOf c).2 q)
+        (one t.toUInt64) (len q).toUSize) k =
+          decide (t < (Column.bitsAt (slicesOf c).2 (((ids q).getD k 0) * 8) 8).toNat) := by
+      intro k hkq
+      obtain ⟨hkn, e⟩ := hk k hkq
+      rw [gtConst_bitAt _ _ ht63 (by rw [hm]; exact hkq) (by rw [e]; have := (hS _ hkn).1; omega), e]
+    have hA : ∀ i ∈ ids (gather 8 q (whereBits (len q).toUSize (Ew.notBits (len q).toUSize
+        (Ew.cmp Ew.gt Ew.i64 Ew.va (gather 8 (slicesOf c).2 q) (one t.toUInt64) (len q).toUSize)))),
+        ∃ _ : i < n.toNat, (Column.bitsAt (slicesOf c).2 (i * 8) 8).toNat ≤ t := by
+      intro i hi
+      obtain ⟨k, hkq, hbk, rfl⟩ := mem_where hql hi
+      rw [notBits_bitAt _ _ (by rw [hm]; exact hkq), hbit k hkq] at hbk
+      exact ⟨(hk k hkq).1, by simpa using hbk⟩
+    have hB : ∀ i ∈ ids (gather 8 q (whereBits (len q).toUSize
+        (Ew.cmp Ew.gt Ew.i64 Ew.va (gather 8 (slicesOf c).2 q) (one t.toUInt64) (len q).toUSize))),
+        ∃ _ : i < n.toNat, t < (Column.bitsAt (slicesOf c).2 (i * 8) 8).toNat := by
+      intro i hi
+      obtain ⟨k, hkq, hbk, rfl⟩ := mem_where hql hi
+      rw [hbit k hkq] at hbk
+      exact ⟨(hk k hkq).1, by simpa using hbk⟩
+    have hsp := sortSide_perm c.2.2.2 (fun v r => (b.sortByC v r).1) (fun v r hr => sortBy_permutes b v r hr)
+      (addc n (slicesOf c).1 t) (gather 8 q (whereBits (len q).toUSize
+        (Ew.cmp Ew.gt Ew.i64 Ew.va (gather 8 (slicesOf c).2 q) (one t.toUInt64) (len q).toUSize)))
+    have hSm : ∀ j ∈ ids (sortSide c.2.2.2 (fun v r => (b.sortByC v r).1) (addc n (slicesOf c).1 t)
+        (gather 8 q (whereBits (len q).toUSize
+          (Ew.cmp Ew.gt Ew.i64 Ew.va (gather 8 (slicesOf c).2 q) (one t.toUInt64) (len q).toUSize)))),
+        ∃ _ : j < n.toNat, t < (Column.bitsAt (slicesOf c).2 (j * 8) 8).toNat := fun j hj => hB j (hsp.mem_iff.1 hj)
+    unfold arrPass
+    rw [if_pos hql]
+    dsimp only [I]
+    rw [ids_concat2 (gather_size8 _ _)]
+    refine ⟨((List.Perm.refl _).append hsp).trans ((split_perm q _ hql).trans hqp), ?_⟩
+    rw [List.pairwise_append]
+    refine ⟨(hqD.sublist (where_sublist hql)).imp_of_mem fun {i j} hi' hj' h hi hj => ?_, ?_,
+      fun i hi' j hj' hi hj => ?_⟩
+    · obtain ⟨_, ci⟩ := hA i hi'
+      obtain ⟨_, cj⟩ := hA j hj'
+      rcases h hi hj with h | ⟨_, h⟩
+      · rw [hdrop i hi (t + 1) (by omega), hdrop j hj (t + 1) (by omega)] at h
+        exact absurd h (Obj.lt_irrefl _ _)
+      · exact .inr ⟨by rw [hdrop i hi t ci, hdrop j hj t cj], h⟩
+    · by_cases hs : 0 < c.1.toNat
+      · have hea : ∀ r (hr : r < n.toNat), t < (Column.bitsAt (slicesOf c).2 (r * 8) 8).toNat →
+            (ids (addc n (slicesOf c).1 t)).getD r 0 = (Column.bitsAt (slicesOf c).1 (r * 8) 8).toNat + t ∧
+              (Column.bitsAt (slicesOf c).1 (r * 8) 8).toNat + t < c.1.toNat := fun r hr cr => by
+          have := (hS r hr).1
+          have hlen : len (addc n (slicesOf c).1 t) = n.toNat := len_val ..
+          rw [hgd _ _ (by rw [hlen]; exact hr), addc_get hr (by omega)]
+          exact ⟨rfl, by omega⟩
+        have hps : ∀ r ∈ ids (gather 8 q (whereBits (len q).toUSize
+            (Ew.cmp Ew.gt Ew.i64 Ew.va (gather 8 (slicesOf c).2 q) (one t.toUInt64) (len q).toUSize))),
+            r < len (addc n (slicesOf c).1 t) ∧ (ids (addc n (slicesOf c).1 t)).getD r 0 < c.1.toNat := by
+          intro r hr
+          obtain ⟨hrn, cr⟩ := hB r hr
+          obtain ⟨e, hlt⟩ := hea r hrn cr
+          exact ⟨by rw [show len (addc n (slicesOf c).1 t) = n.toNat from len_val ..]; exact hrn, by rw [e]; exact hlt⟩
+        have hBl : len (gather 8 q (whereBits (len q).toUSize
+            (Ew.cmp Ew.gt Ew.i64 Ew.va (gather 8 (slicesOf c).2 q) (one t.toUInt64) (len q).toUSize))) < USize.size := by
+          rw [len_eq_ids]; exact Nat.lt_of_le_of_lt (where_sublist hql).length_le (by rw [← len_eq_ids]; exact hql)
+        let f (r : Nat) : b.El :=
+          if h : (ids (addc n (slicesOf c).1 t)).getD r 0 < c.1.toNat then c.2.2.2.row ⟨_, h⟩ else b.dflt
+        have hf : ∀ r (hr : r < n.toNat) (cr : t < (Column.bitsAt (slicesOf c).2 (r * 8) 8).toNat),
+            f r = (c.row ⟨r, hr⟩)[t]'(by rw [(hS r hr).2.1]; exact cr) := fun r hr cr => by
+          obtain ⟨e, hlt⟩ := hea r hr cr
+          rw [(hS r hr).2.2 t _ hlt]
+          simp only [f]
+          rw [dif_pos (by rw [e]; exact hlt)]
+          exact congrArg _ (Fin.ext e)
+        have hsa := sortSide_asc hb c.2.2.2 hx hs (addc n (slicesOf c).1 t) _ hBl hps (D (t + 1))
+          (hqD.sublist (where_sublist hql)) f (fun r _ h => dif_pos h)
+        refine hsa.imp_of_mem fun {i j} hi' hj' hij hi hj => ?_
+        obtain ⟨_, ci⟩ := hSm i hi'
+        obtain ⟨_, cj⟩ := hSm j hj'
+        rw [hcons i hi t ci, hcons j hj t cj, Obj.lt_cons, ← hf i hi ci, ← hf j hj cj]
+        rcases hij with h | ⟨e, h⟩
+        · exact .inl (.inl h)
+        · rcases h hi hj with h' | ⟨e', h'⟩
+          · exact .inl (.inr ⟨e, h'⟩)
+          · exact .inr ⟨by rw [kc, kc, e, e'], h'⟩
+      · have hnil : ids (gather 8 q (whereBits (len q).toUSize
+            (Ew.cmp Ew.gt Ew.i64 Ew.va (gather 8 (slicesOf c).2 q) (one t.toUInt64) (len q).toUSize))) = [] :=
+          List.eq_nil_iff_forall_not_mem.2 fun j hj => by
+            obtain ⟨hjn, cj⟩ := hB j hj
+            have := (hS j hjn).1; omega
+        rw [(hsp.trans (List.Perm.of_eq hnil)).eq_nil]
+        exact List.Pairwise.nil
+    · obtain ⟨_, ci⟩ := hA i hi'
+      obtain ⟨_, cj⟩ := hSm j hj'
+      rw [hdrop i hi t ci, hcons j hj t cj]
+      exact .inl (Obj.lt_nil_cons b _ _)
+  have key := foldr_range_inv (arrPass c (slicesOf c) fun v r => (b.sortByC v r).1) I
+    (longest n (slicesOf c).2 0 c.1.toNat) p
+    ⟨List.Perm.refl _, hR.imp fun {i j} h hi hj =>
+      .inr ⟨by rw [hdrop i hi _ (hcT i hi), hdrop j hj _ (hcT j hj)], h⟩⟩ step
+  simp only [Obj.sortBy, Obj.sortByC]
+  exact key.2.imp fun h hi hj => h hi hj
+
 /-! ## Every side whose atoms qlean orders
 
 A `.general` atom is left out: qlean states no order on it (`orderKind .general = none`, `Obj.key` keys it `[]`),
@@ -694,16 +880,16 @@ theorem sortsAsc_ordered_atom {t : QAtomicType} (h : t ≠ .general) : SortsAsc 
   case general => exact absurd rfl h
   all_goals exact sortsAsc_num rfl (by decide)
 
-/-- **Every ordered side sorts stably by `Obj.lt`**, given that an array of a side that does, does: the LSD
-    passes of `Obj.sortByC` at `.arr`, the open obligation `harr`. -/
-theorem sortsAsc_ordered (harr : ∀ b, SortsAsc b → SortsAsc (.arr b)) :
-    ∀ A : Obj, A.Ordered → SortsAsc A
+/-- **Every ordered side sorts stably by `Obj.lt`**: atoms by their kernels, products and sums and arrays (the
+    LSD passes of `Obj.sortByC`) from their parts. -/
+theorem sortsAsc_all : ∀ A : Obj, A.Ordered → SortsAsc A
   | .atom _, h => sortsAsc_ordered_atom h
-  | .prod a b, ⟨ha, hb⟩ => sortsAsc_prod (sortsAsc_ordered harr a ha) (sortsAsc_ordered harr b hb)
-  | .arr b, h => harr b (sortsAsc_ordered harr b h)
-  | .sum a b, ⟨ha, hb⟩ => sortsAsc_sum (sortsAsc_ordered harr a ha) (sortsAsc_ordered harr b hb)
+  | .prod a b, ⟨ha, hb⟩ => sortsAsc_prod (sortsAsc_all a ha) (sortsAsc_all b hb)
+  | .arr b, h => sortsAsc_arr (sortsAsc_all b h)
+  | .sum a b, ⟨ha, hb⟩ => sortsAsc_sum (sortsAsc_all a ha) (sortsAsc_all b hb)
 
-#print axioms sortsAsc_ordered
+#print axioms sortsAsc_all
+#print axioms sortsAsc_arr
 #print axioms sortsAsc_symbol
 #print axioms sortsAsc_guid
 #print axioms sortBy_asc
