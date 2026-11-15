@@ -1,5 +1,12 @@
 import LeetQ.Rel.AC3Def
-import LeetQ.Rel.CRelEst
+import LeetQ.Rel.CRelDef
+import LeetQ.Rel.CRelArithDef
+import LeetQ.Rel.CRelRelDef
+import LeetQ.Rel.CRelListDef
+import LeetQ.Rel.CRelFoldDef
+import LeetQ.Rel.CRelPowerDef
+import LeetQ.Rel.CRelLoopDef
+import LeetQ.Rel.CRelEstDef
 import LeetQ.Rel.Lang.Bits
 
 /-! The code a `rel_program` definition expands into (`Expand`): one function per core-term constructor, each

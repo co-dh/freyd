@@ -5,12 +5,16 @@
   the step's own spec (`hS`, at the rounds whose step bit is set), not a size bound.
 -/
 import LeetQ.Rel.CRelRel
+import LeetQ.Rel.CRelRelDef
 import LeetQ.Rel.RepFold
 import LeetQ.Rel.RepArith
 import LeetQ.Rel.CRelArith
+import LeetQ.Rel.CRelArithDef
 import LeetQ.Rel.CRelList
+import LeetQ.Rel.CRelListDef
 import LeetQ.Rel.RepSubseq
 import LeetQ.Rel.RepThin
+import LeetQ.Rel.CRelFoldDef
 
 namespace LeetQ.Rel
 
@@ -416,13 +420,6 @@ namespace CRel
 
 open QLean QLean.Kernel LeetQ.Rel.Alg Freyd Freyd.Alg Freyd.Alg.RelSet LeetQ.Rel.Rep FoldN
 
-/-- `foldBy` on a step over `CRel`s, ok where every round's step was and `foldByC` ran within capacity. The
-    step sees its inputs as ok: their bits are already in the fold's. -/
-def foldBy {E V : Obj} {n m : USize} (X : Vals (.arr E) n) (e : Vals V m)
-    (step : CRel .long E → CRel .long V → CRel .long V) : CRel (.arr E) V :=
-  let r := foldByC X e fun el p => let s := step ⟨el, true⟩ ⟨p, true⟩; (s.rel, s.ok)
-  ⟨r.1, r.2⟩
-
 /-- **`CRel.foldBy` read back under its bit**: `rep_foldByC`. -/
 theorem rep_foldBy {E V : Obj} {m n : USize} (e : Vals V m) (X : Vals (.arr E) n)
     (stepK : CRel .long E → CRel .long V → CRel .long V)
@@ -447,13 +444,6 @@ theorem rep_foldBy {E V : Obj} {m n : USize} (e : Vals V m) (X : Vals (.arr E) n
           (ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm))) ∧
         w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) :=
   rep_foldByC e X _ hb T hT pend₀ hpend step hstep Sr elK hE f hf keep hS
-
-/-- `foldOn` on a family over `CRel`s, ok where every round's family member was and `foldOnC` ran within
-    capacity. The family sees the round's pairs as ok: their bits are already in the fold's. -/
-def foldOn {E V : Obj} {m n : USize} (e : Vals V m) (S : CRel (.prod E V) (.prod E V) → CRel (.prod E V) V)
-    (X : Vals (.arr E) n) : CRel (.arr E) V :=
-  let r := foldOnC e (fun D => ((S ⟨D, true⟩).rel, (S ⟨D, true⟩).ok)) X
-  ⟨r.1, r.2⟩
 
 /-- **`CRel.foldOn` read back under its bit**: `rep_foldOnC`. -/
 theorem rep_foldOn {E V : Obj} {m n : USize} (e : Vals V m) (S : CRel (.prod E V) (.prod E V) → CRel (.prod E V) V)
@@ -481,10 +471,6 @@ theorem rep_foldOn {E V : Obj} {m n : USize} (e : Vals V m) (S : CRel (.prod E V
         w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) :=
   rep_foldOnC e _ X hb T hT pend₀ hpend step hstep elK hE f hf D hD Sr hSr
 
-/-- `fold` of one `CRel` step, ok where `S` is and `foldC` ran within capacity. -/
-def fold {E V : Obj} {m n : USize} (e : Vals V m) (S : CRel (.prod E V) V) (X : Vals (.arr E) n) : CRel (.arr E) V :=
-  guard S.ok fun _ => let r := foldC e S.rel X; ⟨r.1, r.2⟩
-
 /-- **`CRel.fold` read back under its bit**: `rep_foldC`. -/
 theorem rep_fold {E V : Obj} {m n : USize} (e : Vals V m) (S : CRel (.prod E V) V) (X : Vals (.arr E) n)
     (hb : (fold e S X).ok = true) :
@@ -496,11 +482,6 @@ theorem rep_fold {E V : Obj} {m n : USize} (e : Vals V m) (S : CRel (.prod E V) 
         w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) := by
   have e' : fold e S X = _ := guard_eq ok hb; rw [e'] at hb ⊢; exact rep_foldC e S.rel X hb
 
-/-- `sum` as a `CRel`, ok where `sumC` ran within capacity. -/
-def Arr.sum {n : USize} (X : Vals (.arr .long) n) : CRel (.arr .long) .long :=
-  let r := Alg.Arr.sumC X
-  ⟨r.1, r.2⟩
-
 /-- **`CRel.Arr.sum` read back under its bit**: `Rep.Arr.rep_sumC`. -/
 theorem Arr.rep_sum {n : USize} (X : Vals (.arr .long) n)
     (hb : (Arr.sum X).ok = true) :
@@ -510,20 +491,11 @@ theorem Arr.rep_sum {n : USize} (X : Vals (.arr .long) n)
       w = xs.foldr (· + ·) 0 :=
   Rep.Arr.rep_sumC X hb
 
-/-- `length` as a `CRel`, ok where `lengthC` ran within capacity. -/
-def length {E : Obj} {n : USize} (X : Vals (.arr E) n) : CRel (.arr E) .long :=
-  let r := lengthC X
-  ⟨r.1, r.2⟩
-
 /-- **`CRel.length` read back under its bit**: `rep_lengthC`. -/
 theorem rep_length {E : Obj} {n : USize} (X : Vals (.arr E) n)
     (hb : (length X).ok = true) :
     ∀ (xs : List E.El) (w : Int64), rep (length X).rel xs w ↔ (∃ i, X.row i = xs) ∧ w = Int64.ofNat xs.length :=
   rep_lengthC X hb
-
-/-- `map` as a `CRel`, ok where `R` is and `mapC` ran within capacity. -/
-def map {A B : Obj} {n : USize} (R : CRel A B) (X : Vals (.arr A) n) : CRel (.arr A) (.arr B) :=
-  guard R.ok fun _ => let r := mapC R.rel X; ⟨r.1, r.2⟩
 
 /-- **`CRel.map` read back under its bit**: `rep_mapC`. -/
 theorem rep_map {A B : Obj} {n : USize} (R : CRel A B) (X : Vals (.arr A) n)
@@ -532,34 +504,17 @@ theorem rep_map {A B : Obj} {n : USize} (R : CRel A B) (X : Vals (.arr A) n)
       ∀ t (ht : t < xs.length) (ht' : t < ys.length), rep R.rel (xs[t]'ht) (ys[t]'ht') :=
   by have e : map R X = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_mapC R.rel X hb
 
-/-- `perm` as a `CRel`, ok where `permC` ran within capacity. -/
-def perm {B : Obj} {n : USize} (X : Vals (.arr B) n) : CRel (.arr B) (.arr B) :=
-  let r := permC X
-  ⟨r.1, r.2⟩
-
 /-- **`CRel.perm` read back under its bit**: `rep_permC`. -/
 theorem rep_perm {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (hb : (perm X).ok = true) :
     ∀ (xs : List B.El) ys, rep (perm X).rel xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Perm xs :=
   rep_permC X hb
 
-/-- `subseq` as a `CRel`, ok where `subseqC` ran within capacity. -/
-def subseq {B : Obj} {n : USize} (X : Vals (.arr B) n) : CRel (.arr B) (.arr B) :=
-  let r := subseqC X
-  ⟨r.1, r.2⟩
-
 /-- **`CRel.subseq` read back under its bit**: `rep_subseqC`. -/
 theorem rep_subseq {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (hb : (subseq X).ok = true) :
     ∀ (xs : List B.El) ys, rep (subseq X).rel xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Sublist xs :=
   rep_subseqC X hb
-
-/-- `thinLOn` on a test over `CRel`s, ok where every call of the test was and `thinLOnC` ran within capacity. The
-    test sees the round's pairs as ok: their bits are already in the fold's. -/
-def thinLOn {B : Obj} {n : USize} (q : CRel (.prod B B) (.prod B B) → CRel (.prod B B) (.prod B B))
-    (X : Vals (.arr B) n) : CRel (.arr B) (.arr B) :=
-  let r := thinLOnC (fun D => ((q ⟨D, true⟩).rel, (q ⟨D, true⟩).ok)) X
-  ⟨r.1, r.2⟩
 
 /-- **`CRel.thinLOn` read back under its bit**: `rep_thinLOnC`. -/
 theorem rep_thinLOn {B : Obj} {n : USize} (q : CRel (.prod B B) (.prod B B) → CRel (.prod B B) (.prod B B))
@@ -589,9 +544,6 @@ theorem rep_thinLOn {B : Obj} {n : USize} (q : CRel (.prod B B) (.prod B B) → 
 #print axioms rep_perm
 #print axioms rep_subseq
 #print axioms rep_thinLOn
-
-/-- `R − S`, ok where both inputs are and `diffC` ran within capacity. -/
-def diff {A B : Obj} (R S : CRel A B) : CRel A B := guard (R.ok && S.ok) fun _ => let r := diffC R.rel S.rel; ⟨r.1, r.2⟩
 
 /-- **`CRel.diff` read back under its bit**: `rep_diffC`. -/
 theorem rep_diff {A B : Obj} (R S : CRel A B) (hb : (diff R S).ok = true) (a : A.El) (b : B.El) :
