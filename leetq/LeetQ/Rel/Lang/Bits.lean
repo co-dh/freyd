@@ -98,6 +98,7 @@ def codeAll (cs : Array Col) : Option (Array ByteArray × Array Col) := do
     let some (all, ok) := (if h : (parts.toList.map fun c : Part A => c.1.toNat).sum < USize.size then
       some (A.razeC parts h) else none) | none
     guard ok
+    guard (Vals.fitsN A all (len firsts))
     sps := sps.push ⟨A, Vals.pickPart A all firsts⟩
     let mut o := 0
     for k in [0:js.size] do

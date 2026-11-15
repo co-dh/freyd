@@ -10,6 +10,7 @@ import LeetQ.Rel.KernelWF.CodesProd
 import LeetQ.Rel.KernelWF.JoinAssembly
 import LeetQ.Rel.KernelWF.JoinContent
 import LeetQ.Rel.KernelWF.CodesSpec
+import LeetQ.Rel.KernelWF.RazeRowN
 
 namespace LeetQ.Rel.Lang.Bits
 
@@ -255,16 +256,17 @@ theorem blockU_inj (ps : Array (Part A)) (hp : 0 < ps.size) (hok : (A.codesC (p 
   exact ((hiff a ha).2 hU.symm).symm.trans ((hiff a' ha').2 (hU.symm.trans e))
 
 /-- What `codeAll` picks for an object from its parts `ps`: the rows of their `razeC` at the first occurrence of
-    each class of `blockCode ps`, both ok bits set. -/
+    each class of `blockCode ps`, both ok bits set and the pick's count passing `fitsN`. -/
 def PickOf (ps : Array (Part A)) (q : Part A) : Prop :=
   ∃ (_ : 0 < ps.size) (_ : (A.codesC (p := ps.size) ⟨ps, rfl⟩).2 = true)
     (hN : (ps.toList.map (·.1.toNat)).sum < USize.size), (A.razeC ps hN).2 = true ∧
+    Vals.fitsN A (A.razeC ps hN).1 (len (blockCode ps).groupIds.2) = true ∧
     q = Vals.pickPart A (A.razeC ps hN).1 (blockCode ps).groupIds.2
 
 /-- The pick holds one row per class. -/
 theorem pickOf_count {ps : Array (Part A)} {q : Part A} (h : PickOf ps q) :
     q.1.toNat = len (blockCode ps).groupIds.2 := by
-  obtain ⟨hp, hok, hN, -, rfl⟩ := h
+  obtain ⟨hp, hok, hN, -, -, rfl⟩ := h
   obtain ⟨hLU, -⟩ := block_spec ps hp hok
   unfold Vals.pickPart need; rw [dif_pos hLU]; exact USize.toNat_ofNat_of_lt' hLU
 
@@ -275,16 +277,11 @@ theorem pickOf_inj {ps : Array (Part A)} {q : Part A} (h : PickOf ps q) {i i' : 
   obtain ⟨hp, hok, -⟩ := h
   exact blockU_inj ps hp hok hi hi' e
 
-/-- **The pick's rows decode its codes**: row `i` of the pick is `blockU ps i`, given that `raze` puts row `j` of
-    part `l` at the counts before `l` plus `j` (`hR`) and that the pick fits (`hP`). -/
-theorem pickOf_row {ps : Array (Part A)} {q : Part A} (h : PickOf ps q)
-    (hR : ∀ (hN : (ps.toList.map fun c : Part A => c.1.toNat).sum < USize.size) l (hl : l < ps.size) j (hj : j < ps[l].1.toNat)
-      (h : ((ps.toList.take l).map (·.1.toNat)).sum + j < ((ps.toList.map fun c : Part A => c.1.toNat).sum).toUSize.toNat),
-      (A.raze ps hN).row ⟨_, h⟩ = ps[l].2.row ⟨j, hj⟩)
-    (hP : ∀ hN, Vals.PickFits A (A.raze ps hN) (ids (blockCode ps).groupIds.2)) :
+/-- **The pick's rows decode its codes**: row `i` of the pick is `blockU ps i`. -/
+theorem pickOf_row {ps : Array (Part A)} {q : Part A} (h : PickOf ps q) :
     ∀ i (hi : i < q.1.toNat), q.2.row ⟨i, hi⟩ = blockU ps i := by
-  obtain ⟨hp, hok, hN, -, hq⟩ := h
-  rw [razeC_fst] at hq; subst hq
+  obtain ⟨hp, hok, hN, hall, hfit, hq⟩ := h
+  rw [razeC_fst] at hq hfit; subst hq
   obtain ⟨hLU, -, -, -, hfirst⟩ := block_spec ps hp hok
   have hS : ((ps.toList.map fun c : Part A => c.1.toNat).sum).toUSize.toNat = (ps.toList.map fun c : Part A => c.1.toNat).sum :=
     USize.toNat_ofNat_of_lt' hN
@@ -294,12 +291,13 @@ theorem pickOf_row {ps : Array (Part A)} {q : Part A} (h : PickOf ps q)
     obtain ⟨l, hl, j, hj, e, -⟩ := hfirst a (by rw [len_eq_ids]; exact ha)
     rw [List.getElem?_eq_getElem ha, Option.some.injEq] at e
     rw [hS, e]; exact off_lt (fun c : Part A => c.1.toNat) ps.toList l (by simpa using hl) j (by simpa using hj)
-  obtain ⟨hk, hrow⟩ := pickPart_row (A.raze ps hN) _ hLU hlt (hP hN)
+  obtain ⟨hk, hrow⟩ := pickPart_row (A.raze ps hN) _ hLU hlt
+    (pickFits_of_fitsN A _ _ hfit _ (len_eq_ids _ ▸ Nat.le_refl _))
   intro i hi
   obtain ⟨hq', ht, e⟩ := hrow i hi
   obtain ⟨l, hl, j, hj, e', hU⟩ := hfirst i (hk ▸ hi)
   rw [List.getElem?_eq_getElem hq', Option.some.injEq] at e'
-  rw [e, hU, ← hR hN l hl j hj (e' ▸ ht)]
+  rw [e, hU, ← KernelWF.raze_rowN A ps hN hall hl hj _ (e' ▸ ht) rfl]
   exact congrArg (Vals.row (A.raze ps hN)) (Fin.ext e')
 
 #print axioms pickOf_inj
@@ -388,6 +386,7 @@ def codeStep (cs : Array Col) (c : Col) (r : MProd (Array ByteArray) (Array Col)
   let some (all, ok) := (if h : (parts.toList.map fun c : Part A => c.1.toNat).sum < USize.size then
     some (A.razeC parts h) else none) | none
   guard ok
+  guard (Vals.fitsN A all (len firsts))
   let sps := sps.push ⟨A, Vals.pickPart A all firsts⟩
   let mut out := out
   let mut o := 0
@@ -479,15 +478,13 @@ theorem off_range {A : Obj} (ps : Array (Part A)) (d : Part A) {k : Nat} (hk : k
   simp only [List.length_map, List.length_range] at h1
   simp [Array.getElem?_eq_getElem (show i < ps.size by omega)]
 
-theorem row_congr {A : Obj} : ∀ {x y : Part A}, x = y → ∀ i hx hy, x.2.row ⟨i, hx⟩ = y.2.row ⟨i, hy⟩
-  | _, _, rfl, _, _, _ => rfl
-
 /-- The step coding a new object `c.1`: its columns get their extracts of the block, its pick is pushed. -/
 theorem step_new (cs : Array Col) (pre : List Col) (c : Col) (hc : c ∈ cs.toList)
     (s : MProd (Array ByteArray) (Array Col)) (hI : Inv cs pre s) (hs : ¬ s.2.any (·.1 == c.1) = true)
     (hok : (c.1.codesC (p := (partsOf cs c.1 c).size) ⟨partsOf cs c.1 c, rfl⟩).2 = true)
     (hN : ((partsOf cs c.1 c).toList.map (·.1.toNat)).sum < USize.size)
-    (hall : (c.1.razeC (partsOf cs c.1 c) hN).2 = true) :
+    (hall : (c.1.razeC (partsOf cs c.1 c) hN).2 = true)
+    (hfit : Vals.fitsN c.1 (c.1.razeC (partsOf cs c.1 c) hN).1 (len (blockCode (partsOf cs c.1 c)).groupIds.2) = true) :
     Inv cs (pre ++ [c]) ⟨((List.range (jsOf cs c.1 c).size).foldl
       (fillStep (fun k => ((partsOf cs c.1 c).getD k ⟨0, Vals.empty c.1⟩).1.toNat) (fun k => (jsOf cs c.1 c).getD k 0)
         (gatherPacked (blockCode (partsOf cs c.1 c)).n
@@ -532,7 +529,7 @@ theorem step_new (cs : Array Col) (pre : List Col) (c : Col) (hc : c ∈ cs.toLi
         obtain rfl : c.1 = B := beq_iff_eq.1 hcB
         obtain rfl := eq_of_heq (Sigma.mk.inj (Option.some.inj hf)).2
         rw [partsOf_congr cs c.1 ⟨c.1, ⟨0, Vals.empty c.1⟩⟩ c]
-        exact ⟨hp, hok, hN, hall, rfl⟩
+        exact ⟨hp, hok, hN, hall, hfit, rfl⟩
       · cases hf
   rw [Array.any_push] at hany
   by_cases hB : B = c.1
@@ -555,7 +552,7 @@ theorem step_new (cs : Array Col) (pre : List Col) (c : Col) (hc : c ∈ cs.toLi
     obtain ⟨h', hlt, hiff⟩ := hrow k hk' r (by rw [hpk]; exact hr)
     rw [hEr r h h', hq]
     refine ⟨hlt, fun a ha => ?_⟩
-    rw [hiff a ha, row_congr hpk, uOf, partsOf_congr cs c.1 ⟨c.1, ⟨0, Vals.empty c.1⟩⟩ c]
+    rw [hiff a ha, KernelWF.row_congr hpk, uOf, partsOf_congr cs c.1 ⟨c.1, ⟨0, Vals.empty c.1⟩⟩ c]
   · have hold : s.2.any (·.1 == B) = true := by simpa [Ne.symm hB] using hany
     obtain ⟨q, hfq, hok'⟩ := hcol j hj B p e hold
     refine ⟨q, by rw [Array.find?_push, hfq]; rfl, ?_⟩
@@ -595,8 +592,13 @@ theorem codeStep_inv (cs : Array Col) (pre : List Col) (c : Col) (s : MProd (Arr
   have hm : List.range' 0 [:(jsOf cs c.1 c).size].size = List.range (jsOf cs c.1 c).size := by
     simp [List.range_eq_range']
   rw [hm] at h
+  split at h
+  rotate_left
+  · cases h
+  rename_i hfit
+  simp only [pure_bind] at h
   cases h
-  exact ⟨_, rfl, step_new cs pre c hc s hI hs hok hN hall⟩
+  exact ⟨_, rfl, step_new cs pre c hc s hI hs hok hN hall hfit⟩
 
 /-- **`codeAll` read back**: one long column per column, every object picked once, every column read back against
     its object's pick under `uOf`. -/
@@ -612,7 +614,14 @@ theorem codeAll_inv (cs : Array Col) {out : Array ByteArray} {sps : Array Col} (
       cs.toList (fun _ h => h) [] _ t ⟨by simp, by simp, fun _ _ _ _ _ h => by simp at h, fun _ _ h => by simp at h⟩ hr
     simpa using this
 
+/-- **`codeAll`'s picks decode its codes**: row `i` of an object's pick is `uOf cs A i`. -/
+theorem codeAll_row (cs : Array Col) {out : Array ByteArray} {sps : Array Col} (h : codeAll cs = some (out, sps))
+    {A : Obj} {q : Part A} (hf : sps.find? (·.1 == A) = some ⟨A, q⟩) :
+    ∀ i (hi : i < q.1.toNat), q.2.row ⟨i, hi⟩ = uOf cs A i :=
+  pickOf_row ((codeAll_inv cs h).2.2.2 A q hf)
+
 #print axioms codeAll_inv
+#print axioms codeAll_row
 
 /-- **A leaf's codes as bits**: where `codeAll` coded the columns `j`, `j'` holding `R`'s key and value, the scattered
     code pairs at the counts `na`, `nb` of the two objects' picks hold `R` under `uOf`. -/
