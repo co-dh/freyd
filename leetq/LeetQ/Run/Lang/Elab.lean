@@ -54,7 +54,6 @@ inductive Tm : Obj → Obj → Bool → Type where
       `τ(Q) : B×B ⟶ B×B` (§a), run on demand on the pairs the operator compares. -/
   | est {B : Obj} (Q : Tm (.prod B B) (.prod B B) true) : Tm (.arr B) B true
   | thin {B : Obj} (Q : Tm (.prod B B) (.prod B B) true) : Tm (.arr B) (.arr B) true
-  | union {A : Obj} : Tm (.arr (.arr A)) (.arr A) true
   | tau {A : Obj} : Tm A (.arr A) true
   | nil {A B : Obj} : Tm A (.arr B) true
   | cons {B : Obj} : Tm (.prod B (.arr B)) (.arr B) true
@@ -212,7 +211,6 @@ inductive Pre
   | takewhile (p : Pre)
   | est (p : Pre)
   | thin (p : Pre)
-  | union (a : OTy)
   | tau (a : OTy)
   | nil (a b : OTy)
   | cons (b : OTy)
@@ -297,7 +295,7 @@ def Pre.at (p : Pos) : Pre → Pre
   | .call _ c us xs alt a b => .call p c us (xs.attach.map fun ⟨y, _⟩ => y.at p) (alt.at p) a b
   -- no position and no part
   | x@(.tm _) | x@(.zero ..) | x@(.id _) | x@(.mem _) | x@(.outl ..) | x@(.outr ..) | x@(.inl ..) | x@(.inr ..)
-  | x@(.union _) | x@(.tau _) | x@(.nil ..) | x@(.cons _) | x@(.uncons _) | x@(.length ..) | x@(.total _)
+  | x@(.tau _) | x@(.nil ..) | x@(.cons _) | x@(.uncons _) | x@(.length ..) | x@(.total _)
   | x@(.inits _) | x@(.tails _) | x@(.«prefix» _) | x@(.suffix _) | x@(.concat _) | x@(.cat _) | x@(.uncat _) | x@(.zip ..) | x@(.snoc _) | x@(.unsnoc _) | x@(.setify _)
   | x@(.bagify _) | x@(.tic _) | x@(.atPos ..) => x
 
@@ -368,7 +366,7 @@ def Pre.nilSrcs : Pre → List OTy
   | .junc x y | .fold x y | .foldI x y => x.nilSrcs ++ y.nilSrcs
   | .conv x | .dom x | .ran x | .lam x | .E x | .map x | .filter x | .takewhile x | .est x | .thin x | .own x | .thinL x | .merge x
   | .loop x | .flat x | .close _ x _ _ | .fix _ _ _ _ x _ _ | .call _ _ _ _ x _ _ => x.nilSrcs
-  | .var .. | .tm _| .zero .. | .id _ | .mem _ | .outl .. | .outr .. | .inl .. | .inr .. | .union _ | .tau _ | .cons _
+  | .var .. | .tm _| .zero .. | .id _ | .mem _ | .outl .. | .outr .. | .inl .. | .inr .. | .tau _ | .cons _
   | .uncons _ | .length .. | .total _ | .inits _ | .tails _ | .«prefix» _ | .suffix _ | .concat _ | .cat _ | .uncat _ | .zip .. | .snoc _ | .unsnoc _ | .setify _
   | .bagify _ | .tic _ | .atPos .. | .succ .. | .arith .. | .leq .. | .lt .. | .lit .. => []
 
@@ -403,7 +401,7 @@ def Pre.parts : Pre → List (Pre × Pol)
   | .thin x => [(x, .not "thin")]
   | .thinL x => [(x, .not "thinL")]
   | .merge x => [(x, .not "merge")]
-  | .var .. | .tm _ | .zero .. | .id _ | .mem _ | .outl .. | .outr .. | .inl .. | .inr .. | .union _ | .tau _
+  | .var .. | .tm _ | .zero .. | .id _ | .mem _ | .outl .. | .outr .. | .inl .. | .inr .. | .tau _
   | .nil .. | .cons _ | .uncons _ | .length .. | .total _ | .inits _ | .tails _ | .«prefix» _ | .suffix _ | .concat _ | .cat _ | .uncat _ | .zip .. | .snoc _
   | .unsnoc _ | .setify _ | .bagify _ | .tic _ | .atPos .. | .succ .. | .arith .. | .leq .. | .lt .. | .lit .. => []
 
@@ -660,7 +658,6 @@ def constant (env : Env) (p : Pos) (o : Op) (objs : List OExp) : M Arg := do
     | .lt => (.lt p a, a, a)
     | .succ => (.succ p a, a, a)
     | .arith k => (.arith p k a, .prod a a, a)
-    | .union => (.union a, .arr (.arr a), .arr a)
     | .tau => (.tau a, a, .arr a)
     | .nil => (.nil a b, a, .arr b)
     | .alpha => (.junc (.close p (.nil a b) a "α") (.close p (.cons b) (.prod b (.arr b)) "α"), .sum a (.prod b (.arr b)), .arr b)
@@ -1209,7 +1206,6 @@ def convTm {A B : Obj} {d : Bool} (t : Tm A B d) : Except String ((e : Bool) × 
   | .takewhile _ => throw "takewhile( )"
   | .est _ => throw "est( )"
   | .thin _ => throw "thin( )"
-  | .union => throw "union"
   | .tau => throw "τ"
   | .nil => throw "nil"
   | .length => throw "length"
@@ -1433,7 +1429,6 @@ def build : Pre → Except Err Res
     if h : B = A then pure ⟨_, _, _, .takewhile (h ▸ t)⟩ else internal dp "takewhile's predicate is not on one object"
   | .est p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .est c⟩
   | .thin p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .thin c⟩
-  | .union a => return ⟨_, _, true, .union (A := ← toObj st dp a)⟩
   | .tau a => return ⟨_, _, true, .tau (A := ← toObj st dp a)⟩
   | .nil a b => return ⟨_, _, true, .nil (A := ← toObj st dp a) (B := ← toObj st dp b)⟩
   | .cons b => return ⟨_, _, true, .cons (B := ← toObj st dp b)⟩

@@ -1,5 +1,5 @@
 /-
-  The composites of `Alg` built only from ops already read back: `tail`, `Arr.union`, `pairsIn`, `swapIn`,
+  The composites of `Alg` built only from ops already read back: `tail`, `pairsIn`, `swapIn`,
   `estOn`/`est`, `thinOn`/`thin`. Each headline chains its primitives' read-backs; the intermediates are bound by
   their defining equations and the primitives' hypotheses are `Prim`'s bundles at them.
 -/
@@ -9,24 +9,6 @@ import LeetQ.Rel.RepE
 namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
-
-/-! ## `Arr.union` -/
-
-section ArrUnion
-
-open Pow OpsN UnionN
-
-/-- Every element of a cell of `X` is a row of its payload: a cell's window ends inside the payload. -/
-theorem row_mem_payload {A : Obj} {n : USize} (X : Vals (.arr A) n) :
-    ∀ xs x, (∃ i, Vals.row X i = xs) → x ∈ xs → ∃ i, Vals.row X.2.2.2 i = x := by
-  rintro xs x ⟨q, rfl⟩ hx
-  rw [arr_row] at hx
-  obtain ⟨j, hj, hjx⟩ := List.mem_map.1 hx
-  rw [List.mem_range] at hj
-  rw [dif_pos (by omega)] at hjx
-  exact ⟨_, hjx⟩
-
-end ArrUnion
 
 /-! ## `tail`, `pairsIn`, `swapIn`, `estOn`, `est`, `thinOn`, `thin` -/
 

@@ -22,7 +22,7 @@ import AOP.A1_7_Pointfree
     `R°`, `R ∩ S`, `R ∪ S`, `R / S`, `R \ S`, `𝟙`, `𝟘`, `⊤`, `dom(R)`, `ran(R)`; `⟨R,S⟩`, `R × S`, `π₁`, `π₂` over
     a `RelProd` instance; `[R,S]`, `inl`, `inr` over a `Coproduct` hypothesis; `∼R`, `R − S` in a
     `BooleanAllegory`; the book's fold `⦇R⦈` and `α` over an `InitialAlgebra` instance, `F(R)` over a `Relator`
-    hypothesis; the power group `∋`, `∈`, `Λ(R)`, `E(R)`, `P(R)`, `est(R)`, `thin(Q)`, `union`, `τ` as the book's
+    hypothesis; the power group `∋`, `∈`, `Λ(R)`, `E(R)`, `P(R)`, `est(R)`, `thin(Q)`, `τ` as the book's
     power-object operators, each over the class AOP defines it in; the list and number builtins as their `Rel(Set)`
     declarations; the program fold `⦇e,S⦈` as the book's `⦇[e',S]⦈` (`toTerm`). `builtins` holds every builtin's
     reading or why it has none. `⊑` and `=` are Lean's, between `rel(…)` terms. Every other construct is an error
@@ -100,7 +100,7 @@ def builtins : List (Op × Except String (Option Name)) :=
   [(.id, .ok none), (.zero, .ok none), (.top, .ok none), (.outl, .ok none), (.outr, .ok none), (.inl, .ok none),
    (.inr, .ok none), (.alpha, .ok none), (.map, .ok none), (.dom, .ok none), (.ran, .ok none),
    (.mem, .ok ``PowerAllegory.eps), (.lam, .ok ``Freyd.Alg.Λ), (.E, .ok ``existsImage), (.P, .ok ``powerRel),
-   (.est, .ok ``est), (.thin, .ok ``thinRel), (.union, .ok ``Freyd.Alg.union), (.tau, .ok ``singletonMap),
+   (.est, .ok ``est), (.thin, .ok ``thinRel), (.tau, .ok ``singletonMap),
    (.leq, .ok ``ListRel.leq), (.succ, .ok ``ListRel.succ), (.arith add, .ok ``ListRel.plus),
    (.arith idiv, .error "Rel's div is Int division and ListRel.div is Nat division; \
     the Int reading is added when a proof first needs it"),

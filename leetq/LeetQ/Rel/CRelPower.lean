@@ -1,7 +1,7 @@
 /-
   Capacity checked at run time, correctness proved, for the power side's ops built on `Λ`: `τ`, `lamOn`, `setify`,
-  `E`, `Arr.union`. Each twin's bit is the `&&` of the bits of the twins it runs, and decides every capacity
-  premise of the op's read-back (`rep_tau`, `rep_lamOn`, …), so `rep_τC` … `rep_arrUnionC` hold under that bit alone.
+  `E`. Each twin's bit is the `&&` of the bits of the twins it runs, and decides every capacity
+  premise of the op's read-back (`rep_tau`, `rep_lamOn`, …), so `rep_τC` … `rep_EC` hold under that bit alone.
 -/
 import LeetQ.Rel.CRelRel
 import LeetQ.Run.CRelRelDef
@@ -97,18 +97,6 @@ theorem rep_EC {n : USize} (R : Rel A B) (X : Vals (.arr A) n) (hb : (EC R X).2 
   simp only [rep_memC X hm]
   exact ⟨fun ⟨x, ⟨hi, hx⟩, hr⟩ => ⟨hi, x, hx, hr⟩, fun ⟨hi, x, hx, hr⟩ => ⟨x, ⟨hi, hx⟩, hr⟩⟩
 
-/-- **`rep (Arr.union X)` under `Arr.unionC`'s bit**: `rep_EC` at `∋` on the payload `X.2.2.2` (`rep_memC`), every
-    element of a cell of `X` a row of the payload (`row_mem_payload`). -/
-theorem rep_arrUnionC {n : USize} (X : Vals (.arr (.arr A)) n) (hb : (Arr.unionC X).2 = true) :
-    (∀ xss Y, rep (Arr.unionC X).1 xss Y → (∃ i, Vals.row X i = xss) ∧ ∀ y, y ∈ Y ↔ ∃ xs ∈ xss, y ∈ xs) ∧
-      (∀ xss, (∃ Y, rep (Arr.unionC X).1 xss Y) ↔ ∃ i, Vals.row X i = xss) := by
-  simp only [Arr.unionC, Bool.and_eq_true] at hb
-  obtain ⟨h1, h2⟩ := rep_EC _ X hb.2
-  have hm := rep_memC X.2.2.2 hb.1
-  refine ⟨fun xss Y h => ⟨(h1 xss Y h).1, fun y => ((h1 xss Y h).2 y).trans ?_⟩, h2⟩
-  exact ⟨fun ⟨xs, hxs, hr⟩ => ⟨xs, hxs, ((hm xs y).1 hr).2⟩,
-    fun ⟨xs, hxs, hy⟩ => ⟨xs, hxs, (hm xs y).2 ⟨row_mem_payload X xss xs (h1 xss Y h).1 hxs, hy⟩⟩⟩
-
 /-- **`rep (P R X Y)` under `PC`'s bit**: `rep_interC` of `rep_leftDivC` and `rep_rightDivC`, at `rep_compC`'s and
     `rep_memC`'s read-backs of the composites. -/
 theorem rep_PC {n m : USize} (R : Rel A B) (X : Vals (.arr A) n) (Y : Vals (.arr B) m) (hb : (PC R X Y).2 = true)
@@ -156,7 +144,6 @@ theorem rep_PC {n m : USize} (R : Rel A B) (X : Vals (.arr A) n) (Y : Vals (.arr
 #print axioms rep_lamOnC
 #print axioms rep_setifyC
 #print axioms rep_EC
-#print axioms rep_arrUnionC
 
 end Rep
 
@@ -190,11 +177,6 @@ theorem rep_E {n : USize} (R : CRel A B) (X : Vals (.arr A) n) (hb : (R.E X).ok 
     (∀ xs Y, rep (R.E X).rel xs Y → (∃ i, Vals.row X i = xs) ∧ ∀ y, y ∈ Y ↔ ∃ x ∈ xs, rep R.rel x y) ∧
       (∀ xs, (∃ Y, rep (R.E X).rel xs Y) ↔ ∃ i, Vals.row X i = xs) := by
   have e : R.E X = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_EC R.rel X hb
-
-theorem rep_arrUnion {n : USize} (X : Vals (.arr (.arr A)) n) (hb : (Arr.union X).ok = true) :
-    (∀ xss Y, rep (Arr.union X).rel xss Y → (∃ i, Vals.row X i = xss) ∧ ∀ y, y ∈ Y ↔ ∃ xs ∈ xss, y ∈ xs) ∧
-      (∀ xss, (∃ Y, rep (Arr.union X).rel xss Y) ↔ ∃ i, Vals.row X i = xss) :=
-  rep_arrUnionC X hb
 
 end CRel
 

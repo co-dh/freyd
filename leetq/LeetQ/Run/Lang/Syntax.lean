@@ -61,7 +61,7 @@ inductive OExp
     every verb is typed, lifted and run by one path. -/
 inductive Op
   | id | zero | top | mem | outl | outr | inl | inr | leq | lt | succ | arith (k : UInt8)
-  | union | tau | nil | alpha | cons | length | total
+  | tau | nil | alpha | cons | length | total
   | dom | ran | lam | E | P | est | thin | map
   | inits | cat | zip | snoc | setify | bagify | tic
   | thinL | merge | loop
@@ -77,7 +77,7 @@ def Op.table : List (String × Op × Nat) :=
    ("plus", .arith QLean.Kernel.Ew.add, 0), ("times", .arith QLean.Kernel.Ew.mul, 0),
    ("minus", .arith QLean.Kernel.Ew.sub, 0), ("div", .arith QLean.Kernel.Ew.idiv, 0),
    ("mod", .arith QLean.Kernel.Ew.imod, 0), ("max", .arith QLean.Kernel.Ew.greater, 0),
-   ("min", .arith QLean.Kernel.Ew.lesser, 0), ("union", .union, 0), ("τ", .tau, 0), ("nil", .nil, 0), ("α", .alpha, 0),
+   ("min", .arith QLean.Kernel.Ew.lesser, 0), ("τ", .tau, 0), ("nil", .nil, 0), ("α", .alpha, 0),
    ("cons", .cons, 0), ("length", .length, 0), ("sum", .total, 0),
    ("dom", .dom, 1), ("ran", .ran, 1), ("Λ", .lam, 1), ("E", .E, 1),
    ("P", .P, 1), ("est", .est, 1), ("thin", .thin, 1),

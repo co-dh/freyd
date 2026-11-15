@@ -471,20 +471,14 @@ private def EOk {n : USize} (R : LL) (X : Vals (.arr L) n) : Bool :=
 #guard Λ(G) ≫ E R Λ(G).val == Λ(G ≫ R)
 #guard E (R ≫ T) Xl == E R Xl ≫ E T (E R Xl).val && E (two ≫ neg) Xs == E two Xs ≫ E neg (E two Xs).val
 #guard E (idU Ub) Λ(R).val == idU Λ(R).val
--- `union`: arrays of arrays over `Xc`'s `[1] [1 2] []`: `[[1] [1 2]]`, `[[1 2] []]`, `[]` twice
 private def XX : Vals (.arr (.arr L)) 4 := ⟨3, col [0, 1, 0, 3], col [2, 3, 0, 3], Xc⟩
 #guard ((idU XX).toList.map (·.1) : List (List (List Int64))) == [[[1], [1, 2]], [[1, 2], []], [], []]
-#guard seteq ((Arr.union XX).toList : List (List (List Int64) × List Int64))
-  (((idU XX).toList.map (·.1) : List (List (List Int64))).map fun xss => (xss, setOf xss.flatten)) && isMap (Arr.union XX) XX
 -- `∪` of a relation with itself, again and again: its payloads hold the cells its rows refer to and no more,
 -- for a nested array, an array of sums and a sum (`Vals.pick`)
 private def selfU {A : Obj} (R : Rel A A) : Nat → Rel A A | 0 => R | k + 1 => selfU R k ∪ selfU R k
 #guard let b := selfU (idU XX) 4; b == idU XX && (b.val.1, b.val.2.2.2.1) == (4, 5)
 #guard let b := selfU (idU Xa) 4; b == idU Xa && (b.val.1, b.val.2.2.2.1, b.val.2.2.2.2.1) == (5, 2, 3)
 #guard let b := selfU (idU Xo) 4; b == idU Xo && (b.val.1, b.val.2.1) == (2, 2)
--- `τ union = 𝟙` on sets; `union` of `τ`'s images of arrays not sets is their set
-#guard τ Λ(R).val ≫ Arr.union (τ Λ(R).val).val == idU Λ(R).val
-#guard seteq ((τ Xs ≫ Arr.union (τ Xs).val).toList : List (List Int64 × List Int64)) ((arrs Xs).map fun xs => (xs, setOf xs))
 -- `P(R)`, Egli–Milner, `R` not a function, into the arrays `[10] [11 20] [] [10 20] [10 20 11 7]`
 private def Yp : Vals (.arr L) 5 := ⟨7, col [0, 1, 0, 3, 3], col [1, 3, 0, 5, 7], col [10, 11, 20, 10, 20, 11, 7]⟩
 private def pSpec {n m : USize} (R : LL) (X : Vals (.arr L) n) (Y : Vals (.arr L) m) : List (List Int64 × List Int64) :=

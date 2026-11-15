@@ -20,10 +20,6 @@ def setify {n : USize} (X : Vals (.arr B) n) : CRel (.arr B) (.arr B) := let r :
 def E {n : USize} (R : CRel A B) (X : Vals (.arr A) n) : CRel (.arr A) (.arr B) :=
   guard R.ok fun _ => let r := EC R.rel X; ⟨r.1, r.2⟩
 
-/-- `union` on the arrays of arrays `X`, ok where `Arr.unionC` ran within capacity. -/
-def Arr.union {n : USize} (X : Vals (.arr (.arr A)) n) : CRel (.arr (.arr A)) (.arr A) :=
-  let r := Alg.Arr.unionC X; ⟨r.1, r.2⟩
-
 /-- `P(R)` from `X` to `Y`, ok where `R` is and `PC` ran within capacity. -/
 def P {n m : USize} (R : CRel A B) (X : Vals (.arr A) n) (Y : Vals (.arr B) m) : CRel (.arr A) (.arr B) :=
   guard R.ok fun _ => let r := PC R.rel X Y; ⟨r.1, r.2⟩

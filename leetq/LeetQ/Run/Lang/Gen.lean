@@ -161,7 +161,6 @@ def thin (B : Obj) (Q : Fn true (.prod B B) (.prod B B)) : Fn true (.arr B) (.ar
   let T := CRel.thinOn (fun P => Q P.rel) (CRel.mem D.val)
   let df := CRel.diff ⟨D, true⟩ (CRel.dom T)
   CRel.union (CRel.transpose T) (also df.ok (ofC (topC df.rel.key (nilVal _))))
-def union (A : Obj) : Fn true (.arr (.arr A)) (.arr A) := fun D => CRel.Arr.union D.val
 def tau (A : Obj) : Fn true A (.arr A) := fun D => CRel.τ D.val
 def nil (A B : Obj) : Fn true A (.arr B) := fun D => ofC (topC D.val (nilVal _))
 def cons (B : Obj) : Fn true (.prod B (.arr B)) (.arr B) := fun D => CRel.cons ⟨D, true⟩

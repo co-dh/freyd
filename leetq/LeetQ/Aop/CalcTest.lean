@@ -322,7 +322,6 @@ example (R : A ⟶ B) (S : C ⟶ A) (Q : A ⟶ A) (X : C ⟶ P (P A)) : True := 
   guard_expr rel(P(R)) =ₛ P(R)
   guard_expr rel(est(Q)) =ₛ est(Q)
   guard_expr rel(thin(Q)) =ₛ thin(Q)
-  guard_expr rel(X union) =ₛ X ≫ union
   guard_expr rel(S τ) =ₛ S ≫ singletonMap
   guard_expr rel(Λ(S) est(Q)) =ₛ Λ S ≫ est(Q)
   guard_expr rel(∈ \ Q°) =ₛ (∋ A)° \ Q°
@@ -397,7 +396,7 @@ example (Q : (⟨Int⟩ : RelSet.{0}) ⟶ ⟨Int⟩) : True := by
 
 end RelSet
 
-/-- error: line 403, col 7: one-argument fold is for rel(…) proofs: a program folds a list with `⦇e,S⦈` -/
+/-- error: line 402, col 7: one-argument fold is for rel(…) proofs: a program folds a list with `⦇e,S⦈` -/
 #guard_msgs (whitespace := lax) in
 rel_program oneFold where
   r ≜ ⦇𝟙⦈

@@ -579,7 +579,6 @@ partial def node (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bo
   | .arr B, _, _, .takewhile (d := d) R => return g ``Gen.takewhile #[oE B, bE d, ← c R]
   | _, B, _, .est Q => return g ``Gen.est #[oE B, ← c Q]
   | _, .arr B, _, .thin Q => return g ``Gen.thin #[oE B, ← c Q]
-  | _, .arr A, _, .union => return g ``Gen.union #[oE A]
   | A, _, _, .tau => return g ``Gen.tau #[oE A]
   | A, .arr B, _, .nil => return g ``Gen.nil #[oE A, oE B]
   | _, .arr B, _, .cons => return g ``Gen.cons #[oE B]

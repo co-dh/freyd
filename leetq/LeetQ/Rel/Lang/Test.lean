@@ -323,7 +323,7 @@ def readsAll (ps : List (String × String)) : CM Unit := ps.forM fun (s, r) => d
 
 #eval trips ["R S", "R°", "R ∩ S", "R ∪ S", "R − S", "∼R", "R ⇒ S", "𝟘", "⊤", "𝟙", "⊤(X, X)", "𝟙(X)", "dom(R)",
   "ran(R)", "R \\ S", "R / S", "frac(R, S)", "⟨R, S⟩", "π₁", "π₂", "R × S", "[R, S]", "inl", "inr", "R + S",
-  "Λ(R)", "∋", "∈", "E(R)", "P(R)", "union", "τ", "nil", "α", "cons°", "⦇e, S⦈", "F(R)", "est(R)", "thin(R)",
+  "Λ(R)", "∋", "∈", "E(R)", "P(R)", "τ", "nil", "α", "cons°", "⦇e, S⦈", "F(R)", "est(R)", "thin(R)",
   "filter(p)", "takewhile(p)", "length", "sum", "head", "tail", "suffix", "succ", "plus", "≤", "<",
   "{(A, B), (B, A)}", "R ∪ S R", "R S ∪ R", "R ∩ S ∪ R", "R ∪ S ∩ R", "R ∪ (S R)", "R (S p)", "∼(R S)°",
   "(∼R)°", "∼R S", "{((A, B), A), ((B, A), B)}", "{(A, (B, (A, B)))}"]
@@ -1114,7 +1114,7 @@ def sudokuGs : List (String × Gen.Gv) := sudokuEx.expanded ++ Programs.sudokuac
    [(81, 13980, 183), (81, 13900, 163), (81, 13800, 142), (81, 13660, 122), (81, 13540, 113), (81, 13440, 107),
     (81, 13380, 103), (81, 13340, 93), (81, 13200, 83), (81, 13000, 81), (81, 12960, 81)])
 
-/-! `concat` is `List.flatten` (`rep_concatC`), not `union`: order and duplicates kept. `w` is `a ↦ [[3 1] [2] [1]]`;
+/-! `concat` is `List.flatten` (`rep_concatC`): order and duplicates kept. `w` is `a ↦ [[3 1] [2] [1]]`;
     `d` is `a ↦ [[1] [] [1]]`, `b ↦ [[] [1] []]`; `e` is `a ↦ [[3 1]]`, `b ↦ []`, an empty outer array. -/
 open LeetQ.Rel.Programs.prelude in
 rel_program concats where
@@ -1124,13 +1124,11 @@ rel_program concats where
     d : K ⟶ [[N]] ≜ ⟨Λ({(a,1)}), ⟨Λ({(b,1)}), Λ(Λ({(a,1)}))⟩cons⟩cons
     e : K ⟶ [[N]] ≜ Λ(⟨{(a,3)},Λ({(a,1)})⟩cons)
     print w concat
-    print w union
     print d concat
     print e concat
 
 #guard concats.ok && concats.prints == [
   "w concat = {(a, 3 1 2 1)}",
-  "w union = {(a, 1 2 3)}",
   "d concat = {(a, 1 1), (b, [1])}",
   "e concat = {(a, 3 1), (b, [])}"]
 

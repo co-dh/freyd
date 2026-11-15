@@ -1529,17 +1529,6 @@ def tic {K B : Obj} (P : Rel K (.prod B (.arr B))) : Rel K (.arr (.arr B)) := (t
 
 namespace Arr
 
-/-- `union : arr (arr A) ⟶ arr A` on the arrays of arrays `X`, the note's `union≜frac(∋∋,∋)`
-    (diag/aop/07-optimisation.typ:718; `union ≜ Λ(∋∋)`, AOP/A5_4.lean:337): `Λ(∋∋)` total on `X`. Named
-    `Arr.union` because `union` is `∪`'s, which a program must not name. `E(∋)` on `X`, `∋` on the payload; whether
-    it ran within capacity: the bits of `memC` there and of `EC`. -/
-def unionC {A : Obj} {n : USize} (X : Vals (.arr (.arr A)) n) : Rel (.arr (.arr A)) (.arr A) × Bool :=
-  let m := memC X.2.2.2; let e := EC m.1 X
-  (e.1, m.2 && e.2)
-
-/-- `union` on the arrays of arrays `X`: `unionC`'s relation. -/
-def union {A : Obj} {n : USize} (X : Vals (.arr (.arr A)) n) : Rel (.arr (.arr A)) (.arr A) := (unionC X).1
-
 /-- `sum ≜ ⦇[zero, plus]⦈` on the arrays of longs `X` (`sum`, AOP/A5_6_ListCombinators.lean:323), each round's
     `plus` on the pairs it meets. Named `Arr.sum` because `sum` is `R + S`'s. -/
 def sumC {n : USize} (X : Vals (.arr (.atom .long)) n) : Rel (.arr (.atom .long)) (.atom .long) × Bool :=
