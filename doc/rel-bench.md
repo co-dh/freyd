@@ -4,6 +4,19 @@ Rows ranked by wall (median of 3, seconds; load average beside each timing is in
 elab-only is the same file with the #guard lines removed. interp/kernel/other: self time of one perf run
 (interpreter = lean::ir::interpreter*; kernel = qlean_* / libqleankernel.so). rounds: mu/nu loops of >= 3 rounds.
 
+Provenance. The table was measured at 1ab50df (stage 1: `#guard`s ran programs through the interpreter `Eval`),
+using the oleans of the main checkout, with `lake env lean --setup …` per file and no precompile. It is not
+comparable with the TestChess figures in the native work, which come from a different commit and a different
+command:
+
+| figure | commit | command | what it times |
+|---|---|---|---|
+| TestChess 52.5 s (this table) | 1ab50df, stage 1 | `lean --setup` on the file | interpreter runs at `#guard` time; elaboration 0.6 s |
+| TestChess 206 s | fa417e7, stage 2 WIP | `lake build` of the module | 14 Chess variants expanded by the `rel_program` macro, run in the IR interpreter |
+| TestChess 9.1 s | cae4f23, stage 2 + precompile | `lake build` of the module | the same expansion, run natively |
+
+The rerun after native lands uses one commit and one command for every row.
+
 | file | wall | elab-only | interp% | kernel% | other% | top symbol | mu/nu rounds | median delta% per round after round 1 |
 |------|------|-----------|---------|---------|--------|------------|------------|------------------------------|
 | TestChess | 52.5 | 0.6 | 64.1 | 9.2 | 25.4 | interp::eval_body 21.02% | none traced |  |
