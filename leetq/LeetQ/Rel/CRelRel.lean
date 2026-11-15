@@ -14,22 +14,6 @@ import LeetQ.Rel.RepLoop
 
 namespace LeetQ.Rel
 
-namespace Alg
-
-variable {A B D E : Obj}
-
-/-- `R × S` and whether it ran within capacity: `rep_prod`'s bounds decided as it states them, the pair count and
-    each column's reads repeated once per row of the other side; `prod` itself runs. Here, not beside `prod`,
-    because `Vals.reads` is defined after `Alg`. -/
-def prodC (R : Rel A B) (S : Rel D E) : Rel (.prod A D) (.prod B E) × Bool :=
-  (prod R S, decide (R.n.toNat * S.n.toNat < USize.size) && decide (R.n.toNat * S.n.toNat < 2 ^ 63) &&
-    decide ((S.n.toNat + 1) * Vals.reads A R.key (List.range R.n.toNat) < min (2 ^ 63) USize.size) &&
-    decide ((S.n.toNat + 1) * Vals.reads B R.val (List.range R.n.toNat) < min (2 ^ 63) USize.size) &&
-    decide ((R.n.toNat + 1) * Vals.reads D S.key (List.range S.n.toNat) < min (2 ^ 63) USize.size) &&
-    decide ((R.n.toNat + 1) * Vals.reads E S.val (List.range S.n.toNat) < min (2 ^ 63) USize.size))
-
-end Alg
-
 namespace Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF Freyd Freyd.Alg Freyd.Alg.RelSet

@@ -402,6 +402,42 @@ def prod {A B D E : Obj} (R : Rel A B) (S : Rel D E) : Rel (.prod A D) (.prod B 
     ⟨m, (Vals.pick A R.key c.1 m h, Vals.pick D S.key c.2 m ((cross_len R.n S.n).trans h)),
       (Vals.pick B R.val c.1 m h, Vals.pick E S.val c.2 m ((cross_len R.n S.n).trans h))⟩
 
+/-- An interned atom column's dictionary entry count, `0` unencoded. A def, so `Vals.reads` and the bounds on it
+    name one constant rather than each module its own `match` auxiliary, which `omega` sees as distinct atoms. -/
+def _root_.LeetQ.Rel.Arr.dictSize {t : QAtomicType} {n : USize} (x : Arr t n) : Nat :=
+  match x.enc with | .enum _ o _ => o.size | _ => 0
+
+/-- **What reading `x` at the rows `ps` touches**, the one size measure every fit bound is arithmetic on: the
+    rows read at each level, an interned atom's dictionary, an array's payload count, a sum's two side counts —
+    each clause `Vals.PickFits`'s bounds summed, at the same windows (`w`) and side positions (`side`). A payload
+    and a side are read at all their rows as well: `raze` takes them whole (`Vals.RazeFits`), rows no parent row
+    reaches included. -/
+def _root_.LeetQ.Rel.Vals.reads : (A : Obj) → {n : USize} → Vals A n → List Nat → Nat
+  | .atom t, n, x, ps => ps.length + Arr.dictSize (t := t) (n := n) x
+  | .prod a b, _, x, ps => Vals.reads a x.1 ps + Vals.reads b x.2 ps
+  | .arr b, n, ⟨p, lo, hi, f⟩, ps =>
+    let w (k : Nat) : List Nat := if h : k < n.toNat then
+      List.range' (min (max (lo.get ⟨k, h⟩).toInt 0).toNat p.toNat)
+        (min (max (hi.get ⟨k, h⟩).toInt 0).toNat p.toNat - min (max (lo.get ⟨k, h⟩).toInt 0).toNat p.toNat)
+      else []
+    ps.length + p.toNat + Vals.reads b f (ps.flatMap w ++ List.range p.toNat)
+  | .sum a b, n, ⟨l, r, tag, idx, x, y⟩, ps =>
+    let side (s : Bool) (c : Nat) : List Nat := ps.filterMap fun k =>
+      if h : k < n.toNat then
+        (if tag.get ⟨k, h⟩ = s then some (min (max (idx.get ⟨k, h⟩).toInt 0).toNat (c - 1)) else none)
+      else if s then none else some c
+    ps.length + l.toNat + r.toNat + Vals.reads a x (side false l.toNat ++ List.range l.toNat) +
+      Vals.reads b y (side true r.toNat ++ List.range r.toNat)
+
+/-- `R × S` and whether it ran within capacity: `rep_prod`'s bounds decided as it states them, the pair count and
+    each column's reads repeated once per row of the other side; `prod` itself runs. -/
+def prodC {A B D E : Obj} (R : Rel A B) (S : Rel D E) : Rel (.prod A D) (.prod B E) × Bool :=
+  (prod R S, decide (R.n.toNat * S.n.toNat < USize.size) && decide (R.n.toNat * S.n.toNat < 2 ^ 63) &&
+    decide ((S.n.toNat + 1) * Vals.reads A R.key (List.range R.n.toNat) < min (2 ^ 63) USize.size) &&
+    decide ((S.n.toNat + 1) * Vals.reads B R.val (List.range R.n.toNat) < min (2 ^ 63) USize.size) &&
+    decide ((R.n.toNat + 1) * Vals.reads D S.key (List.range S.n.toNat) < min (2 ^ 63) USize.size) &&
+    decide ((R.n.toNat + 1) * Vals.reads E S.val (List.range S.n.toNat) < min (2 ^ 63) USize.size))
+
 /-- `n` bits, all `x`: `Ew.cmp` of `til n` against `0`. -/
 def bitsOf (x : Bool) (n : USize) : ByteArray :=
   Ew.cmp (if x then Ew.ge else Ew.lt) Ew.i64 Ew.va (tilLongs n) (one 0) n

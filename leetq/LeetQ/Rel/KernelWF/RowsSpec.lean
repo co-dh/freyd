@@ -180,34 +180,11 @@ def _root_.LeetQ.Rel.Vals.PickFits : (A : Obj) → {n : USize} → Vals A n → 
     ps.length < 2 ^ 63 ∧ l.toNat < 2 ^ 63 ∧ r.toNat < 2 ^ 63 ∧ Vals.PickFits a x (side false l.toNat) ∧
       Vals.PickFits b y (side true r.toNat)
 
-/-- **What reading `x` at the rows `ps` touches**, the one size measure every fit bound is arithmetic on: the
-    rows read at each level, an interned atom's dictionary, an array's payload count, a sum's two side counts —
-    each clause `Vals.PickFits`'s bounds summed, at the same windows (`w`) and side positions (`side`). A payload
-    and a side are read at all their rows as well: `raze` takes them whole (`Vals.RazeFits`), rows no parent row
-    reaches included. -/
-def _root_.LeetQ.Rel.Vals.reads : (A : Obj) → {n : USize} → Vals A n → List Nat → Nat
-  | .atom t, n, x, ps =>
-    ps.length + (match Arr.enc (t := t) (n := n) x with | .enum _ o _ => o.size | _ => 0)
-  | .prod a b, _, x, ps => Vals.reads a x.1 ps + Vals.reads b x.2 ps
-  | .arr b, n, ⟨p, lo, hi, f⟩, ps =>
-    let w (k : Nat) : List Nat := if h : k < n.toNat then
-      List.range' (min (max (lo.get ⟨k, h⟩).toInt 0).toNat p.toNat)
-        (min (max (hi.get ⟨k, h⟩).toInt 0).toNat p.toNat - min (max (lo.get ⟨k, h⟩).toInt 0).toNat p.toNat)
-      else []
-    ps.length + p.toNat + Vals.reads b f (ps.flatMap w ++ List.range p.toNat)
-  | .sum a b, n, ⟨l, r, tag, idx, x, y⟩, ps =>
-    let side (s : Bool) (c : Nat) : List Nat := ps.filterMap fun k =>
-      if h : k < n.toNat then
-        (if tag.get ⟨k, h⟩ = s then some (min (max (idx.get ⟨k, h⟩).toInt 0).toNat (c - 1)) else none)
-      else if s then none else some c
-    ps.length + l.toNat + r.toNat + Vals.reads a x (side false l.toNat ++ List.range l.toNat) +
-      Vals.reads b y (side true r.toNat ++ List.range r.toNat)
-
 /-- **A pick at most doubles an atom side's dictionary** (`gatherColumn_dict`): the entry count, not the
     `o.size - 1` entries `PickFits` bounds, because a miss may append the empty entry to a one-entry offsets array. -/
 theorem pickArr_dict {t : QAtomicType} {n : USize} (x : Arr t n) (i : ByteArray) (m : USize) (h : len i = m.toNat) :
-    (match Arr.enc (pickArr t ⟨n, x⟩ i m h) with | .enum _ o _ => o.size | _ => 0) ≤
-      2 * (match Arr.enc x with | .enum _ o _ => o.size | _ => 0) := by
+    (pickArr t ⟨n, x⟩ i m h).dictSize ≤ 2 * x.dictSize := by
+  unfold Arr.dictSize
   have hl : len i < USize.size := h ▸ m.toNat_lt_size
   have cast : ∀ {k : USize} (e : k = m) (y : Arr t k), Arr.enc (e ▸ y : Arr t m) = Arr.enc y := by
     intro k e y; subst e; rfl
@@ -254,7 +231,7 @@ theorem pickFits_of_reads {A : Obj} {n : USize} {x : Vals A n} {ps : List Nat}
     (h63 : Vals.reads A x ps < 2 ^ 63) (hU : Vals.reads A x ps < USize.size) : Vals.PickFits A x ps := by
   induction A generalizing n ps with
   | atom t =>
-    unfold Vals.reads at hU; unfold Vals.PickFits
+    unfold Vals.reads Arr.dictSize at hU; unfold Vals.PickFits
     intro _ d o ids he; simp only [he] at hU; omega
   | prod a b iha ihb =>
     unfold Vals.reads at h63 hU; unfold Vals.PickFits
