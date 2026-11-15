@@ -1099,6 +1099,23 @@ def takewhileC {B : Obj} {n : USize} (P : Rel B B) (X : Vals (.arr B) n) : Rel (
 
 /-- `takewhile`: `takewhileC`'s relation. -/
 def takewhile {B : Obj} {n : USize} (P : Rel B B) (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) := (takewhileC P X).1
+/-- `concat : arr (arr B) ⟶ arr B` on the arrays of arrays `X`, each to its arrays one after another (B&dM p.129,
+    the prelude's `⦇ran(nil), cat⦈`): no round, no `cons`. The inner arrays compacted (`Vals.pickC` at `til`) lie
+    end to end, inner array `j` ending at `hi j` (`pick_row_arr`), so outer row `i`, the inner arrays `[a, a + c)`
+    (`slicesOf`), is one slice: from the end of array `a - 1` to the end of array `a + c - 1`, the index `-1`
+    missing the gather and reading `0`. The inner arrays are not contiguous in general (`tails` overlaps them), so
+    the compaction is the one copy; the key is `X` itself. The bit: `X`'s inner count below `2^63` and the
+    compaction's (`pickC`). -/
+def concatC {B : Obj} {n : USize} (X : Vals (.arr (.arr B)) n) : Rel (.arr (.arr B)) (.arr B) × Bool :=
+  let z := Vals.pickC (.arr B) X.2.2.2 (tilLongs X.1) X.1 (len_tilLongs X.1)
+  let s := slicesOf X
+  let ends (k : ByteArray) : Arr .long n :=
+    let i := Kernel.Ew.val Ew.sub Ew.i64 Ew.va nul k (one 1) n
+    longsN n (gather 8 (longsOf z.1.2.2.1) i) (Nat.le_of_eq ((gather_len _ _).trans (len_val ..)).symm)
+  (⟨n, X, ⟨z.1.1, ends s.1, ends (add n s.1 s.2), z.1.2.2.2⟩⟩, decide (X.1.toNat < 2 ^ 63) && z.2)
+
+/-- `concat`: `concatC`'s relation. -/
+def concat {B : Obj} {n : USize} (X : Vals (.arr (.arr B)) n) : Rel (.arr (.arr B)) (.arr B) := (concatC X).1
 
 /-- `cat : arr B × arr B ⟶ arr B` on the rows of `P`, each `(xs, ys)` to `xs` then `ys` under its key (`cat`,
     AOP/A5_6_ListCombinators.lean:224, the graph of `cappend`). `cons` with an array for a head: the new arrays

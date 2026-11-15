@@ -34,6 +34,8 @@ def filter (P : CRel B B) (X : Vals (.arr B) n) : CRel (.arr B) (.arr B) := guar
 
 /-- `takewhile` of the keys of `P` on the arrays `X`, ok where `P` is and `takewhileC` ran within capacity. -/
 def takewhile (P : CRel B B) (X : Vals (.arr B) n) : CRel (.arr B) (.arr B) := guard P.ok fun _ => let r := takewhileC P.rel X; ⟨r.1, r.2⟩
+/-- `concat` on the arrays of arrays `X`, ok where `concatC` ran within capacity. -/
+def concat (X : Vals (.arr (.arr B)) n) : CRel (.arr (.arr B)) (.arr B) := let r := concatC X; ⟨r.1, r.2⟩
 
 /-- `cat°` on the arrays `X`, ok where `uncatC` ran within capacity. -/
 def uncat (X : Vals (.arr B) n) : CRel (.arr B) (.prod (.arr B) (.arr B)) := let r := uncatC X; ⟨r.1, r.2⟩
