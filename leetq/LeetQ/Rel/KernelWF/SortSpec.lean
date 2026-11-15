@@ -5,6 +5,7 @@
 import LeetQ.Rel.KernelWF.JoinContent
 import LeetQ.Rel.KernelWF.CodesAll
 import LeetQ.Run.KernelWF.Reduce
+import LeetQ.Rel.KernelWF.MemberSpec
 
 namespace LeetQ.Rel.Alg
 
@@ -121,11 +122,90 @@ theorem grade_gather_perm (kc : Code) (hw : laneOK(kc.w)) (hs : kc.b.size = (kc.
   rw [← hGn, ← hGw] at hGs
   rw [← hGn]; exact (grade_code G hw hGs).1
 
+/-- A gathered long payload holds whole longs. -/
+theorem gather_size8 (s i : ByteArray) : (gather 8 s i).size = len (gather 8 s i) * 8 := by
+  have h8 : (Nat.toUSize 8).toNat = 8 := KernelWF.toNat_small 8 (by decide)
+  simp only [len, gather, KernelWF.gatherBytes_size, h8]; omega
+
+/-- **Two long payloads end to end, read back**: long `d` is the first's below its count, the second's past
+    it, the first holding exactly its longs. -/
+theorem concat2_get {a c : ByteArray} (ha : a.size = len a * 8) (d : Nat) :
+    Column.bitsAt (concatBytes #[a, c]) (d * 8) 8 =
+      if d < len a then Column.bitsAt a (d * 8) 8 else Column.bitsAt c ((d - len a) * 8) 8 := by
+  have e : concatBytes #[a, c] = a ++ c := by simp [concatBytes]
+  rw [e]
+  split
+  · exact KernelWF.bitsAt_congr fun j hj => by
+      rw [ByteArray.data_append, Array.getElem?_append_left (by rw [ByteArray.size_data]; omega)]
+  · exact KernelWF.bitsAt_congr fun j hj => by
+      rw [ByteArray.data_append, Array.getElem?_append_right (by rw [ByteArray.size_data]; omega),
+        ByteArray.size_data]
+      exact congrArg (c.data[·]?) (by omega)
+
+/-- Two long payloads end to end, read back as one list. -/
+theorem ids_concat2 {a c : ByteArray} (ha : a.size = len a * 8) : ids (concatBytes #[a, c]) = ids a ++ ids c := by
+  have hs : len (concatBytes #[a, c]) = len a + len c := by
+    simp only [len, KernelWF.concatBytes_size, List.map, Array.toList, List.sum_cons, List.sum_nil] at ha ⊢
+    omega
+  apply List.ext_getElem
+  · rw [List.length_append, ← len_eq_ids, ← len_eq_ids, ← len_eq_ids, hs]
+  · intro d h1 h2
+    rw [ids_getElem h1, concat2_get ha]
+    by_cases hd : d < len a
+    · have hd' : d < (ids a).length := by rw [← len_eq_ids]; exact hd
+      rw [if_pos hd, List.getElem_append_left hd', ids_getElem hd']
+    · have hd' : (ids a).length ≤ d := by rw [← len_eq_ids]; omega
+      have hc : d - (ids a).length < (ids c).length := by rw [List.length_append] at h2; omega
+      rw [if_neg hd, List.getElem_append_right hd', ids_getElem hc, len_eq_ids]
+
+/-- `til |l|` read through `l` is `l`. -/
+theorem map_range_getD (l : List Nat) : (List.range l.length).map (fun t => l.getD t 0) = l :=
+  List.ext_getElem (by simp) fun j _ h2 => by
+    simp [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem (by simpa using h2)]
+
+/-- **`q` split by a bitmap `g` of its positions, the unmarked rows first, holds `q`'s longs, each once.** -/
+theorem split_perm (q g : ByteArray) (hq : len q < USize.size) :
+    (ids (gather 8 q (whereBits (len q).toUSize (Ew.notBits (len q).toUSize g))) ++
+      ids (gather 8 q (whereBits (len q).toUSize g))).Perm (ids q) := by
+  have hm : ((len q).toUSize).toNat = len q := USize.toNat_ofNat_of_lt' hq
+  have hin : ∀ b, ∀ t ∈ ids (whereBits (len q).toUSize b), t < len q := fun b t ht => by
+    rw [(whereBits_ids _ b).1, List.mem_filter, List.mem_range, hm] at ht; exact ht.1
+  rw [ids_gather8 (hin _), ids_gather8 (hin _), (whereBits_ids _ _).1, (whereBits_ids _ _).1,
+    List.filter_congr (p := Column.bitAt (Ew.notBits _ g)) (q := fun i => !Column.bitAt g i)
+      (fun i hi => notBits_bitAt _ g (List.mem_range.1 hi)), hm]
+  refine List.perm_append_comm.trans ?_
+  rw [← List.map_append]
+  refine ((List.filter_append_perm _ _).map _).trans ?_
+  rw [len_eq_ids, map_range_getD]
+
+/-- `til k` as longs, read back. -/
+theorem ids_tilLongs (k : USize) : ids (tilLongs k) = List.range k.toNat :=
+  List.ext_getElem (by rw [← len_eq_ids, len_tilLongs, List.length_range]) fun j h1 h2 => by
+    rw [ids_getElem h1, List.getElem_range, tilLongs_get (by simpa using h2)]
+
+/-- **`sortSide` permutes the rows it is handed**, given that its sort does. -/
+theorem sortSide_perm {B : Obj} {s : USize} (x : Vals B s) (srt : {k : USize} → Vals B k → ByteArray → ByteArray)
+    (hs : ∀ {k : USize} (v : Vals B k) (r : ByteArray), len r < USize.size → (ids (srt v r)).Perm (ids r))
+    (ps q : ByteArray) : (ids (sortSide x srt ps q)).Perm (ids q) := by
+  unfold sortSide
+  split
+  next h =>
+    have hm : ((len q).toUSize).toNat = len q := USize.toNat_ofNat_of_lt' h.2
+    refine gather_perm ?_
+    have := hs (Vals.pickShared B x (gather 8 ps q) (len q).toUSize (by rw [gather_len]; exact hm.symm))
+      (tilLongs (len q).toUSize) (by rw [len_tilLongs, hm]; exact h.2)
+    rw [ids_tilLongs] at this; exact this.trans (List.Perm.of_eq (by rw [hm]))
+  next => exact List.Perm.refl _
+
+theorem sortSide_size8 {B : Obj} {s : USize} (x : Vals B s) (srt : {k : USize} → Vals B k → ByteArray → ByteArray)
+    (ps q : ByteArray) (hq : q.size = len q * 8) : (sortSide x srt ps q).size = len (sortSide x srt ps q) * 8 := by
+  unfold sortSide; split
+  · exact gather_size8 _ _
+  · exact hq
+
 /-- **`Obj.sortBy` permutes the rows it is handed**: its answer holds the longs of `p`, each once, at every
-    side. Hypotheses: `c`'s codes fit (`Obj.CodesFit`, the codes `sortBy` grades at an `.arr` or `.sum` side);
-    `len p` fits a `USize`; every long of `p` a row of `c`. -/
-theorem sortBy_perm (A : Obj) {n : USize} (c : Vals A n) (hf : A.CodesFit (#v[⟨n, c⟩] : Vector (Part A) 1))
-    (p : ByteArray) (hl : len p < USize.size) (hp : ∀ t ∈ ids p, t < n.toNat) :
+    side, wherever `len p` fits a `USize`. -/
+theorem sortBy_permutes (A : Obj) {n : USize} (c : Vals A n) (p : ByteArray) (hl : len p < USize.size) :
     (ids (A.sortBy c p)).Perm (ids p) := by
   induction A generalizing n p with
   | atom t =>
@@ -148,25 +228,37 @@ theorem sortBy_perm (A : Obj) {n : USize} (c : Vals A n) (hf : A.CodesFit (#v[�
       exact gather_perm (ids_sort_range _ le (Nat.lt_of_lt_of_le hl (by have := USize.size_le; omega)))
     next => exact gather_perm hc
   | prod a b iha ihb =>
-    have ha : a.CodesFit (#v[⟨n, c.1⟩] : Vector (Part a) 1) := by
-      have h := hf.2.1
-      rwa [show (#v[⟨n, c⟩] : Vector (Part (.prod a b)) 1).map (fun c => (⟨c.1, c.2.1⟩ : Part a)) = #v[⟨n, c.1⟩] from
-        Vector.ext fun i hi => by obtain rfl : i = 0 := by omega
-                                  simp] at h
-    have hb : b.CodesFit (#v[⟨n, c.2⟩] : Vector (Part b) 1) := by
-      have h := hf.2.2
-      rwa [show (#v[⟨n, c⟩] : Vector (Part (.prod a b)) 1).map (fun c => (⟨c.1, c.2.2⟩ : Part b)) = #v[⟨n, c.2⟩] from
-        Vector.ext fun i hi => by obtain rfl : i = 0 := by omega
-                                  simp] at h
-    have h2 := ihb c.2 hb p hl hp
+    have h2 := ihb c.2 p hl
     have hl2 : len (b.sortBy c.2 p) < USize.size := by rw [len_eq_ids, h2.length_eq, ← len_eq_ids]; exact hl
-    exact (iha c.1 ha _ hl2 fun t ht => hp t (h2.mem_iff.1 ht)).trans h2
-  | arr b =>
-    obtain ⟨hw, hn, hs, -⟩ := (codes_faithful_wf _ _ hf).1.2 (k := 0) Nat.zero_lt_one
-    exact gather_perm (grade_gather_perm _ hw hs p hl fun t ht => by rw [hn]; exact hp t ht)
-  | sum a b =>
-    obtain ⟨hw, hn, hs, -⟩ := (codes_faithful_wf _ _ hf).1.2 (k := 0) Nat.zero_lt_one
-    exact gather_perm (grade_gather_perm _ hw hs p hl fun t ht => by rw [hn]; exact hp t ht)
+    exact (iha c.1 _ hl2).trans h2
+  | arr b ih =>
+    simp only [Obj.sortBy, Obj.sortByC]
+    generalize List.range _ = ts
+    induction ts with
+    | nil => exact List.Perm.refl _
+    | cons t ts iht =>
+      simp only [List.foldr_cons]
+      generalize List.foldr _ p ts = q at iht ⊢
+      split
+      next hq =>
+        rw [ids_concat2 (gather_size8 _ _)]
+        exact (((List.Perm.refl _).append (sortSide_perm _ _ (fun v r hr => ih v r hr) _ _)).trans
+          (split_perm q _ hq)).trans iht
+      next => exact iht
+  | sum a b iha ihb =>
+    simp only [Obj.sortBy, Obj.sortByC]
+    split
+    next h =>
+      rw [ids_concat2 (sortSide_size8 _ _ _ _ (gather_size8 _ _))]
+      exact ((sortSide_perm _ _ (fun v r hr => iha v r hr) _ _).append
+        (sortSide_perm _ _ (fun v r hr => ihb v r hr) _ _)).trans (split_perm p _ h)
+    next h => exact absurd hl h
+
+/-- **`Obj.sortBy` permutes the rows it is handed** (`sortBy_permutes`); the fit and the range of `p` are
+    not needed. -/
+theorem sortBy_perm (A : Obj) {n : USize} (c : Vals A n) (_hf : A.CodesFit (#v[⟨n, c⟩] : Vector (Part A) 1))
+    (p : ByteArray) (hl : len p < USize.size) (_hp : ∀ t ∈ ids p, t < n.toNat) :
+    (ids (A.sortBy c p)).Perm (ids p) := sortBy_permutes A c p hl
 
 /-- **`Obj.sortByC`'s permutation holds the rows it is handed under its bit**: `sortBy_perm`, the bit the codes'
     (`sortByC_snd`), so a fit (`codesC_fits`). -/

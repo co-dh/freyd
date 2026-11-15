@@ -112,21 +112,6 @@ theorem block_inj {n : Nat} {P : Nat → Nat} (hPs : ∀ r < n, P r ≤ P (r + 1
   · exact ⟨rfl, by omega⟩
   · have := hle (r' + 1) r (by omega) (by omega); omega
 
-/-- **Two long payloads end to end, read back**: long `d` is the first's below its count, the second's past
-    it, the first holding exactly its longs. -/
-theorem concat2_get {a c : ByteArray} (ha : a.size = len a * 8) (d : Nat) :
-    Column.bitsAt (concatBytes #[a, c]) (d * 8) 8 =
-      if d < len a then Column.bitsAt a (d * 8) 8 else Column.bitsAt c ((d - len a) * 8) 8 := by
-  have e : concatBytes #[a, c] = a ++ c := by simp [concatBytes]
-  rw [e]
-  split
-  · exact KernelWF.bitsAt_congr fun j hj => by
-      rw [ByteArray.data_append, Array.getElem?_append_left (by rw [ByteArray.size_data]; omega)]
-  · exact KernelWF.bitsAt_congr fun j hj => by
-      rw [ByteArray.data_append, Array.getElem?_append_right (by rw [ByteArray.size_data]; omega),
-        ByteArray.size_data]
-      exact congrArg (c.data[·]?) (by omega)
-
 end LeetQ.Rel.Alg
 
 #print axioms LeetQ.Rel.Alg.block_inj
