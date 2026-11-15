@@ -1,5 +1,5 @@
---- a/LeetQ/Rel/Lang/Gen.lean
-+++ b/LeetQ/Rel/Lang/Gen.lean
+--- a/LeetQ/Run/Lang/Gen.lean
++++ b/LeetQ/Run/Lang/Gen.lean
 @@ -208,24 +208,38 @@
  
  /-- `νX : φ`: rounds of `φ` from `S` down to the greatest fixed point. -/

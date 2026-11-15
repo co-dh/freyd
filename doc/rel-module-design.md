@@ -209,7 +209,7 @@ rel_program sudokuac where
 不冲突,条件有两个:
 
 - 只有文件头是 Lean(`import`、`namespace`、`open`、`export`)。`rel_program … where` 本来就是 Lean 文件里的一条
-  Lean command,前面已经有 `import LeetQ.Rel.Lang.Embed` 和 `namespace LeetQ.Rel.Programs`。body 仍然只有
+  Lean command,前面已经有 `import LeetQ.Run.Lang.Embed` 和 `namespace LeetQ.Rel.Programs`。body 仍然只有
   `obj`、关系定义、parametric def、μ/ν、`check`,没有新增任何 production 能嵌 Lean 的 `term`。
 - 上一小节的边界。一个手写的 Lean def 即使 type 是 `CRel A B`、即使被 `open` 进来,Rel body 写它的名字也
   得到 "`x` is not a Rel definition"。去掉这一条,body 就能调用任意 Lean 代码,那才是 escape。

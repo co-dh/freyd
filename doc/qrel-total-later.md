@@ -298,7 +298,7 @@ theorem whereBits_size_le (n : USize) (b : ByteArray) : (whereBits n b).size ≤
 ### Briefs (prepend the Rules block to each)
 
 **K1.** Create `leetq/LeetQ/Rel/KernelWF/Search.lean`, importing `QLean.Kernel.Search`, `QLean.Kernel.Sort`,
-`QLean.Verify.{Where,Distinct,FindMember,Search,SymFind}`, `LeetQ.Rel.KernelWF.Gather`. Prove `_isSome` and `_wf`
+`QLean.Verify.{Where,Distinct,FindMember,Search,SymFind}`, `LeetQ.Run.KernelWF.Gather`. Prove `_isSome` and `_wf`
 for `whereColumn`, `distinctColumn`, `findColumn`, `memberColumn`, `binColumn`, `matchColumn` in the shapes of the
 plan's "Statements" block, by unfolding each kernel's Lean body, as `gatherColumn_isSome`/`gatherColumn_wf`
 (`KernelWF/Gather.lean` :27, :98) do. The call sites that will use them: `Find.lean` :90 (`where`), :113
@@ -323,7 +323,7 @@ well-formed, for the three shapes `Ew.vv`, `Ew.av`, `Ew.va`; the same for `monCo
 `lowZeroArr`; `Struct.lean` :306. If `ewType = some rt` does not imply an answer for some encoding pair, report the
 pair; that case goes to approval Ap6, it is not yours to settle. Edit no existing file.
 
-**K4.** Create `leetq/LeetQ/Rel/KernelWF/Reduce.lean`. Kernels behind `Scan.lean`'s `Ops.*` (:34 `scan`, :40
+**K4.** Create `leetq/LeetQ/Run/KernelWF/Reduce.lean`. Kernels behind `Scan.lean`'s `Ops.*` (:34 `scan`, :40
 `over`, :43 `avg`, :64 `countBy`, :68 `lastBy`, :79 `overBy`, :93 `mwin`, :100 `grade`, :108 `rank`, :112
 `permute`, :117 `sort`, :128 `xasc`): `gradeColumn`, `groupedOver`, `overColumn`, the scan and moving-window
 kernels; plus `rankSlices_size` (for `Algebra.lean` :527 `setIds`) and `whereBits_size_le`. Start from

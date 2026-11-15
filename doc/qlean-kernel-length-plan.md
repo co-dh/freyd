@@ -59,7 +59,7 @@ Each right side is computed in `Nat` from `n.toNat`: "the payload holds exactly 
 `QValue.count : QValue → Option Nat` (`Value.lean:2203`) keeps its type and answers `some n.toNat` for a vector: a
 table's or a slice list's count is not a vector header.
 
-leetq, `leetq/LeetQ/Rel/Core.lean:31`:
+leetq, `leetq/LeetQ/Run/Core.lean:31`:
 
 ```lean
 abbrev Arr (t : QAtomicType) (n : USize) := {v : QValue // v.WFAt t n}
@@ -217,7 +217,7 @@ those names.
 Gates. qlean: `lake build` in `/home/dh/repo/qlean`, clean, then `./.lake/build/bin/qlean-test` (`AGENTS.md:17-18`; the
 test binary needs the q licence daemon). leetq: `lake build <modules>` in `/home/dh/repo/freyd/leetq`, with
 `-K qlean=<dir>` to point at a qlean branch (`leetq/lakefile.lean`); the last step's gate is `lake build
-LeetQ.Rel.Algebra LeetQ.Rel.Lang.Test rel` with the 228 `#guard` lines of `AlgTest.lean` holding. Run each gate
+LeetQ.Run.Algebra LeetQ.Rel.Lang.Test rel` with the 228 `#guard` lines of `AlgTest.lean` holding. Run each gate
 without a pipe.
 
 Estimates come from the indexes (leetq's current; qlean's from Oct 26, stale) and from text counts in the working
@@ -260,8 +260,8 @@ tree; they size a step, they are not obligations lists.
   `bytesOf_size`, restated with no `< USize.size` premise where the count is the argument; `Ew.widen_size` and
   `Scan.scan_size` are new. About 14 theorems; 19 leetq theorems mention `USize.size` today. Gate: `lake build`.
 - **L1–L5.** leetq imports are linear (`Core` ← `KernelWF` ← `Code` ← `Alg` ← `Lang` ← programs), so each step is
-  green by building its own modules: `lake build LeetQ.Rel.Core`, then `LeetQ.Rel.KernelWF.Reduce`, then
-  `LeetQ.Rel.Code`, then `LeetQ.Rel.Alg LeetQ.Rel.AlgTest`, then the final gate. Size: 229 declarations state
+  green by building its own modules: `lake build LeetQ.Run.Core`, then `LeetQ.Run.KernelWF.Reduce`, then
+  `LeetQ.Run.Code`, then `LeetQ.Run.Alg LeetQ.Rel.AlgTest`, then the final gate. Size: 229 declarations state
   something over `Arr`, `Vals` or `Enc.WF` (56 theorems); 147 `toUSize` are deleted. L2 deletes the theorems Q4 took.
   L3 removes every reference branch of section 3 and the definitions `slicesRef`, `setIdsRef`, `setIdsRef_size`,
   `rankAt`. L4 is where the laws take their bound (section 6). Only L5's four programs are independent files.

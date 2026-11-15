@@ -7,7 +7,7 @@ moved to `Core`). Every line number below is of that tree and moves with any edi
 ## Who reaches what
 
 - The four programs (`Blocks`, `BlocksRel`, `Chess`, `Circuit`, `Wumpus`) and the `.rel` front end
-  (`Lang/Elab.lean`, through it `Eval`, `Test*`) import `LeetQ.Rel.Algebra` and nothing else of leetq. None of
+  (`Lang/Elab.lean`, through it `Eval`, `Test*`) import `LeetQ.Run.Algebra` and nothing else of leetq. None of
   them names `Find.`, `Ew.`, `Ops.`, `Parted.`, `Spec.` or `KernelWF.`: they reach steps 2 and 4 only through the
   `Alg` ops they call.
 - `Algebra.lean` imports `Find`, `Ew`, `Scan`, `Parted`, `KernelWF.Reduce`. What it actually uses of them:
@@ -134,7 +134,7 @@ DONE (branch `leetq-arch-step5`): `Code.lean` (codes, payload kernels, laws of c
 | `#print axioms` of the ops                       | 1797-1834    |   ~38 | `AlgTest.lean`  |
 | `section Laws` (codes faithful, ops mean their relation) and its `#print axioms` | 1835-2214 | ~380 | `Code.lean` (laws of codes) / `Alg.lean` (laws of ops) |
 
-- Dependents: every program and `Lang/Elab.lean` import `LeetQ.Rel.Algebra`. Keeping `Algebra.lean` as a three-line
+- Dependents: every program and `Lang/Elab.lean` import `LeetQ.Run.Algebra`. Keeping `Algebra.lean` as a three-line
   file that imports `Code`, `Alg` and nothing else leaves all of them unedited; the guards file is imported by nobody.
 - `private`: `le inter union conv comp diff` (`:821-885`) and `lamOn` (`:1219`) are private in `section Gen`, and the
   guards call `inter`, `union`, `conv`, `comp`, `diff` by name. A guard file of its own cannot see them: taken:
@@ -142,7 +142,7 @@ DONE (branch `leetq-arch-step5`): `Code.lean` (codes, payload kernels, laws of c
   `#guard_msgs` in `Blocks.lean` still hold. The `#guard_msgs` at `:1728` prints the parameter name `_h` of `lt` and must move unchanged.
 - Risk: high only for collisions. Another agent appends ops to `Algebra.lean` now; a split moves every line, so its
   branch would merge as one conflict per hunk. Do step 5 when no other branch edits `Algebra.lean`, as one mechanical
-  move (no body edits in the same commit), then build `LeetQ.Rel.Algebra LeetQ.Rel.Lang.Test rel` and the four
+  move (no body edits in the same commit), then build `LeetQ.Run.Algebra LeetQ.Rel.Lang.Test rel` and the four
   `Lang/Test*` modules. Elaboration time improves: today any edit to a guard re-elaborates the 1300 lines of ops.
 - New type: none.
 

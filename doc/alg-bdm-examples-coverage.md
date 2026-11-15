@@ -1,6 +1,6 @@
 # The B&dM note's example programs against `Alg`
 
-Audit only. `Alg` read on `master` at `2382c21` (`leetq/LeetQ/Rel/Algebra.lean`, which has `bagify` at :1399). The
+Audit only. `Alg` read on `master` at `2382c21` (`leetq/LeetQ/Run/Algebra.lean`, which has `bagify` at :1399). The
 note (`diag/aop/06-recursive.typ` … `10-greedy.typ`) prints each program as `#leanf("<decl>")`, so the formula is
 the Lean statement of that declaration; the table names it with the note's line, and "Formulas" below gives the
 statement verbatim. File names are shortened to their number: `07:1616` is `diag/aop/07-optimisation.typ:1616`.
