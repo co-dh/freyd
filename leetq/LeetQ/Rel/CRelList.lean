@@ -364,18 +364,20 @@ theorem rep_concatC {B : Obj} {n : USize} (X : Vals (.arr (.arr B)) n) (hb : (co
     rw [arr_row, hl, hh, cl _ (hSm ▸ mono _ (by omega)), cl _ (hSm ▸ mono _ q.2)]
   have hYZ : ∀ q : Fin m.toNat, Y.row q = Z.row q := fun q => by
     rw [hrow, dif_pos (by rw [tilLongs_get q.2]; exact q.2)]
-    exact congrArg Y.row (Fin.ext (tilLongs_get q.2)).symm
+    congr 1; exact Fin.ext (tilLongs_get q.2).symm
   -- an end: the long `k[i]` (at most `m`) less one, gathered from `Z`'s `hi`, is `S k[i]`
   have hE : ∀ (k : ByteArray) (i : Fin n.toNat), (Column.bitsAt k (i.1 * 8) 8).toNat ≤ m.toNat →
       (Column.bitsAt (gather 8 (longsOf Z.2.2.1) (Kernel.Ew.val Ew.sub Ew.i64 Ew.va nul k (one 1) n)) (i.1 * 8) 8
         ).toInt64.toInt = S (Column.bitsAt k (i.1 * 8) 8).toNat := fun k i hk => by
     have hm63 : m.toNat < 2 ^ 63 := hp
+    have hsz : UInt64.size = 2 ^ 64 := rfl
+    have h1' : (1 : UInt64).toInt64.toInt = 1 := rfl
     have hv := val_va_get Ew.sub k (one 1) n i.2
     rw [bitsAt_one] at hv
     have hx := toInt64_toInt (x := Column.bitsAt k (i.1 * 8) 8) (by omega)
-    have h1 := (valStep_int (x := Column.bitsAt k (i.1 * 8) 8) (y := 1) (by omega) (by decide)).2.1
-      (by rw [hx]; decide) (by rw [hx]; omega)
-    rw [← hv, hx, show (1 : UInt64).toInt64.toInt = 1 from rfl] at h1
+    have h1 := (valStep_int (x := Column.bitsAt k (i.1 * 8) 8) (y := 1) (by rw [hx]; omega) (by rw [h1']; decide)).2.1
+      (by rw [hx, h1']; omega) (by rw [hx, h1']; omega)
+    rw [← hv, hx, h1'] at h1
     have hlen : i.1 < len (Kernel.Ew.val Ew.sub Ew.i64 Ew.va nul k (one 1) n) := by rw [len_val]; exact i.2
     rcases Nat.eq_zero_or_pos (Column.bitsAt k (i.1 * 8) 8).toNat with h0 | hpos
     · rw [h0] at h1 ⊢
@@ -387,15 +389,17 @@ theorem rep_concatC {B : Obj} {n : USize} (X : Vals (.arr (.arr B)) n) (hb : (co
       have hlt : (Column.bitsAt k (i.1 * 8) 8).toNat - 1 < m.toNat := by omega
       rw [gather8_get hlen (by rw [hu, len_longsOf, UInt64.toNat_ofNat_of_lt' (by omega)]; exact hlt), hu,
         UInt64.toNat_ofNat_of_lt' (by omega), longsOf_get _ hlt, Int64.toInt64_toUInt64,
-        (hSq ⟨_, hlt⟩).2.1]
-      congr 1; simp only; omega
+        (hSq ⟨_, hlt⟩).2.2]
+      simp only [Nat.sub_add_cancel hpos]
   have key : ∀ i : Fin n.toNat, Vals.row (concatC ⟨m, lo, hi, Y⟩).1.val i =
       (Vals.row (A := .arr (.arr B)) ⟨m, lo, hi, Y⟩ i).flatten := fun i => by
     obtain ⟨hac, hlen, hel⟩ := slicesOf_row (⟨m, lo, hi, Y⟩ : Vals (.arr (.arr B)) n) hp i.2
+    change _ + _ ≤ m.toNat at hac
     have hsum := add_get (n := n) (a := (slicesOf (⟨m, lo, hi, Y⟩ : Vals (.arr (.arr B)) n)).1)
       (b := (slicesOf (⟨m, lo, hi, Y⟩ : Vals (.arr (.arr B)) n)).2) i.2 (by have : m.toNat < 2 ^ 63 := hp; omega)
-    have e1 := hE _ i (by omega)
-    have e2 := hE _ i (by rw [hsum]; exact hac)
+    have e1 := hE (slicesOf (⟨m, lo, hi, Y⟩ : Vals (.arr (.arr B)) n)).1 i (by omega)
+    have e2 := hE (add n (slicesOf (⟨m, lo, hi, Y⟩ : Vals (.arr (.arr B)) n)).1
+      (slicesOf (⟨m, lo, hi, Y⟩ : Vals (.arr (.arr B)) n)).2) i (by rw [hsum]; exact hac)
     rw [hsum] at e2
     generalize (Column.bitsAt (slicesOf (⟨m, lo, hi, Y⟩ : Vals (.arr (.arr B)) n)).1 (i.1 * 8) 8).toNat = a
       at hac hlen hel e1 e2
@@ -405,11 +409,13 @@ theorem rep_concatC {B : Obj} {n : USize} (X : Vals (.arr (.arr B)) n) (hb : (co
         (List.range c).map fun j => (List.range (S (a + j + 1) - S (a + j))).map fun k => g (S (a + j) + k) := by
       apply List.ext_getElem (by rw [hlen]; simp)
       intro j h1 h2
-      rw [hel j h1 (by omega), List.getElem_map, List.getElem_range]
+      have hjc : j < c := by rw [← hlen]; exact h1
+      rw [hel j h1 (by show a + j < m.toNat; omega), List.getElem_map, List.getElem_range]
       exact (hYZ _).trans (hZrow _)
     rw [hX, (flatten_windows S g a c fun t h1 h2 => (hSq ⟨t, by omega⟩).1).2]
     simp only [concatC]
-    rw [ez, arr_row, longsN_get, longsN_get, e1, e2, cl _ (hSm ▸ mono _ (by omega)), cl _ (hSm ▸ mono _ hac)]
+    rw [arr_row]; dsimp only
+    rw [longsN_get, longsN_get, ez, e1, e2, cl _ (hSm ▸ mono _ (by omega)), cl _ (hSm ▸ mono _ hac)]
   intro xss ys
   rw [rep_apply]
   constructor

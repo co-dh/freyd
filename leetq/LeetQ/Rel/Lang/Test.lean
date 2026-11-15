@@ -396,6 +396,22 @@ rel_program lists where
   "⟨{(a, 0), (b, 1)}, x⟩ loop(plus) = {(a, 6), (b, 7)}",
   "⟨{(a, 5)}, Λ({(a, 1), (a, 2)})⟩ tic = {(a, [5] [5 1] [5 1 2])}"]
 
+/-! `concat` is `List.flatten` (`rep_concatC`), not `union`: order and duplicates kept. `w` is `a ↦ [[3 1] [2] [1]]`;
+    `d` is `a ↦ [[1] [] [1]]`, `b ↦ [[] [1] []]`; `e` is `a ↦ [[3 1]]`, `b ↦ []`, an empty outer array. -/
+open LeetQ.Rel.Programs.prelude in
+rel_program concats where
+    obj N = 0…9
+    obj K = {a,b}
+    w : K ⟶ [[N]] ≜ ⟨⟨{(a,3)},Λ({(a,1)})⟩cons, ⟨Λ({(a,2)}), Λ(Λ({(a,1)}))⟩cons⟩cons
+    d : K ⟶ [[N]] ≜ ⟨Λ({(a,1)}), ⟨Λ({(b,1)}), Λ(Λ({(a,1)}))⟩cons⟩cons
+    e : K ⟶ [[N]] ≜ Λ(⟨{(a,3)},Λ({(a,1)})⟩cons)
+    print w concat
+    print w union
+    print d concat
+    print e concat
+
+#eval concats.prints
+
 /-! `at(i)`, positions from `0`, on the arrays `x` above: `at(0) = head`, `tail at(i) = at(i+1)`, and a position
     past every array's end the empty relation. -/
 #eval trips ["at(0)", "at(12)", "R at(2) S"]
