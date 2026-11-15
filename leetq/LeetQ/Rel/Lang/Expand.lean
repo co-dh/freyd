@@ -431,8 +431,10 @@ partial def prf (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Boo
   let cd ← code pre ρ t
   let c := cd.appArg!.constName!
   if let some h := (← get).1[c]? then return some (mkConst h)
-  let some p ← prfNode pre ρ t | return none
   let h := c ++ `rep
+  -- the cache is rolled back when a definition's proof runs out of heartbeats, the environment is not
+  if (← getEnv).contains h then return some (mkConst h)
+  let some p ← prfNode pre ρ t | return none
   let ty ← mkAppM ``Gen.Sound #[cd, (← inferType p).appArg!]
   addDecl (.thmDecl { name := h, levelParams := [], type := ty, value := p })
   modify fun (m, g) => (m.insert c h, g)
@@ -523,14 +525,25 @@ def emit (n : Name) (r : Read) : MetaM Unit := do
       addConst k (mkApp2 (mkConst ``CRel) (oE A) (oE B)) (app v)
       -- `n.rep_x : (n.rel.x).ok = true → rep (n.rel.x).rel = ⟦x⟧`, assembled from `GenSpec`'s lemmas
       modify fun (m, _) => (m, none)
-      match ← withCurrHeartbeats (prf n [] t) with
-      | some p =>
-        let kc := mkConst k
-        let ty ← mkArrow (← mkEq (← mkAppM ``CRel.ok #[kc]) (toExpr true))
-          (← mkEq (← mkAppM ``Rep.rep #[← mkAppM ``CRel.rel #[kc]]) (← inferType p).appArg!)
-        let pv ← mkAppM ``Gen.Sound.eq #[p]
-        addDecl (.thmDecl { name := n ++ Name.mkSimple s!"rep_{x}", levelParams := [], type := ty, value := pv })
-      | none => gaps := gaps ++ [(x, ((← get).2.map toString).getD "?")]
+      let body : PM (Option String) := do
+        match ← prf n [] t with
+        | some p =>
+          let kc := mkConst k
+          let ty ← mkArrow (← mkEq (← mkAppM ``CRel.ok #[kc]) (toExpr true))
+            (← mkEq (← mkAppM ``Rep.rep #[← mkAppM ``CRel.rel #[kc]]) (← inferType p).appArg!)
+          let pv ← mkAppM ``Gen.Sound.eq #[p]
+          addDecl (.thmDecl { name := n ++ Name.mkSimple s!"rep_{x}", levelParams := [], type := ty, value := pv })
+          pure none
+        | none => pure (((← get).2.map toString).getD "?")
+      -- a fresh heartbeat count per theorem, since the expansion has spent the command's; a proof that still runs
+      -- past it is a gap named by its message, while every other error propagates
+      let s ← get; let r ← getThe (Std.HashMap Lean.Expr Name)
+      match ← (tryCatchRuntimeEx (Except.ok <$> withCurrHeartbeats ((body.run s).run r))
+          fun e => if e.isRuntime then pure (.error e) else throw e : MetaM _) with
+      | .ok ((gp, s'), r') =>
+        set s'; modifyThe (Std.HashMap Lean.Expr Name) fun _ => r'
+        if let some c := gp then gaps := gaps ++ [(x, c)]
+      | .error e => gaps := gaps ++ [(x, s!"runtime: {(← e.toMessageData.toString).takeWhile (· != '\n')}")]
       es := es ++ [g ``Gen.entry #[toExpr x, oE A, oE B, mkConst k]]
     let ps ← ps.mapM fun (x, ⟨A, B, t⟩, s, u) => do
       pure (g ``printText #[oE A, oE B, os, toExpr x, toExpr s, toExpr u, app (← code n [] t)])
