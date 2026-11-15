@@ -29,7 +29,9 @@ def objInfo (env : Env) (n : String) : ObjDef → Except Err ObjInfo
     line in the prelude, at the use; one about the arguments (at the use) passes as it is. `perm` is its own
     converse, the one converse rule kept for a definition (`Tm.own`): `perm° = perm` is a theorem the
     language cannot derive from the fold `perm` is. `tails`, `prefix`, `suffix` run as their slice forms, each
-    read back against the list function the prelude's fold is (`rep_tailsC`, `rep_prefixC`, `rep_suffixC`). -/
+    read back against the list function the prelude's fold is (`rep_tailsC`, `rep_prefixC`, `rep_suffixC`);
+    `filter(p)`, `takewhile(p)` (given one relation, not a family) as their mask forms, whose read-back theorems
+    (`rep_filterC`, `rep_takewhileC`) are not proved yet. -/
 def preludeDef (n : String) (d : Def) : Def :=
   { d with apply := fun p as => do
       let r ← tryCatch (d.apply p as) fun e =>
@@ -40,6 +42,8 @@ def preludeDef (n : String) (d : Def) : Def :=
       | "tails", .rel _ s@(.arr b) t => pure (.rel (.tails b) s t)
       | "prefix", .rel _ s@(.arr b) t => pure (.rel (.«prefix» b) s t)
       | "suffix", .rel _ s@(.arr b) t => pure (.rel (.suffix b) s t)
+      | "filter", .rel q s t => pure (.rel (match as with | [.rel a _ _] => .filter a | _ => q.at p) s t)
+      | "takewhile", .rel q s t => pure (.rel (match as with | [.rel a _ _] => .takewhile a | _ => q.at p) s t)
       | _, .rel q s t => pure (.rel (q.at p) s t)
       | _, .fam q i a b => pure (.fam (q.at p) i a b) }
 
@@ -322,6 +326,7 @@ def fv : {A B : Obj} → {d : Bool} → Tm A B d → List Nat
   | _, _, _, .comp R S | _, _, _, .meet R S | _, _, _, .join R S | _, _, _, .diff R S => fv R ++ fv S
   | _, _, _, .pair R S | _, _, _, .prod R S | _, _, _, .junc R S | _, _, _, .arg R S => fv R ++ fv S
   | _, _, _, .conv R | _, _, _, .dom R | _, _, _, .ran R | _, _, _, .lam R | _, _, _, .E R | _, _, _, .map R => fv R
+  | _, _, _, .filter R | _, _, _, .takewhile R => fv R
   | _, _, _, .est R | _, _, _, .thin R | _, _, _, .own R | _, _, _, .thinL R | _, _, _, .merge R => fv R
   | _, _, _, .loop R | _, _, _, .flat R => fv R
   | _, _, _, .ldiv R S U V | _, _, _, .rdiv R S U V => fv R ++ fv S ++ fv U ++ fv V
@@ -367,6 +372,8 @@ def number : {A B : Obj} → {d : Bool} → Tm A B d → StateM Nat (Tm A B d)
   | _, _, _, .lam R => do w (.lam (← number R))
   | _, _, _, .E R => do w (.E (← number R))
   | _, _, _, .map R => do w (.map (← number R))
+  | _, _, _, .filter R => do w (.filter (← number R))
+  | _, _, _, .takewhile R => do w (.takewhile (← number R))
   | _, _, _, .est Q => do w (.est (← number Q))
   | _, _, _, .thin Q => do w (.thin (← number Q))
   | _, _, _, .own R => do w (.own (← number R))
@@ -547,6 +554,8 @@ partial def node (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bo
   | A, .arr B, d, .lam R => return g ``Gen.lam #[oE A, oE B, bE d, ← c R]
   | .arr A, .arr B, _, .E (d := d) R => return g ``Gen.E #[oE A, oE B, bE d, ← c R]
   | .arr A, .arr B, _, .map (d := d) R => return g ``Gen.map #[oE A, oE B, bE d, ← c R]
+  | .arr B, _, _, .filter (d := d) R => return g ``Gen.filter #[oE B, bE d, ← c R]
+  | .arr B, _, _, .takewhile (d := d) R => return g ``Gen.takewhile #[oE B, bE d, ← c R]
   | _, B, _, .est Q => return g ``Gen.est #[oE B, ← c Q]
   | _, .arr B, _, .thin Q => return g ``Gen.thin #[oE B, ← c Q]
   | _, .arr A, _, .union => return g ``Gen.union #[oE A]

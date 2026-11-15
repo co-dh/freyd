@@ -29,6 +29,11 @@ def «prefix» (X : Vals (.arr B) n) : CRel (.arr B) (.arr B) := let r := prefix
 
 /-- `suffix` on the arrays `X`, ok where `suffixC` ran within capacity. -/
 def suffix (X : Vals (.arr B) n) : CRel (.arr B) (.arr B) := let r := suffixC X; ⟨r.1, r.2⟩
+/-- `filter` of the keys of `P` on the arrays `X`, ok where `P` is and `filterC` ran within capacity. -/
+def filter (P : CRel B B) (X : Vals (.arr B) n) : CRel (.arr B) (.arr B) := guard P.ok fun _ => let r := filterC P.rel X; ⟨r.1, r.2⟩
+
+/-- `takewhile` of the keys of `P` on the arrays `X`, ok where `P` is and `takewhileC` ran within capacity. -/
+def takewhile (P : CRel B B) (X : Vals (.arr B) n) : CRel (.arr B) (.arr B) := guard P.ok fun _ => let r := takewhileC P.rel X; ⟨r.1, r.2⟩
 
 /-- `cat°` on the arrays `X`, ok where `uncatC` ran within capacity. -/
 def uncat (X : Vals (.arr B) n) : CRel (.arr B) (.prod (.arr B) (.arr B)) := let r := uncatC X; ⟨r.1, r.2⟩
