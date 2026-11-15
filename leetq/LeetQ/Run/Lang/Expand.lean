@@ -234,6 +234,8 @@ def walk (prog : Program) (env : Env) (wrap : String → Def → Def) (own : Lea
   let mut pr : List (String × Top) := []
   let mut cs : List Chk := []
   for d in prog do
+    -- an imported program's prints, checks and theorems ran where it was defined; only its scope is read here
+    if imported then if let .print .. | .check .. | .«theorem» .. := d then continue
     match d with
     | .obj _ n od =>
       -- an imported program's object is its constant's, so the importer's types name the same object (§2.3)

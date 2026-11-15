@@ -388,7 +388,7 @@ partial def atomOf (s : Syntax) (p : Lang.Pos) (n : String) (app objs pair : Opt
     | none, some a => do pure [.op p o [] (← args a)]
     | none, none => failAt s "expected '('"
   | none, none =>
-    if (← get).thms.contains n then throw ⟨p, s!"`{n}` is a theorem, not a relation"⟩
+    if (← get).thms.contains n || ((← get).ext n).any (·.thm) then throw ⟨p, s!"`{n}` is a theorem, not a relation"⟩
     if !(← Parse.isInfix n) then do pure (.name p n :: (← after))
     else if app.isSome || objs.isSome then failAt s s!"`{n}` is an infix operator: write `R {n} S`, not `{n}(R, S)`"
     else pure [.name p n]
@@ -569,7 +569,9 @@ def define (stx id : Syntax) (prog : Program) (used : List Name) (more : List Na
   let env ← getEnv
   let opts ← getOptions
   let reg := Expand.relRegistry.getState env
-  let homes := (reg.progs.toList.map (·.1)).filter ((more ++ homesOf reg used).contains ·)
+  -- `nil` starts at the `1` in scope (`Env.one`) though no token names it, so its home is read too
+  let one := match (resolverAt env opts reg ns os).1 "1" with | .ext e => [e.const] | _ => []
+  let homes := (reg.progs.toList.map (·.1)).filter ((more ++ homesOf reg (one ++ used)).contains ·)
   let progs ← homes.mapM fun m => return (m, ← programOf m)
   let resOf (h : Name) : String → Found :=
     if h == n then (resolverAt env opts reg ns os).1 else

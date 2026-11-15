@@ -17,11 +17,11 @@ open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Alg QLean
 
 abbrev CM := Lean.Elab.Command.CommandElabM
 
-/-- The statements `src` read as a `rel_program`'s (`Embed`, the one grammar) in the scope `s`, nothing elaborated;
-    they start on the line of `where`, so a line of `src` is a line of the error. A Lean parse error has no line. -/
 /-- The scope of a text read after the prelude outside any Lean scope: its names unqualified (`Parse.openAll`). -/
 def preludeScope : Parse.S := { cs := #[], res := Parse.openAll [(`LeetQ.Rel.Programs.prelude, Programs.prelude)] }
 
+/-- The statements `src` read as a `rel_program`'s (`Embed`, the one grammar) in the scope `s`, nothing elaborated;
+    they start on the line of `where`, so a line of `src` is a line of the error. A Lean parse error has no line. -/
 def readIn (s : Parse.S) (src : String) : CM (Except Err Program) := do
   let txt := "rel_program t where " ++ src
   match Lean.Parser.runParserCategory (← Lean.getEnv) `command txt with
@@ -314,6 +314,7 @@ example : True := trivial
 
 /-! The list builtins of §b on arrays built by `Λ` and `cons`, each value as `Algebra.lean`'s guard of the op
     states it: `x` is `a ↦ [3 1 2]`, `b ↦ [1 5]`; `y` is `a ↦ [7]`, `b ↦ [8 9]`; `z` is `a ↦ [3 3 1 2]`. -/
+open LeetQ.Rel.Programs.prelude in
 rel_program lists where
     obj N = 0…9
     obj K = {a,b}
@@ -875,11 +876,12 @@ rel_program corPairs where
 #eval errAt "obj B = 0…1\nf ≜ ⇒(π₁,π₂)\n" 2 "`⇒` is an infix operator: write `R ⇒ S`, not `⇒(R, S)`"
 #eval errAt "obj B = 0…1\nf ≜ π₁ ∪ ⇒\n" 2 "`⇒` is an infix operator: it stands between two terms, `R ⇒ S`"
 #eval errAt "obj B = 0…1\n_≼_(R) ≜ R\n" 2 "the infix operator `≼` takes two parameters, `_≼_(R, S)`, found 1"
--- a prelude name taken again, as a definition, an infix operator's name or an object
-#eval errAt "obj N = 0…9\nperm ≜ 𝟙(N)\n" 2 "`perm` is already defined in the prelude"
-#eval errAt "obj N = 0…9\n⊕ ≜ 𝟙(N)\n" 2 "`⊕` is already defined in the prelude"
-#eval errAt "obj N = 0…9\n_sort_(R,S) ≜ R ∩ S\n" 2 "`sort` is already defined in the prelude"
-#eval errAt "obj 1 = {∗}\nobj N = 0…9\n" 1 "`1` is already defined in the prelude"
+-- a prelude name taken again, as a definition, an infix operator's name or an object, is the program's own: the
+-- local name wins over an opened one (module design §2.3)
+#eval do
+  for src in ["obj N = 0…9\nperm : N ⟶ N ≜ 𝟙(N)\n", "obj N = 0…9\n⊕ : N ⟶ N ≜ 𝟙(N)\n",
+      "obj N = 0…9\n_sort_(R : N ⟶ N, S : N ⟶ N) : N ⟶ N ≜ R ∩ S\n", "obj 1 = {∗}\nobj N = 0…9\n"] do
+    if let .error e ← readIn preludeScope src then throwError "{e}"
 -- an error of the prelude's own text, and one raised in a prelude body at a use: the prelude's line, the use's
 /-- The text `src` read after the prelude `pre`: its error. -/
 def afterErr (pre src : String) : CM Err := do
@@ -890,10 +892,10 @@ def afterErr (pre src : String) : CM Err := do
 -- the prelude's line 1 starts after `rel_program t where `, 20 columns
 #eval do
   let e ← afterErr "    f ≜ g\n" "obj X = {A}\n"
-  unless toString e == "in the prelude, line 1, col 29: unknown name 'g'" do throwError "{e}"
+  unless toString e == "in the program `pre`, line 1, col 29: unknown name 'g'" do throwError "{e}"
 #eval do
   let e ← afterErr "    f(R : α ⟶ β) : α ⟶ β ≜ R g\n" "obj X = {A}\nx : X ⟶ X ≜ {(A,A)}\ny : X ⟶ X ≜ f(x)\n"
-  unless e.pos.line == 3 && e.msg == "in the prelude's `f` (its line 1): unknown name 'g'" do throwError "{e}"
+  unless e.pos.line == 3 && e.msg == "in `pre.f` (its line 1): unknown name 'g'" do throwError "{e}"
 
 #guard Programs.blocks.filterMap reading == [
     ("S₀", "{(C, A), (A, A), (B, B)}"),
@@ -1004,7 +1006,7 @@ rel_program muGrow where
     g : B ⟶ [B] ≜ μX : r ∪ (⟨X, r⟩ cat)
 #guard !muGrow.ok
 #guard muGrow.failures.map (·.msg) == ["an op ran out of capacity (its twin's ok bit is false); in g, or the μ at " ++
-  "line 961, col 19 ran its cap of 1024 rounds without reaching a fixed point"]
+  "line 1006, col 19 ran its cap of 1024 rounds without reaching a fixed point"]
 -- `X` under an operator not monotonic in its argument, or in an antitone place; `ν` with no bound
 #eval errAt "obj B = 0…1\nf : B ⟶ B ≜ νX : ⊤(B,B) ∩ (Λ(X)∋)\n" 2
   "νX: X occurs under Λ at 2:30; Λ is not monotonic in its argument, so the fixed point need not exist"

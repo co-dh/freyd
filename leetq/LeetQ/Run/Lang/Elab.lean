@@ -678,11 +678,12 @@ def constant (env : Env) (p : Pos) (o : Op) (objs : List OExp) : M Arg := do
   | _ => throw ⟨p, s!"{o.sym} takes at most two objects, found {objs.length}"⟩
   pure (.rel q s t)
 
-/-- The declared objects holding all the words `ws` (named elements, or numbers in their range). -/
-def holders (objs : Objs) (ws : List String) : List String :=
+/-- The declared objects holding all the words `ws` (named elements, or numbers in their range), each once: an
+    imported object is in scope under its name and its constant, one object (`Expand.walk`). -/
+def holders (objs : Objs) (ws : List String) : List OTy :=
   let holds (i : ObjInfo) (w : String) : Bool := i.elems.contains w ||
     match i.range, w.toInt? with | some (lo, hi), some k => lo ≤ k && k ≤ hi | _, _ => false
-  (objs.filter fun (_, i) => ws.all (holds i)).map (·.1)
+  ((objs.filter fun (_, i) => ws.all (holds i)).map (·.2.ty)).eraseDups
 
 /-- Why the rows `ts` of a literal's position do not determine its object: they are none (an empty array's
     elements), or several declared objects hold their words. -/
@@ -704,7 +705,7 @@ partial def litTy (objs : Objs) (p : Pos) (ts : List Tup) : M OTy := do
   | _, .leaf _ =>
     let ws := ts.filterMap fun | .leaf w => some w | _ => none
     match holders objs ws with
-    | [n] => pure (.base n)
+    | [o] => pure o
     | [] => throw ⟨p, s!"no declared object has the elements {ws}"⟩
     | _ => fresh
   | _, .pair .. =>

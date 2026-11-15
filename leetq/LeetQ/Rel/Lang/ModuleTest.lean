@@ -20,7 +20,7 @@ elab "#rel_read " s:str : command => do
 
 /-- Fails unless the constant `c` exists. -/
 elab "#has " c:ident : command => do
-  unless (← getEnv).contains c.getId do throwError "no constant {c.getId}"
+  discard <| resolveGlobalConstNoOverload c
 
 open LeetQ.Rel.Programs.prelude in
 rel_program mh where
@@ -53,11 +53,14 @@ rel_program qual where
 #guard qual.ok
 
 /-! Selective: `open csp (AC3)` brings `AC3`; without it `AC3` is unknown. -/
-open LeetQ.Rel.Programs.prelude csp (AC3) in
+section
+open LeetQ.Rel.Programs.prelude
+open csp (AC3)
 rel_program sel where
     obj A = 0…2
     s : A ⟶ A ≜ AC3(≠, ≠, 𝟙)
 #guard sel.ok
+end
 
 /-- error: line 3, col 16: unknown name 'AC3' -/
 #guard_msgs in
@@ -121,10 +124,12 @@ open Nat in
 #rel_read "obj A = 0…2\nad : A ⟶ A ≜ 𝟙\nd : A ⟶ A ≜ 𝟙\nprint add"
 
 /-! Symbol names: `open mh («≺»)` makes `≺` readable; `mh.≺` reads unopened. -/
+section
+open mh («≺»)
 /-- info: x -/
 #guard_msgs in
-open mh («≺») in
 #rel_read "print ≺"
+end
 
 /-- info: x -/
 #guard_msgs in
