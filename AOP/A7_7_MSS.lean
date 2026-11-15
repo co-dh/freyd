@@ -87,7 +87,8 @@ public theorem geq_trans : geq ≫ geq ⊑ geq :=
   (graph fun _ : Int × Int => zeroVal) ∪ plus
 
 /-- The note's `S ≜ [zero, ⊸ zero ∪ plus]` — `prefix`'s algebra with `sum` fused in. -/
-@[expose] public def Salg : Fobj Unit Int (⟨Int⟩ : RelSet.{0}) ⟶ ⟨Int⟩ :=
+-- typed by the relator's `obj`, not `Fobj`: `relCata Salg` then finds the initial algebra by unification
+@[expose] public def Salg : (F Unit Int).obj (⟨Int⟩ : RelSet.{0}) ⟶ ⟨Int⟩ :=
   junc (sumCop (dL Unit) ⟨Int × Int⟩) zero zeroPlus
 
 theorem zeroPlus_apply (a b w : Int) : zeroPlus (a, b) w ↔ w = 0 ∨ w = a + b := Iff.rfl

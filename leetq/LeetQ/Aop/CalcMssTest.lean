@@ -118,7 +118,7 @@ theorem toFused :
       = (suffix%∋ ≫ existsImage ((«prefix» ≫ ListRel.sum)%∋ ≫ est(MSS.geq))) ≫ est(MSS.geq) := rfl   -- ≜ shape
     _ = (suffix%∋ ≫ existsImage ((cataR MSS.Salg)%∋ ≫ est(MSS.geq))) ≫ est(MSS.geq) := by
       rw [MSS.mss_prefix_sum]                                                                         -- prefix sum = ⦇S⦈
-    _ = (suffix%∋ ≫ existsImage ((relCata (I := initial Unit Int) MSS.Salg)%∋ ≫ est(MSS.geq))) ≫ est(MSS.geq) := by
+    _ = (suffix%∋ ≫ existsImage ((relCata MSS.Salg)%∋ ≫ est(MSS.geq))) ≫ est(MSS.geq) := by
       rw [cataR_eq_relCata]                                                                           -- ⦇S⦈ in RelSet
     _ = fused K zero suffix «≥» := by unfold fused; rw [top_zero]; rfl                              -- ⊤zero = ⊸ zero
 
@@ -129,7 +129,7 @@ theorem toGreedy :
     fused K zero suffix «≥» = greedy K zero suffix «≥» := by
   intro zero «≥» suffix K
   calc fused K zero suffix «≥»
-      = (suffix%∋ ≫ existsImage ((relCata (I := initial Unit Int) MSS.Salg)%∋ ≫ est(MSS.geq))) ≫ est(MSS.geq) := by
+      = (suffix%∋ ≫ existsImage ((relCata MSS.Salg)%∋ ≫ est(MSS.geq))) ≫ est(MSS.geq) := by
         unfold fused; rw [top_zero]; rfl                                                            -- ⊤zero = ⊸ zero
     _ = (suffix%∋ ≫ existsImage ((cataR MSS.Salg)%∋ ≫ est(MSS.geq))) ≫ est(MSS.geq) := by
       rw [cataR_eq_relCata]                                                                           -- ⦇S⦈ in RelSet
@@ -137,7 +137,9 @@ theorem toGreedy :
       rw [MSS.mss_greedy_eq]                                                                          -- Λ(⦇S⦈)est(≥) = ⦇Λ(S)est(≥)⦈
     _ = (suffix%∋ ≫ existsImage (cataR (junc (sumCop _ _) MSS.zero MSS.oplus))) ≫ est(MSS.geq) := by
       rw [MSS.mss_step]                                                                               -- Λ(S)est(≥) = [zero,⊕]
-    _ = greedy K zero suffix «≥» := by unfold greedy g; rw [oplus_eq, cataR_eq_relCata]               -- ≜ g, oplus
+    _ = (suffix%∋ ≫ existsImage (relCata (I := initial Unit Int) (junc (sumCop _ _) MSS.zero MSS.oplus)))
+          ≫ est(MSS.geq) := by rw [cataR_eq_relCata]                                                 -- ⦇S⦈ in RelSet
+    _ = greedy K zero suffix «≥» := by unfold greedy g; rw [oplus_eq]                                  -- ≜ g, oplus
 
 /-- `greedy = scan` (note `mss-scan`). -/
 theorem toScan :
@@ -148,8 +150,10 @@ theorem toScan :
     greedy K zero suffix «≥» = scan Nα NNα L zero «≥» := by
   intro zero «≥» suffix K Nα NNα L
   calc greedy K zero suffix «≥»
-      = (suffix%∋ ≫ existsImage (cataR (junc (sumCop _ _) MSS.zero MSS.oplus))) ≫ est(MSS.geq) := by
-        unfold greedy g; rw [oplus_eq, cataR_eq_relCata]                                              -- ≜ g, oplus
+      = (suffix%∋ ≫ existsImage (relCata (I := initial Unit Int) (junc (sumCop _ _) MSS.zero MSS.oplus)))
+          ≫ est(MSS.geq) := by unfold greedy g; rw [oplus_eq]                                         -- ≜ g, oplus
+    _ = (suffix%∋ ≫ existsImage (cataR (junc (sumCop _ _) MSS.zero MSS.oplus))) ≫ est(MSS.geq) := by
+        rw [cataR_eq_relCata]                                                                         -- ⦇S⦈ in RelSet
     _ = (⦇MSS.k⦈ ≫ (graph (fun p : Int × (Int → Prop) => p.2) : (⟨Int × (Int → Prop)⟩ : RelSet.{0}) ⟶ P ⟨Int⟩))
           ≫ est(MSS.geq) := by rw [MSS.Kalg_snd_eq]                                                  -- ⦇k⦈π₂ = Λ(suffix)E(g)
     _ = scan Nα NNα L zero «≥» := by rw [← k_eq]; rfl                                                -- ≜ k, ≜ scan
