@@ -1,4 +1,3 @@
-import LeetQ.Rel.Lang.Test
 import LeetQ.Rel.Programs.Detab
 
 /-! The Rel language on B&dM §10.2 detab-entab, the program `Programs.detab`: `detab`, the specification
@@ -7,7 +6,7 @@ import LeetQ.Rel.Programs.Detab
 
 namespace LeetQ.Rel.Lang.TestDetab
 
-open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Lang.Test
+open LeetQ.Rel LeetQ.Rel.Lang
 
 /-- The tab width, the program's `m`. -/
 def n : Nat := 4
@@ -31,8 +30,8 @@ def shortest (y : List String) : List (List String) :=
   let k := (ps.map List.length).foldl min y.length
   ps.filter (·.length == k)
 
-/-- A relation `1 ⟶ [Ch]` holding the strings `ss`, as the interpreter prints it (rows in `cmpEl`'s order: an
-    array lexicographically by element name, a prefix first). -/
+/-- A relation `1 ⟶ [Ch]` holding the strings `ss`, as a `print` shows it (rows in `cmpEl`'s order: an array
+    lexicographically by element name, a prefix first). -/
 def shown (ss : List (List String)) : String :=
   "{" ++ ", ".intercalate ((ss.mergeSort fun a b => decide (a ≤ b)).map fun s => "(∗, " ++ arrText false s ++ ")") ++
     "}"
@@ -41,17 +40,22 @@ def x : List String := ["a", "b", "TB", "c", "BL", "d"]
 def inputs : List (String × List String) :=
   [("p", ["a", "BL", "BL", "BL"]), ("q", ["a", "a", "a", "BL", "a"]), ("y", List.replicate 5 "BL")]
 
-/-- The program's eight `check`s turned back into `print`s, one per line, so the values compared are Lean's below. -/
-def asPrints : List String := ["x detab", "x detab entab", "p Λ(H)est(R)", "q Λ(H)est(R)", "y Λ(H)est(R)", "p entab",
-  "q entab", "y entab"]
+-- the program's eight `check`s turned back into `print`s, one per line, so the values compared are Lean's below
+rel_program out after Programs.detab where
+    print x detab
+    print x detab entab
+    print p Λ(H)est(R)
+    print q Λ(H)est(R)
+    print y Λ(H)est(R)
+    print p entab
+    print q entab
+    print y entab
 
-def out : Out := ok (runExt Programs.detab (String.join (asPrints.map fun e => s!"print {e}\n")))
-
--- every `check` holds (a failed one is an error), including entab ⊑ the specification and detab entab = 𝟙, on D;
--- the program prints nothing itself
-#guard (runProgram Programs.detab).isOk
-#guard (ok (runProgram Programs.detab)).prints == []
-#guard out.prints.length == 8
+-- every `check` holds, including entab ⊑ the specification and detab entab = 𝟙, on D; the program prints nothing
+-- itself
+#guard Programs.detab.ok
+#guard Programs.detab.prints == []
+#guard out.ok && out.prints.length == 8
 -- the note's run: detab of ab, a tab, c d
 #guard out.prints[0]? == some s!"x detab = {shown [detabL x]}"
 -- the specification is every shortest preimage; q has two
