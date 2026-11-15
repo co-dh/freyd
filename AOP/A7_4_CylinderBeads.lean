@@ -25,6 +25,7 @@
 module
 
 public import AOP.A6_1_RelSet
+public import Freyd.RelSet
 
 namespace Freyd.Alg.RelSet.Tuple
 open PowerAllegory

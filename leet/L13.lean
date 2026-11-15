@@ -22,6 +22,7 @@
   Mathlib-free; fully constructive — axioms `⊆ {propext, Quot.sound}`.
 -/
 import AOP.A6_1_RelSet
+import Freyd.RelSet
 
 namespace Freyd.Alg.RelSet.LC13
 

@@ -46,6 +46,7 @@
   `{propext, Quot.sound}` budget (via `graph_map`/`hom_ext`).
 -/
 import AOP.A6_1_RelSet
+import Freyd.RelSet
 
 namespace Freyd.Alg.RelSet.LC56
 

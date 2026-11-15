@@ -28,6 +28,7 @@ public import AOP.A5_5_TypeFunctor
 -- The graph of a function, the one arrow whose content is a Lean TERM and not an operator: its
 -- name is read off that term, here, so every picture writes the same one.
 public import AOP.A6_1_RelSet
+public import Freyd.RelSet
 public section
 
 open Lean

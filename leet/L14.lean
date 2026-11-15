@@ -23,6 +23,7 @@
   usual cost; the core `lcp_correct` theorem itself needs neither).
 -/
 import AOP.A6_1_RelSet
+import Freyd.RelSet
 
 set_option linter.unusedVariables false
 

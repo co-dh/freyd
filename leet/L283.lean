@@ -35,6 +35,7 @@
   Mathlib-free. Axioms ⊆ {propext, Quot.sound}.
 -/
 import AOP.A6_1_RelSet
+import Freyd.RelSet
 import leet.L242
 
 namespace Freyd.Alg.RelSet.LC283

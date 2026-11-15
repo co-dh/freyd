@@ -17,6 +17,7 @@ module
 
 public import diag.Monoidal
 public import AOP.A6_1_RelSet
+public import Freyd.RelSet
 @[expose] public section
 
 universe u

@@ -127,6 +127,8 @@ import Freyd.S2_10
 import Freyd.S2_16
 import Freyd.S2_20
 import Freyd.S2_22
+import Freyd.RelSet
+import Freyd.Junc
 import Freyd.S2_16b
 import Freyd.S2_16c
 import Freyd.S2_55

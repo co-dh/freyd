@@ -29,6 +29,7 @@ public import AOP.A7_1
 -- `thinRel_pt`, the pointwise reading every Rel(Set) user of `thinRel` needs, is stated beside the
 -- definition it reads rather than re-derived in each of them.
 public import AOP.A6_1_RelSet
+public import Freyd.RelSet
 public import AOP.A4_2
 import AOP.A5_4
 import AOP.A6_3

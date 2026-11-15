@@ -49,6 +49,7 @@
   via `List.filter_eq_nil_iff` (the `Classical.choice`-pulling trap flagged in `leetcode.md` S28).
 -/
 import AOP.A6_1_RelSet
+import Freyd.RelSet
 
 namespace Freyd.Alg.RelSet.LC253
 

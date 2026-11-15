@@ -19,6 +19,7 @@
 module
 
 public import AOP.A6_1_RelSet
+public import Freyd.RelSet
 
 set_option linter.unusedVariables false
 

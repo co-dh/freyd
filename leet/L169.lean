@@ -39,6 +39,7 @@
   `omega`/`simp` straight from a numeric contradiction, S33/S3).
 -/
 import AOP.A6_1_RelSet
+import Freyd.RelSet
 import leet.L242
 
 namespace Freyd.Alg.RelSet.LC169

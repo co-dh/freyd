@@ -14,6 +14,7 @@ module
 public import AOP.A5_4
 public import AOP.A5_5_TypeFunctor
 public import AOP.A6_1_RelSet
+public import Freyd.RelSet
 import AOP.A8_1
 
 universe u

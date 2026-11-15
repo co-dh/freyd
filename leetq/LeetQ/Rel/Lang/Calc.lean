@@ -4,6 +4,7 @@ import AOP.A4_4
 import AOP.A4_5
 import AOP.A5_2
 import AOP.A5_3
+import Freyd.Junc
 import AOP.A5_5
 import AOP.A6_2
 import AOP.A5_4_PowerRel

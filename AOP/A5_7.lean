@@ -12,6 +12,7 @@ module
 
 public import AOP.A5_2
 public import AOP.A5_3
+public import Freyd.Junc
 public import Freyd.S2_147_MapCat
 import AOP.A4_2
 import AOP.A5_4

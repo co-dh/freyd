@@ -29,6 +29,7 @@ public import Freyd.S2_40
 import AOP.A4_2
 import AOP.A4_6
 import Freyd.S1_56
+public import Freyd.Junc
 
 universe v₂ u₂ v u
 
@@ -41,12 +42,6 @@ namespace Freyd.Alg
 section Junc
 
 variable {𝒜 : Type u} [DistributiveAllegory 𝒜]
-
-/-- **B&dM 5.9**: the junc (case) morphism `[R,S] : s ⟶ c` induced by a coproduct
-    `C : Coproduct s a₁ a₂` together with `R : a₁ ⟶ c`, `S : a₂ ⟶ c`, in Freyd's diagram order:
-    `[R,S] = (u₁°≫R) ∪ (u₂°≫S)`. -/
-@[expose] public def junc {s a₁ a₂ c : 𝒜} (C : Coproduct s a₁ a₂) (R : a₁ ⟶ c) (S : a₂ ⟶ c) : s ⟶ c :=
-  (C.u₁° ≫ R) ∪ (C.u₂° ≫ S)
 
 /-- **B&dM 5.9** (UP, first injection): `u₁ ≫ [R,S] = R`. -/
 public theorem u₁_junc {s a₁ a₂ c : 𝒜} (C : Coproduct s a₁ a₂) (R : a₁ ⟶ c) (S : a₂ ⟶ c) :

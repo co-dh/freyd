@@ -13,6 +13,7 @@
 module
 
 public import AOP.A6_1_RelSet
+public import Freyd.RelSet
 -- §5.7's `StrictNatural`: the constructor's naturality square is stated here, where `con` is.
 public import AOP.A5_7
 

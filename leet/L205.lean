@@ -34,6 +34,7 @@
   Mathlib-free; axioms ⊆ {propext, Quot.sound} (fully constructive, no `Classical.choice`).
 -/
 import AOP.A6_1_RelSet
+import Freyd.RelSet
 
 set_option linter.unusedVariables false
 

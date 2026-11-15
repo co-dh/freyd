@@ -38,6 +38,7 @@
   every arithmetic step is `omega` on plain `Nat` (in)equalities, no negated conjunctions).
 -/
 import AOP.A6_1_RelSet
+import Freyd.RelSet
 import Freyd.Exacts
 
 set_option linter.unusedVariables false

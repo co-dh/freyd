@@ -25,6 +25,7 @@ module
 
 public import AOP.A7_1
 import AOP.A6_1_RelSet
+import Freyd.RelSet
 
 set_option linter.unusedVariables false
 
