@@ -4,7 +4,8 @@ import Lean
 
 /-! The Rel language as a closed Lean syntax category, its one grammar: `rel_program n where` and the program's
     lines define `n : Program`; `Expand.emit` defines what it reads. The grammar has relation constructs only, and no
-    production embeds Lean's `term`: `fun`, `let`, `do`, `if`, a tuple or a numeral expression is a parse error.
+    production embeds Lean's `term`: `fun x => x`, `let`, `if`, a tuple or a numeral expression is an error
+    (a keyword is read only as a name).
     Scope (which run of letters is which names, which name takes arguments) is `Parse`'s: a Lean identifier is read
     back by `Parse.name`/`Parse.word`/`Parse.object` in its scope. -/
 
@@ -33,15 +34,39 @@ def symToks : List Token :=
     fun k => let c := Char.ofNat (a + k)
       if Parse.isSym c && !isLetterLike c && !isSubScriptAlnum c then some c.toString else none
 
-/-- A name Lean reads as a token: a one-character name (`⊤ ≤ ∧ ⇝`), or a builtin of `Op.table` that is a Lean
-    keyword (`at`). -/
+/-- The tokens of the Rel categories' own productions (`where`, `_`, `≜`, …), read from the parser tables. -/
+def relGrammarTokens (env : Environment) : List Token :=
+  let cats := [`relWord, `relHead, `relObj, `relType, `relLit, `rel, `relParam, `relItem, `relStmt]
+  cats.flatMap fun n => match (parserExtension.getState env).categories.find? n with
+    | none => []
+    | some c => let t := c.tables
+      let ps := t.leadingParsers ++ t.trailingParsers ++ (t.leadingTable.toList ++ t.trailingTable.toList).flatMap (·.2)
+      ps.flatMap fun (p, _) => p.info.collectTokens []
+
+/-- A Lean keyword that is a Rel name, as `ident` never reads it: a word token (`prefix`, `at`, `fun`) that no
+    production of the Rel grammar uses. -/
+def kwName (env : Environment) (v : String) : Bool :=
+  isIdFirst v.front && v.all isIdRest && !(relGrammarTokens env).contains v
+
+/-- A name Lean reads as a token: a one-character name (`⊤ ≤ ∧ ⇝`), a builtin of `Op.table`, or a Lean keyword
+    (`kwName`). -/
 def relSymFn : ParserFn := fun c s =>
   let (n, i) := (s.stackSize, s.pos)
   let s := tokenFn [] c s
   if s.hasError then s else match s.stxStack.back with
-    | .atom _ v => if (v.length == 1 && Parse.isSym v.front) || (Parse.builtin v).isSome then s
+    | .atom _ v => if (v.length == 1 && Parse.isSym v.front) || (Parse.builtin v).isSome || kwName c.env v then s
                    else (s.restore n i).mkErrorAt "a name" i
     | _ => (s.restore n i).mkErrorAt "a name" i
+
+/-- `p`, undone when it fails on a statement that starts with a keyword name: the program ends there, since a Lean
+    command after it (`example :`, `prefix:max`, `rel_program`) starts with the same token. -/
+def kwBackFn (p : ParserFn) : ParserFn := fun c s =>
+  let (n, i) := (s.stackSize, s.pos)
+  let t := tokenFn [] c s
+  let kw := !t.hasError && match t.stxStack.back with | .atom _ v => kwName c.env v | _ => false
+  if kw then atomicFn p c (t.restore n i) else p c (t.restore n i)
+
+def kwBack (p : Parser) : Parser := { p with fn := kwBackFn p.fn }
 
 /-- The operator token of `s`, a node of one atom or the atom itself. -/
 partial def atomIn (s : Syntax) : String := match s with
@@ -53,8 +78,8 @@ def relSym : Parser := { fn := relSymFn, info := { collectTokens := (symToks ++ 
 /-- `p` read with the tokens the program's text has whatever namespaces are open: a token of more than one
     character that starts with a character of a name (`Parse.isSym`, letter-like) is dropped, so an opened
     notation's `Λ(`, `∋(` or `P(` does not swallow the name `Λ` and its parenthesis. The grammar's own tokens are
-    one character each; a word (`end`, `def`) or one starting in ASCII other than a letter is a Lean keyword, which
-    ends the program. -/
+    one character each; a word (`end`, `def`) or one starting in ASCII other than a letter is a Lean keyword: a word
+    is a Rel name (`kwName`), and a statement it starts that does not parse ends the program (`kwBack`). -/
 def relTokenTable (tt : TokenTable) : TokenTable :=
   let keep (t : Token) := t.length == 1 || t.all isIdRest || (t.front.toNat < 128 && !t.front.isAlpha) ||
     !(Parse.isIdCont t.front || Parse.isSym t.front || isLetterLike t.front)
@@ -79,6 +104,10 @@ open PrettyPrinter in
 @[combinator_formatter relTokens] def relTokens.formatter (p : Formatter) : Formatter := p
 open PrettyPrinter in
 @[combinator_parenthesizer relTokens] def relTokens.parenthesizer (p : Parenthesizer) : Parenthesizer := p
+open PrettyPrinter in
+@[combinator_formatter kwBack] def kwBack.formatter (p : Formatter) : Formatter := p
+open PrettyPrinter in
+@[combinator_parenthesizer kwBack] def kwBack.parenthesizer (p : Parenthesizer) : Parenthesizer := p
 
 declare_syntax_cat relWord
 declare_syntax_cat relHead
@@ -146,7 +175,7 @@ syntax (name := sInfix) "_" relWord "_" "(" relParam,+ ")" (relType)? "≜" rel 
   relStmt
 
 /-- A program's statements, each at its own position, read with the program's tokens (`relTokens`). -/
-@[run_parser_attribute_hooks] def relStmts : Parser := relTokens (many (withPosition (categoryParser `relStmt 0)))
+@[run_parser_attribute_hooks] def relStmts : Parser := relTokens (many (withPosition (kwBack (categoryParser `relStmt 0))))
 
 -- one block, so the program's lines stay as they are (no per-line keyword) and its scope runs through them
 syntax (name := relProgram) (docComment)? "rel_program " ident (&" after " ident)? " where" relStmts : command
@@ -173,7 +202,7 @@ def onText {α : Type} (s : Syntax) (t : String) (p : P α) : C α := do
   | .error e => throw e
 
 /-- The source text of a token: an identifier as Lean reads it, a number, a symbol. A name that is a Lean keyword
-    is written in Lean's escape, `«prefix»`, and is the name `prefix`. -/
+    is written bare, `prefix`, and comes as its atom (`kwName`). -/
 def tokText (s : Syntax) : String := match s with
   | .ident _ _ n _ => n.toString (escape := false)
   | .atom _ v => v

@@ -22,7 +22,7 @@ rel_program prelude where
     tail : [α] ⟶ [α] ≜ cons° π₂                                   -- B&dM p.149 tail = outr cons°
     init : [α] ⟶ [α] ≜ snoc° π₁                                   -- B&dM p.249 init = outl snoc°
     last : [α] ⟶ α ≜ snoc° π₂                                     -- B&dM p.267 last = outr snoc°
-    «prefix» : [α] ⟶ [α] ≜ ⦇ran(nil), nil ∪ cons⦈              -- B&dM p.126 prefix = ⦇[nil, nil ∪ cons]⦈
+    prefix : [α] ⟶ [α] ≜ ⦇ran(nil), nil ∪ cons⦈                -- B&dM p.126 prefix = ⦇[nil, nil ∪ cons]⦈
     suffix : [α] ⟶ [α] ≜ cat° π₂                                  -- B&dM p.127 suffix, dual to prefix: x ⧺ y ↦ y
     concat : [[α]] ⟶ [α] ≜ ⦇ran(nil), cat⦈                    -- B&dM p.129 concat = ⦇[nil, cat]⦈
     subseq : [α] ⟶ [α] ≜ ⦇ran(nil), cons ∪ π₂⦈                -- B&dM p.123 subseq = ⦇[nil, cons ∪ outr]⦈
