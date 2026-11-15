@@ -310,7 +310,7 @@ directly.
   ))
 })
 // lean:AOP.A7_2.Distributes@6dbe2b7b
-// lean:AOP.A7_2_RelSet.plus_distributes_le@c9089ed5
+// lean:AOP.A7_2_RelSet.plus_distributes_le@16a7da97
 ]<dist-str>
 
 // B&dM Theorem 7.1, p. 172.  The mirrored chain lands on `R°`, and the last step, `f` a map, is
@@ -633,7 +633,7 @@ directly.
 #align(center, block(inset: (y: 4pt))[#src[the set is `{nil}` where `p` fails on the head and
   `{nil,cons(a,xs)}` where it holds, and `nil` loses the second — @est-defn at a two-element set.
  ]])
-  // lean:AOP.A7_7_TakeWhile.takewhile_step@67f2affb
+  // lean:AOP.A7_7_TakeWhile.takewhile_step@0af977fc
 ]<takewhile-step>
 
 // B&dM Ex 7.39, p. 174: the specification down to the program, then the three facts that turn the
@@ -696,7 +696,7 @@ directly.
   Thm[#leanf("Freyd.Alg.RelSet.MSS.mss_shape") \
     #src[maximum segment sum problem: using `segment=suffix prefix`, the specification is expressed in this
      form]],
-    // lean:AOP.A7_7_MSS.mss_shape@3696f150
+    // lean:AOP.A7_7_MSS.mss_shape@a0d1b59a
   table.header([*formula* — one wire from `[Int]` to `Int`, its type written along it], [*reason*]),
 
   [#step([])[#leanc("Freyd.Alg.RelSet.MSS.mss_shape_step1.lhs")][]], [],
@@ -807,7 +807,7 @@ directly.
  Thm[#leanf("Freyd.Alg.RelSet.MSS.mss_step") \
     #src[the largest sum the algebra offers is zero from nothing and, from a head and a running sum,
      the larger of zero and the head added to it]],
-  // lean:AOP.A7_7_MSS.mss_step@1d55d1f4 lean:AOP.A7_7_MSS.mss_step_plus@0649f220
+  // lean:AOP.A7_7_MSS.mss_step@90030040 lean:AOP.A7_7_MSS.mss_step_plus@44456613
   table.header([*circuit* — the tape is the coproduct: `zero`'s branch above, `plus`'s below],
     [*Hinze–Marsden*]),
 
@@ -827,7 +827,7 @@ directly.
 #align(center, block(inset: (y: 4pt))[#src[with @mss-mono the greedy theorem gives
   `⦇[zero,⊕]⦈⊑` $frac(#[`prefix sum`], ∋)$ ` est(≥)` — and @mss-deriv
  makes it an equality. ]])
-  // lean:AOP.A7_7_MSS.mss_greedy@fbb45188
+  // lean:AOP.A7_7_MSS.mss_greedy@0435eea4
 ]<mss-step>
 
 // B&dM Ex 7.40's last stage, in the power object: @cata-defining's equation for the pair whose
@@ -838,7 +838,7 @@ directly.
     #src[`k≜[zero⟨𝟙,`#frc([`𝟙`])`⟩,⟨w,⟨w `#frc([`𝟙`])`,π₂π₂⟩ cup⟩]`, `w≜(𝟙×π₁)⊕`: the value at the
      whole list, paired with the set of the values at its suffixes, runs `k`'s recursion.
  ]],
-     // lean:AOP.A7_7_MSS.k@005479e5 lean:AOP.A7_7_MSS.scanStep_union@051f2b01
+     // lean:AOP.A7_7_MSS.k@7c575f16 lean:AOP.A7_7_MSS.scanStep_union@d7d85e6b
   table.header([*the equation at that branch*], [*why*]),
 
   [`nil⟨g,`#frc([`suffix`])` E(g)⟩=zero⟨𝟙,`#frc([`𝟙`])`⟩`],
@@ -864,7 +864,7 @@ directly.
      hence `mss` implemented by a linear-time algorithm, `⊕≜` #frc([`⊸ zero ∪ plus`]) ` est(≥)` —
      @mss-defn; `k` and `w` — @mss-scan.
  ]],
-    // lean:AOP.A7_7_MSS.mss_eq_scan@46dfc853
+    // lean:AOP.A7_7_MSS.mss_eq_scan@51aef1bd
   // #frc([`R`]) `=` #frc([`𝟙`]) `E(R)` (@adj-E-bend): the singleton BIRTHS the `E` and `est(≥)` KILLS
   // it, so no bead here carries a `%∋`.  `suffix` is only LAX natural in `Rel`, so it is a NODE on
   // the object wire like the rest; the outer `E` runs past it, and `prefix sum` is where `list` dies.
@@ -952,7 +952,7 @@ directly.
   Thm[#leanf("Freyd.Alg.RelSet.Filter.filter_step") \
     #src[the longest of the lists the algebra allows is the `cons` where the head passes `p`, and
  the tail where it does not]],
-     // lean:AOP.A7_7_Filter.filter_step@ca7c9c3b
+     // lean:AOP.A7_7_Filter.filter_step@7dea71c2
   table.header([*formula*], [*reason*]),
 
   [#step([])[#leanc("Freyd.Alg.RelSet.Filter.filter_step1.lhs")][]], [],
@@ -1126,23 +1126,23 @@ directly.
   (sym: [input], type: leant("Freyd.Alg.RelSet.Party.run_kept.lhs.arg"),
    value: leanf("Freyd.Alg.RelSet.Party.run_kept.lhs.arg"),
    meaning: [the ratings of the tree above]),
-  // lean:AOP.A7_3_Party.run_kept@a2499d36
+  // lean:AOP.A7_3_Party.run_kept@fc4ff1ac
   (sym: [#leann("Freyd.Alg.RelSet.Party.kept") at `b`], type: leant("Freyd.Alg.RelSet.Party.run_kept_b.rhs"),
    value: leanf("Freyd.Alg.RelSet.Party.run_kept_b.rhs"),
    meaning: [`include=[b]=7`, `exclude=[d,e]=6`]),
-  // lean:AOP.A7_3_Party.run_kept_b@2008f745
+  // lean:AOP.A7_3_Party.run_kept_b@cb2f4560
   (sym: [#leann("Freyd.Alg.RelSet.Party.kept") at `c`], type: leant("Freyd.Alg.RelSet.Party.run_kept_c.rhs"),
    value: leanf("Freyd.Alg.RelSet.Party.run_kept_c.rhs"),
    meaning: [`include=[c]=2`, `exclude=[f]=8`]),
-  // lean:AOP.A7_3_Party.run_kept_c@80715eb0
+  // lean:AOP.A7_3_Party.run_kept_c@a0fefec6
   (sym: [#leann("Freyd.Alg.RelSet.Party.kept") at `a`], type: leant("Freyd.Alg.RelSet.Party.run_kept.rhs"),
    value: leanf("Freyd.Alg.RelSet.Party.run_kept.rhs"),
    meaning: [`include=[a]⧺[d,e]⧺[f]=17`, `exclude=[b]⧺[f]=15`]),
-  // lean:AOP.A7_3_Party.run_kept@a2499d36
+  // lean:AOP.A7_3_Party.run_kept@fc4ff1ac
   (sym: leann("Freyd.Alg.RelSet.Party.best"), type: leant("Freyd.Alg.RelSet.Party.run_best.rhs"),
    value: leanf("Freyd.Alg.RelSet.Party.run_best.rhs"),
    meaning: [`est(R°)` takes `17` over `15`]),
-  // lean:AOP.A7_3_Party.run_best@4f99b543
+  // lean:AOP.A7_3_Party.run_best@95a26ebb
   // lean:AOP.A7_3_Party.party_example_costs@5c33e66d
 )<party-example>
 
@@ -1242,7 +1242,7 @@ directly.
   [$frac(#[`⦇S⦈choose`], ∋)$ `=` $frac(#[`⦇S⦈`], ∋)$ `E(choose)` #h(1cm) #src[@Freyd.Alg.Λ_absorption, absorption,
  ]],
    // lean:AOP.A4_6.Λ_absorption@00399742
-   // lean:AOP.A7_3_Party.party_absorb@4dd05f08
+   // lean:AOP.A7_3_Party.party_absorb@7f2432e5
 )]<party-absorb>
 
 // `(label, width, chamfer)`, set once: the same box is drawn in up to four rows, and a width typed
@@ -1344,7 +1344,7 @@ directly.
 
   [`((0,1),0)`], [in `choose R`, not in `(R×R)choose`
  #h(4pt) #src[]],
-   // lean:AOP.A7_3_ChooseStrict.choose_monotonic_strict@2b446ff0
+   // lean:AOP.A7_3_ChooseStrict.choose_monotonic_strict@8ca3f557
 
   [`(R×R)choose=choose R`], [iff `R` is entire — `dom⊑𝟙` is the `g` row's only inequality step,
    and it is an equality iff `dom(R)=𝟙`],
@@ -1384,13 +1384,13 @@ directly.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   // Two rows, cut where the fold is opened — inside the `⦇ ⦈` in the first, outside it in the
   // second; the display breaks across the page between them.
-  // lean:AOP.A7_2.greedy@89f3aee8 lean:AOP.A7_3_Party.pair_est_le@44802697
-  // lean:AOP.A7_3_Party.graph_le_Λ_est@0a19f8f7 lean:AOP.A7_3_Party.exclude_step@ba4fa6b3
+  // lean:AOP.A7_2.greedy@89f3aee8 lean:AOP.A7_3_Party.pair_est_le@f787b2f8
+  // lean:AOP.A7_3_Party.graph_le_Λ_est@dd8bf4f7 lean:AOP.A7_3_Party.exclude_step@3fb73b8f
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Party.party_laws") \
     #src[the best of every guest list the president allows is one pass up the tree, each subtree
      handing up its best party with its boss in and its best with the boss out, and `choose` taking
  the better of the two at the root]],
-     // lean:AOP.A7_3_Party.party_laws@b2a60154
+     // lean:AOP.A7_3_Party.party_laws@d36ffecc
   lean-calc(calc-party, breaks: (5,)),
 )]<party-laws>
 
@@ -1460,7 +1460,7 @@ directly.
   [`PX⟶X`],
   [`X[k]⟶X`, `∋:X[k]⟶X`],
   // lean:AOP.A7_4_CylinderVecRel.Vec.Rel.est@d89b35a7
-  // lean:AOP.A7_4_CylinderVecRel.Vec.Rel.est_eq@6474d151
+  // lean:AOP.A7_4_CylinderVecRel.Vec.Rel.est_eq@34a972b5
   [A component that is `R`-below every component; `∋` is "is some component" and `∈` its converse.],
 
   [`R≜sum≤sum°`],
@@ -1739,7 +1739,7 @@ zip(that)                                         each row: its square, and the 
   [`[[a],[b,c]]` to `[[a,b],[c]]`: `[a]` is a prefix of `[a,b]`.],
 
  [`R;H≜R∩(R°⇒H)` #src[]],
-  // lean:AOP.A7_5_Van.RH_eq@b44c0810
+  // lean:AOP.A7_5_Van.RH_eq@5599433c
   [#leant("Freyd.Alg.RelSet.Van.RH_eq")],
   [`[[a,b,c]]` to `[[a],[b,c]]` by `|R|`, and `[[a],[b,c]]` to `[[a,b],[c]]` by `R∩H`.],
 
@@ -2034,10 +2034,10 @@ zip(that)                                         each row: its square, and the 
     #src[the fewest secure segments the transactions can be cut into are one pass along them, the
      next transaction glued onto the open segment wherever that segment stays secure and the van
  called where it does not]],
-     // lean:AOP.A7_5_Van.van_laws@127240a2
+     // lean:AOP.A7_5_Van.van_laws@87a35077
   // lean:AOP.A7_5_Van.van_spec@594a0b7d lean:AOP.A7_5_Van.van_7_15_false@b95e7068
   // lean:AOP.A7_5_Van.van_7_14@dcae9923 lean:AOP.A7_5_Van.van_mono_new@33b862ab
-  // lean:AOP.A7_5_Van.prog_le_greedy@79aa6e7b
+  // lean:AOP.A7_5_Van.prog_le_greedy@b9780e11
   lean-calc(calc-van),
 )]<van-laws>
 
