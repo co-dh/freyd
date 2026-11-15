@@ -204,7 +204,7 @@ def fv : {A B : Obj} → {d : Bool} → Tm A B d → List Nat
   | _, _, _, .pair R S | _, _, _, .prod R S | _, _, _, .junc R S => fv R ++ fv S
   | _, _, _, .conv R | _, _, _, .dom R | _, _, _, .ran R | _, _, _, .lam R | _, _, _, .E R | _, _, _, .map R => fv R
   | _, _, _, .est R | _, _, _, .thin R | _, _, _, .own R | _, _, _, .thinL R | _, _, _, .merge R => fv R
-  | _, _, _, .loop R | _, _, _, .share _ R | _, _, _, .flat R => fv R
+  | _, _, _, .loop R | _, _, _, .flat R => fv R
   | _, _, _, .ldiv R S U V | _, _, _, .rdiv R S U V => fv R ++ fv S ++ fv U ++ fv V
   | _, _, _, .fold e S | _, _, _, .foldI e S => fv e ++ fv S
   | _, _, _, .var k => [k]
@@ -214,6 +214,41 @@ def fv : {A B : Obj} → {d : Bool} → Tm A B d → List Nat
 
 /-- A term that needs no keys and reads no fixed-point variable: computed once, its own constant (`share`). -/
 def closed {A B : Obj} {d : Bool} (t : Tm A B d) : Bool := !d && (fv t).isEmpty
+
+/-- `t` with each closed sub-term `R` wrapped as `.share k R`, `k` the next number: `code` keeps each number's
+    code and `fv` stops there (a share is closed), so building and proving a closed sub-term never rebuilds it. -/
+def number : {A B : Obj} → {d : Bool} → Tm A B d → StateM Nat (Tm A B d)
+  | _, _, _, .top V => do w (.top (← number V))
+  | _, _, _, .comp R S => do w (.comp (← number R) (← number S))
+  | _, _, _, .conv R => do w (.conv (← number R))
+  | _, _, _, .meet R S => do w (.meet (← number R) (← number S))
+  | _, _, _, .join R S => do w (.join (← number R) (← number S))
+  | _, _, _, .diff R S => do w (.diff (← number R) (← number S))
+  | _, _, _, .dom R => do w (.dom (← number R))
+  | _, _, _, .ran R => do w (.ran (← number R))
+  | _, _, _, .ldiv R S U V => do w (.ldiv (← number R) (← number S) (← number U) (← number V))
+  | _, _, _, .rdiv R S U V => do w (.rdiv (← number R) (← number S) (← number U) (← number V))
+  | _, _, _, .pair R S => do w (.pair (← number R) (← number S))
+  | _, _, _, .prod R S => do w (.prod (← number R) (← number S))
+  | _, _, _, .junc R S => do w (.junc (← number R) (← number S))
+  | _, _, _, .lam R => do w (.lam (← number R))
+  | _, _, _, .E R => do w (.E (← number R))
+  | _, _, _, .map R => do w (.map (← number R))
+  | _, _, _, .est Q => do w (.est (← number Q))
+  | _, _, _, .thin Q => do w (.thin (← number Q))
+  | _, _, _, .own R => do w (.own (← number R))
+  | _, _, _, .thinL Q => do w (.thinL (← number Q))
+  | _, _, _, .merge Q => do w (.merge (← number Q))
+  | _, _, _, .loop F => do w (.loop (← number F))
+  | _, _, _, .fold e S => do w (.fold (← number e) (← number S))
+  | _, _, _, .share _ R => number R
+  | _, _, _, .foldI e S => do w (.foldI (← number e) (← number S))
+  | _, _, _, .flat R => do w (.flat (← number R))
+  | _, _, _, .nu k S b => do w (.nu k (← number S) (← number b))
+  | _, _, _, .mu k U V b => do w (.mu k (← number U) (← number V) (← number b))
+  | _, _, _, t => w t
+where w {A B : Obj} {d : Bool} (t : Tm A B d) : StateM Nat (Tm A B d) :=
+  if closed t then modifyGet fun k => (.share k t, k + 1) else pure t
 
 /-- `X C`, `X` the variable `k`, `C` closed: `C`. -/
 def varComp (k : Nat) : {A B : Obj} → {d : Bool} → Tm A B d → Option ((D : Obj) × Tm D B false)
@@ -234,7 +269,8 @@ def arcs (k : Nat) : {V D : Obj} → {d : Bool} → Tm V D d →
     if h : V' = V ∧ D' = D then some [(h.1 ▸ R, h.2 ▸ C, UB, UC)] else none
   | _, _, _, t => if closed t then some [] else none
 
-abbrev RM := StateT (Std.HashMap Lean.Expr Name) MetaM
+/-- The constant of each closed value, and the code of each numbered sub-term (`number`). -/
+abbrev RM := StateT (Std.HashMap Lean.Expr Name × Std.HashMap Nat Lean.Expr) MetaM
 
 /-- The constant `c : ty := v`, compiled, with the heartbeats a `def` command of its own would have: one
     `rel_program` command adds them all, and a program's count of constants is no measure of any one's cost.
@@ -282,8 +318,13 @@ def liftE {α : Type} (x : Except String α) : RM α := match x with
 
 mutual
 
-/-- `t`'s code, `Gen.Fn d A B`: a closed `t` is its constant (`share`), any other its node. -/
+/-- `t`'s code, `Gen.Fn d A B`: a closed `t` is its constant (`share`), any other its node; a numbered sub-term's
+    is built once. -/
 partial def code (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bool} (t : Tm A B d) : RM Lean.Expr := do
+  if let .share k R := t then
+    if let some e := (← get).2[k]? then return e
+    let e ← code pre ρ R
+    modify fun (m, cs) => (m, cs.insert k e); return e
   if closed t then
     let c ← share pre A B (mkApp (← node pre ρ t) (mkConst ``Unit.unit))
     pure (g ``Gen.const #[oE A, oE B, mkConst c])
@@ -291,11 +332,11 @@ partial def code (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bo
 
 /-- The constant of the closed value `v : CRel A B`: one per structurally equal value. -/
 partial def share (pre : Name) (A B : Obj) (v : Lean.Expr) : RM Name := do
-  if let some c := (← get)[v]? then return c
-  let i := (← get).size
+  if let some c := (← get).1[v]? then return c
+  let i := (← get).1.size
   let c := pre ++ `c ++ Name.mkSimple s!"c{i}"
   addConst c (mkApp2 (mkConst ``CRel) (oE A) (oE B)) v
-  modify (·.insert v c); pure c
+  modify fun (m, cs) => (m.insert v c, cs); pure c
 
 /-- The plan of `t` (`Gen.Pl d A B`) where its node has a bit rule. -/
 partial def plan? (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bool} (t : Tm A B d) : RM (Option Lean.Expr) := do
@@ -435,7 +476,8 @@ partial def prf (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Boo
   let c := cd.appArg!.constName!
   if let some h := (← get).1[c]? then return some (mkConst h)
   let h := c ++ `rep
-  let some p ← prfNode pre ρ t | return none
+  -- under its number, `t`'s node: proving `.share k R` by `R`'s own `prf` would add `h` twice
+  let some p ← (match t with | .share _ R => prfNode pre ρ R | t => prfNode pre ρ t) | return none
   -- `const_sound` at `c` itself, so the kernel meets `c =?= node(t) ()` and unfolds `c`, never the data
   let T := (← inferType p).appArg!
   let some (.defnInfo ci) := (← getEnv).find? c | throwError "rel_program expansion: internal: no definition `{c}`"
@@ -517,6 +559,13 @@ def objsE (objs : Objs) : MetaM Lean.Expr := do
     hold, and an op out of capacity) and `n.ok`, that there is none. -/
 def emit (n : Name) (r : Read) : MetaM Unit := do
   let (ds, ps, cs, objs) := r
+  -- one numbering over the whole program, as the code of each number is kept across it
+  let (ds, ps, cs) := Prod.fst <| (do
+    let ds ← ds.mapM fun (x, ⟨A, B, d, t⟩) => return (x, ⟨A, B, d, ← number t⟩)
+    let ps ← ps.mapM fun (x, ⟨A, B, t⟩, s, u) => return (x, ⟨A, B, ← number t⟩, s, u)
+    let cs ← cs.mapM fun (p, x, y, eq, s, u, ⟨A, B, R, S⟩) =>
+      return (p, x, y, eq, s, u, ⟨A, B, ← number R, ← number S⟩)
+    pure (ds, ps, cs) : StateM Nat (List (String × Res) × List (String × Top) × List Chk)).run 0
   addConst (n ++ `objs) (mkConst ``Objs) (← objsE objs)
   let os := mkConst (n ++ `objs)
   let app (t : Lean.Expr) := mkApp t (mkConst ``Unit.unit)
@@ -549,7 +598,7 @@ def emit (n : Name) (r : Read) : MetaM Unit := do
       pure (g ``checkErr #[oE A, oE B, os, toExpr p, toExpr x, toExpr y, toExpr eq, toExpr s, toExpr u,
         app (← code n [] R), app (← code n [] S)])
     pure (es, ps, cs, gaps) : PM (List Lean.Expr × List Lean.Expr × List Lean.Expr × List (String × String))).run'
-      ({}, none) |>.run' {}
+      ({}, none) |>.run' ({}, {})
   -- the definitions with no `rep_x` yet, each with the first combinator `GenSpec` has no lemma for
   let sty := pairT (mkConst ``String) (mkConst ``String)
   addConst (n ++ `unproved) (listT sty) (← mkListLit sty (unproved.map fun (x, c) =>
