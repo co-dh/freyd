@@ -15,15 +15,15 @@ set_option hygiene false in
 scoped notation "sL(" x ", " r ", " h ")" => min (max (Int64.toInt (Arr.get x.2.1 ⟨r, h⟩)) 0).toNat x.1.toNat
 set_option hygiene false in
 scoped notation "sH(" x ", " r ", " h ")" => min (max (Int64.toInt (Arr.get x.2.2.1 ⟨r, h⟩)) 0).toNat x.1.toNat
-end SliceN
-open SliceN
 -- `expand`'s index column of `slicesOf x`'s counts, and each copy's payload position, as `mem` computes them
 set_option hygiene false in
-local notation "sE(" n ", " x ")" => expandBytes 8 0 (tilLongs n) (slicesOf x).2
+scoped notation "sE(" n ", " x ")" => expandBytes 8 0 (tilLongs n) (slicesOf x).2
 set_option hygiene false in
-local notation "sP(" n ", " x ")" => add (len sE(n, x)).toUSize (gather 8 (slicesOf x).1 sE(n, x))
+scoped notation "sP(" n ", " x ")" => add (len sE(n, x)).toUSize (gather 8 (slicesOf x).1 sE(n, x))
   (sub (len sE(n, x)).toUSize (tilLongs (len sE(n, x)).toUSize)
     (gather 8 (sub n (sums n (slicesOf x).2) (slicesOf x).2) sE(n, x)))
+end SliceN
+open SliceN
 
 /-- **`slicesOf` read back at a row**: row `t`'s start is its clamped start, its count the clamped window's
     length. Hypothesis: the payload count below `2^63`. -/
