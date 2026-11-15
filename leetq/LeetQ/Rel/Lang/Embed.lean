@@ -3,7 +3,7 @@ import LeetQ.Rel.Lang.Expand
 import Lean
 
 /-! The Rel language as a closed Lean syntax category: `rel_program n where` and the program's lines, unchanged,
-    define `n : Program`, the AST `Parse` reads from the same text; `Eval.runProgram` runs it. The grammar has
+    define `n : Program`, the AST `Parse` reads from the same text; `Expand.emit` defines what it reads. The grammar has
     relation constructs only, and no production embeds Lean's `term`: `fun`, `let`, `do`, `if`, a tuple or a numeral
     expression is a parse error. Scope (which run of letters is which names, which name takes arguments) is the
     text parser's: a Lean identifier is read back by `Parse.name`/`Parse.word`/`Parse.object` in its scope. -/
@@ -128,10 +128,11 @@ syntax (name := sInfix) "_" relWord "_" "(" relParam,+ ")" (relType)? "≜" rel 
   relStmt
 
 -- one block, so the program's lines stay as they are (no per-line keyword) and its scope runs through them
-syntax (name := relProgram) "rel_program " ident (&" after " ident)? " where" (withPosition(relStmt))* : command
+syntax (name := relProgram) (docComment)? "rel_program " ident (&" after " ident)? " where" (withPosition(relStmt))* :
+  command
 /-- A variant of a program: its definitions, the `where` ones in place of those of their names, its checks dropped
     (they state the base's own values), and only the declarations up to the definition `upto` names. -/
-syntax (name := relVariant) "rel_program " ident &" from " ident (&" upto " relWord)? " where"
+syntax (name := relVariant) (docComment)? "rel_program " ident &" from " ident (&" upto " relWord)? " where"
   (withPosition(relStmt))* : command
 
 /-! ### From syntax to the AST, in the text parser's state -/
@@ -410,12 +411,14 @@ def defConst (n : Name) (v : Lean.Expr) : CoreM Unit :=
     { name := n, levelParams := [], type := mkConst ``Program, value := v, hints := .abbrev, safety := .safe }
 
 /-- The program `n` named by `id`, its chain (`n.root`, `n.mid`), and what it reads (`Expand.emit`): each closed
-    definition as the Lean definition `n.rel.x`, its prints, its checks. -/
+    definition as the Lean definition `n.rel.x`, its prints, its checks; the doc comment `stx[0]`, when written, is
+    `n`'s. -/
 def define (stx id : Syntax) (chain : Option Chain) (prog : Program) : CommandElabM Unit := do
   let n := (← getCurrNamespace) ++ id.getId
   liftTermElabM do
     defConst n (toExpr (α := List Decl) prog)
     if let some (r, m, _, _) := chain then defConst (n ++ `root) (mkConst r); defConst (n ++ `mid) m
+    addDocString' n mkNullNode (stx[0].getOptional?.map (⟨·⟩))
     Term.addTermInfo' id (mkConst n) (isBinder := true)
   match Expand.read (chain.map (·.2.2.1)) ((chain.map (·.2.2.2)).getD []) prog with
   | .error e => throwErrorAt stx "{e}"
@@ -424,21 +427,21 @@ def define (stx id : Syntax) (chain : Option Chain) (prog : Program) : CommandEl
 /-- `rel_program n where …` is read in the empty scope, `rel_program n after pre where …` in the scope after `pre`
     and what `pre` is read after (`chainOf`). -/
 @[command_elab relProgram] def elabRelProgram : CommandElab := fun stx => do
-  let chain ← if stx[2].getNumArgs == 0 then pure none else
-    pure (some (← chainOf (← liftCoreM (realizeGlobalConstNoOverloadWithInfo stx[2][1]))))
-  match program (← getFileMap) (scopeOf chain) stx[4].getArgs with
+  let chain ← if stx[3].getNumArgs == 0 then pure none else
+    pure (some (← chainOf (← liftCoreM (realizeGlobalConstNoOverloadWithInfo stx[3][1]))))
+  match program (← getFileMap) (scopeOf chain) stx[5].getArgs with
   | .error e => throwErrorAt stx "{e}"
-  | .ok prog => define stx stx[1] chain prog
+  | .ok prog => define stx stx[2] chain prog
 
 /-- `rel_program n from base upto x where …`: the replacements read in the scope of `base`'s chain and objects. -/
 @[command_elab relVariant] def elabRelVariant : CommandElab := fun stx => do
-  let b ← liftCoreM (realizeGlobalConstNoOverloadWithInfo stx[3])
+  let b ← liftCoreM (realizeGlobalConstNoOverloadWithInfo stx[4])
   let base ← programOf b
   let chain ← if (← getEnv).contains (b ++ `root) then
     pure (some (b ++ `root, mkConst (b ++ `mid), ← programOf (b ++ `root), ← programOf (b ++ `mid))) else pure none
   let s := Parse.after (scopeOf chain) (base.filter fun | .obj .. => true | _ => false)
   let named : Decl → Option String := fun | .defn _ x .. => some x | _ => none
-  match program (← getFileMap) s stx[6].getArgs with
+  match program (← getFileMap) s stx[7].getArgs with
   | .error e => throwErrorAt stx "{e}"
   | .ok news => do
     for d in news do
@@ -446,13 +449,13 @@ def define (stx id : Syntax) (chain : Option Chain) (prog : Program) : CommandEl
       | some x => unless base.any (named · == some x) do throwErrorAt stx "`{x}` is no definition of `{b}`"
       | none => throwErrorAt stx "a variant only replaces definitions"
     let kept := base.filter fun | .check .. => false | _ => true
-    let kept ← if stx[4].getNumArgs == 0 then pure kept else do
-      let x ← match (wordOf stx[4][1]).run (← getFileMap) |>.run' s with
+    let kept ← if stx[5].getNumArgs == 0 then pure kept else do
+      let x ← match (wordOf stx[5][1]).run (← getFileMap) |>.run' s with
         | .ok x => pure x
-        | .error e => throwErrorAt stx[4] "{e}"
+        | .error e => throwErrorAt stx[5] "{e}"
       match kept.findIdx? (named · == some x) with
       | some k => pure (kept.take (k + 1))
-      | none => throwErrorAt stx[4] "`{x}` is no definition of `{b}`"
-    define stx stx[1] chain (kept.map fun d => ((named d).bind fun x => news.find? (named · == some x)).getD d)
+      | none => throwErrorAt stx[5] "`{x}` is no definition of `{b}`"
+    define stx stx[2] chain (kept.map fun d => ((named d).bind fun x => news.find? (named · == some x)).getD d)
 
 end LeetQ.Rel.Lang.Embed

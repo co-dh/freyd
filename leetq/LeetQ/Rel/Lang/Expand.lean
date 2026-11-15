@@ -5,8 +5,7 @@ import LeetQ.Rel.Lang.Gen
     a composition of `CRel` ops (`Gen`), so its ok bit is the `&&` of the ops it runs. At elaboration time the
     program is elaborated (`elabE`, `build`) to its core term `Tm`, as a run does; the term is then read into a
     Lean `Expr` constructor by constructor. Every closed sub-term (no keys, no fixed-point variable) becomes one
-    constant `n.c.<i>`, structurally equal ones the same constant, so it is computed once, as `Eval.hoist` shares
-    it; a fixed point's body is a Lean `fun X => …`; a closed `≫`/`∩`/`−`/`\` runs as a bit-matrix plan. -/
+    constant `n.c.<i>`, structurally equal ones the same constant, so it is computed once; a fixed point's body is a Lean `fun X => …`; a closed `≫`/`∩`/`−`/`\` runs as a bit-matrix plan. -/
 
 namespace LeetQ.Rel.Lang
 
@@ -213,7 +212,7 @@ def fv : {A B : Obj} → {d : Bool} → Tm A B d → List Nat
   | _, _, _, .mu k U V b => fv U ++ fv V ++ (fv b).filter (· != k)
   | _, _, _, _ => []
 
-/-- A term that needs no keys and reads no fixed-point variable: computed once, as `Eval.hoist` does. -/
+/-- A term that needs no keys and reads no fixed-point variable: computed once, its own constant (`share`). -/
 def closed {A B : Obj} {d : Bool} (t : Tm A B d) : Bool := !d && (fv t).isEmpty
 
 /-- `X C`, `X` the variable `k`, `C` closed: `C`. -/
@@ -223,7 +222,7 @@ def varComp (k : Nat) : {A B : Obj} → {d : Bool} → Tm A B d → Option ((D :
   | _, _, _, _ => none
 
 /-- The arcs of an AC-3 body `S ∩ ⋂ₖ Aₖ\(X Cₖ)` over the variable `k`, its closed conjuncts skipped (they are
-    `S`); `none` for any other body (`Eval.acArcs` on the hoisted term). -/
+    `S`); `none` for any other body. -/
 def arcs (k : Nat) : {V D : Obj} → {d : Bool} → Tm V D d →
     Option (List (Tm V V false × Tm D D false × Tm V V false × Tm D D false))
   | _, _, _, .share _ R => arcs k R
@@ -295,7 +294,7 @@ partial def share (pre : Name) (A B : Obj) (v : Lean.Expr) : RM Name := do
   addConst c (mkApp2 (mkConst ``CRel) (oE A) (oE B)) v
   modify (·.insert v c); pure c
 
-/-- The plan of `t` (`Gen.Pl d A B`) where its node has a bit rule, as `Eval.evB` keeps it. -/
+/-- The plan of `t` (`Gen.Pl d A B`) where its node has a bit rule. -/
 partial def plan? (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bool} (t : Tm A B d) : RM (Option Lean.Expr) := do
   if closed t then return some (g ``Gen.pleaf #[oE A, oE B, bE d, ← code pre ρ t])
   match A, B, d, t with
@@ -315,7 +314,7 @@ partial def plan? (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : B
       #[oE A, oE B, oE C, ← planOr pre ρ R, ← planOr pre ρ S, ← code pre ρ UB, ← code pre ρ UC])
   | _, _, _, _ => return none
 
-/-- The plan of `t`, or its table as a leaf (`Bits.orLeaf`). -/
+/-- The plan of `t`, or its table as a leaf (`Gen.pleaf`). -/
 partial def planOr (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bool} (t : Tm A B d) : RM Lean.Expr := do
   match ← plan? pre ρ t with
   | some p => pure p
@@ -326,7 +325,7 @@ partial def body (pre : Name) (ρ : List (Nat × Lean.Expr)) (A B : Obj) (k : Na
   withLocalDeclD `X (mkApp2 (mkConst ``CRel) (oE A) (oE B)) fun x => do
     mkLambdaFVars #[x] (← code pre ((k, x) :: ρ) b)
 
-/-- `t`'s own node, its parts by `code` (or `planOr` where `Eval.ev` runs them as bit matrices). -/
+/-- `t`'s own node, its parts by `code` (or `planOr` where they run as bit matrices). -/
 partial def node (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bool} (t : Tm A B d) : RM Lean.Expr := do
   let c {X Y : Obj} {e : Bool} (u : Tm X Y e) := code pre ρ u
   let p {X Y : Obj} {e : Bool} (u : Tm X Y e) := planOr pre ρ u
@@ -445,12 +444,14 @@ def emit (n : Name) (r : Read) : MetaM Unit := do
   addConst (n ++ `expanded) (listT ety) (← mkListLit ety entries)
   let pty := pairT (mkConst ``String) (mkConst ``Bool)
   addConst (n ++ `printed) (listT pty) (← mkListLit pty printed)
-  addConst (n ++ `prints) (listT (mkConst ``String))
-    (← mkAppM ``List.map #[← mkAppOptM ``Prod.fst #[mkConst ``String, mkConst ``Bool], mkConst (n ++ `printed)])
+  -- every term spelled with its implicit arguments: `mkAppM` unifies, and its `isDefEq` is a heartbeat check
+  -- against the whole command's count, which the expansion's own work has already spent (`addConst`)
+  addConst (n ++ `prints) (listT (mkConst ``String)) (mkApp4 (mkConst ``List.map [0, 0]) pty (mkConst ``String)
+    (mkApp2 (mkConst ``Prod.fst [0, 0]) (mkConst ``String) (mkConst ``Bool)) (mkConst (n ++ `printed)))
   let cty := pairT (mkApp (mkConst ``Option [0]) (mkConst ``Err)) (mkConst ``Bool)
   addConst (n ++ `failures) (listT (mkConst ``Err))
     (g ``failures #[mkConst (n ++ `expanded), mkConst (n ++ `printed), ← mkListLit cty checked])
-  addConst (n ++ `ok) (mkConst ``Bool) (← mkAppM ``List.isEmpty #[mkConst (n ++ `failures)])
+  addConst (n ++ `ok) (mkConst ``Bool) (mkApp2 (mkConst ``List.isEmpty [0]) (mkConst ``Err) (mkConst (n ++ `failures)))
 
 end Expand
 
