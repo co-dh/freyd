@@ -243,14 +243,14 @@ theorem nestMemC_bits {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (nestC X f).2 = true ∧ Vals.PickFits (.arr B) X
       ((List.range (len (expandBytes 8 0 (tilLongs n) (addc n (slicesOf X).2 1))).toUSize.toNat).map fun q =>
         (Column.bitsAt (expandBytes 8 0 (tilLongs n) (addc n (slicesOf X).2 1)) (q * 8) 8).toNat) := by
-  simp only [nestMemC, nestC, expand, need, okbit] at hb ⊢
+  simp only [nestMemC, expand, need, okbit] at hb
   obtain ⟨⟨hp1, hK⟩, hb⟩ := hb
   split at hb
   · rename_i hx
     simp only [okbit] at hb
     obtain ⟨⟨h63, hv⟩, hk⟩ := hb
-    refine ⟨⟨⟨hp1, hK⟩, ?_⟩, Vals.pickC_fits (.arr B) X _ _ _ hk⟩
-    rw [dif_pos hx]; exact ⟨h63, hv⟩
+    refine ⟨?_, Vals.pickC_fits (.arr B) X _ _ _ hk⟩
+    simp only [nestC, expand, need, okbit, hp1, hK, hx, h63, hv, dite_true, Bool.and_self, decide_true]
   · exact absurd hb Bool.false_ne_true
 
 /-- **`prefix` under `prefixC`'s bit**: an array `xs` of `X` goes to exactly its prefixes, B&dM's

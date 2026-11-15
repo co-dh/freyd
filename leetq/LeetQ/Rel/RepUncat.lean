@@ -230,6 +230,8 @@ theorem nestMem_rep {B : Obj} {n : USize} (X : Vals (.arr B) n)
     have g1 : min (max ((L r t : Nat) : Int) 0).toNat X.1.toNat = L r t := by omega
     have g2 : min (max ((H r t : Nat) : Int) 0).toNat X.1.toNat = H r t := by omega
     simp only [g1, g2]
+  have hdl : ∀ r t, r < n.toNat → t < cn(r) + 1 → pc(r) + t < ((len xi).toUSize).toNat := fun r t hr ht => by
+    rw [hmN, hxl]; have := hpre_le (r + 1) n.toNat (by omega); rw [hpre_succ, hcg r hr] at this; omega
   subst hxr hxi hc hR
   rw [rep_apply]
   simp only [nestMemC, expand, need_fst, pickC_fst]
@@ -246,8 +248,7 @@ theorem nestMem_rep {B : Obj} {n : USize} (X : Vals (.arr B) n)
   · rintro ⟨_, ⟨r, hr, hx, rfl⟩, hy⟩
     obtain ⟨t, ht, rfl⟩ := List.mem_map.1 hy
     rw [List.mem_range] at ht
-    have hd : pc(r) + t < ((len _).toUSize).toNat := by
-      rw [hmN, hxl]; have := hpre_le (r + 1) n.toNat (by omega); rw [hpre_succ, hcg r hr] at this; omega
+    have hd := hdl r t hr ht
     exact ⟨⟨_, hd⟩, (hkey _ r t hr (by rw [hcg r hr]; exact ht) hd).trans hx, hval _ r t hr (by omega) hd⟩
 
 /-- **`inits`, read back**: an array `xs` of `X` goes to its prefixes by increasing length, `[]` first. The counts
@@ -385,6 +386,7 @@ theorem rep_prefix {B : Obj} {n : USize} (X : Vals (.arr B) n)
   have hsl : len (slicesOf X).1 = n.toNat := (len_slices _ _ _ _).1
   have hI := rep_inits X c hc hS hU xi hxi m hm xr hxr hK hV
   intro xs ys
+  show rep (nestMemC X initsK).1 xs ys ↔ _
   rw [nestMem_rep X initsK c hc hS hU xi hxi m hm xr hxr (fun r _ => st(r)) (fun r t => st(r) + t)
     (fun r t hr ht => by dsimp only; have := (hb r hr).1; omega)
     (fun h d hd hx _ => by
@@ -429,6 +431,7 @@ theorem rep_suffix {B : Obj} {n : USize} (X : Vals (.arr B) n)
     have := (hb r hr).1; exact add_get hr (by omega)
   have hI := rep_tails X c hc hS hU xi hxi m hm xr hxr hK hV
   intro xs ys
+  show rep (nestMemC X (tailsK n)).1 xs ys ↔ _
   rw [nestMem_rep X (tailsK n) c hc hS hU xi hxi m hm xr hxr (fun r t => st(r) + t) (fun r _ => st(r) + cn(r))
     (fun r t hr ht => by dsimp only; exact ⟨by omega, (hb r hr).1⟩)
     (fun h d hd hx hy => by
