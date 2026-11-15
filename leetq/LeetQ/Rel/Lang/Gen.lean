@@ -94,10 +94,11 @@ def outr (A B : Obj) : Fn true (.prod A B) B := fun D => ⟨Alg.outr D, true⟩
 def inl (A B : Obj) : Fn true A (.sum A B) := fun D => CRel.inl D.val
 def inr (A B : Obj) : Fn true B (.sum A B) := fun D => CRel.inr D.val
 
-/-- The demand of `S` in `R S`: `ran(R)` where `S` takes one, `R`'s plan run for it. -/
+/-- The demand of `S` in `R S`: `ran(R)` where `S` takes one, `R`'s plan run for it, `ranC`'s bit kept so the
+    demand is proved a coreflexive on `R`'s range (`GenSpec.demP_spec`). -/
 def demP {A B : Obj} : (e : Bool) → Bits.TP A B → Dem e B × Bool
   | false, _ => ((), true)
-  | true, r => let x := Bits.runC r; (Alg.ran x.1, x.2)
+  | true, r => let x := Bits.runC r; let k := ranC x.1; (k.1, x.2 && k.2)
 
 /-- `R S` on demand: `S` runs on `ran(R)`, and not at all where `R` has no row. -/
 def comp (A B C : Obj) (e : Bool) (R : Fn true A B) (S : Fn e B C) : Fn true A C := fun D =>
