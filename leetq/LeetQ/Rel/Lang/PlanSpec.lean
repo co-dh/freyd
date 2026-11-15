@@ -469,4 +469,36 @@ theorem groupIdsB_builds {fg : Array Fun × Array Fun} (c : Alg.Code) (hw : c.w 
   rw [lanes_find] at this
   exact this
 
+/-! ### `Alg.arith` -/
+
+/-- A one-register kernel call: its arguments read, its one answer pushed. -/
+theorem runI_call1 {k : Kernel} {f : Array Val → Except String (Array Val)} {as : Array Nat} {vs rs : Array Val}
+    {v : Val} {ws : Writes} (hk : abi k.sym = some k) (hf : k.run = .inl f) (ha : as.mapM (reg rs k.sym) = .ok vs)
+    (ho : f vs = .ok #[v]) (hs : k.res.size = 1) : runI abi fs gs (.call k.sym as) rs ws = .ok (rs.push v, ws) := by
+  rw [Array.push_eq_append]; exact runI_call hk hf ha ho (by simp [hs])
+
+/-- `call1 k as`, then the rest: the kernel `k` of the ABI answers one register from the registers `as` read. -/
+theorem Builds.call1 {fg fg' : Array Fun × Array Fun} {k : Kernel} {f : Array Val → Except String (Array Val)}
+    {as : Array Nat} {vs rs out : Array Val} {v : Val} {c : Nat → Bld (Array Nat)} (hk : abiOf k.sym = some k)
+    (hf : k.run = .inl f) (ha : as.mapM (reg rs k.sym) = .ok vs) (ho : f vs = .ok #[v]) (hs : k.res.size = 1)
+    (hc : Builds abiOf fg fg' (c rs.size) (rs.push v) out) : Builds abiOf fg fg' (Plan.call1 k as >>= c) rs out :=
+  Builds.emit1 (fun _ _ _ _ => runI_call1 hk hf ha ho hs) hc
+
+/-- `lit x`, then the rest: the literal is pushed. -/
+theorem Builds.lit {fg fg' : Array Fun × Array Fun} {x : Val} {rs out : Array Val} {c : Nat → Bld (Array Nat)}
+    (hc : Builds abi fg fg' (c rs.size) (rs.push x) out) : Builds abi fg fg' (Plan.lit x >>= c) rs out :=
+  Builds.emit1 (fun _ _ _ _ => rfl) hc
+
+/-- The registers `as` read from concrete registers: each a literal index into a known array. -/
+macro "reads" : tactic => `(tactic| (rw [List.mapM_toArray]; simp only [List.mapM_cons, List.mapM_nil]; rfl))
+
+/-- One step of a straight-line builder: an `if` of the builder, a literal, a kernel call of one result, or the
+answer. Each lemma is matched by its head only (reducible), so a step that is not its case fails at once. -/
+macro "build_step" : tactic => `(tactic| ((try simp only [bind_assoc, pure_bind, lenB]); (first
+  | split
+  | with_reducible refine Builds.lit ?_
+  | with_reducible refine Builds.call1 (by with_unfolding_all simp [abiOf, LeetQ.Rel.Lang.Plan.abi, List.find?])
+                          (by with_unfolding_all rfl) (by with_unfolding_all reads) (by with_unfolding_all rfl) rfl ?_
+  | (with_reducible refine Builds.pure ?_); intro; reads)))
+
 end LeetQ.Rel.Lang.Plan
