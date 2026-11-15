@@ -3,9 +3,10 @@ import LeetQ.Rel.Programs.Mss
 import AOP.A7_7_MSS
 
 /-! `rel_aop mss` (`doc/rel-mss-proof-design.md` §4, option D): the program `Programs.mss` over the book's model, its
-    four laws `toShape`, `toFused`, `toGreedy`, `toScan` proved from `AOP/A7_7_MSS.lean`, and `linear : mss = scan`
-    the `calc` the program writes. These are theorems about B&dM's model (`Int`, cons lists, the power object), not
-    about the executable `mss.rel.*`: the evidence between those is still the program's `check`. -/
+    owed laws (the steps' laws, `toFused`, `toScan`) proved from `AOP/A7_7_MSS.lean`, and the `calc`s the program
+    writes (`toShape`, `toGreedy`, `linear : mss = scan`). These are theorems about B&dM's model (`Int`, cons lists,
+    the power object), not about the executable `mss.rel.*`: the evidence between those is still the program's
+    `check`. -/
 
 namespace LeetQ.Rel.Aop.Mss
 
@@ -37,13 +38,13 @@ rel_aop mss
     NN := relProd (⟨Int⟩ : RelSet.{0}) ⟨Int⟩, Nα := relProd (⟨Int⟩ : RelSet.{0}) (P ⟨Int⟩),
     NNα := relProd (⟨Int⟩ : RelSet.{0}) Nα.p, L : Coproduct ((F Unit Int).obj Nα.p) (dL Unit) NNα.p := sumCop _ _
   proof
-    toShape := (by
-      calc mss
-          = ((suffix ≫ «prefix») ≫ ListRel.sum)%∋ ≫ est(MSS.geq) := rfl                -- ≜ mss, ≜ segment
-        _ = MSS.mss := by rw [← ListRel.segment_eq]; rfl                                 -- segment = suffix prefix
-        _ = suffix%∋ ≫ existsImage MSS.mssPre ≫ est(MSS.geq) := MSS.mss_shape            -- mss-shape
-        _ = (suffix%∋ ≫ existsImage MSS.mssPre) ≫ est(MSS.geq) := (Cat.assoc _ _ _).symm
-        _ = shape := rfl),                                                               -- ≜ mssPre, ≜ shape
+    absorption := (by rw [Λ_absorption, Cat.assoc]),                                  -- Λ(S)E(R) = Λ(S R)
+    Eunion := (by rw [Cat.assoc]; exact congrArg (_ ≫ ·) (existsImage_eq_Λ_bigUnion _)),  -- E(R) = E(Λ(R))E(∋)
+    estUnion := (by simp only [Cat.assoc]; exact MSS.mss_shape_step4),                 -- no prefix set is empty
+    Ecomp := (by rw [Cat.assoc, existsImage_comp]),                                    -- E(R S) = E(R)E(S)
+    greedyFold := (by                                                                  -- Λ(⦇S⦈)est(≥) = ⦇Λ(S)est(≥)⦈
+      have h := MSS.mss_greedy_eq; simp only [MSS.mss_step1, cataR_eq_relCata] at h; rw [top_zero]; exact h),
+    estMap := Λ_map_comp_est (graph_map _) MSS.geq_refl,                               -- Λ(f)est(R) = f
     toFused := (by
       calc shape
           = (suffix%∋ ≫ existsImage ((«prefix» ≫ ListRel.sum)%∋ ≫ est(MSS.geq))) ≫ est(MSS.geq) := rfl  -- ≜ shape
@@ -53,21 +54,6 @@ rel_aop mss
           rw [cataR_eq_relCata]                                                                       -- ⦇S⦈ in RelSet
         _ = fused := by                                                                               -- ⊤zero = ⊸ zero
           show _ = Programs.mss.fused.aop; delta Programs.mss.fused.aop; rw [top_zero]; rfl),
-    toGreedy := (by
-      calc fused
-          = (suffix%∋ ≫ existsImage ((relCata MSS.Salg)%∋ ≫ est(MSS.geq))) ≫ est(MSS.geq) := by
-            show Programs.mss.fused.aop = _; delta Programs.mss.fused.aop; rw [top_zero]; rfl         -- ⊤zero = ⊸ zero
-        _ = (suffix%∋ ≫ existsImage ((cataR MSS.Salg)%∋ ≫ est(MSS.geq))) ≫ est(MSS.geq) := by
-          rw [cataR_eq_relCata]                                                                       -- ⦇S⦈ in RelSet
-        _ = (suffix%∋ ≫ existsImage (cataR (MSS.Salg%∋ ≫ est(MSS.geq)))) ≫ est(MSS.geq) := by
-          rw [MSS.mss_greedy_eq]                                                                      -- Λ(⦇S⦈)est(≥) = ⦇Λ(S)est(≥)⦈
-        _ = (suffix%∋ ≫ existsImage (cataR (junc (sumCop _ _) MSS.zero MSS.oplus))) ≫ est(MSS.geq) := by
-          rw [MSS.mss_step]                                                                           -- Λ(S)est(≥) = [zero,⊕]
-        _ = (suffix%∋ ≫ existsImage (relCata (I := initial Unit Int) (junc (sumCop _ _) MSS.zero MSS.oplus)))
-              ≫ est(MSS.geq) := by rw [cataR_eq_relCata]                                             -- ⦇S⦈ in RelSet
-        _ = greedy := by                                                                              -- ≜ g, ≜ oplus
-          show _ = Programs.mss.greedy.aop
-          delta Programs.mss.greedy.aop Programs.mss.g.aop Programs.mss.oplus.aop; rw [top_zero]; rfl),
     toScan := (by
       calc greedy
           = (suffix%∋ ≫ existsImage (relCata (I := initial Unit Int) (junc (sumCop _ _) MSS.zero MSS.oplus)))
@@ -82,6 +68,12 @@ rel_aop mss
           show _ = Programs.mss.scan.aop
           delta Programs.mss.scan.aop Programs.mss.oplus.aop; rw [top_zero, ← k_eq]; rfl)
 
+#print axioms Programs.mss.absorption.aop
+#print axioms Programs.mss.Eunion.aop
+#print axioms Programs.mss.estUnion.aop
+#print axioms Programs.mss.Ecomp.aop
+#print axioms Programs.mss.greedyFold.aop
+#print axioms Programs.mss.estMap.aop
 #print axioms Programs.mss.toShape.aop
 #print axioms Programs.mss.toFused.aop
 #print axioms Programs.mss.toGreedy.aop

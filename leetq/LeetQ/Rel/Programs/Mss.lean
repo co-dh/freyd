@@ -47,14 +47,39 @@ rel_program mss where
     check A greedy = A mss
     check A scan = A mss
 
-    /- B&dM Ex 7.40: the spec is the linear `scan`, one theorem per step of the note's derivation. The four laws are
-       owed to Lean: `rel_aop mss` (LeetQ/Aop/Mss.lean) proves them over the book's model (`Int`, cons lists, the
-       power object), so `linear` is a theorem about that model, not about the executable `mss.rel.*`; the evidence
+    /- B&dM Ex 7.40: the spec is the linear `scan`, one theorem per step of the note's derivation. The laws with no
+       `calc` are owed to Lean: `rel_aop mss` (LeetQ/Aop/Mss.lean) proves them over the book's model (`Int`, cons
+       lists, the power object), so `linear` is a theorem about that model, not about the executable `mss.rel.*`; the evidence
        between those two is the `check`s above. -/
 
-    theorem toShape : mss = shape                 -- note `mss-shape`
+    /- The steps' laws. `absorption` is Λ(S)E(R) = Λ(S R), `Eunion` E(R) = E(Λ(R))E(∋), `Ecomp` E(R S) = E(R)E(S),
+       `estMap` Λ(f)est(R) = f for a map f and a reflexive R: laws of any relation, each stated at the one instance
+       its step uses, because a Rel theorem takes no parameters under `rel_aop` yet. Each keeps the step's left
+       context `Λ(suffix)`, because a step rewrites one subterm and a composite put in place is not re-associated. -/
+
+    theorem absorption : Λ(suffix)E(prefix sum) = Λ(suffix prefix sum)
+    theorem Eunion : Λ(suffix)E(prefix sum) = Λ(suffix)E(Λ(prefix sum))E(∋)
+    theorem estUnion : Λ(suffix)E(Λ(prefix sum))E(∋)est(≥) = Λ(suffix)E(Λ(prefix sum))E(est(≥))est(≥)  -- no set empty
+    theorem Ecomp : Λ(suffix)E(Λ(prefix sum))E(est(≥)) = Λ(suffix)E(Λ(prefix sum)est(≥))
+    -- the greedy row Λ(⦇S⦈)est(≥) = ⦇Λ(S)est(≥)⦈, with S's seed and step apart
+    theorem greedyFold : Λ(⦇ran(zero), ⊤zero ∪ plus⦈)est(≥) = ⦇ran(Λ(zero)est(≥)), Λ(⊤zero ∪ plus)est(≥)⦈
+    theorem estMap : Λ(zero)est(≥) = zero
+
+    theorem toShape : mss = shape := calc         -- note `mss-shape`
+      _ = Λ(suffix prefix sum)est(≥) := ≜ segment
+      _ = Λ(suffix)E(prefix sum)est(≥) := absorption
+      _ = Λ(suffix)E(Λ(prefix sum))E(∋)est(≥) := Eunion
+      _ = Λ(suffix)E(Λ(prefix sum))E(est(≥))est(≥) := estUnion
+      _ = Λ(suffix)E(Λ(prefix sum)est(≥))est(≥) := Ecomp
+      _ = shape := ≜ shape
     theorem toFused : shape = fused               -- note `mss-prefix-sum`
-    theorem toGreedy : fused = greedy             -- note `mss-mono`, `mss-step`, the greedy row
+    theorem toGreedy : fused = greedy := calc     -- note `mss-mono`, `mss-step`, the greedy row
+      _ = Λ(suffix)E(Λ(⦇ran(zero), ⊤zero ∪ plus⦈)est(≥))est(≥) := ≜ fused
+      _ = Λ(suffix)E(⦇ran(Λ(zero)est(≥)), Λ(⊤zero ∪ plus)est(≥)⦈)est(≥) := greedyFold
+      _ = Λ(suffix)E(⦇ran(zero), Λ(⊤zero ∪ plus)est(≥)⦈)est(≥) := estMap
+      _ = Λ(suffix)E(⦇ran(zero), oplus⦈)est(≥) := ≜ oplus
+      _ = Λ(suffix)E(g)est(≥) := ≜ g
+      _ = greedy := ≜ greedy
     theorem toScan : greedy = scan                -- note `mss-scan`
     theorem linear : mss = scan := calc
       _ = shape := toShape
