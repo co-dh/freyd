@@ -28,8 +28,8 @@ def objInfo (env : Env) (n : String) : ObjDef → Except Err ObjInfo
 
 /-- The definition `d` whose constant is `c`, as a use sees it. `prelude.perm` is its own converse, the one converse
     rule kept for a definition (`Tm.own`): `perm° = perm` is a theorem the language cannot derive from the fold
-    `perm` is. `prelude.tails`, `prefix`, `suffix` run as their slice forms, each read back against the list
-    function the prelude's fold is (`rep_tailsC`, `rep_prefixC`, `rep_suffixC`); `filter(p)`, `takewhile(p)` (given
+    `perm` is. `prelude.tails`, `prefix`, `suffix`, `concat` run as their slice forms, each read back against
+    the list function the prelude's fold is (`rep_tailsC`, `rep_prefixC`, `rep_suffixC`, `rep_concatC`); `filter(p)`, `takewhile(p)` (given
     one relation, not a family) as their mask forms, whose read-back theorems (`rep_filterC`, `rep_takewhileC`) are
     not proved yet. `imported`: `d` is another program's, so an error its body raises at a use names `c` and its
     line there, at the use; one about the arguments (at the use) passes as it is. -/
@@ -44,6 +44,7 @@ def useDef (c : Lean.Name) (imported : Bool) (d : Def) : Def :=
       | `LeetQ.Rel.Programs.prelude.tails, .rel _ s@(.arr b) t => pure (.rel (.tails b) s t)
       | `LeetQ.Rel.Programs.prelude.prefix, .rel _ s@(.arr b) t => pure (.rel (.«prefix» b) s t)
       | `LeetQ.Rel.Programs.prelude.suffix, .rel _ s@(.arr b) t => pure (.rel (.suffix b) s t)
+      | `LeetQ.Rel.Programs.prelude.concat, .rel _ s t@(.arr b) => pure (.rel (.concat b) s t)
       | `LeetQ.Rel.Programs.prelude.filter, .rel q s t =>
         pure (.rel (match as with | [.rel a _ _] => .filter a | _ => if imported then q.at p else q) s t)
       | `LeetQ.Rel.Programs.prelude.takewhile, .rel q s t =>
@@ -589,6 +590,7 @@ partial def node (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bo
   | .arr B, _, _, .tails => return g ``Gen.tails #[oE B]
   | .arr B, _, _, .«prefix» => return g ``Gen.«prefix» #[oE B]
   | .arr B, _, _, .suffix => return g ``Gen.suffix #[oE B]
+  | _, .arr B, _, .concat => return g ``Gen.concat #[oE B]
   | _, .arr B, _, .cat => return g ``Gen.cat #[oE B]
   | .arr B, _, _, .uncat => return g ``Gen.uncat #[oE B]
   | .prod (.arr A) (.arr B), _, _, .zip => return g ``Gen.zip #[oE A, oE B]

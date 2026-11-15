@@ -172,6 +172,7 @@ def inits (B : Obj) : Fn true (.arr B) (.arr (.arr B)) := fun D => CRel.inits D.
 def tails (B : Obj) : Fn true (.arr B) (.arr (.arr B)) := fun D => CRel.tails D.val
 def «prefix» (B : Obj) : Fn true (.arr B) (.arr B) := fun D => CRel.prefix D.val
 def suffix (B : Obj) : Fn true (.arr B) (.arr B) := fun D => CRel.suffix D.val
+def concat (B : Obj) : Fn true (.arr (.arr B)) (.arr B) := fun D => CRel.concat D.val
 def cat (B : Obj) : Fn true (.prod (.arr B) (.arr B)) (.arr B) := fun D => CRel.cat ⟨D, true⟩
 def uncat (B : Obj) : Fn true (.arr B) (.prod (.arr B) (.arr B)) := fun D => CRel.uncat D.val
 def zip (A B : Obj) : Fn true (.prod (.arr A) (.arr B)) (.arr (.prod A B)) := fun D => CRel.zip ⟨D, true⟩

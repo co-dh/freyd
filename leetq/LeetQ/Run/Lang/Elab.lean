@@ -62,10 +62,11 @@ inductive Tm : Obj → Obj → Bool → Type where
   | length {B : Obj} : Tm (.arr B) .long true
   | total : Tm (.arr .long) .long true
   | inits {B : Obj} : Tm (.arr B) (.arr (.arr B)) true
-  /-- The prelude's folds `tails`, `prefix`, `suffix`, run as their slice forms (`Expand.preludeDef`). -/
+  /-- The prelude's folds `tails`, `prefix`, `suffix`, `concat`, run as their slice forms (`Expand.useDef`). -/
   | tails {B : Obj} : Tm (.arr B) (.arr (.arr B)) true
   | «prefix» {B : Obj} : Tm (.arr B) (.arr B) true
   | suffix {B : Obj} : Tm (.arr B) (.arr B) true
+  | concat {B : Obj} : Tm (.arr (.arr B)) (.arr B) true
   | cat {B : Obj} : Tm (.prod (.arr B) (.arr B)) (.arr B) true
   | uncat {B : Obj} : Tm (.arr B) (.prod (.arr B) (.arr B)) true
   | zip {A B : Obj} : Tm (.prod (.arr A) (.arr B)) (.arr (.prod A B)) true
@@ -222,6 +223,7 @@ inductive Pre
   | tails (b : OTy)
   | «prefix» (b : OTy)
   | suffix (b : OTy)
+  | concat (b : OTy)
   | cat (b : OTy)
   | uncat (b : OTy)
   | zip (a b : OTy)
@@ -296,7 +298,7 @@ def Pre.at (p : Pos) : Pre → Pre
   -- no position and no part
   | x@(.tm _) | x@(.zero ..) | x@(.id _) | x@(.mem _) | x@(.outl ..) | x@(.outr ..) | x@(.inl ..) | x@(.inr ..)
   | x@(.union _) | x@(.tau _) | x@(.nil ..) | x@(.cons _) | x@(.uncons _) | x@(.length ..) | x@(.total _)
-  | x@(.inits _) | x@(.tails _) | x@(.«prefix» _) | x@(.suffix _) | x@(.cat _) | x@(.uncat _) | x@(.zip ..) | x@(.snoc _) | x@(.unsnoc _) | x@(.setify _)
+  | x@(.inits _) | x@(.tails _) | x@(.«prefix» _) | x@(.suffix _) | x@(.concat _) | x@(.cat _) | x@(.uncat _) | x@(.zip ..) | x@(.snoc _) | x@(.unsnoc _) | x@(.setify _)
   | x@(.bagify _) | x@(.tic _) | x@(.atPos ..) => x
 
 /-- The `why` of a top-level term's `close`. -/
@@ -367,7 +369,7 @@ def Pre.nilSrcs : Pre → List OTy
   | .conv x | .dom x | .ran x | .lam x | .E x | .map x | .filter x | .takewhile x | .est x | .thin x | .own x | .thinL x | .merge x
   | .loop x | .flat x | .close _ x _ _ | .fix _ _ _ _ x _ _ | .call _ _ _ _ x _ _ => x.nilSrcs
   | .var .. | .tm _| .zero .. | .id _ | .mem _ | .outl .. | .outr .. | .inl .. | .inr .. | .union _ | .tau _ | .cons _
-  | .uncons _ | .length .. | .total _ | .inits _ | .tails _ | .«prefix» _ | .suffix _ | .cat _ | .uncat _ | .zip .. | .snoc _ | .unsnoc _ | .setify _
+  | .uncons _ | .length .. | .total _ | .inits _ | .tails _ | .«prefix» _ | .suffix _ | .concat _ | .cat _ | .uncat _ | .zip .. | .snoc _ | .unsnoc _ | .setify _
   | .bagify _ | .tic _ | .atPos .. | .succ .. | .arith .. | .leq .. | .lt .. | .lit .. => []
 
 /-- A `nil` whose source no context fixed, once the whole term is elaborated, starts at `1`: B&dM's
@@ -402,7 +404,7 @@ def Pre.parts : Pre → List (Pre × Pol)
   | .thinL x => [(x, .not "thinL")]
   | .merge x => [(x, .not "merge")]
   | .var .. | .tm _ | .zero .. | .id _ | .mem _ | .outl .. | .outr .. | .inl .. | .inr .. | .union _ | .tau _
-  | .nil .. | .cons _ | .uncons _ | .length .. | .total _ | .inits _ | .tails _ | .«prefix» _ | .suffix _ | .cat _ | .uncat _ | .zip .. | .snoc _
+  | .nil .. | .cons _ | .uncons _ | .length .. | .total _ | .inits _ | .tails _ | .«prefix» _ | .suffix _ | .concat _ | .cat _ | .uncat _ | .zip .. | .snoc _
   | .unsnoc _ | .setify _ | .bagify _ | .tic _ | .atPos .. | .succ .. | .arith .. | .leq .. | .lt .. | .lit .. => []
 
 /-- Where the variable `k` first occurs in `x`. -/
@@ -1216,6 +1218,7 @@ def convTm {A B : Obj} {d : Bool} (t : Tm A B d) : Except String ((e : Bool) × 
   | .tails => throw "tails"
   | .«prefix» => throw "prefix"
   | .suffix => throw "suffix"
+  | .concat => throw "concat"
   | .zip => throw "zip"
   | .setify => throw "setify"
   | .bagify => throw "bagify"
@@ -1444,6 +1447,7 @@ def build : Pre → Except Err Res
   | .tails b => return ⟨_, _, true, .tails (B := ← toObj st dp b)⟩
   | .«prefix» b => return ⟨_, _, true, .«prefix» (B := ← toObj st dp b)⟩
   | .suffix b => return ⟨_, _, true, .suffix (B := ← toObj st dp b)⟩
+  | .concat b => return ⟨_, _, true, .concat (B := ← toObj st dp b)⟩
   | .cat b => return ⟨_, _, true, .cat (B := ← toObj st dp b)⟩
   | .uncat b => return ⟨_, _, true, .uncat (B := ← toObj st dp b)⟩
   | .zip a b => return ⟨_, _, true, .zip (A := ← toObj st dp a) (B := ← toObj st dp b)⟩

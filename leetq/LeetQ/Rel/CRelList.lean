@@ -313,6 +313,112 @@ theorem rep_snocC {K B : Obj} (P : Rel K (.prod (.arr B) B)) (hb : (snocC P).2 =
   rintro M rfl
   exact catC_ok _ hr
 
+/-- **`gather 8 src idx` misses**: long `j` reads `0` where its index is past `src`'s count. -/
+theorem gather8_miss {src idx : ByteArray} {j : Nat} (hj : j < len idx)
+    (hs : len src ≤ (Column.bitsAt idx (j * 8) 8).toNat) : Column.bitsAt (gather 8 src idx) (j * 8) 8 = 0 := by
+  have h8 : (Nat.toUSize 8).toNat = 8 := KernelWF.toNat_small 8 (by decide)
+  have h := (gatherBytes_spec (Nat.toUSize 8) (by rw [h8]; decide) 0 src idx).2 j (by simpa [len] using hj)
+  rw [h8] at h
+  unfold gather; rw [h, if_neg (by simp only [len] at hs; omega)]; rfl
+
+/-- **Windows laid end to end flatten to one**: the window of `t` is `[S t, S (t + 1))`, `S` rising over
+    `[a, a + c]`. -/
+theorem flatten_windows {α : Type} (S : Nat → Nat) (g : Nat → α) (a : Nat) : ∀ c,
+    (∀ t, a ≤ t → t < a + c → S t ≤ S (t + 1)) → S a ≤ S (a + c) ∧
+      ((List.range c).map fun j => (List.range (S (a + j + 1) - S (a + j))).map fun k => g (S (a + j) + k)).flatten =
+        (List.range (S (a + c) - S a)).map fun k => g (S a + k)
+  | 0, _ => ⟨Nat.le_refl _, by simp⟩
+  | c + 1, h => by
+    obtain ⟨hle, ih⟩ := flatten_windows S g a c fun t h1 h2 => h t h1 (by omega)
+    have hs := h (a + c) (by omega) (by omega)
+    rw [show a + (c + 1) = a + c + 1 from rfl]
+    refine ⟨Nat.le_trans hle hs, ?_⟩
+    rw [List.range_succ, List.map_append, List.flatten_append, ih, List.map_singleton, List.flatten_singleton,
+      show S (a + c + 1) - S a = (S (a + c) - S a) + (S (a + c + 1) - S (a + c)) by omega, List.range_add,
+      List.map_append, List.map_map]
+    congr 1
+    apply List.map_congr_left; intro k _; simp only [Function.comp_apply]; congr 1; omega
+
+/-- **`concat` under `concatC`'s bit**: an array of arrays `xss` of `X` goes to `xss.flatten`, B&dM's
+    `concat = ⦇[nil, cat]⦈` (p.129), the prelude's `⦇ran(nil), cat⦈`. The compacted inner arrays lie end to end
+    (`pick_row_arr`'s `S`), so outer row `i`, inner arrays `[a, a + c)` (`slicesOf_row`), is `[S a, S (a + c))`
+    (`flatten_windows`), each end gathered at the index one before (`gather8_get`, `gather8_miss` at `-1`). -/
+theorem rep_concatC {B : Obj} {n : USize} (X : Vals (.arr (.arr B)) n) (hb : (concatC X).2 = true) :
+    ∀ xss ys, rep (concatC X).1 xss ys ↔ (∃ j, X.row j = xss) ∧ ys = xss.flatten := by
+  obtain ⟨m, lo, hi, Y⟩ := X
+  simp only [concatC, Bool.and_eq_true, decide_eq_true_eq] at hb
+  obtain ⟨hp, hz⟩ := hb
+  have hf := Vals.pickC_fits (.arr B) Y (tilLongs m) m (len_tilLongs m) hz
+  obtain ⟨⟨S, hS0, hSm, hS63, hSq⟩, hrow⟩ :=
+    pick_row_arr Y (fun i m h hf q => pick_row B Y.2.2.2 i m h hf q) (tilLongs m) m (len_tilLongs m) hf
+  have ez : (Vals.pickC (.arr B) Y (tilLongs m) m (len_tilLongs m)).1 =
+    Vals.pick (.arr B) Y (tilLongs m) m (len_tilLongs m) := rfl
+  generalize Vals.pick (.arr B) Y (tilLongs m) m (len_tilLongs m) = Z at hrow hSm hSq ez
+  have mono : ∀ t ≤ m.toNat, S t ≤ S m.toNat := fun t ht => by
+    have := (flatten_windows S (fun _ => ()) t (m.toNat - t) fun u _ h2 => (hSq ⟨u, by omega⟩).1).1
+    rwa [Nat.add_sub_cancel' ht] at this
+  have cl : ∀ x, x ≤ Z.1.toNat → min (max (x : Int) 0).toNat Z.1.toNat = x := fun x hx => by omega
+  let g : Nat → B.El := fun k => if h : k < Z.1.toNat then Z.2.2.2.row ⟨k, h⟩ else B.dflt
+  have hZrow : ∀ q : Fin m.toNat, Z.row q = (List.range (S (q + 1) - S q)).map fun k => g (S q + k) := fun q => by
+    obtain ⟨-, hl, hh⟩ := hSq q
+    rw [arr_row, hl, hh, cl _ (hSm ▸ mono _ (by omega)), cl _ (hSm ▸ mono _ q.2)]
+  have hYZ : ∀ q : Fin m.toNat, Y.row q = Z.row q := fun q => by
+    rw [hrow, dif_pos (by rw [tilLongs_get q.2]; exact q.2)]
+    exact congrArg Y.row (Fin.ext (tilLongs_get q.2)).symm
+  -- an end: the long `k[i]` (at most `m`) less one, gathered from `Z`'s `hi`, is `S k[i]`
+  have hE : ∀ (k : ByteArray) (i : Fin n.toNat), (Column.bitsAt k (i.1 * 8) 8).toNat ≤ m.toNat →
+      (Column.bitsAt (gather 8 (longsOf Z.2.2.1) (Kernel.Ew.val Ew.sub Ew.i64 Ew.va nul k (one 1) n)) (i.1 * 8) 8
+        ).toInt64.toInt = S (Column.bitsAt k (i.1 * 8) 8).toNat := fun k i hk => by
+    have hm63 : m.toNat < 2 ^ 63 := hp
+    have hv := val_va_get Ew.sub k (one 1) n i.2
+    rw [bitsAt_one] at hv
+    have hx := toInt64_toInt (x := Column.bitsAt k (i.1 * 8) 8) (by omega)
+    have h1 := (valStep_int (x := Column.bitsAt k (i.1 * 8) 8) (y := 1) (by omega) (by decide)).2.1
+      (by rw [hx]; decide) (by rw [hx]; omega)
+    rw [← hv, hx, show (1 : UInt64).toInt64.toInt = 1 from rfl] at h1
+    have hlen : i.1 < len (Kernel.Ew.val Ew.sub Ew.i64 Ew.va nul k (one 1) n) := by rw [len_val]; exact i.2
+    rcases Nat.eq_zero_or_pos (Column.bitsAt k (i.1 * 8) 8).toNat with h0 | hpos
+    · rw [h0] at h1 ⊢
+      have hu := u64_ext (v := UInt64.ofNat (2 ^ 64 - 1)) (h1.trans (by decide))
+      rw [gather8_miss hlen (by rw [hu, len_longsOf]; have := hSm ▸ hS63; simp; omega), hS0]; rfl
+    · have hu := u64_ext (v := UInt64.ofNat ((Column.bitsAt k (i.1 * 8) 8).toNat - 1))
+        (h1.trans (by rw [toInt64_toInt (by rw [UInt64.toNat_ofNat_of_lt' (by omega)]; omega),
+          UInt64.toNat_ofNat_of_lt' (by omega)]; omega))
+      have hlt : (Column.bitsAt k (i.1 * 8) 8).toNat - 1 < m.toNat := by omega
+      rw [gather8_get hlen (by rw [hu, len_longsOf, UInt64.toNat_ofNat_of_lt' (by omega)]; exact hlt), hu,
+        UInt64.toNat_ofNat_of_lt' (by omega), longsOf_get _ hlt, Int64.toInt64_toUInt64,
+        (hSq ⟨_, hlt⟩).2.1]
+      congr 1; simp only; omega
+  have key : ∀ i : Fin n.toNat, Vals.row (concatC ⟨m, lo, hi, Y⟩).1.val i =
+      (Vals.row (A := .arr (.arr B)) ⟨m, lo, hi, Y⟩ i).flatten := fun i => by
+    obtain ⟨hac, hlen, hel⟩ := slicesOf_row (⟨m, lo, hi, Y⟩ : Vals (.arr (.arr B)) n) hp i.2
+    have hsum := add_get (n := n) (a := (slicesOf (⟨m, lo, hi, Y⟩ : Vals (.arr (.arr B)) n)).1)
+      (b := (slicesOf (⟨m, lo, hi, Y⟩ : Vals (.arr (.arr B)) n)).2) i.2 (by have : m.toNat < 2 ^ 63 := hp; omega)
+    have e1 := hE _ i (by omega)
+    have e2 := hE _ i (by rw [hsum]; exact hac)
+    rw [hsum] at e2
+    generalize (Column.bitsAt (slicesOf (⟨m, lo, hi, Y⟩ : Vals (.arr (.arr B)) n)).1 (i.1 * 8) 8).toNat = a
+      at hac hlen hel e1 e2
+    generalize (Column.bitsAt (slicesOf (⟨m, lo, hi, Y⟩ : Vals (.arr (.arr B)) n)).2 (i.1 * 8) 8).toNat = c
+      at hac hlen hel e1 e2
+    have hX : Vals.row (A := .arr (.arr B)) ⟨m, lo, hi, Y⟩ i =
+        (List.range c).map fun j => (List.range (S (a + j + 1) - S (a + j))).map fun k => g (S (a + j) + k) := by
+      apply List.ext_getElem (by rw [hlen]; simp)
+      intro j h1 h2
+      rw [hel j h1 (by omega), List.getElem_map, List.getElem_range]
+      exact (hYZ _).trans (hZrow _)
+    rw [hX, (flatten_windows S g a c fun t h1 h2 => (hSq ⟨t, by omega⟩).1).2]
+    simp only [concatC]
+    rw [ez, arr_row, longsN_get, longsN_get, e1, e2, cl _ (hSm ▸ mono _ (by omega)), cl _ (hSm ▸ mono _ hac)]
+  intro xss ys
+  rw [rep_apply]
+  constructor
+  · rintro ⟨i, h1, h2⟩
+    exact ⟨⟨i, h1⟩, h2 ▸ h1 ▸ key i⟩
+  · rintro ⟨⟨i, rfl⟩, rfl⟩
+    exact ⟨i, rfl, key i⟩
+
+#print axioms rep_concatC
 #print axioms rep_consC
 #print axioms rep_catC
 #print axioms rep_zipC
@@ -361,6 +467,10 @@ theorem rep_prefix (X : Vals (.arr B) n) (hb : («prefix» X).ok = true) :
 theorem rep_suffix (X : Vals (.arr B) n) (hb : (suffix X).ok = true) :
     ∀ xs ys, rep (suffix X).rel xs ys ↔ (∃ j, X.row j = xs) ∧ ys <:+ xs :=
   rep_suffixC X hb
+
+theorem rep_concat (X : Vals (.arr (.arr B)) n) (hb : (concat X).ok = true) :
+    ∀ xss ys, rep (concat X).rel xss ys ↔ (∃ j, X.row j = xss) ∧ ys = xss.flatten :=
+  rep_concatC X hb
 
 theorem rep_uncat (X : Vals (.arr B) n) (hb : (uncat X).ok = true) :
     ∀ xs ys zs, rep (uncat X).rel xs (ys, zs) ↔ (∃ j, X.row j = xs) ∧ xs = ys ++ zs :=
