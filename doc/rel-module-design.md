@@ -355,3 +355,268 @@ csp.AC3 : (α β : Obj) → (Uα : CRel α α) → (Uβ : CRel β β)
 |   | 第 5 步之前的例外:family 实参、或 object variable 不是声明过的 object 时,这次使用展开 body,记进 `n.notCalled`(被调的 constant、位置、原因) |
 |   | 第 5 步之前的例外:body 做不成 constant 的定义(type variable 上的算术、复合 object 的 universe)在每次使用处展开,记进 `n.notOnce`;第 5 步让两张表都空,之后两者都报错 |
 | N | object 是 "`Obj` 加 universe" 的一个 structure,每个 type variable 收一个这样的值(数据结构改动,已批准)       |
+
+## 6. 证明 `rel_program` 的定义:等式风格(elaborate-once 之后的一步)
+
+只是设计。没有 elaborate 过下面任何一段 Lean;标了"未验证"的是读源码推出来的。第 5 节的 E–N 照旧有效,本节不改它们。
+
+本节已决定(2026-11-15;字母是本节自己的,和第 5 节的 E–N 无关,本节提到第 5 节的决定时写 "5-G" 这样):
+
+| # | 决定                                                                                          | 在哪    |
+|---|-----------------------------------------------------------------------------------------------|---------|
+| D | literal def 和 `obj` 是 `.aop` constant 的参数;书的 model 靠代入得到                          | 6.5     |
+| L | registry 的每个条目存 def 的 body(`Lang.Expr`)(数据结构改动,已批准)                         | 6.4     |
+| N | 单独的 Lean command `rel_aop` 生成 `.aop` constant;run path 不 import AOP                     | 6.4     |
+
+被否决的选项各一行在 6.9。
+
+### 6.1 现状
+
+| 东西                     | 现在                                                                            | 位置                              |
+|--------------------------|---------------------------------------------------------------------------------|-----------------------------------|
+| `rel(t)`                 | 把 Rel term 读成 AOP allegory 的 term;`calc` 的每一步写 Rel,理由写 AOP 的定律   | `Lang/Calc.lean:254`              |
+| `rel(t)` 里的名字        | 只能是 statement 的 local variable;别的报 "is not a local variable"             | `Lang/Calc.lean:164`–`:168`       |
+| `rel(t)` 里的 Rel def    | `.app`/`.inf` 报 "is a Rel definition, and rel(…) has none"                     | `Lang/Calc.lean:212`              |
+| prelude                  | 一张手写的表,只有 `∈`                                                           | `Lang/Calc.lean:96`               |
+| program fold `⦇e,S⦈`     | 报错,要求改写成书上的 `⦇[e,S]⦈`                                                 | `Lang/Calc.lean:210`              |
+| literal、`at(i)`、`setify`、μ/ν | 报错:没有 AOP 对应物                                                     | `Lang/Calc.lean:203`–`:213`       |
+| Rel def 的 executable    | `n.rel.x : CRel A B`                                                            | `Lang/Expand.lean:577`            |
+| executable 的含义        | `n.rep_x : (n.rel.x).ok = true → rep (n.rel.x).rel = T`,`T : Den A B`           | `Lang/Expand.lean:580`–`:590`     |
+| `T` 是什么               | `Rel(Set)` 里 `⟨A.El⟩ ⟶ ⟨B.El⟩` 的一个 term,由 `GenSpec` 的引理逐节点拼出,inline 在 `rep_x` 的 type 里,没有名字 | `Lang/GenSpec.lean:21`, `:36` |
+| 拼不出 `T` 的 def        | 进 `n.unproved`,带上第一个没有引理的 combinator                                 | `Lang/Expand.lean:607`            |
+| program 里的 `check`     | 只在有限数据上求值,例如 `mss` 对它的 derived program                            | `Programs/Mss.lean:34`–`:35`      |
+
+所以现在能用 `calc` 证的只有"对任意 `R S` 成立"的定律(`Lang/CalcTest.lean`);关于 `mss`、`sort(Q)` 这些
+def 的命题写不出来,因为 `rel(…)` 不认识它们的名字。
+
+### 6.2 两种读法(先定义,下面都用这两个词)
+
+一个 Rel def `m.x` 有两种含义,它们不是同一个东西:
+
+| 读法        | 是什么                                                                  | 在哪个 allegory                         | 现在有没有          |
+|-------------|-------------------------------------------------------------------------|-----------------------------------------|---------------------|
+| AOP 读法    | `rel(body)` 给出的 term:`Calc.toTerm` 对 body 的翻译                    | statement 的 allegory `𝒜`,object 是 Lean 的 | 没有(名字不认识)  |
+| `Den` 读法  | `rep_x` 右边的 `T`                                                      | `Rel(Set)`,object 是 `⟨A.El⟩`           | 有,但没有名字      |
+
+两种读法在这些地方不同(`doc/rel-lean-mapping.md` 的 note [7] [8] [9] 和 `GenSpec`):
+
+| 构造               | AOP 读法                         | `Den` 读法                                                     |
+|--------------------|----------------------------------|----------------------------------------------------------------|
+| `[α]`、`𝒫α`        | `dList A` 和 `P A` 是两个 object | 同一个 array type                                              |
+| `∋`、`Λ`、`est`、`thin` | 在 power object `P A` 上    | 在 array 上;`mem_sound` 的 `T` 是 `fun xs x => x ∈ xs`         |
+| `obj N = lo…hi`    | 没有;书的 model 是全的 `Int`     | 有限 universe,算术出范围就没有值                               |
+| `R/S`、`R\S`       | `DivisionAllegory.div`、`leftDiv` | 限制在 universe 里的公式(`ldivDen`,`Lang/GenSpec.lean:288`)   |
+| `R − S`、`⊤`       | `sub`(Boolean)、`topHom`/`topMor` | `fun x y => TR x y ∧ ¬TS x y`、`relTop ≫ TV`                  |
+| fold、`Λ`、`est`、list builtin、算术 | `relCata` 等          | `GenSpec` 没有引理,def 落进 `n.unproved`                       |
+
+- AOP 的定理(`greedy`、`thinning_est`、`mss_eq_scan`)都是关于 AOP 读法的。等式风格的证明因此证的是 AOP 读法。
+- `Den` 读法是 executable 和证明之间唯一已有的定理。把两种读法连起来是 6.4 的 gap G3–G5,排在最后一个 stage。
+
+### 6.3 `rel(t)` 怎么解析 Rel def 的名字(问题 1)
+
+同一个 resolver,不是第二套查找:
+
+- 2.3 的 resolver 是一个函数:字符串 → registry 里的 constant(及其 arity、infix、signature)。它读
+  `getEnv`、`getCurrNamespace`、`getOpenDecls`。`rel_program` 把它放进 `Parse.S` 的 resolver 字段;
+  `Calc.elabRel`(`Lang/Calc.lean:256`)在读 `rel(t)` 时放进同一个字段。
+- theorem 写在 Lean 文件里,它所在位置的 `namespace` 和 `open` 就是 scope。`open mss (mss oplus w)` 写在
+  theorem 之前,和写在 `rel_program` 之前是同一条 Lean 语句、同一个过滤。
+- 解析顺序是 2.3 "边界" 一节的三步,只有第 1 步的内容不同:
+
+| 步 | `rel_program` 的 body                       | `rel(t)`                                   |
+|----|---------------------------------------------|--------------------------------------------|
+| 1  | 参数、fixed point 变量、本 program 的名字   | statement 的 local variable(现在的 `vars`) |
+| 2  | kernel 表                                   | kernel 表                                  |
+| 3  | `resolveGlobalName` 的候选,只留 registry 里的 | 同左                                     |
+
+- local variable 赢过 registry 里的名字,和 Lean 的 local 赢过 global 一致。
+- 字母串的切分(`Parse.name` 的最长前缀)用同一批名字,所以 F7 在这里同样成立:`open mss` 整个打开会把 `w`、
+  `A`、`D`、`x`、`K` 加进切分。证明文件用 selective `open`。
+- `Calc.toTerm` 要改的三处:`.name`(`:164`)查不到 local variable 时问 resolver;`.app`、`.inf`(`:212`)不再
+  报错,变成 "AOP constant 作用到各实参的 `toTerm`"。
+- `Calc.prelude` 这张表(`:96`)删掉:`∈` 经 `open prelude` 解析到 `prelude.«∈»`,和别的 def 一样。
+- 报错沿用 2.3:"`x` is not a Rel definition";另加一条 "`x` has no AOP reading: <第一个没有 AOP 对应物的构造>"。
+
+### 6.4 一个 Rel def 的 AOP 含义(问题 2)
+
+是一个 Lean def,`calc` 的一步能把它展开。
+
+- 对 registry 里的每个 def `m.x`,生成一个 Lean constant,记作 `m.x.aop`(名字待定;registry 里没有它,所以
+  Rel body 和 `rel(…)` 都拼不出来,符合 5-G):
+  - value 是 `Calc.toTerm` 对 `m.x` 的 body 的翻译,和 `calc` 步里的 `rel(body)` 走同一段代码;
+  - body 里提到的别的 def 是它们的 `.aop` constant 的 application,不是 body 的拷贝(elaborate-once 的 AOP 一侧);
+  - `rel(x)` elaborate 成 `m.x.aop` 的 application。
+- `≜` 步:`rel(mss) = rel(Λ(segment ⦇[zero,plus]⦈) est(≥)) := rfl`。两边 elaborate 之后一边是 constant,一边是
+  它的 value,`rfl` 靠 delta 成立。不需要新的 tactic;要显式的话 `by unfold`。
+- 生成的 def 的 binder(细节见 6.5):
+
+| body 里的东西                                      | binder                                                        |
+|----------------------------------------------------|---------------------------------------------------------------|
+| type variable `α`                                  | `{α : 𝒜}`                                                     |
+| 关系参数 `Q : α ⟶ α`                               | 显式 `(Q : α ⟶ α)`                                            |
+| allegory                                           | `{𝒜} [TabularUnitaryUnguardedPowerLCDA 𝒜]`;用到 `∼`、`−` 再加 `[BooleanAllegory 𝒜]` |
+| `rel(…)` 不写的 witness(`RelProd`、`Coproduct`、`InitialAlgebra`、`Relator`) | 每个 hole 一个 binder;使用处仍由 `Calc.fill` 从 statement 的 context 取 |
+
+- allegory 的 class 先固定为 `CalcTest` 的 `Fold`、`Power` 两节用的那一个;按 body 推最弱的 class 等有第二个
+  需要它的例子再做。
+- 在哪里生成:不在 `rel_program` 里。`Lang/Embed.lean` 不 import AOP,`Lang/Calc.lean` import 了十个 AOP/Freyd
+  module(`Lang/Calc.lean:1`–`:11`);在 `rel_program` 里生成会让每个 program 都依赖它们。所以是证明文件里的一条
+  Lean command,`rel_aop mss`(决定 N):从 registry 读出 program `mss` 的每个 def 的 AST,各 emit 一个 `.aop` constant。
+  - registry 的条目多存一个字段:def 的 body(`Lang.Expr`)(决定 L)。
+  - `rel_aop` 是 Lean 一侧的 command,在 `rel_program` 之外,不是 Rel 语法。
+  - run path(`LeetQ/Run/`,唯一 precompile 的库)因此不 import AOP:`rel_aop` 和 `Lang/Calc.lean` 留在 `LeetQ/Rel/`。
+
+和 executable 的关系,以及 gap:
+
+| #  | gap                                                                                             | 谁来补                       |
+|----|-------------------------------------------------------------------------------------------------|------------------------------|
+| G1 | AOP 读法没有 constant:`rel(…)` 不认识 def 的名字                                               | 本节 6.3、6.4                |
+| G2 | `Den` 读法没有名字:`T` inline 在 `rep_x` 里,每个引用它的 def 再 inline 一遍                    | elaborate-once 第 5 步顺带:`rep_x` 的右边引用被调用 def 的 `T` |
+| G3 | 没有定理连接两种读法。需要一个新定理,不是现有的 `rep_*`/`const_sound`:`m.x.sound : (m.x).ok = true → rep (m.x).rel = m.x.aop` 在 executable 的 model 上的实例 | stage 6 |
+| G4 | G3 的右边要有意义,executable 的 model 必须是 6.2 第二张表每一行的 model:array 当 power object、有限 universe 上的除法。这些等式现在没有陈述 | stage 6 |
+| G5 | `GenSpec` 对 fold、`Λ`、`est`、`thin`、list builtin、算术没有 `*_sound` 引理,所以 `mss` 这类 def 连 `rep_x` 都没有(推断:`Lang/GenSpec.lean` 全文只有 leaf、allegory 运算、bit plan 三组;没有查 `mss.unproved` 的值) | stage 6 |
+
+- `rep_*` 和 `const_sound` 不动。它们说的是 "executable 算出 `T`";G3 说的是 "`T` 就是 AOP 读法"。两个定理
+  合起来才是 "executable 算出证明里的那个关系"。
+- G3–G5 补上之前,等式证明和 executable 之间的证据仍然是 `check`(有限数据)。这一点要写在每个这样的
+  theorem 的 docstring 里,不能让 theorem 读起来像是关于 executable 的。
+
+### 6.5 statement 量化的是什么(问题 3)
+
+| def 的种类                              | 例子                            | `.aop` 的形状                                   | statement 量化的东西                         |
+|-----------------------------------------|---------------------------------|-------------------------------------------------|----------------------------------------------|
+| body 全在 `rel(…)` 的 fragment 里       | `frac(R,S)`、`cor(S)`、`csp.peer(unit)` | 对 `𝒜`、object、参数泛型的 def            | 所有 allegory、所有 object、所有实参         |
+| 带关系参数                              | `sort(Q)`、`filter(p)`          | `(Q : α ⟶ α)` 是显式参数                        | 所有 `Q`:`theorem (Q : A ⟶ A) : rel(sort(Q)) = …` |
+| body 用到 list builtin 或算术           | `sort(Q)`、`segment`、`oplus`   | AOP 只在 `Rel(Set)` 里定义了它们(`ListRel.*`) | `𝒜` 固定为 `RelSet`;量化 Lean 的 `A : Type` |
+| body 是 literal,或 type 里有 `obj`      | `zero ≜ {(∗,0)}`、`N = -10…20`  | 自己没有 `.aop`;是用到它的 def 的 `.aop` 的参数(D) | 所有 model;书的 model 是一次代入          |
+| body 用到 μ/ν、`at(i)`、`setify`、lifting | `csp.AC3`、`csp.K`            | 没有;registry 记下第一个这样的构造             | 写不出 statement;`rel(AC3(…))` 报错         |
+
+- 参数在 statement 里是 local variable,没有 demand bit,也没有 family:5-M 的限制("constant 只收 closed 关系")
+  只管 executable,不管 `.aop`。
+- list 和算术这一行需要 `Calc.powers`(`Lang/Calc.lean:90`)旁边的第二张表:builtin → 它在 `Rel(Set)` 里的 AOP
+  declaration(`cons`、`nil`、`cat`、`inits`、`plus`、`≤`、`sum`、`length` …,即 `doc/rel-lean-mapping.md` Table A
+  里 status 是 same 或 differs [8] 的那些行)。`Calc.power`(`:111`)已经会按 declaration 的 binder 作用它,并在
+  statement 的 allegory 不对时报错;不需要新机制。
+- `sort(Q)` 另有一个已知的缺口:Rel 的 `ordered(Q)` 是公式,AOP 的 `ordered` 是递归谓词,两者相等没有陈述
+  (mapping 的 note [14])。要 reuse AOP 关于 `sortSpec` 的定理,先证这一条。
+- program fold `⦇e,S⦈` 要一条翻译规则(现在是报错):`⦇e,S⦈` 读成 `⦇[⊤e, S]⦈`,`⊤ : 1 ⟶ V`,`e` 是 seed 的
+  coreflexive。`ran(zero)` 这种 seed 给出 `⊤ ran(zero)`,它等于 `zero` 需要 `zero` 是 map(一步 `calc`)。未验证。
+
+literal 和 `obj`(决定 D):
+
+| literal def 和 `obj` 的 AOP 读法                                           | statement 说的是                   | 代价                                                        |
+|----------------------------------------------------------------------------|------------------------------------|-------------------------------------------------------------|
+| 没有读法;它们是用到它们的 def 的 `.aop` 的参数:`obj N` 是 `{N : 𝒜}`,`zero` 是 `(zero : 1 ⟶ N)`。`rel(mss)` 从 statement 的同名 local variable 取 | 对每个 model 成立;书的 model 是一次代入 | statement 要写出 `zero` 和它的假设;范围 `-10…20` 不出现在命题里 |
+
+- D 不发明 model:书的 model 和(以后的)executable model 都是同一个 def 的实例。
+- 书的 model 的写法:statement 把 literal 列成 binder 加一条等式假设(`(zero : …) (hz : zero = MSS.zero)`),
+  证明第一步 `subst`;6.6 的骨架就是这样。
+
+### 6.6 目标例子:`mss = ⦇k⦈ π₂ est(≥)`(问题 4)
+
+AOP 一侧已有的(索引 db,行号对过源文件):
+
+| 声明                              | 位置                     | statement                                                             |
+|-----------------------------------|--------------------------|-----------------------------------------------------------------------|
+| `Freyd.Alg.RelSet.MSS.mss`        | `AOP/A7_7_MSS.lean:106`  | `dCL Unit Int ⟶ ⟨Int⟩ := (segment ≫ sum)%∋ ≫ est(geq)`               |
+| `MSS.k`                           | `AOP/A7_7_MSS.lean:756`  | `Alg (F Unit Int) ⟨Int × (Int → Prop)⟩`,由 `wstep`、`tailSet` 写成    |
+| `MSS.mss_eq_scan`                 | `AOP/A7_7_MSS.lean:993`  | `mss = ⦇k⦈ ≫ graph (fun p => p.2) ≫ est(geq)`                         |
+| `ListRel.segment`、`ListRel.sum`  | `AOP/A5_6_ListCombinators.lean:311`, `:323` | `dList A ⟶ dList A`、`dList A ⟶ ⟨A⟩`               |
+
+能不能 reuse:能,但只在书的 model 上,而且两端各要一组桥。
+
+- `mss_eq_scan` 不是泛型定理:它在 `RelSet.{0}`、`Int`、`ConsList Unit Int`、`Int → Prop` 上逐点证出来
+  (`oplusFn`、`scanFn`、`mssPreFn`)。所以结论是关于书的 model 的,不是关于 `N = -10…20` 上的 array 程序的。
+- 左端的桥:`rel(mss)` 展开之后等于 `MSS.mss`。需要 `segment`(Rel 写成 `tails ∋ inits ∋`)等于
+  `ListRel.segment`,program fold `⦇ran(zero),plus⦈` 等于 `ListRel.sum`。
+  - `tails ∋` 里的 `∋` 作用在 list 上;`rel(…)` 把 `∋` 读成 `PowerAllegory.eps`,type 对不上。在 D 之下 `segment`
+    因此没有 AOP 读法,成为 `mss.aop` 的参数,在书的 model 上代入 `ListRel.segment`。
+- 右端的桥:Rel 写的 `[zero⟨𝟙,Λ(𝟙)⟩, ⟨w,Λ(w ∪ (π₂π₂∋))⟩]` 等于 `MSS.k`。`MSS.k` 用逐点定义的 `wstep`、
+  `tailSet` 写成,所以要三条引理:`wstep = (𝟙×π₁)oplus`、`tailSet = π₂π₂∋`、`⊤zero = graph fun _ => zeroVal`。
+  源文件里有 `wstep_apply`(`:771`)、`tailSet_apply`(`:784`)、`discZero_zero`(`:251`)可以用。
+- 书的 model 的 witness(`sumCop`、`rpair`、`CL.listInitial`,`AOP/A6_ConsList.lean:364`)是 def,不是 instance;
+  `Calc.fill` 只从 context 或 instance search 找。证明文件要把它们声明成 local instance 或 hypothesis。未验证。
+
+statement 和 `calc` 骨架(`Programs/MssProof.lean`,新文件):
+
+```
+import LeetQ.Rel.Programs.Mss
+import LeetQ.Rel.Lang.Calc
+import AOP.A7_7_MSS
+
+namespace LeetQ.Rel.Programs
+open Freyd Freyd.Alg Freyd.Alg.RelSet Freyd.Alg.RelSet.MSS
+open prelude
+open mss (mss oplus w)                          -- Lean 的 open;registry 过滤后 rel(…) 认识这三个名字
+
+rel_aop mss                                     -- 生成 mss.mss.aop、mss.oplus.aop、mss.w.aop
+
+-- 书的 model 的 witness:rel(…) 不写它们,`fill` 从 context 取(未验证:是否要写成 hypothesis)
+attribute [local instance] CL.listInitial
+
+/-- B&dM Ex 7.40 在书的 model 上(`Int`、cons list、power object):Rel 的 `mss` 等于 Rel 写的 scan。
+    不是关于 executable 的命题:`mss.rel.mss` 和它之间的证据是 `Programs/Mss.lean` 的 `check`。 -/
+theorem mss_scan
+    (zero : dL Unit ⟶ (⟨Int⟩ : RelSet.{0})) (hz : zero = MSS.zero)         -- literal `{(∗,0)}` 的读法
+    (segment : dCL Unit Int ⟶ dCL Unit Int) (hs : segment = ListRel.segment) :
+    rel(mss) = rel(⦇[zero ⟨𝟙,Λ(𝟙)⟩, ⟨w,Λ(w ∪ (π₂π₂∋))⟩]⦈ π₂ est(≥)) := by
+  subst hz hs
+  calc rel(mss)
+      = rel(Λ(segment ⦇[zero,plus]⦈) est(≥)) := rfl                        -- ≜ mss(program fold 已翻译)
+    _ = rel(Λ(segment sum) est(≥)) := by rw [sum_eq_fold]                   -- 桥:⦇[zero,plus]⦈ = sum
+    _ = MSS.mss := rfl                                                      -- ≜ MSS.mss
+    _ = ⦇k⦈ ≫ graph (fun p : Int × (Int → Prop) => p.2) ≫ est(geq) := mss_eq_scan
+    _ = rel(⦇[zero ⟨𝟙,Λ(𝟙)⟩, ⟨w,Λ(w ∪ (π₂π₂∋))⟩]⦈ π₂ est(≥)) := by
+        rw [k_eq, snd_eq_outr]                                              -- 桥:MSS.k 的拼法
+```
+
+- AOP 的证明一行都不重证:中间那一步就是 `mss_eq_scan`。新写的只有两端的桥(`sum_eq_fold`、`k_eq`、
+  `snd_eq_outr`,名字是占位)和 `≜` 步。
+- 第二、三步用到 `plus`、`≥`、`sum` 的 `Rel(Set)` 读法(6.5 的第二张 builtin 表),并假定 `MSS.plus`、`MSS.geq`
+  和 `ListRel` 的那两个可以互相化简。未验证。
+- 要得到关于 `N = -10…20` 的 array 程序的定理,需要 `mss_eq_scan` 的一个不依赖 `Int` 的版本(假设写成
+  hypothesis)加上 G3–G5。那是另一项工作,不在这个目标里。
+
+### 6.7 `rel_program` 里要不要证明语法(问题 5)
+
+不要。
+
+- Lean 的 `calc` 是唯一的证明语言。理由(右边的 term)是 Lean term,定律是 Lean 的 theorem;`rel_program` 里
+  的证明语法要么把 Lean term 嵌进 Rel body(破坏 2.3 的边界),要么自己实现一套定律名字的查找和 congruence,
+  是第二个证明检查器。
+- note 的 `calc_steps`、`lean-calc(…)` 已经从 Lean 的 `calc` 画证明表;证明留在 Lean 里,图免费得到。
+- 什么情况才值得加:
+  - 有一个读者只能读 Rel 文本、读不了 Lean 文件。5-I 已经否决了独立的 `.rel` 文件,所以现在没有这个读者;
+  - 或者证明步骤需要一条 Lean 的 `calc` 表达不了的 Rel 专有规则。现在没有这样的规则。
+- 可以加、但不是语法的一样东西:一个 gate,列出每个 program 的每条 `check R = S`,报告哪些没有同名 statement
+  的 theorem。它枚举的是 `check`(义务),不是 theorem(记录)。等有第二个带证明的 program 再做。
+
+### 6.8 分阶段计划(问题 6)
+
+owner:`Lang/*`、`CRel*`、`Rep*` 是 ffreyd;`Programs/*` 是 aima。"第 n 步" 指第 4 节的表。
+
+| stage | 交付物                                                                                                                               | 文件                                                               | owner               | gate                                                                                                           | 规模         | 等 elaborate-once 吗      |
+|-------|---------------------------------------------------------------------                                                                 |--------------------------------------------------------            |--------             |-----------------------------------------------------------                                                     |--------------|---------------------------|
+| P0    | spike:6.6 的 theorem,Rel def 先手写成 Lean def(各一行 `rel(…)`),不碰 registry。按 D 写 statement;定下 witness 的写法、三组桥是否成立 | `Lang/CalcMssTest.lean`(新)                                        | ffreyd              | 该 module build;`#print axioms` 不比 `mss_eq_scan` 多                                                          | ~150 行      | 不等,现在就能做           |
+| P1    | program fold 的翻译规则;list/算术 builtin 的 `Rel(Set)` 表                                                                           | `Lang/Calc.lean`、`Lang/CalcTest.lean`                             | ffreyd              | `CalcTest`:每个新构造一条 `guard_expr`,每个仍不支持的一条报错                                                  | ~80 行       | 不等                      |
+| P2    | registry 多存 body;`rel_aop m` 生成 `.aop` constant                                                                                  | registry 所在文件、`Lang/Calc.lean`                                | ffreyd              | `rel_aop prelude` 之后每个 def 要么有 `.aop`,要么在 "no AOP reading" 表里带原因;两者之和等于 registry 的条目数 | ~150 行      | 等第 1 步(registry)       |
+| P3    | `rel(t)` 用 2.3 的 resolver;`.name`/`.app`/`.inf` 解析到 `.aop`;删 `Calc.prelude`                                                    | `Lang/Calc.lean`、`Lang/CalcTest.lean`                             | ffreyd              | 测试:`rel(mss)` 能读;没有 `open` 报 unknown;手写的 Lean def 报 "is not a Rel definition";`≜` 步是 `rfl`        | ~100 行      | 等第 1–3 步(resolver)     |
+| P4    | `mss_scan`,用真的 `rel(mss)`;P0 的 spike 文件删掉                                                                                    | `Programs/MssProof.lean`(新);桥引理放 `AOP/A7_7_MSS.lean` 或新文件 | aima(桥引理:ffreyd) | 该 module build;axioms 同 P0                                                                                   | ~120 行      | 等 P2、P3                 |
+| P5    | 第二个例子,取一个带参数的 def(`sort(Q)` 或 `filter(p)`),含 note [14] 那条等式                                                        | `Programs/*Proof.lean`                                             | aima                | 同 P4                                                                                                          | 取决于 [14]  | 等 P3                     |
+| P6    | 连接 executable:G2–G5                                                                                                                | `Lang/GenSpec.lean`、`Lang/Expand.lean`、`Rep*.lean`               | ffreyd              | 每个 program:`n.unproved` 为空的 def 都有 `m.x.sound`                                                          | 大,未估      | 等第 5 步                 |
+
+- P0 和 P1 不依赖 module 的工作,可以和第 1–5 步并行;P0 先做,因为它验证 D 的 statement 写得出来,也决定 P2 的 binder 规则。
+- P2–P4 只需要 registry 和 resolver(第 1–3 步),不需要 2.4 的 Gen 一侧(第 4–5 步)。
+- P6 是唯一等 2.4 的:带参数的 def 要先有 executable 的 constant,才有东西可以陈述 `sound`。P6 不做,P0–P5 的
+  theorem 照样成立,只是它们和 executable 之间仍然只有 `check`。
+
+### 6.9 被否决的选项
+
+决定是本节开头那张表的 D、L、N。没有剩下要他决定的。
+
+| # | 选项                                                         | 否决的理由                                                                   |
+|---|--------------------------------------------------------------|------------------------------------------------------------------------------|
+| E | literal def 和 `obj` 固定读成书的 `Rel(Set)` model           | 枚举的 `obj` 要生成 Lean type(新结构);命题把有限的 `N` 说成了 `Int`(note [8]) |
+| F | literal def 和 `obj` 读成 executable 的 model(`Den` 读法)   | AOP 第 7 章以后的定理陈述在 `Int`、`ConsList`、`P` 上,用不上;G5 的 def 没有 `T` |
+| M | registry 不存 body                                           | `rel_aop` 在 `rel_program` 之外拿不到 def 的 AST,只能重新 parse 源文本,是 def 的第二份拷贝 |
+| O | `.aop` constant 在 `rel_program` 里生成,不加 command         | 每个 program、连同 run path,都要 import `Lang/Calc.lean` 的十个 AOP/Freyd module |
