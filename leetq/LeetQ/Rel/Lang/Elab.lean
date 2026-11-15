@@ -224,7 +224,7 @@ inductive Pre
       mention `X`, a `ν`'s start. -/
   | fix (pos : Pos) (least : Bool) (k : Nat) (S : Option Pre) (body : Pre) (a b : OTy)
   /-- The constant `c` at `pos`, at the objects `us` of its object variables and the arguments `args`; `alt` the
-      definition's body expanded at the use, which every analysis reads and `build` falls back to. -/
+      definition's body expanded at the use, which every analysis reads and `build` does not. -/
   | call (pos : Pos) (c : Lean.Name) (us : List OTy) (args : List Pre) (alt : Pre) (a b : OTy)
 
 instance : Inhabited Pre := ⟨.id (.base "")⟩
@@ -1425,18 +1425,21 @@ def build : Pre → Except Err Res
     pure ⟨A, B, false, .val ⟨n, k, v⟩⟩
   | .close p q a why => do closeRes objs st dp p a why (← build q)
   | .var _ k a b => return ⟨← toObj st dp a, ← toObj st dp b, false, .var k⟩
-  -- the constant's object variables must be base objects with a universe and its arguments need no keys (M); a
-  -- use that is not expands the body, as a definition of the program itself does
-  | .call pos c us xs alt a b => do
+  -- the constant takes, per object variable, a declared object's universe, and closed relations (M); any other
+  -- use is refused, since the constant was built with each variable a `.long` object of its own
+  | .call pos c us xs _ a b => do
     let A ← toObj st dp a; let B ← toObj st dp b
-    let us := us.map (zonk st)
-    let rs ← xs.attach.mapM fun ⟨x, h⟩ =>
+    let f ← us.foldlM (fun f u => do
+      let u := zonk st u
+      unless (match u with | .base _ => (uniOf objs u).isSome | _ => false) do
+        throw ⟨pos, s!"`{c}`: an object variable is {u} here; its constant takes only a declared object with a universe"⟩
+      return .arg f (← uniTm objs st dp pos u .long "a call")) (Tm.call (A := A) (B := B) c)
+    let f ← xs.attach.foldlM (init := f) fun (f : Tm A B false) ⟨x, h⟩ => do
       have : sizeOf x < sizeOf xs := List.sizeOf_lt_of_mem h
-      build x
-    let base (u : OTy) := match u with | .base _ => (uniOf objs u).isSome | _ => false
-    if !us.all base || rs.any (·.2.2.1) then build alt else
-    let f ← us.foldlM (fun f u => return .arg f (← uniTm objs st dp pos u .long "a call")) (Tm.call (A := A) (B := B) c)
-    pure ⟨A, B, false, rs.foldl (fun f r => match r with | ⟨_, _, false, t⟩ => .arg f t | _ => f) f⟩
+      match ← build x with
+      | ⟨_, _, false, t⟩ => pure (.arg f t)
+      | _ => throw ⟨pos, s!"`{c}`: an argument needs keys; its constant takes only closed relations (decision M)"⟩
+    pure ⟨A, B, false, f⟩
   -- the body read whole each round, on its source's universe when it needs keys
   | .fix p least k S q a b => do
     let A ← toObj st dp a; let B ← toObj st dp b
