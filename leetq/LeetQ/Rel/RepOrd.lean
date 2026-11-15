@@ -200,23 +200,28 @@ set_option hygiene false in
 local notation "pc(" r ")" => ((List.range r).map fun u => (Column.bitsAt (slicesOf X).2 (u * 8) 8).toNat).sum
 
 /-- **`bagify`'s row `r`, read back**: under `rep_bagify`'s bound pieces and hypotheses, the result's row `r` is a
-    permutation of row `r` of `X`, ascending; the copies fit a `USize` (`expand_at`). The pieces: `expand`'s
+    permutation of row `r` of `X`, `S`-ordered where `sortBy` lists every fitting `m` cells in an order `R` that
+    `S` reads on their values (`hsort`, `hRS`); the copies fit a `USize` (`expand_at`). The pieces: `expand`'s
     index and rank columns `xi`, `xr` at `m` copies, the cells `cells`, the regrouped grade `p`. -/
-theorem bag_row {n : USize} (X : Vals (.arr (.atom .long)) n) (hp : X.1.toNat < 2 ^ 63) (hn : n.toNat < 2 ^ 63)
+theorem bag_row {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 2 ^ 63) (hn : n.toNat < 2 ^ 63)
     (hS : pc(n.toNat) < 2 ^ 63) (hU : pc(n.toNat) < USize.size)
     (xi : ByteArray) (hxi : xi = expandBytes 8 0 (tilLongs n) (slicesOf X).2)
-    (m : USize) (hm : m = (len xi).toUSize)
+    (m : USize) (hm : m = (len xi).toUSize) (hf : Vals.fitsN B X.2.2.2 m.toNat = true)
+    (R : Vals B m → Nat → Nat → Prop) (S : B.El → B.El → Prop)
+    (hsort : ∀ c : Vals B m, Vals.PickFits B c (List.range m.toNat) →
+      (ids (Obj.sortBy B c (tilLongs m))).Perm (List.range m.toNat) ∧ (ids (Obj.sortBy B c (tilLongs m))).Pairwise (R c))
+    (hRS : ∀ (c : Vals B m) a b (ha : a < m.toNat) (hb : b < m.toNat), R c a b → S (c.row ⟨a, ha⟩) (c.row ⟨b, hb⟩))
     (xr : ByteArray) (hxr : xr = sub m (tilLongs m) (gather 8 (sub n (sums n (slicesOf X).2) (slicesOf X).2) xi))
-    (cells : Vals (.atom .long) m) (hc : cells = Vals.pick (.atom .long) X.2.2.2
+    (cells : Vals B m) (hc : cells = Vals.pick B X.2.2.2
       (add m (gather 8 (slicesOf X).1 xi) xr) m (len_val Ew.add Ew.vv (gather 8 (slicesOf X).1 xi) xr m))
-    (p : ByteArray) (hpg : p = gather 8 (Obj.sortBy (.atom .long) cells (tilLongs m))
-      (Code.ofLongs (gather 8 xi (Obj.sortBy (.atom .long) cells (tilLongs m)))).grade) :
+    (p : ByteArray) (hpg : p = gather 8 (Obj.sortBy B cells (tilLongs m))
+      (Code.ofLongs (gather 8 xi (Obj.sortBy B cells (tilLongs m)))).grade) :
     len xi < USize.size ∧ len p = m.toNat ∧
       ∀ (q : USize) (hq : len p = q.toNat) (hh : n.toNat ≤ len (sums n (slicesOf X).2)) (r : Nat)
-        (hr : r < n.toNat) (ys : List Int64), ys = Vals.row (A := .arr (.atom .long))
+        (hr : r < n.toNat) (ys : List B.El), ys = Vals.row (A := .arr B)
           (⟨q, valCol Ew.sub Ew.vv (sums n (slicesOf X).2) (slicesOf X).2, longsN n (sums n (slicesOf X).2) hh,
-            Vals.pick (.atom .long) cells p q hq⟩ : Vals (.arr (.atom .long)) n) ⟨r, hr⟩ →
-        ys.Perm (X.row ⟨r, hr⟩) ∧ ys.Pairwise (· ≤ ·) := by
+            Vals.pick B cells p q hq⟩ : Vals (.arr B) n) ⟨r, hr⟩ →
+        ys.Perm (X.row ⟨r, hr⟩) ∧ ys.Pairwise S := by
   have hs1 : len (slicesOf X).1 = n.toNat := (len_slices _ _ _ _).1
   have hs2 : len (slicesOf X).2 = n.toNat := (len_slices _ _ _ _).2
   have hR := fun r (hr : r < n.toNat) => slicesOf_row X hp hr
@@ -227,6 +232,12 @@ theorem bag_row {n : USize} (X : Vals (.arr (.atom .long)) n) (hp : X.1.toNat < 
   obtain ⟨hxl, hx_in, hx_at⟩ := expand_at (n := n) (slicesOf X).2 hs2 hS hU xi hxi xr (by rw [hxr, hm])
   have hxU : len xi < USize.size := by omega
   have hmN : m.toNat = len xi := by rw [hm]; exact USize.toNat_ofNat_of_lt' hxU
+  -- the payload fits at any `m` positions, so the cells fit at any `m` of theirs
+  have hfp : ∀ qs : List Nat, qs.length ≤ m.toNat → Vals.PickFits B X.2.2.2 qs :=
+    fun qs hl => pickFits_of_fitsN B X.2.2.2 m.toNat hf qs hl
+  have hcf : ∀ qs : List Nat, (∀ c ∈ qs, c < m.toNat) → qs.length ≤ m.toNat → Vals.PickFits B cells qs :=
+    fun qs hqs hl => by
+      subst hc; exact pickFits_pick B X.2.2.2 _ m _ qs hqs (hfp _ (by simp)) (hfp _ (by simpa using hl))
   -- copy `pc(r) + t` is cell `t` of row `r`
   have hcell : ∀ r t (hr : r < n.toNat) (ht : t < (X.row ⟨r, hr⟩).length) (hd : pc(r) + t < m.toNat),
       cells.row ⟨pc(r) + t, hd⟩ = (X.row ⟨r, hr⟩)[t] := by
@@ -242,7 +253,8 @@ theorem bag_row {n : USize} (X : Vals (.arr (.atom .long)) n) (hp : X.1.toNat < 
         (Column.bitsAt (slicesOf X).1 (r * 8) 8).toNat + t := by
       rw [add_get hd (by rw [hgs, hrk]; omega), hgs, hrk]
     subst hc
-    rw [pick_row_atom _ _ _ _ ⟨pc(r) + t, hd⟩ (by rw [hj]; omega), hget t ht (by omega)]
+    rw [pick_row B _ _ _ _ (hfp _ (by simp)) ⟨pc(r) + t, hd⟩,
+      dif_pos (show _ < X.1.toNat by rw [hj]; omega), hget t ht (by omega)]
     exact congrArg _ (Fin.ext hj)
   -- every copy is of row `xi[c]`, in that row's block
   have hkey : ∀ c, c < len xi → (Column.bitsAt xi (c * 8) 8).toNat < n.toNat ∧
@@ -251,8 +263,8 @@ theorem bag_row {n : USize} (X : Vals (.arr (.atom .long)) n) (hp : X.1.toNat < 
     obtain ⟨r, t, hr, ht, rfl⟩ := hx_at c hc
     rw [(hx_in r t hr ht).1, hpc_succ]; omega
   -- the cells sorted by value, then regrouped stably by row
-  generalize hv : Obj.sortBy (.atom .long) cells (tilLongs m) = v at hpg
-  obtain ⟨hvp, hvs⟩ := sortBy_long cells
+  generalize hv : Obj.sortBy B cells (tilLongs m) = v at hpg
+  obtain ⟨hvp, hvs⟩ := hsort cells (hcf _ (fun c hc => List.mem_range.1 hc) (by simp))
   rw [hv, hmN] at hvp; rw [hv] at hvs
   obtain ⟨hpp, hps⟩ := grade_group xi v hvp _ hvs hxU (fun c hc => by have := (hkey c hc).1; omega)
   rw [← hpg] at hpp hps
@@ -275,15 +287,21 @@ theorem bag_row {n : USize} (X : Vals (.arr (.atom .long)) n) (hp : X.1.toNat < 
   have hhi : ((longsN n (sums n (slicesOf X).2) hh).get ⟨r, hr⟩).toInt = ((pc(r + 1) : Nat) : Int) := by
     rw [longsN_get]; dsimp only
     rw [toInt64_toInt (x := Column.bitsAt (sums n (slicesOf X).2) (r * 8) 8) (by omega), hsum]
-  have hrow := arr_row (b := .atom .long) (⟨q, valCol (n := n) Ew.sub Ew.vv (sums n (slicesOf X).2) (slicesOf X).2,
-    longsN n (sums n (slicesOf X).2) hh, Vals.pick (.atom .long) cells p q hq⟩ : Vals (.arr (.atom .long)) n) ⟨r, hr⟩
+  have hrow := arr_row (b := B) (⟨q, valCol (n := n) Ew.sub Ew.vv (sums n (slicesOf X).2) (slicesOf X).2,
+    longsN n (sums n (slicesOf X).2) hh, Vals.pick B cells p q hq⟩ : Vals (.arr B) n) ⟨r, hr⟩
   dsimp only at hrow
   rw [hlo, hhi] at hrow
   have f1 : min (max ((pc(r) : Nat) : Int) 0).toNat q.toNat = pc(r) := by omega
   have f2 : min (max ((pc(r + 1) : Nat) : Int) 0).toNat q.toNat = pc(r + 1) := by omega
   rw [f1, f2] at hrow
   -- the row is the block `[pc(r), pc(r+1))` of the grade, each copy read as its cell
-  let F : Nat → Int64 := fun c => if h : c < m.toNat then cells.row ⟨c, h⟩ else default
+  let F : Nat → B.El := fun c => if h : c < m.toNat then cells.row ⟨c, h⟩ else B.dflt
+  have hpq : q.toNat = m.toNat := by rw [← hq, hlp]
+  have hcp : Vals.PickFits B cells ((List.range q.toNat).map fun t => (Column.bitsAt p (t * 8) 8).toNat) :=
+    hcf _ (fun c hc => by
+      obtain ⟨t, ht, rfl⟩ := List.mem_map.1 hc
+      have hJ : t < (ids p).length := by rw [← len_eq_ids, hq]; exact List.mem_range.1 ht
+      rw [← ids_getElem hJ]; exact hpm _ (List.getElem_mem hJ)) (by simp [hpq])
   have hlen : ((ids p).drop pc(r)).length ≥ cc(r) := by
     rw [List.length_drop, ← len_eq_ids, hlp, hmN, hxl]; omega
   have hys : ys = (((ids p).drop pc(r)).take cc(r)).map F := by
@@ -297,7 +315,8 @@ theorem bag_row {n : USize} (X : Vals (.arr (.atom .long)) n) (hp : X.1.toNat < 
       have hin : (ids p)[pc(r) + u] < m.toNat := hpm _ (List.getElem_mem hJ)
       rw [List.getElem_map, List.getElem_range, dif_pos hb, List.getElem_map, List.getElem_take, List.getElem_drop]
       dsimp only [F]
-      rw [dif_pos hin, pick_row_atom _ _ _ _ ⟨pc(r) + u, hb⟩ (by rw [← ids_getElem hJ]; exact hin)]
+      rw [dif_pos hin, pick_row B _ _ _ _ hcp ⟨pc(r) + u, hb⟩,
+        dif_pos (show _ < m.toNat by rw [← ids_getElem hJ]; exact hin)]
       exact congrArg _ (Fin.ext (ids_getElem hJ).symm)
   have hX : X.row ⟨r, hr⟩ = (List.range' pc(r) cc(r)).map F := by
     obtain ⟨-, hln, -⟩ := hR r hr
@@ -332,10 +351,8 @@ theorem bag_row {n : USize} (X : Vals (.arr (.atom .long)) n) (hp : X.1.toNat < 
   rcases h with h | ⟨-, h⟩
   · exact absurd h (Nat.lt_irrefl _)
   · dsimp only [F]
-    rw [dif_pos ham, dif_pos hbm, Vals.row_atom, Vals.row_atom, Int64.le_iff_lt_or_eq]
-    rcases h ham hbm with h | ⟨h, -⟩
-    · exact .inl h
-    · exact .inr h
+    rw [dif_pos ham, dif_pos hbm]
+    exact hRS cells a b ham hbm h
 
 /-- **`rep (bagify X)` at `long`**: an array of `X` goes to `ys` exactly when `ys` is a permutation of it,
     ascending — the one sorted member of its `perm` class. Hypotheses: the payload count, the row count and the
