@@ -96,10 +96,14 @@ def checkErr (A B : Obj) (objs : Objs) (p : Pos) (x y : String) (eq : Bool) (s t
    else some ⟨p, s!"check failed: {x} = {showRel objs s t R.rel}, {y} = {showRel objs s t S.rel}"⟩, R.ok && S.ok)
 
 /-- A program's failures: each `check` that does not hold, and an op out of capacity anywhere in its definitions,
-    prints or checks (an ok bit false), which no value of the program can be trusted after. -/
-def failures (ds : List (String × Gen.Gv)) (ps : List (String × Bool)) (cs : List (Option Err × Bool)) : List Err :=
+    prints or checks (an ok bit false), which no value of the program can be trusted after; each definition not
+    ok is named with the `μ`s it holds (`ms`), whose rounds reaching their cap also clear the bit. -/
+def failures (ds : List (String × Gen.Gv)) (ms : List (String × List String)) (ps : List (String × Bool))
+    (cs : List (Option Err × Bool)) : List Err :=
   cs.filterMap (·.1) ++ if ds.all (·.2.2.2.ok) && ps.all (·.2) && cs.all (·.2) then [] else
-    [⟨{}, "an op ran out of capacity (its twin's ok bit is false)"⟩]
+    let bad := (ds.filter (!·.2.2.2.ok)).map fun (x, _) =>
+      s!"; in {x}" ++ String.join (((ms.lookup x).getD []).map (s!", or {·}"))
+    [⟨{}, "an op ran out of capacity (its twin's ok bit is false)" ++ String.join bad⟩]
 
 namespace Expand
 
@@ -320,7 +324,21 @@ def fv : {A B : Obj} → {d : Bool} → Tm A B d → List Nat
   | _, _, _, .fold e S | _, _, _, .foldI e S => fv e ++ fv S
   | _, _, _, .var k => [k]
   | _, _, _, .nu k S b => fv S ++ (fv b).filter (· != k)
-  | _, _, _, .mu k U V b => fv U ++ fv V ++ (fv b).filter (· != k)
+  | _, _, _, .mu k _ _ b => (fv b).filter (· != k)
+  | _, _, _, _ => []
+
+/-- The `μ`s in `t`, each as the failure it reports when its rounds reach the cap. -/
+def mus : {A B : Obj} → {d : Bool} → Tm A B d → List String
+  | _, _, _, .top V => mus V
+  | _, _, _, .comp R S | _, _, _, .meet R S | _, _, _, .join R S | _, _, _, .diff R S => mus R ++ mus S
+  | _, _, _, .pair R S | _, _, _, .prod R S | _, _, _, .junc R S | _, _, _, .arg R S => mus R ++ mus S
+  | _, _, _, .conv R | _, _, _, .dom R | _, _, _, .ran R | _, _, _, .lam R | _, _, _, .E R | _, _, _, .map R => mus R
+  | _, _, _, .est R | _, _, _, .thin R | _, _, _, .own R | _, _, _, .thinL R | _, _, _, .merge R => mus R
+  | _, _, _, .loop R | _, _, _, .flat R => mus R
+  | _, _, _, .ldiv R S U V | _, _, _, .rdiv R S U V => mus R ++ mus S ++ mus U ++ mus V
+  | _, _, _, .fold e S | _, _, _, .foldI e S => mus e ++ mus S
+  | _, _, _, .nu _ S b => mus S ++ mus b
+  | _, _, _, .mu _ w n b => s!"{w} ran its cap of {n} rounds without reaching a fixed point" :: mus b
   | _, _, _, _ => []
 
 /-- A term that needs no keys and reads no fixed-point variable: computed once, its own constant (`share`). -/
@@ -356,7 +374,7 @@ def number : {A B : Obj} → {d : Bool} → Tm A B d → StateM Nat (Tm A B d)
   | _, _, _, .foldI e S => do w (.foldI (← number e) (← number S))
   | _, _, _, .flat R => do w (.flat (← number R))
   | _, _, _, .nu k S b => do w (.nu k (← number S) (← number b))
-  | _, _, _, .mu k U V b => do w (.mu k (← number U) (← number V) (← number b))
+  | _, _, _, .mu k s n b => do w (.mu k s n (← number b))
   | _, _, _, .arg f x => do w (.arg (← number f) (← number x))
   | _, _, _, t => w t
 where w {A B : Obj} {d : Bool} (t : Tm A B d) : StateM Nat (Tm A B d) :=
@@ -572,7 +590,7 @@ partial def node (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bo
       let arcTy := mkApp2 (mkConst ``Gen.Arc) (oE A) (oE B)
       return g ``Gen.nuAC #[oE A, oE B, ← c S, ← arc a, ← mkListLit arcTy (← as.mapM arc)]
     | _ => return g ``Gen.nu #[oE A, oE B, ← c S, ← body pre ρ A B k b]
-  | A, B, _, .mu k UA UB b => return g ``Gen.mu #[oE A, oE B, ← c UA, ← c UB, ← body pre ρ A B k b]
+  | A, B, _, .mu k _ n b => return g ``Gen.mu #[oE A, oE B, toExpr n, ← body pre ρ A B k b]
   | _, _, _, .call c => return mkConst c
   | _, _, _, t@(.arg ..) => spine pre ρ t
 
@@ -724,6 +742,8 @@ def objsE (objs : Objs) : MetaM Lean.Expr := do
     hold, and an op out of capacity) and `n.ok`, that there is none. -/
 def emit (n : Name) (r : Read) : MetaM Unit := do
   let (ds, ps, cs, objs, os, xs, ex) := r
+  -- read before `number`, which hides a closed `μ` inside a `share`
+  let ms : List (String × List String) := ds.map fun (x, ⟨_, _, _, t⟩) => (x, mus t)
   -- one numbering over the whole program, as the code of each number is kept across it
   let ((ds, ps, cs), fs) := Prod.fst <| (do
     let fs ← os.mapM fun (x, nv, qs, ⟨A, B, d, t⟩) => return (x, nv, qs, (⟨A, B, d, ← number t⟩ : Res))
@@ -795,7 +815,7 @@ def emit (n : Name) (r : Read) : MetaM Unit := do
     (mkApp2 (mkConst ``Prod.fst [0, 0]) (mkConst ``String) (mkConst ``Bool)) (mkConst (n ++ `printed)))
   let cty := pairT (mkApp (mkConst ``Option [0]) (mkConst ``Err)) (mkConst ``Bool)
   addConst (n ++ `failures) (listT (mkConst ``Err))
-    (g ``failures #[mkConst (n ++ `expanded), mkConst (n ++ `printed), ← mkListLit cty checked])
+    (g ``failures #[mkConst (n ++ `expanded), toExpr ms, mkConst (n ++ `printed), ← mkListLit cty checked])
   addConst (n ++ `ok) (mkConst ``Bool) (mkApp2 (mkConst ``List.isEmpty [0]) (mkConst ``Err) (mkConst (n ++ `failures)))
 
 end Expand
