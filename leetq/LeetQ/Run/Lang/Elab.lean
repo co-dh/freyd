@@ -450,11 +450,28 @@ structure Env where
   objs : Objs := []
   defs : List (String × Def) := []
   params : List (String × Arg) := []
+  /-- The resolver (module design §2.3), and the other programs' definitions and objects by constant: where a name
+      the program does not define goes. -/
+  res : String → Found := fun _ => .none
+  ext : List (Lean.Name × Def) := []
+  extObjs : List (Lean.Name × ObjInfo) := []
+
+/-- The definition `n`: the program's, else the one the resolver gives. -/
+def Env.def? (env : Env) (n : String) : Option Def :=
+  (env.defs.lookup n).orElse fun _ => match env.res n with | .ext e => if e.obj then none else env.ext.lookup e.const | _ => none
+
+/-- The infix operator `n`: the program's `_n_`, else the registered infix the resolver gives. -/
+def Env.infix? (env : Env) (n : String) : Option Def :=
+  (env.defs.lookup s!"_{n}_").orElse fun _ => match env.res n with | .ext e => if e.infix then env.ext.lookup e.const else none | _ => none
+
+/-- The object `n`: the program's, else the registered object the resolver gives. -/
+def Env.obj? (env : Env) (n : String) : Option ObjInfo :=
+  (env.objs.lookup n).orElse fun _ => match env.res n with | .ext e => if e.obj then env.extObjs.lookup e.const else none | _ => none
 
 /-- `o` as the program wrote it, resolved: an alias stands for its definition, a variable for its object in `vs`,
     one use's instantiation (§e). -/
 def oty (env : Env) (vs : List (String × OTy) := []) : OExp → M OTy
-  | .name p n => match env.objs.lookup n with
+  | .name p n => match env.obj? n with
     | some i => pure i.ty
     | none => throw ⟨p, s!"unknown object '{n}'"⟩
   | .var p n => match vs.lookup n with
@@ -779,7 +796,7 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
     -- a fixed point's variable at the place it is used, which its errors name
     | some (.rel (.var _ k a b) s t) => pure (.rel (.var p k a b) s t)
     | some a => pure a
-    | none => match env.defs.lookup n with
+    | none => match env.def? n with
       | some d =>
         if d.arity == 0 then (do settle m p [] (← d.apply p []))
         else throw ⟨p, s!"'{n}' takes {d.arity} arguments, found none"⟩
@@ -792,7 +809,7 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
       | none => applied p o (as.map Arg.plain)
   | .app p n args => do
     let as ← elabArgs env m args
-    match env.defs.lookup n with
+    match env.def? n with
     | some d =>
       if d.arity != as.length then throw ⟨p, s!"'{n}' takes {d.arity} arguments, found {as.length}"⟩
       settle m p as (← d.apply p as)
@@ -800,7 +817,7 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
   -- `R n S`: the definition declared `_n_`, given `R` and `S` (§c)
   | .inf p n a b => do
     let x ← elabE env m a; let y ← elabE env m b
-    match env.defs.lookup s!"_{n}_" with
+    match env.infix? n with
     | some d => settle m p [x, y] (← d.apply p [x, y])
     | none => throw ⟨p, s!"unknown infix operator '{n}'"⟩
   | .comp a b => do

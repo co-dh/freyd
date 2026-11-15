@@ -146,6 +146,8 @@ syntax (name := lArr) "[" relLit* "]" : relLit
 -- one level, left to right (§c): every infix form takes the level on its left and a primary on its right
 syntax:max (name := rId) ident : rel
 syntax:max (name := rSym) relSym : rel
+-- `csp.≼`: Lean reads a qualified symbol name as three tokens (module design §2.3)
+syntax:max (name := rQSym) ident noWs "." noWs relSym : rel
 syntax:max (name := rApp) relHead noWs "(" rel,+ ")" : rel
 syntax:max (name := rObjs) relHead noWs "(" relObj,+ ")" : rel
 syntax:max (name := rAppPair) relHead noWs "⟨" rel "," rel "⟩" : rel
@@ -188,7 +190,7 @@ syntax (name := sTheorem) &"theorem " relWord ("(" relParam,+ ")")? (&" on " rel
 @[run_parser_attribute_hooks] def relStmts : Parser := relTokens (many (withPosition (kwBack (categoryParser `relStmt 0))))
 
 -- one block, so the program's lines stay as they are (no per-line keyword) and its scope runs through them
-syntax (name := relProgram) (docComment)? "rel_program " ident (&" after " ident)? " where" relStmts : command
+syntax (name := relProgram) (docComment)? "rel_program " ident " where" relStmts : command
 /-- A variant of a program: its definitions, the `where` ones in place of those of their names, its checks and
     theorems dropped (they state the base's own values), and only the declarations up to the definition `upto` names. -/
 syntax (name := relVariant) (docComment)? "rel_program " ident &" from " ident (&" upto " relWord)? " where" relStmts :
@@ -223,8 +225,8 @@ def wordOf (s : Syntax) : C String := match s.getKind with
   | _ => onText s (tokText s[0]) Parse.word
 
 /-- The names a run of letters is, each where it starts: `Parse.name` to the end of the token. -/
-partial def namesOf (s : Syntax) : C (List (Lang.Pos × String)) :=
-  onText s (tokText s) go
+partial def namesOf (s : Syntax) (t : String := tokText s) : C (List (Lang.Pos × String)) :=
+  onText s t go
 where go : P (List (Lang.Pos × String)) := do
   if (← Parse.peek).isNone then return []
   let p ← Parse.pos; let n ← Parse.name
@@ -293,6 +295,7 @@ partial def prim (s : Syntax) : C (List Lang.Expr) := do
   let p ← posOf s
   match s.getKind with
   | ``rId | ``rSym => do (← namesOf s[0]).flatMapM fun (p, n) => atomOf s p n none none none
+  | ``rQSym => do (← namesOf s s!"{tokText s[0]}.{tokText s[2]}").flatMapM fun (p, n) => atomOf s p n none none none
   | ``rParen => pure [← expr s[1]]
   -- a fixed point: `X` in scope in the body only
   | ``rFix => do
@@ -355,7 +358,11 @@ partial def atomOf (s : Syntax) (p : Lang.Pos) (n : String) (app objs pair : Opt
     | _, some q => do pure [.pair (← posOf q[1]) (← expr q[2]) (← expr q[4])]
     | none, none => if objs.isSome then failAt s "expected a term" else pure []
   let args (a : Syntax) : C (List Lang.Expr) := a[2].getSepArgs.toList.mapM expr
-  match (← get).known.lookup n, Parse.builtin n with
+  -- the program's names, then the kernel table, then the resolver's (§2.3)
+  let st ← get
+  let ar := (st.known.lookup n).orElse fun _ =>
+    if (Parse.builtin n).isSome then none else (st.ext n).bind fun e => if e.infix || e.obj then none else some e.arity
+  match ar, Parse.builtin n with
   | some 0, _ => do pure (.name p n :: (← after))
   | some _, _ => match app with
     | some a => do pure [.app p n (← args a)]
@@ -486,9 +493,9 @@ def stmt (s : Syntax) : C Decl := do
   | _ => failAt s "expected a declaration"
 
 /-- The program of the statements `ss`, read in the scope `s₀`, each statement in the scope those before it leave
-    (`Parse.after`). -/
-def program (fm : FileMap) (s₀ : Parse.S) (ss : Array Syntax) : Except Err Program :=
-  (ss.toList.mapM (fun x => do let d ← stmt x; modify (Parse.after · [d]); pure d) |>.run fm).run' s₀
+    (`Parse.after`); and the scope it leaves. -/
+def program (fm : FileMap) (s₀ : Parse.S) (ss : Array Syntax) : Except Err (Program × Parse.S) :=
+  (ss.toList.mapM (fun x => do let d ← stmt x; modify (Parse.after · [d]); pure d) |>.run fm).run s₀
 
 unsafe def programOfUnsafe (n : Name) : CommandElabM Program := do
   match (← getEnv).evalConstCheck Program (← getOptions) ``Program n with
@@ -498,69 +505,90 @@ unsafe def programOfUnsafe (n : Name) : CommandElabM Program := do
 /-- The value of the program `n`, a `rel_program` elaborated before. -/
 @[implemented_by programOfUnsafe] opaque programOf (n : Name) : CommandElabM Program
 
-/-- What a program is read after: the prelude (its constant, its value) and the programs between (as a term of the
-    constants `n.mid` and the programs, and their value). -/
-abbrev Chain := Name × Lean.Expr × Program × Program
-
-/-- The chain of `rel_program n after pre`: `pre`'s own (`pre.root`, `pre.mid`) with `pre` after it; `pre` alone
-    when it is read after nothing. -/
-def chainOf (pre : Name) : CommandElabM Chain := do
-  let p ← programOf pre
-  if (← getEnv).contains (pre ++ `root) then
-    pure (pre ++ `root, mkApp3 (mkConst ``List.append [0]) (mkConst ``Decl) (mkConst (pre ++ `mid)) (mkConst pre),
-      ← programOf (pre ++ `root), (← programOf (pre ++ `mid)) ++ p)
-  else pure (pre, mkApp (mkConst ``List.nil [0]) (mkConst ``Decl), p, [])
-
-def scopeOf : Option Chain → Parse.S
-  | none => { cs := #[] }
-  | some (_, _, r, m) => Parse.after (Parse.scope r) m
-
 def defConst (n : Name) (v : Lean.Expr) : CoreM Unit :=
   addAndCompile <| .defnDecl
     { name := n, levelParams := [], type := mkConst ``Program, value := v, hints := .abbrev, safety := .safe }
 
-/-- The program `n` named by `id`, its chain (`n.root`, `n.mid`), and what it reads (`Expand.emit`): each closed
-    definition as the Lean definition `n.rel.x`, its prints, its checks; the doc comment `stx[0]`, when written, is
-    `n`'s. -/
-def define (stx id : Syntax) (chain : Option Chain) (prog : Program) (names : List Name) : CommandElabM Unit := do
+/-- The resolver in the namespace `ns` with the `open`s `opens` (module design §2.3): Lean's `resolveGlobalName`
+    gives the candidates of a written name, the registry keeps its own; and whether a written prefix is a
+    namespace. -/
+def resolverAt (env : Environment) (reg : Expand.Registry) (ns : Name) (opens : List OpenDecl) :
+    (String → Found) × (String → Bool) :=
+  let id (t : String) : Name := (Parse.parts t).foldl Name.str .anonymous
+  (fun t =>
+    let cs := ((ResolveName.resolveGlobalName env ns opens (id t)).filterMap fun (c, fs) =>
+      if fs.isEmpty then some c else none).eraseDups
+    match cs.filterMap (reg.exts[·]?) with
+    | [(e, _)] => .ext e
+    | [] => if cs.isEmpty then .none else .bad false s!"`{t}` is not a Rel definition: Lean resolves it to {cs}"
+    | es => .bad true s!"ambiguous name `{t}`: it is {es.map (·.1.const)}",
+   fun t => !(ResolveName.resolveNamespace env ns opens (id t)).isEmpty)
+
+/-- The scope of a program read here: the current namespace and `open`s. -/
+def scopeHere : CommandElabM Parse.S := do
+  let (res, ns) := resolverAt (← getEnv) (Expand.relRegistry.getState (← getEnv)) (← getCurrNamespace) (← getOpenDecls)
+  pure { cs := #[], res, ns }
+
+/-- The programs the constants `used` reach, each after the programs its own names reach, in the order they were
+    defined (an import's before the importer's). -/
+def homesOf (reg : Expand.Registry) (used : List Name) : List Name :=
+  let hs := used.filterMap fun c => (reg.exts[c]?).map (·.2)
+  let all := hs.flatMap fun h => ((reg.chains.lookup h).getD []) ++ [h]
+  (reg.progs.toList.map (·.1)).filter all.contains
+
+/-- The program `n` named by `id`, read in the scope `s` that left `used`, what it reads (`Expand.emit`): each closed
+    definition as the Lean definition `n.x`, its prints, its checks; then its definitions and objects registered,
+    each a constant (`n.x : Decl`, its declaration, where it is not built once), with its scope and homes; the doc
+    comment `stx[0]`, when written, is `n`'s. -/
+def define (stx id : Syntax) (prog : Program) (used : List Name) (more : List Name := [])
+    (scope : Option (Name × List OpenDecl) := none) : CommandElabM Unit := do
   let n := (← getCurrNamespace) ++ id.getId
+  let (ns, os) := scope.getD (← getCurrNamespace, ← getOpenDecls)
   liftTermElabM do
     defConst n (toExpr (α := List Decl) prog)
-    if let some (r, m, _, _) := chain then defConst (n ++ `root) (mkConst r); defConst (n ++ `mid) m
     addDocString' n mkNullNode (stx[0].getOptional?.map (⟨·⟩))
     Term.addTermInfo' id (mkConst n) (isBinder := true)
-  let reg := Expand.relRegistry.getState (← getEnv)
-  let progs ← names.mapM fun m => return (m, ← programOf m)
-  match Expand.read (reg.calls.contains ·) progs prog n with
+  let env ← getEnv
+  let reg := Expand.relRegistry.getState env
+  let homes := (reg.progs.toList.map (·.1)).filter ((more ++ homesOf reg used).contains ·)
+  let progs ← homes.mapM fun m => return (m, ← programOf m)
+  let resOf (h : Name) : String → Found :=
+    if h == n then (resolverAt env reg ns os).1 else
+    match reg.progs.find? (·.1 == h) with
+    | some (_, ns, os) => (resolverAt env reg ns os).1
+    | none => fun _ => .none
+  match Expand.read (reg.calls.contains ·) progs prog n resOf with
   | .error e => throwErrorAt stx "{e}"
-  | .ok r => liftTermElabM (Expand.emit n r); modifyEnv (Expand.relRegistry.addEntry · (.chain n names))
+  | .ok r =>
+    liftTermElabM (Expand.emit n r)
+    for d in prog do
+      if let some (_, e) := Parse.extOf n d then
+        unless (← getEnv).contains e.const do
+          liftTermElabM <| addAndCompile <| .defnDecl { name := e.const, levelParams := [], type := mkConst ``Decl,
+            value := toExpr d, hints := .abbrev, safety := .safe }
+        modifyEnv (Expand.relRegistry.addEntry · (.ext e n))
+    modifyEnv (Expand.relRegistry.addEntry · (.prog n ns os))
+    modifyEnv (Expand.relRegistry.addEntry · (.chain n homes))
 
-/-- The programs `pre`'s successor is read after: `pre`'s own chain, then `pre`. -/
-def namesAfter (pre : Name) : CommandElabM (List Name) := do
-  pure ((((Expand.relRegistry.getState (← getEnv)).chains.lookup pre).getD []) ++ [pre])
-
-/-- `rel_program n where …` is read in the empty scope, `rel_program n after pre where …` in the scope after `pre`
-    and what `pre` is read after (`chainOf`). -/
+/-- `rel_program n where …`, read in the current namespace and `open`s (module design §2.3): no program is in
+    scope that is not `open`ed or written qualified. -/
 @[command_elab relProgram] def elabRelProgram : CommandElab := fun stx => do
-  let pre ← if stx[3].getNumArgs == 0 then pure none else
-    pure (some (← liftCoreM (realizeGlobalConstNoOverloadWithInfo stx[3][1])))
-  let chain ← pre.mapM chainOf
-  let names ← match pre with | some p => namesAfter p | none => pure []
-  match program (← getFileMap) (scopeOf chain) stx[5].getArgs with
+  match program (← getFileMap) (← scopeHere) stx[4].getArgs with
   | .error e => throwErrorAt stx "{e}"
-  | .ok prog => define stx stx[2] chain prog names
+  | .ok (prog, s) => define stx stx[2] prog s.used
 
-/-- `rel_program n from base upto x where …`: the replacements read in the scope of `base`'s chain and objects. -/
+/-- `rel_program n from base upto x where …`: the replacements read in `base`'s scope and objects. -/
 @[command_elab relVariant] def elabRelVariant : CommandElab := fun stx => do
   let b ← liftCoreM (realizeGlobalConstNoOverloadWithInfo stx[4])
   let base ← programOf b
-  let chain ← if (← getEnv).contains (b ++ `root) then
-    pure (some (b ++ `root, mkConst (b ++ `mid), ← programOf (b ++ `root), ← programOf (b ++ `mid))) else pure none
-  let s := Parse.after (scopeOf chain) (base.filter fun | .obj .. => true | _ => false)
+  let reg := Expand.relRegistry.getState (← getEnv)
+  let some (_, bns, bos) := reg.progs.find? (·.1 == b) | throwErrorAt stx[4] "`{b}` is no rel_program"
+  let (res, ns) := resolverAt (← getEnv) reg bns bos
+  let s := Parse.after { cs := #[], res, ns } (base.filter fun | .obj .. => true | _ => false)
   let named : Decl → Option String := fun | .defn _ x .. => some x | _ => none
   match program (← getFileMap) s stx[7].getArgs with
   | .error e => throwErrorAt stx "{e}"
-  | .ok news => do
+  | .ok (news, s') => do
     for d in news do
       match named d with
       | some x => unless base.any (named · == some x) do throwErrorAt stx "`{x}` is no definition of `{b}`"
@@ -573,7 +601,7 @@ def namesAfter (pre : Name) : CommandElabM (List Name) := do
       match kept.findIdx? (named · == some x) with
       | some k => pure (kept.take (k + 1))
       | none => throwErrorAt stx[5] "`{x}` is no definition of `{b}`"
-    define stx stx[2] chain (kept.map fun d => ((named d).bind fun x => news.find? (named · == some x)).getD d)
-      (((Expand.relRegistry.getState (← getEnv)).chains.lookup b).getD [])
+    define stx stx[2] (kept.map fun d => ((named d).bind fun x => news.find? (named · == some x)).getD d) s'.used
+      ((reg.chains.lookup b).getD []) (some (bns, bos))
 
 end LeetQ.Rel.Lang.Embed

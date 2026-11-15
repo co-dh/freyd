@@ -23,8 +23,26 @@ structure Err where
 /-- Line 0 is no place in the program: an error of the prelude's own text says where in its message. -/
 instance : ToString Err := ⟨fun e => if e.pos.line == 0 then e.msg else s!"{e.pos}: {e.msg}"⟩
 
-/-- An error in the prelude's own text (§c), which is no place in the program. -/
-def Err.inPrelude (e : Err) : Err := ⟨default, s!"in the prelude, {e.pos}: {e.msg}"⟩
+/-- An error raised re-reading the program `n` a program imports: where in `n` it is. -/
+def Err.inProg (n : String) (e : Err) : Err := ⟨default, s!"in the program `{n}`, {e.pos}: {e.msg}"⟩
+
+/-- A definition or object of a program, as the registry records it (`Expand.relRegistry`) and the resolver gives
+    it: its constant `n.x`, its arity, whether it is an infix operator `_x_`, whether an object. -/
+structure Ext where
+  const : Lean.Name
+  arity : Nat := 0
+  infix : Bool := false
+  obj : Bool := false
+  deriving Repr, Inhabited
+
+/-- What a written name (`AC3`, `csp.AC3`, `≠`) resolves to in Lean's scope (the current namespace and `open`s),
+    kept to the registry: one entry; or an error, `inScope` when the name is a Rel name all the same (several
+    entries: ambiguous), not when Lean gives only constants that are no Rel definition; or nothing. -/
+inductive Found
+  | ext (e : Ext)
+  | bad (inScope : Bool) (msg : String)
+  | none
+  deriving Inhabited
 
 /-- An object as written: a declared name, `A×B`, `A+B`, `𝒫A`, `[A]`; in a parameter's type also an object
     variable `α`, instantiated at each use (§e). -/
