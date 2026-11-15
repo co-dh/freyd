@@ -42,4 +42,52 @@ error: owed: 2 theorem(s) of `LeetQ.Rel.Lang.RelAopTest.mssOwed` with no calc an
 #guard_msgs in
 rel_aop mssOwed
 
+open LeetQ.Rel.Programs.prelude Programs.mss in
+/-- Laws with parameters, quantified over their objects, and with hypotheses; steps citing them applied, two of which
+    put a composite in place inside a longer composite (re-association, no left context in the law). -/
+rel_program laws where
+    entire(f : α ⟶ β) ≜ 𝟙 ⊑ ff°
+    simple(f : α ⟶ β) ≜ f°f ⊑ 𝟙
+
+    theorem Eunion(R : α ⟶ β) : E(R) = E(Λ(R))E(∋)
+    theorem Ecomp(R : α ⟶ β, S : β ⟶ γ) : E(R S) = E(R)E(S)
+    theorem estMap(f : α ⟶ β, R : β ⟶ β) if dom(f) = 𝟙, simple(f), 𝟙 ⊑ R : Λ(f)est(R) = f
+    theorem zeroEntire : dom(zero) = 𝟙
+    theorem zeroSimple : zero°zero ⊑ 𝟙
+    theorem geqRefl : 𝟙 ⊑ ≥
+
+    theorem union : Λ(suffix)E(prefix sum)est(≥) = Λ(suffix)E(Λ(prefix sum))E(∋)est(≥) := calc
+      _ = Λ(suffix)E(Λ(prefix sum))E(∋)est(≥) := Eunion(prefix sum)
+    theorem comp : Λ(suffix)E(Λ(prefix sum))E(est(≥))est(≥) = Λ(suffix)E(Λ(prefix sum)est(≥))est(≥) := calc
+      _ = Λ(suffix)E(Λ(prefix sum)est(≥))est(≥) := Ecomp(Λ(prefix sum), est(≥))
+    theorem point : ⦇ran(Λ(zero)est(≥)), oplus⦈ = g := calc
+      _ = ⦇ran(zero), oplus⦈ := estMap(zero, ≥)
+      _ = g := ≜ g
+
+rel_aop laws
+  model N := (⟨Int⟩ : RelSet.{0}), zero := MSS.zero, «≥» := MSS.geq, suffix := ListRel.suffix (A := Int),
+    «prefix» := ListRel.«prefix» (A := Int),
+    K : Coproduct ((F Unit Int).obj ⟨Int⟩) (dL Unit) (relProd (⟨Int⟩ : RelSet.{0}) ⟨Int⟩).p := sumCop _ _
+  proof
+    Eunion := existsImage_eq_Λ_bigUnion R,
+    Ecomp := existsImage_comp R S,
+    estMap := Λ_map_comp_est ⟨h₁, h₂⟩ h₃,
+    zeroEntire := (graph_map _).1,
+    zeroSimple := (graph_map _).2,
+    geqRefl := MSS.geq_refl
+
+/-- info: Programs.mss.laws... -/
+#check @laws.estMap.aop
+
+open LeetQ.Rel.Programs.prelude Programs.mss laws in
+/-- A cited law whose hypothesis nothing proves: `estMap` at `≥` needs `𝟙 ⊑ ≥`, and this program proves no
+    `simple(zero)` instance either once `zeroSimple` is not read after. -/
+rel_program lawsBad where
+    theorem pointBad : ⦇ran(Λ(zero)est(≥)), oplus⦈ = ⦇ran(zero), oplus⦈ := calc
+      _ = ⦇ran(zero), oplus⦈ := estMap(zero, >)
+
+#guard_msgs in
+rel_aop lawsBad
+  model N := (⟨Int⟩ : RelSet.{0}), zero := MSS.zero, «>» := MSS.geq
+
 end LeetQ.Rel.Lang.RelAopTest

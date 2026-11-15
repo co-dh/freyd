@@ -294,10 +294,10 @@ inductive ObjDef
   | alias (o : OExp)
   deriving Repr, Inhabited
 
-/-- A `calc` step's reason (`doc/rel-mss-proof-design.md` §3): `:= n` cites the theorem `n`, `:= ≜ n` unfolds or
-    folds back the definition `n`. -/
+/-- A `calc` step's reason (`doc/rel-mss-proof-design.md` §3): `:= n(R, …)` cites the theorem `n` at the
+    arguments `args` (none when it has no parameters), `:= ≜ n` unfolds or folds back the definition `n`. -/
 inductive Why
-  | thm (p : Pos) (n : String)
+  | thm (p : Pos) (n : String) (args : List Expr)
   | unfold (p : Pos) (n : String)
   deriving Repr, Inhabited
 
@@ -310,7 +310,8 @@ inductive Decl
   /-- `theorem n(ps) on A : e = f := calc` (`⊑` when `eq` is false), each step `_ = x := why` with its line; no
       steps: the proof is owed to Lean. `on A`: each step is also evaluated as `check A x = A y` (§3). -/
   | «theorem» (p : Pos) (n : String) (ps : List Param) (e f : Expr) (eq : Bool) (on : Option Expr)
-      (steps : List (Pos × Bool × Expr × Why))
+      -- each hypothesis after `if`: `e = f` or `e ⊑ f` (`some (eq, f)`), or a test applied, `t(R)` (`none`)
+      (hyps : List (Expr × Option (Bool × Expr))) (steps : List (Pos × Bool × Expr × Why))
   deriving Repr, Inhabited
 
 abbrev Program := List Decl

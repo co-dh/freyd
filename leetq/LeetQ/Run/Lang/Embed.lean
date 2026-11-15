@@ -203,9 +203,12 @@ syntax (name := sInfix) "_" relWord "_" "(" relParam,+ ")" (relType)? "≜" rel 
 -- Lean's `theorem … := calc` (§3, §8): `theorem` and `calc` stay names (`kwName`), so a Lean `theorem` command
 -- after a program still ends it (`kwBack`); each step on its own line, indented past the statement, read from its
 -- own position so that juxtaposition reaches along its line (`sameLine`)
-syntax (name := cStep) "_" cmpOp rel " := " ("≜")? relWord : relStep
-syntax (name := sTheorem) &"theorem " relWord ("(" relParam,+ ")")? (&" on " rel:max)? ":" rel cmpOp rel
-  (" := " &"calc" (colGt withPosition(relStep))+)? : relStmt
+-- a step cites a theorem at its arguments, `:= estMap(zero, ≥)`, as a definition is applied (`rApp`)
+syntax (name := cStep) "_" cmpOp rel " := " ("≜")? relWord (noWs "(" rel,+ ")")? : relStep
+-- a hypothesis: `e = f`, `e ⊑ f`, or a test applied; above level 0, so `R : …` after it is no fixed point `μX : φ`
+syntax relHyp := rel:1 (cmpOp rel:1)?
+syntax (name := sTheorem) &"theorem " relWord ("(" relParam,+ ")")? (&" on " rel:max)? (&" if " relHyp,+)? ":"
+  rel cmpOp rel (" := " &"calc" (colGt withPosition(relStep))+)? : relStmt
 
 /-- A program's statements, each at its own position, read with the program's tokens (`relTokens`). -/
 @[run_parser_attribute_hooks] def relStmts : Parser := relTokens (many (withPosition (kwBack (categoryParser `relStmt 0))))
@@ -491,9 +494,12 @@ def stmt (s : Syntax) : C Decl := do
     let outer := (← get).known
     modify fun st => { st with known := ps.map (fun q => (q.name, 0)) ++ st.known }
     let on ← if s[3].getNumArgs == 0 then pure none else some <$> expr s[3][1]
-    let e ← expr s[5]; let f ← expr s[7]; let eq := atomIn s[6] == "="
+    let hyps ← (opt s[4]).toList.mapM fun h => do
+      let a ← expr h[0]
+      if h[1].getNumArgs == 0 then pure (a, none) else pure (a, some (atomIn h[1][0] == "=", ← expr h[1][1]))
+    let e ← expr s[6]; let f ← expr s[8]; let eq := atomIn s[7] == "="
     -- a reason is the program's theorem or definition, else the registry's one the resolver gives
-    let steps ← (if s[8].getNumArgs == 0 then #[] else s[8][2].getArgs).toList.mapM fun t => do
+    let steps ← (if s[9].getNumArgs == 0 then #[] else s[9][2].getArgs).toList.mapM fun t => do
       unless t.getKind == ``cStep do failAt t "expected a step `_ = e := n`"
       let q ← posOf t; let x ← expr t[2]; let r ← posOf t[5]; let m ← wordOf t[5]
       let st ← get
@@ -504,8 +510,10 @@ def stmt (s : Syntax) : C Decl := do
       let isDef := (st.known.any (fun k => k.1 == m || k.1 == Parse.infixKey m) && !ps.any (·.name == m)) ||
         ex.any (fun e => !e.obj && !e.thm)
       let isThm := st.thms.contains m || ex.any (·.thm)
+      let args ← if t[6].getNumArgs == 0 then pure [] else t[6][1].getSepArgs.toList.mapM expr
+      if t[4].getNumArgs != 0 && !args.isEmpty then failAt t[6] s!"`≜ {m}` unfolds a definition: it takes no arguments"
       let why ← if t[4].getNumArgs == 0 then
-          if isThm then pure (Why.thm r m)
+          if isThm then pure (Why.thm r m args)
           else failAt t[5] (if isDef then s!"`{m}` is a definition; write `≜ {m}`" else s!"unknown theorem '{m}'")
         else if isDef then pure (Why.unfold r m)
           else failAt t[5] (if isThm then s!"`{m}` is a theorem, not a definition"
@@ -517,7 +525,7 @@ def stmt (s : Syntax) : C Decl := do
       if x.render 0 true != f.render 0 true then
         throw ⟨q, s!"the chain of `{n}` ends at {x.show}, not at its right side {f.show}"⟩
     modify fun st => { st with known := outer }
-    pure (.«theorem» p n ps e f eq on steps)
+    pure (.«theorem» p n ps e f eq on hyps steps)
   | _ => failAt s "expected a declaration"
 
 /-- The program of the statements `ss`, read in the scope `s₀`, each statement in the scope those before it leave
