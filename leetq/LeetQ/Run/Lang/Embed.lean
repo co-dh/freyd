@@ -49,15 +49,36 @@ def relGrammarTokens (env : Environment) : List Token :=
 def kwName (env : Environment) (v : String) : Bool :=
   isIdFirst v.front && v.all isIdRest && !(relGrammarTokens env).contains v
 
-/-- A name Lean reads as a token: a one-character name (`⊤ ≤ ∧ ⇝`), a builtin of `Op.table`, or a Lean keyword
-    (`kwName`). -/
-def relSymFn : ParserFn := fun c s =>
+/-- One token that `ok` accepts, else the error that `ex` was expected. Read by `tokenFn` alone, so no antiquotation
+    is: `$x` is read only where a term is (the category's own), never in an operator's place, where it would make
+    the term reach on to the operand after it, on the next line. -/
+def tokWhereFn (ok : Environment → String → Bool) (ex : List String) : ParserFn := fun c s =>
   let (n, i) := (s.stackSize, s.pos)
   let s := tokenFn [] c s
   if s.hasError then s else match s.stxStack.back with
-    | .atom _ v => if (v.length == 1 && Parse.isSym v.front) || (Parse.builtin v).isSome || kwName c.env v then s
-                   else (s.restore n i).mkErrorAt "a name" i
-    | _ => (s.restore n i).mkErrorAt "a name" i
+    | .atom _ v => if ok c.env v then s else (s.restore n i).mkErrorsAt ex i
+    | _ => (s.restore n i).mkErrorsAt ex i
+
+/-- A name Lean reads as a token: a one-character name (`⊤ ≤ ∧ ⇝`), a builtin of `Op.table`, or a Lean keyword
+    (`kwName`). -/
+def relSymFn : ParserFn := tokWhereFn (ex := ["a name"]) fun env v =>
+  (v.length == 1 && Parse.isSym v.front) || (Parse.builtin v).isSome || kwName env v
+
+/-- One of the tokens `ts`, an operator: the syntax DSL's `("∩" <|> "∪")` gives each string an antiquotation `$x`
+    of its own (`token.«∩».antiquot`), which takes a juxtaposed `$x` for the operator (`tokWhereFn`). -/
+def relOp (ts : List String) : Parser :=
+  { fn := tokWhereFn (fun _ v => ts.contains v) (ts.map (s!"'{·}'")), info := { collectTokens := (ts ++ ·) } }
+
+open PrettyPrinter in
+@[combinator_formatter relOp] def relOp.formatter (_ : List String) : Formatter := Formatter.visitAtom .anonymous
+open PrettyPrinter in
+@[combinator_parenthesizer relOp] def relOp.parenthesizer (_ : List String) : Parenthesizer := Parenthesizer.visitToken
+
+/-- An infix operator of `Bin.table`. -/
+@[run_parser_attribute_hooks] def binOp : Parser := relOp (Bin.table.map (·.1.toString))
+
+/-- The relation a check, a theorem or a step states. -/
+@[run_parser_attribute_hooks] def cmpOp : Parser := relOp ["⊑", "="]
 
 /-- `p`, undone when it fails on a statement that starts with a keyword name: the program ends there, since a Lean
     command after it (`example :`, `prefix:max`, `rel_program`) starts with the same token. -/
@@ -163,7 +184,7 @@ syntax:max (name := rConv) rel:max "°" : rel
 -- `R*`, at the level of `°`, so `R°*`, `R*°` need no parentheses; `*` is no name (`Parse.reserved`)
 syntax:max (name := rStar) rel:max "*" : rel
 syntax:60 (name := rComp) rel:60 sameLine rel:61 : rel
-syntax:60 (name := rBin) rel:60 ("∩" <|> "∪" <|> "−" <|> "/" <|> "\\" <|> "×") rel:61 : rel
+syntax:60 (name := rBin) rel:60 binOp rel:61 : rel
 -- `μX : φ`, `νX : φ`, one identifier then the body to the end: below every operator, so an operand only in
 -- parentheses
 syntax:0 (name := rFix) ident ":" rel : rel
@@ -175,15 +196,15 @@ syntax (name := sElems) &"obj" relWord "=" "{" relWord,+ "}" : relStmt
 syntax (name := sRange) &"obj" relWord "=" relWord "…" relWord : relStmt
 syntax (name := sAlias) &"obj" relWord "=" relObj : relStmt
 syntax (name := sPrint) &"print" rel : relStmt
-syntax (name := sCheck) &"check" rel ("⊑" <|> "=") rel : relStmt
+syntax (name := sCheck) &"check" rel cmpOp rel : relStmt
 syntax (name := sDefn) relWord ("(" relParam,+ ")")? (relType)? "≜" rel ("⊑" rel)? ("where" relItem,+)? : relStmt
 syntax (name := sInfix) "_" relWord "_" "(" relParam,+ ")" (relType)? "≜" rel ("⊑" rel)? ("where" relItem,+)? :
   relStmt
 -- Lean's `theorem … := calc` (§3, §8): `theorem` and `calc` stay names (`kwName`), so a Lean `theorem` command
 -- after a program still ends it (`kwBack`); each step on its own line, indented past the statement, read from its
 -- own position so that juxtaposition reaches along its line (`sameLine`)
-syntax (name := cStep) "_" ("⊑" <|> "=") rel " := " ("≜")? relWord : relStep
-syntax (name := sTheorem) &"theorem " relWord ("(" relParam,+ ")")? (&" on " rel:max)? ":" rel ("⊑" <|> "=") rel
+syntax (name := cStep) "_" cmpOp rel " := " ("≜")? relWord : relStep
+syntax (name := sTheorem) &"theorem " relWord ("(" relParam,+ ")")? (&" on " rel:max)? ":" rel cmpOp rel
   (" := " &"calc" (colGt withPosition(relStep))+)? : relStmt
 
 /-- A program's statements, each at its own position, read with the program's tokens (`relTokens`). -/
