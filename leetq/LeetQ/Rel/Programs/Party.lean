@@ -19,29 +19,29 @@ rel_program partyPlan where
     rating : E ⟶ N ≜ {(a,3),(b,7),(c,2),(d,5),(e,1),(f,8),(g,4),(h,5),(i,4),(k,2),(l,2),(m,0)}
 
     under : E ⟶ E ≜ boss°*                        -- e and everyone below e
-    leaf : E ⟶ E ≜ 𝟙 − ran(boss)
-    kids : E ⟶ [E] ≜ Λ(boss°) ∪ (leaf nil)        -- Λ has no row at a leaf, so [] is added there
-    cost(r : α ⟶ β) : [α] ⟶ β ≜ F(r)sum
-    R(r : α ⟶ β) : [α] ⟶ [α] ≜ cost(r) ≥ cost(r)°
+    kids : E ⟶ [E] ≜ Λ(boss°)
+    -- builtin F(r) : [α] ⟶ [β] relates [a₁,…,aₙ] to [b₁,…,bₙ] when every aᵢ r bᵢ (Run/Lang/Elab.lean, `.map`)
+    cost(r : α ⟶ β) : [α] ⟶ β ≜ F(r) sum
+    R(r : α ⟶ β) : [α] ⟶ [α] ≜ cost(r) ≤ cost(r)°
 
     /- The book's fold ⦇S⦈ (p. 177), written as μ over the array objects [E]. -/
 
     choose : [E]×[E] ⟶ [E] ≜ π₁ ∪ π₂
-    include : E×[[E]×[E]] ⟶ [E] ≜ ⟨π₁τ τ, π₂F(π₂)⟩cat union
-    exclude : E×[[E]×[E]] ⟶ [E] ≜ π₂F(choose)union
+    include : E×[[E]×[E]] ⟶ [E] ≜ (𝟙×(F(π₂)concat))cons
+    exclude : E×[[E]×[E]] ⟶ [E] ≜ π₂F(choose)concat
     S : E×[[E]×[E]] ⟶ [E]×[E] ≜ ⟨include, exclude⟩
     fold : E ⟶ [E]×[E] ≜ μX : ⟨𝟙, kids F(X)⟩S
     party : E ⟶ [E] ≜ fold choose
-    best : E ⟶ [E] ≜ Λ(party)est(R(rating))
+    best : E ⟶ [E] ≜ Λ(party)est(R(rating)°)
 
     -- the sets with no employee beside his boss
-    check party = Λ(under)subseq(𝟙 − dom(∋ ∩ (∋ boss)))
+    check party setify = Λ(under)subseq(𝟙 − dom(∋ ∩ (∋ boss)))setify
 
     /- The greedy form (p. 178): exclude keeps only the best party of each child. -/
 
-    exclude₁ : E×[[E]×[E]] ⟶ [E] ≜ π₂F(Λ(choose)est(R(rating)))union
+    exclude₁ : E×[[E]×[E]] ⟶ [E] ≜ π₂F(Λ(choose)est(R(rating)°))concat
     gfold : E ⟶ [E]×[E] ≜ μX : ⟨𝟙, kids F(X)⟩⟨include, exclude₁⟩
-    check gfold Λ(choose)est(R(rating)) ⊑ best
+    check gfold Λ(choose)est(R(rating)°) ⊑ best
 
     /- The efficient form: c is (cost with e, cost without e), win the employees whose best party holds them, ties
        to include, and guests the party as a relation into E. -/
