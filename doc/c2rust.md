@@ -83,6 +83,107 @@ kernel too; the failure predates the trial.
   10,000–20,000 (porting, AVX kernels written from scratch, tests, benchmarks), C about 100. At about 450 calls/h
   and about 18k units per call, B is tens of hours of agent time and 200–400 M units.
 
+## Handover: how to continue the trial
+
+Everything below is the exact command set the trial used; run from the paths given, never from `/tmp`.
+
+### State on disk
+
+| what                         | where                                                                            |
+|------------------------------|----------------------------------------------------------------------------------|
+| qlean worktree, branch       | `/data/tmp/c2rust/wt`, branch `c2rust-trial`, base e9e00e2, HEAD 62cddac         |
+| short status note            | `/data/tmp/c2rust/wt/tmp/handoff.md`                                             |
+| Rust crate                   | `/data/tmp/c2rust/wt/rust/` (`Cargo.toml`, `lib.rs`, `own.rs`, `build.sh`, `rust-toolchain.toml`) |
+| raw c2rust output            | `/data/tmp/c2rust/out/src` (own.c), `out-zip/`, `out-reduce/` (empty: OOM)       |
+| one-file compile databases   | `/data/tmp/c2rust/cc-zip/compile_commands.json`, `cc-reduce/…`                   |
+| logs                         | `transpile.log`, `zip*.log`, `reduce*.log`, `zip.perf`, `test-*.log`, `bench-*.txt` in `/data/tmp/c2rust/` |
+| cargo target dirs            | `/data/tmp/c2rust/target-crate` (the crate), `target-git` (c2rust itself)        |
+
+### 1. Tool install (already done; redo only on a new machine)
+
+```
+cargo install --locked --git https://github.com/immunant/c2rust c2rust > /data/tmp/c2rust/install-git.log 2>&1
+rustup toolchain install nightly-2023-04-15
+```
+
+`rust-toolchain.toml` in the crate pins the nightly. `Cargo.toml` takes `c2rust-bitfields` by path from the
+git checkout (`~/.cargo/git/checkouts/c2rust-2471865f8518dc65/5f19702/c2rust-bitfields`, feature `no_std`); the
+crates.io bitfields 0.20 fails on `lean_object`. If clang/LLVM dev files are missing, ask the user for
+`! sudo pacman -S …`; never run sudo.
+
+### 2. Transpile one C file
+
+A compile database with ONE entry per file, flags copied from the lakefile's `kernelObj`:
+
+```
+[{"directory": "/data/tmp/c2rust/wt/c", "file": "zip.c",
+  "arguments": ["cc", "-c", "-O3", "-march=native", "-fPIC", "-fno-trapping-math",
+                "-I", "/home/dh/.elan/toolchains/leanprover--lean4---v4.28.0/include", "zip.c"]}]
+```
+
+Then, ALWAYS under the memory cap (the two uncapped runs took the machine to 21 GB and 13 GB):
+
+```
+cd /data/tmp/c2rust; env CAP_MEM_MB=8000 /home/dh/repo/freyd/scripts/cap c2rust transpile cc-zip/compile_commands.json -o /data/tmp/c2rust/out-zip --overwrite-existing > zip4.log 2>&1; echo EXIT $? >> zip4.log
+```
+
+For own.c the trial ran `c2rust transpile compile_commands.json -o /data/tmp/c2rust/out --emit-build-files
+--overwrite-existing` from `wt/c`. If a file blows up, profile it with `perf record -g -o zip.perf -- <same command>`
+before changing anything. Untried ideas for zip.c/reduce.c: preprocess with `-mno-avx512f` (loses the AVX
+path), or split the AVX kernels out of the file so c2rust sees only the scalar part.
+
+### 3. Put a translated file into the crate
+
+- Copy the module from `out*/src/<file>.rs` into `wt/rust/<file>.rs` and add `pub mod <file>;` to `lib.rs`.
+- `lib.rs` is `#![no_std]` with an aborting `panic_handler` and a `rust_eh_personality` stub; keep that.
+- In `build.sh`, add every exported C symbol of the new file as another `-u <symbol>` to the `ld -r` line, else the
+  partial link drops it.
+- Build: `sh /data/tmp/c2rust/wt/rust/build.sh` (writes `wt/rust/own_rs.o`; with a second file, rename the
+  output to something general, e.g. `kernels_rs.o`, and point every replaced target at it).
+
+### 4. Link it in place of the C object
+
+In `wt/lakefile.lean`, the replaced target becomes
+
+```
+target own.o pkg : System.FilePath := inputBinFile <| pkg.dir / "rust" / "own_rs.o"
+```
+
+and going back to C is `target own.o pkg : System.FilePath := kernelObj "own" pkg`. Remove the C file's own
+`target` from `extern_lib qleankernel` only if its symbols would clash; for own.c they were replaced one for one.
+
+### 5. Test and benchmark
+
+```
+cd /data/tmp/c2rust/wt; env CAP_MEM_MB=13000 /home/dh/repo/freyd/scripts/cap lake build > /data/tmp/c2rust/lake-N.log 2>&1; echo exit=$? >> /data/tmp/c2rust/lake-N.log
+cd /data/tmp/c2rust/wt; ./.lake/build/bin/qlean-test db > /data/tmp/c2rust/test-N.log 2>&1; echo exit=$? >> /data/tmp/c2rust/test-N.log
+```
+
+- Every swap rebuilds all 547 jobs (about 5 min): run it in the background and wait with `Monitor`.
+- `qlean-test` compares against live q 4.1, so it needs the licence daemon's network.
+- `QLean.Kernel.SortTest` OOMs under the cap with the C kernel too; ignore it.
+- Benchmark: `lake build bench-own`, copy `.lake/build/bin/bench-own` to `/data/tmp/c2rust/bench-own.<c|rs>` for
+  each kernel, then run them alternately (`bench-own.rs /data/tmp/c2rust/bench/col`, then `.c`, then again) and
+  compare medians; one run each is inside the noise.
+
+### 6. Hand-port a function to safe Rust
+
+The pattern, as done for `exc_ok` (`wt/rust/own.rs:1132-1170`):
+
+- write `fn <name>_safe(&[u8], …) -> …` taking slices and `&mut` instead of pointers and lengths;
+- keep the original `unsafe extern "C" fn <name>` as a shim that builds the slices with
+  `core::slice::from_raw_parts` and calls the safe one, so the callers stay unchanged;
+- rebuild (step 3), relink (step 4), run `qlean-test db` (step 5); count the `unsafe` left.
+
+Port leaf functions first. A function returning or reading `coc` (13 raw pointers into the mapped file,
+`coc.h`) cannot be ported alone: `coc` must first become a struct of slices and every reader changes with it.
+
+### Rules for the next agent
+
+- Work only in `/data/tmp/c2rust/wt`; do not push `c2rust-trial`; no edits in `/home/dh/repo/qlean` itself.
+- Every `c2rust transpile`, `cargo build` and `lake build` goes under `scripts/cap`.
+- Log each measured result into this file's tables, marking measured against estimated.
+
 ## Conclusion
 
 "c2rust first" covers only the I/O-shaped files c2rust accepts, where Rust brings no speed gain; for the AVX kernels
