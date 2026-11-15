@@ -1,8 +1,7 @@
 /-
-  `Obj.raze` of two parts read back at every shape of side: `raze_row` composes the four constructor lemmas
-  (`raze_row_atom`, `_prod`, `_arr`, `_sum`) along the side's shape, under `Vals.RazeFits`, the size bounds the
-  composition needs. The atom read-back enters as `hat`, the one statement `razeTo2_fits` proves at the types
-  and encodings it covers.
+  `Vals.RazeFits`, the size bounds under which two parts' `raze` reads back row by row, and `razeTo2_fits`, the
+  atom read-back at the types and encodings proved here; `raze_row` (`RazeFoR`) composes the four constructor
+  lemmas (`raze_row_atom`, `_prod`, `_arr`, `_sum`) along the side's shape once `hat_all` covers every atom.
 -/
 import LeetQ.Rel.KernelWF.RazeRowRec
 
@@ -126,35 +125,6 @@ theorem razeTo2_fits {t : QAtomicType} {n m : USize} (x : Arr t n) (y : Arr t m)
   · exact razeTo2_bytes x y hN (guid_bytes x) (guid_bytes y)
   · exact razeTo2_bytes x y hN hx hy
 
-section
-variable (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
-    (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
-      USize.size), Vals.RazeFits (.atom t) x y →
-    (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
-include hat
-
-/-- **Row read-back of `raze` at every side**: row `k` of two razed parts is the first part's row below its count,
-    the second's past it — the four constructor lemmas composed along `A`, under `Vals.RazeFits`; `hat`: the atom
-    read-back (`razeTo2_fits` where it is proved). -/
-theorem raze_row : (A : Obj) → {n m : USize} → (x : Vals A n) → (y : Vals A m) → Vals.RazeFits A x y →
-    ∀ (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part A)).toList.map fun c : Part A => c.1.toNat).sum < USize.size)
-      (k : Nat) (hk : k < ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part A)).toList.map
-        fun c : Part A => c.1.toNat).sum.toUSize.toNat),
-    Vals.row (A.raze #[⟨n, x⟩, ⟨m, y⟩] hN) ⟨k, hk⟩ =
-      if h : k < n.toNat then Vals.row x ⟨k, h⟩
-      else Vals.row y ⟨k - n.toNat, by have := raze2_cnt x y hN; omega⟩
-  | .atom t, _, _, x, y, hF => fun hN k hk => raze_row_atom x y hN (hat t x y hN hF) k hk
-  | .prod a b, _, _, x, y, hF => fun hN k hk =>
-      raze_row_prod x y hN (raze_row a x.1 y.1 hF.1) (raze_row b x.2 y.2 hF.2) k hk
-  | .arr b, _, _, x, y, hF => fun hN k hk =>
-      raze_row_arr x y hN hF.1 hF.2.1 (raze_row b x.2.2.2 y.2.2.2 hF.2.2) k hk
-  | .sum a b, _, _, x, y, hF => fun hN k hk =>
-      raze_row_sum x y hN hF.1 hF.2.1 hF.2.2.1 hF.2.2.2.1 hF.2.2.2.2.1 hF.2.2.2.2.2.1
-        (raze_row a _ _ hF.2.2.2.2.2.2.1) (raze_row b _ _ hF.2.2.2.2.2.2.2) k hk
-
-end
-
-#print axioms raze_row
 #print axioms razeTo2_fits
 
 end LeetQ.Rel.KernelWF

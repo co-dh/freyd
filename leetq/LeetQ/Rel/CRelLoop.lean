@@ -3,7 +3,7 @@
   answers its new state and a bit, the `&&` of its pieces' twins' bits; `iterC` carries the `&&` of the rounds it
   ran, and `iterC_run` reads each run round's bit back. The proofs use only the rounds `iter` ran (`done` failing
   up to them): each such round's read-back comes from its pieces' `rep_<op>C`. What stays is not a size bound:
-  a step's spec (`loopOn`'s `F`, at the rounds whose step bit is set) and `unionC`'s `hat`.
+  a step's spec (`loopOn`'s `F`, at the rounds whose step bit is set).
 -/
 import LeetQ.Rel.CRelFold
 import LeetQ.Rel.CRelList
@@ -14,12 +14,6 @@ namespace LeetQ.Rel
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF Freyd Freyd.Alg Freyd.Alg.RelSet
 open LeetQ.Rel.Rep LeetQ.Rel.Rep.FoldN LeetQ.Rel.Rep.OpsN LeetQ.Rel.Rep.Prim LeetQ.Rel.Rep.ListN
-
--- `unionC`'s `hat`: `razeTo`'s read-back of two atom parts, not a size bound
-set_option quotPrecheck false in
-local notation "hatOK" => ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
-  (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
-    USize.size), Vals.RazeFits (.atom t) x y → (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList
 
 namespace Rep
 
@@ -35,7 +29,7 @@ theorem rep_ticC {K B : Obj} (P : Rel K (.prod B (.arr B))) (hb : (ticC P).2 = t
 
 /-- **`suffix` under `suffixC`'s bit**: `suffix_rounds`, each round `iter` ran read back by `suffix_round_of` at
     its bit (`iterC_run`): `ranC`'s codes and `fitsN` bits, `rep_tailC`, `rep_compC`, `rep_unionC`. -/
-theorem rep_suffixC {B : Obj} {n : USize} (X : Vals (.arr B) n) (hat : hatOK) (hb : (suffixC X).2 = true) :
+theorem rep_suffixC {B : Obj} {n : USize} (X : Vals (.arr B) n) (hb : (suffixC X).2 = true) :
     ∀ xs ys, rep (suffixC X).1 xs ys ↔ (∃ j, X.row j = xs) ∧ ys <:+ xs :=
   suffix_rounds X (fun s => (suffixRound s).1) (fun _ _ => rfl) fun i hi hne => by
     have h := iterC_run (X.1.toNat + 1) (fun s : Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B) => s.2.n == 0)
@@ -49,7 +43,7 @@ theorem rep_suffixC {B : Obj} {n : USize} (X : Vals (.arr B) n) (hat : hatOK) (h
     simp only [ranC, distinctCoreflC, Bool.and_eq_true] at hW
     exact suffix_round_of S F (rep_tailC _ hT) (rep_compC _ _ hC)
       (rep_ran_corefl F (one_ok _ (Obj.codesC_fits _ _ hW.1)) (pickFits_of_fitsN _ _ _ hW.2 _ (by simp)))
-      (rep_unionC hat _ _ hU)
+      (rep_unionC _ _ hU)
 
 /-- The pairs `(c, y)` a round of `loopOn` meets at its states `St`, whose `ran` its step sees. -/
 def loopPairs {K X Y : Obj} (St : Rel K (.prod X (.arr Y))) : Rel (.prod X (.arr Y)) (.prod X Y) :=
@@ -58,9 +52,9 @@ def loopPairs {K X Y : Obj} (St : Rel K (.prod X (.arr Y))) : Rel (.prod X (.arr
 /-- **`loopOn` under `loopOnC`'s bit**: `loopOn_rounds`, each round `iter` ran read back by `loop_round_set` at its
     bit (`iterC_run`): `ranC`'s and `domC`'s codes and `fitsN` bits, `rep_unconsC`, `rep_compC`, `rep_pairC`,
     `rep_nubC`, `rep_antiJoinC`, `rep_unionC`. What stays: the step's spec `hS` at the rounds whose step bit is
-    set, and `unionC`'s `hat`. -/
+    set. -/
 theorem rep_loopOnC {K X Y : Obj} (F : Rel (.prod X Y) (.prod X Y) → Rel (.prod X Y) X × Bool)
-    (P : Rel K (.prod X (.arr Y))) (hat : hatOK) (hb : (loopOnC F P).2 = true)
+    (P : Rel K (.prod X (.arr Y))) (hb : (loopOnC F P).2 = true)
     (Fr : Nat → X.El × Y.El → X.El → Prop)
     (hS : ∀ i, (F (ran (loopPairs ((fun s => (loopRound F s).1)^[i] (Alg.zero, P)).2))).2 = true →
       ∀ cy c', Fr i cy c' ↔ rep (F (ran (loopPairs ((fun s => (loopRound F s).1)^[i] (Alg.zero, P)).2))).1 cy c') :
@@ -96,7 +90,7 @@ theorem rep_loopOnC {K X Y : Obj} (F : Rel (.prod X Y) (.prod X Y) → Rel (.pro
       (rep_unconsC _ hc) (rep_compC _ _ hu) (rep_pairC _ _ hp) (rep_compC _ _ hQ) (rep_pairC _ _ hR)
       (rep_compC _ _ hT) (by rw [← nubC_fst]; exact rep_nubC _ hN)
       (rep_dom_corefl _ (one_ok _ (Obj.codesC_fits _ _ hdu.1)) (pickFits_of_fitsN _ _ _ hdu.2 _ (by simp <;> exact Nat.le_refl _)))
-      (rep_antiJoinC _ _ hA) (rep_compC _ _ hO) (rep_unionC hat _ _ hU)
+      (rep_antiJoinC _ _ hA) (rep_compC _ _ hO) (rep_unionC _ _ hU)
     have hFr := hSi hG
     simp only [loopRound, nubC_fst]
     exact ⟨fun k c' ys => (hr.1 k c' ys).trans
@@ -106,11 +100,10 @@ theorem rep_loopOnC {K X Y : Obj} (F : Rel (.prod X Y) (.prod X Y) → Rel (.pro
     (fun i hi hne => (one i hi hne).2)
 
 /-- **`loop` under `loopC`'s bit**: `rep_loopOnC` at the step `F` with no bit of its own, its spec `rep F`. -/
-theorem rep_loopC {K X Y : Obj} (F : Rel (.prod X Y) X) (P : Rel K (.prod X (.arr Y))) (hat : hatOK)
-    (hb : (loopC F P).2 = true) :
+theorem rep_loopC {K X Y : Obj} (F : Rel (.prod X Y) X) (P : Rel K (.prod X (.arr Y))) (hb : (loopC F P).2 = true) :
     ∀ k c, rep (loopC F P).1 k c ↔ ∃ c₀ xs, rep P k (c₀, xs) ∧ ∃ g : Nat → X.El, g 0 = c₀ ∧
       (∀ t (ht : t < xs.length), rep F (g t, xs[t]'ht) (g (t + 1))) ∧ c = g xs.length :=
-  rep_loopOnC (fun _ => (F, true)) P hat hb (fun _ => rep F) fun _ _ _ _ => Iff.rfl
+  rep_loopOnC (fun _ => (F, true)) P hb (fun _ => rep F) fun _ _ _ _ => Iff.rfl
 
 -- `merge`'s test `q` read back as `le`: on a coreflexive `D` of the pairs `S`, where its bit is set, a pair of `S`
 -- passes exactly when `le` holds; the spec of the test, not a size bound
@@ -124,7 +117,7 @@ local notation "testOK(" q ")" =>
     codes and `fitsN` bits, `rep_unconsC`, `rep_compC`, `rep_pairC`, `rep_snocC`, `rep_antiJoinC`, `rep_unionC`,
     `rep_catC` — and the test's spec `hq` at the pairs of heads the round meets. -/
 theorem rep_mergeRoundC {K B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B) × Bool)
-    (le : B.El → B.El → Bool) (hat : hatOK) (hq : testOK(q)) (out : Rel K (.arr B))
+    (le : B.El → B.El → Bool) (hq : testOK(q)) (out : Rel K (.arr B))
     (St : Rel K (.prod (.prod (.arr B) (.arr B)) (.arr B))) (hb : (mergeRound q (out, St)).2 = true) :
     (∀ k s', rep (mergeRound q (out, St)).1.2 k s' ↔ ∃ a x b y acc, rep St k ((a :: x, b :: y), acc) ∧
       (le a b = true ∧ s' = ((x, b :: y), acc ++ [a]) ∨ le a b = false ∧ s' = ((a :: x, y), acc ++ [b]))) ∧
@@ -153,16 +146,16 @@ theorem rep_mergeRoundC {K B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.p
     (hA1 := rep_pairC _ _ hA1) (hS1 := rep_pairC _ _ hS1) (hN1 := rep_snocC _ hN1) (hP1 := rep_pairC _ _ hP1)
     (hL1 := rep_compC _ _ hL1) (hnb := rep_antiJoinC _ _ hnb)
     (hA2 := rep_pairC _ _ hA2) (hS2 := rep_pairC _ _ hS2) (hN2 := rep_snocC _ hN2) (hP2 := rep_pairC _ _ hP2)
-    (hL2 := rep_compC _ _ hL2) (htk := rep_unionC hat _ _ htk) (hT := rep_compC _ _ hT)
+    (hL2 := rep_compC _ _ hL2) (htk := rep_unionC _ _ htk) (hT := rep_compC _ _ hT)
     (hfl := rep_antiJoinC _ _ hfl) (hSf := rep_compC _ _ hSf)
     (hc1 := rep_pairC _ _ hc1) (hC1 := rep_catC _ hC1) (hc2 := rep_pairC _ _ hc2) (hC2 := rep_catC _ hC2)
-    (hO := rep_compC _ _ hO) (hU := rep_unionC hat _ _ hU)
+    (hO := rep_compC _ _ hO) (hU := rep_unionC _ _ hU)
 
 /-- **`mergeOn` under `mergeOnC`'s bit**: `mergeOn_rounds`, the first state read back by `merge_init` at its bit
     (`ranC`'s codes and `fitsN` bits, `topC`'s count and fit, `pairC_ok`, `compC_cmpOK`), each round `iter` ran by
-    `rep_mergeRoundC` at its bit (`iterC_run`). What stays: the test's spec `hq` and `unionC`'s `hat`. -/
+    `rep_mergeRoundC` at its bit (`iterC_run`). What stays: the test's spec `hq`. -/
 theorem rep_mergeOnC {K B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B) × Bool)
-    (P : Rel K (.prod (.arr B) (.arr B))) (le : B.El → B.El → Bool) (hat : hatOK) (hq : testOK(q))
+    (P : Rel K (.prod (.arr B) (.arr B))) (le : B.El → B.El → Bool) (hq : testOK(q))
     (hb : (mergeOnC q P).2 = true) :
     ∀ k zs, rep (mergeOnC q P).1 k zs ↔ ∃ xs ys, rep P k (xs, ys) ∧ zs = List.merge xs ys le := by
   simp only [mergeOnC, Bool.and_eq_true] at hb
@@ -174,8 +167,8 @@ theorem rep_mergeOnC {K B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod
     pickFits_of_fitsN _ _ _ hfa _ (by simp <;> exact Nat.le_refl _), pairC_ok _ _ hQ, compC_cmpOK _ _ hM⟩
   rw [mergeOnC_fst]
   refine mergeOn_rounds (fun D => (q D).1) P le (fun s => (mergeRound q s).1) ?_ _ rfl h0
-    (fun i hi hne => (rep_mergeRoundC q le hat hq _ _ (iterC_run _ _ _ _ hit i (by omega) hne)).1)
-    (fun i hi hne => (rep_mergeRoundC q le hat hq _ _ (iterC_run _ _ _ _ hit i (by omega) hne)).2)
+    (fun i hi hne => (rep_mergeRoundC q le hq _ _ (iterC_run _ _ _ _ hit i (by omega) hne)).1)
+    (fun i hi hne => (rep_mergeRoundC q le hq _ _ (iterC_run _ _ _ _ hit i (by omega) hne)).2)
   intro out St D hD x hx y hy acc hacc ux hux uy huy both hboth h hh l hl
   subst hD hx hy hacc hux huy hboth hh hl
   rfl
@@ -183,9 +176,9 @@ theorem rep_mergeOnC {K B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod
 /-- **`merge` under `mergeC`'s bit**: `rep_mergeOnC`, the test `pairsIn Q` read back by `rep_pairsIn` at
     `compC`'s bit; `le a b` any Boolean test with `le a b = true` exactly when `a Q b` (`hle`). -/
 theorem rep_mergeC {K B : Obj} (Q : Rel B B) (P : Rel K (.prod (.arr B) (.arr B))) (le : B.El → B.El → Bool)
-    (hle : ∀ a b, le a b = true ↔ rep Q a b) (hat : hatOK) (hb : (mergeC Q P).2 = true) :
+    (hle : ∀ a b, le a b = true ↔ rep Q a b) (hb : (mergeC Q P).2 = true) :
     ∀ k zs, rep (mergeC Q P).1 k zs ↔ ∃ xs ys, rep P k (xs, ys) ∧ zs = List.merge xs ys le := by
-  refine rep_mergeOnC _ P le hat (fun D S hD hc a b hS => ?_) hb
+  refine rep_mergeOnC _ P le (fun D S hD hc a b hS => ?_) hb
   have eP := rep_pairsIn Q D (compC_cmpOK _ _ hc)
   constructor
   · rintro ⟨c, h⟩
@@ -288,27 +281,25 @@ theorem rep_tic (P : CRel K (.prod B (.arr B))) (hb : (tic P).ok = true) :
       zss = (List.range (bs.length + 1)).map fun j => (b :: bs).take (j + 1) := by
   have e : tic P = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_ticC P.rel hb
 
-/-- `hat`: `rep_unionC`'s. -/
-theorem rep_suffix {n : USize} (X : Vals (.arr B) n) (hat : hatOK) (hb : (suffix X).ok = true) :
+theorem rep_suffix {n : USize} (X : Vals (.arr B) n) (hb : (suffix X).ok = true) :
     ∀ xs ys, rep (suffix X).rel xs ys ↔ (∃ j, X.row j = xs) ∧ ys <:+ xs :=
-  rep_suffixC X hat hb
+  rep_suffixC X hb
 
-/-- `hat`: `rep_unionC`'s; `hS` the step's spec at each round whose step was ok. -/
+/-- `hS`: the step's spec at each round whose step was ok. -/
 theorem rep_loopOn (F : CRel (.prod X Y) (.prod X Y) → CRel (.prod X Y) X) (P : CRel K (.prod X (.arr Y)))
-    (hat : hatOK) (hb : (loopOn F P).ok = true) (Fr : Nat → X.El × Y.El → X.El → Prop)
+    (hb : (loopOn F P).ok = true) (Fr : Nat → X.El × Y.El → X.El → Prop)
     (hS : ∀ i, (F ⟨Alg.ran (loopPairs ((fun s => (loopRound (fun D => let s := F ⟨D, true⟩; (s.rel, s.ok)) s).1)^[i]
         (Alg.zero, P.rel)).2), true⟩).ok = true →
       ∀ cy c', Fr i cy c' ↔ rep (F ⟨Alg.ran (loopPairs ((fun s => (loopRound (fun D => let s := F ⟨D, true⟩;
         (s.rel, s.ok)) s).1)^[i] (Alg.zero, P.rel)).2), true⟩).rel cy c') :
     ∀ k c, rep (loopOn F P).rel k c ↔ ∃ c₀ xs, rep P.rel k (c₀, xs) ∧ ∃ g : Nat → X.El, g 0 = c₀ ∧
       (∀ t (ht : t < xs.length), Fr t (g t, xs[t]'ht) (g (t + 1))) ∧ c = g xs.length := by
-  have e : loopOn F P = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_loopOnC _ P.rel hat hb Fr hS
+  have e : loopOn F P = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_loopOnC _ P.rel hb Fr hS
 
-/-- `hat`: `rep_unionC`'s. -/
-theorem rep_loop (F : CRel (.prod X Y) X) (P : CRel K (.prod X (.arr Y))) (hat : hatOK) (hb : (loop F P).ok = true) :
+theorem rep_loop (F : CRel (.prod X Y) X) (P : CRel K (.prod X (.arr Y))) (hb : (loop F P).ok = true) :
     ∀ k c, rep (loop F P).rel k c ↔ ∃ c₀ xs, rep P.rel k (c₀, xs) ∧ ∃ g : Nat → X.El, g 0 = c₀ ∧
       (∀ t (ht : t < xs.length), rep F.rel (g t, xs[t]'ht) (g (t + 1))) ∧ c = g xs.length := by
-  have e : loop F P = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_loopC F.rel P.rel hat hb
+  have e : loop F P = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_loopC F.rel P.rel hb
 
 /-- `mergeOn` on a test over `CRel`s, ok where `P` is, every round's test was and `mergeOnC` ran within capacity.
     The test sees its input as ok: its bit is already in the merge's. -/
@@ -320,21 +311,21 @@ def mergeOn (q : CRel (.prod B B) (.prod B B) → CRel (.prod B B) (.prod B B)) 
 def merge (Q : CRel B B) (P : CRel K (.prod (.arr B) (.arr B))) : CRel K (.arr B) :=
   guard (Q.ok && P.ok) fun _ => let r := mergeC Q.rel P.rel; ⟨r.1, r.2⟩
 
-/-- `hat`: `rep_unionC`'s; `hq` the test's spec on a coreflexive where the test was ok. -/
+/-- `hq`: the test's spec on a coreflexive where the test was ok. -/
 theorem rep_mergeOn (q : CRel (.prod B B) (.prod B B) → CRel (.prod B B) (.prod B B))
-    (P : CRel K (.prod (.arr B) (.arr B))) (le : B.El → B.El → Bool) (hat : hatOK)
+    (P : CRel K (.prod (.arr B) (.arr B))) (le : B.El → B.El → Bool)
     (hq : ∀ (D : Rel (.prod B B) (.prod B B)) (S : (Obj.prod B B).El → Prop),
       rep D = corefl (A := (⟨(Obj.prod B B).El⟩ : RelSet.{0})) S → (q ⟨D, true⟩).ok = true →
       ∀ a b, S (a, b) → ((∃ c, rep (q ⟨D, true⟩).rel (a, b) c) ↔ le a b = true))
     (hb : (mergeOn q P).ok = true) :
     ∀ k zs, rep (mergeOn q P).rel k zs ↔ ∃ xs ys, rep P.rel k (xs, ys) ∧ zs = List.merge xs ys le := by
-  have e : mergeOn q P = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_mergeOnC _ P.rel le hat hq hb
+  have e : mergeOn q P = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_mergeOnC _ P.rel le hq hb
 
-/-- `hat`: `rep_unionC`'s; `hle`: `le` decides `Q`. -/
+/-- `hle`:`le` decides `Q`. -/
 theorem rep_merge (Q : CRel B B) (P : CRel K (.prod (.arr B) (.arr B))) (le : B.El → B.El → Bool)
-    (hle : ∀ a b, le a b = true ↔ rep Q.rel a b) (hat : hatOK) (hb : (merge Q P).ok = true) :
+    (hle : ∀ a b, le a b = true ↔ rep Q.rel a b) (hb : (merge Q P).ok = true) :
     ∀ k zs, rep (merge Q P).rel k zs ↔ ∃ xs ys, rep P.rel k (xs, ys) ∧ zs = List.merge xs ys le := by
-  have e : merge Q P = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_mergeC Q.rel P.rel le hle hat hb
+  have e : merge Q P = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_mergeC Q.rel P.rel le hle hb
 
 /-- `fixOn` on a step over `CRel`s, with the rounds run: ok where `X₀` is, every round's step was and `fixOnC` ran
     within capacity. The step sees its input as ok: its bit is already in the loop's. -/

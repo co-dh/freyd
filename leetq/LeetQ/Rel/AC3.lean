@@ -20,12 +20,6 @@ namespace LeetQ.Rel.AC3
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF LeetQ.Rel.Rep LeetQ.Rel.Rep.OpsN LeetQ.Rel.Rep.FoldN
 open Freyd.Alg.RelSet (comp_apply inter_apply union_apply recip_apply hom_ext)
 
--- `unionC`'s `hat`, as `CRelLoop`'s (local there): `razeTo`'s read-back of two atom parts
-set_option quotPrecheck false in
-local notation "hatOK" => ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
-  (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
-    USize.size), Vals.RazeFits (.atom t) x y → (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList
-
 variable {V D : Obj}
 
 /-! ## The rounds, pointwise -/
@@ -83,7 +77,7 @@ theorem rep_naiveStepC (X Y : Rel V D) (a : Revise V D) (hb : (naiveStepC X Y a)
 /-- **The delta arc step under its bit**, `Δ` coreflexive: `rep_unionC`, `rep_antiJoinC`, `rep_ranC`, `rep_interC`,
     `rep_leftDivC`, `rep_compC`. The vacuous part of `(Δ A)\…` matters only off `ran(Δ A)`, where the anti-join side
     already holds; on `Δ`, `Δ w v` is `w = v`. -/
-theorem rep_deltaStepC (hat : hatOK) (X : Rel V D) (Δ : Rel V V) (hΔ : ∀ w v, rep Δ w v → w = v) (Y : Rel V D)
+theorem rep_deltaStepC (X : Rel V D) (Δ : Rel V V) (hΔ : ∀ w v, rep Δ w v → w = v) (Y : Rel V D)
     (a : Revise V D) (hb : (deltaStepC X Δ Y a).2 = true) (x : V.El) (d : D.El) :
     rep (deltaStepC X Δ Y a).1 x d ↔ rep Y x d ∧ Dl a (rep X) (rep Δ) x d := by
   classical
@@ -100,7 +94,7 @@ theorem rep_deltaStepC (hat : hatOK) (X : Rel V D) (Δ : Rel V V) (hΔ : ∀ w v
   have hT' : (∃ z, rep (ranC (compC Δ a.A).1).1 z x) ↔ ∃ w, rep (compC Δ a.A).1 w x := by
     rw [rep_ranC _ hT]
     exact ⟨fun ⟨_, _, w, _, h⟩ => ⟨w, h⟩, fun ⟨w, h⟩ => ⟨x, rfl, w, h, h⟩⟩
-  rw [rep_unionC hat _ _ hu, union_apply, rep_conv, recip_apply, rep_antiJoinC _ _ hj, comp_apply, rep_conv,
+  rw [rep_unionC _ _ hu, union_apply, rep_conv, recip_apply, rep_antiJoinC _ _ hj, comp_apply, rep_conv,
     rep_interC _ _ hi, inter_apply, rep_leftDivC _ _ _ _ hL]
   constructor
   · rintro (⟨y, hY, rfl, hn⟩ | ⟨hY, hall, -⟩)
@@ -158,7 +152,7 @@ theorem rep_dPrime (X X' : Rel V D) (hg : (gone(X, X')).2 = true) (hr : (ranC (o
 /-- **One delta round is one naive round, and keeps the invariant**: from `AcInv s as (rep X) (rep Δ)`, under the
     round's bit, `rep (acDelta as (X, Δ)).1 = body s as (rep X)`, and `AcInv` holds of the new `X′` with the new
     `Δ′` (`rep_foldlC` at `rep_deltaStepC`, `rep_dPrime`). -/
-theorem acDelta_round (hat : hatOK) (s : Rel V D) (as : List (Revise V D)) (X : Rel V D) (Δ : Rel V V)
+theorem acDelta_round (s : Rel V D) (as : List (Revise V D)) (X : Rel V D) (Δ : Rel V V)
     (hI : AcInv s as (rep X) (rep Δ)) (hb : (acDeltaC as (X, Δ)).2 = true) :
     (∀ x d, rep (acDelta as (X, Δ)).1 x d ↔ body s as (rep X) x d) ∧
       AcInv s as (rep (acDelta as (X, Δ)).1) (rep (acDelta as (X, Δ)).2) := by
@@ -166,7 +160,7 @@ theorem acDelta_round (hat : hatOK) (s : Rel V D) (as : List (Revise V D)) (X : 
   obtain ⟨hΔ, hXs, hXv, hXn, hXo⟩ := hI
   simp only [acDeltaC, Bool.and_eq_true] at hb
   obtain ⟨⟨hf, hg⟩, hr⟩ := hb
-  have hd := (rep_foldlC _ _ (rep_deltaStepC hat X Δ hΔ) as X true hf).2
+  have hd := (rep_foldlC _ _ (rep_deltaStepC X Δ hΔ) as X true hf).2
   have hΔ' := rep_dPrime X (foldlC (deltaStepC X Δ) as X).1 hg hr
   -- the two rounds agree pointwise
   have key : ∀ x d, rep (acDelta as (X, Δ)).1 x d ↔ body s as (rep X) x d := fun x d => by
@@ -336,10 +330,10 @@ theorem exists_fixed (s : Rel V D) (as : List (Revise V D)) (hsn : ∀ x d, rep 
     `s` end on one relation, the first fixed naive iterate (`exists_fixed`). Each delta round is a naive round
     (`acDelta_round`); `acFix` stops at `Δ = 𝟘`, a fixed iterate by `AcInv`, or after `|s.nub| + 1` rounds; `fixOn`
     stops at an unchanged row count, a fixed iterate by `count_lt` on `nubC`'s distinct rows, or after `n` rounds.
-    Capacity is the two runs' bits, `fixOnC`'s and `acFixC`'s. Hypotheses: `hat` (`rep_unionC`'s); `n` at least
+    Capacity is the two runs' bits, `fixOnC`'s and `acFixC`'s. Hypothesis: `n` at least
     `|s.nub| + 1`; `U` coreflexive, holding every arc's predecessors, and `s` inside every arc's vacuous part
     (`acInv_init`). -/
-theorem acFix_eq_fixOn (hat : hatOK) (s : Rel V D) (as : List (Revise V D)) (U : Rel V V) (n : Nat)
+theorem acFix_eq_fixOn (s : Rel V D) (as : List (Revise V D)) (U : Rel V V) (n : Nat)
     (hn : s.nub.n.toNat + 1 ≤ n)
     (hU : ∀ w v, rep U w v → w = v) (hUA : ∀ a ∈ as, ∀ w x, rep a.A w x → rep U w w)
     (hsV : ∀ a ∈ as, ∀ x d, rep s x d → Vac a x d)
@@ -417,7 +411,7 @@ theorem acFix_eq_fixOn (hat : hatOK) (s : Rel V D) (as : List (Revise V D)) (U :
       | succ k ih =>
         intro hk
         obtain ⟨hI, hk'⟩ := ih (by omega)
-        obtain ⟨hr, hI'⟩ := acDelta_round hat s as _ _ hI (hrun k (by omega))
+        obtain ⟨hr, hI'⟩ := acDelta_round s as _ _ hI (hrun k (by omega))
         show AcInv s as (rep (fd (fd^[k] b₀)).1) (rep (fd (fd^[k] b₀)).2.1) ∧ ∀ x d, rep (fd (fd^[k] b₀)).1 x d ↔ _
         exact ⟨hI', fun x d => (hr x d).trans (body_congr s as hk' x d)⟩
     rw [e, he]

@@ -5,7 +5,7 @@
   with its own.
 -/
 import LeetQ.Rel.KernelWF.CodesAll
-import LeetQ.Rel.KernelWF.RazeRowAll
+import LeetQ.Rel.KernelWF.RazeFoR
 import LeetQ.Rel.OkBit
 
 namespace LeetQ.Rel
@@ -92,13 +92,7 @@ theorem rep_interC (R S : Rel A B) (hb : (interC R S).2 = true) : rep (interC R 
 /-- **`rep (R ∪ S) = rep R ∪ rep S` under `unionC`'s bit**: `need`'s guard is `rep_union`'s `hN`, the razes' bits
     its `hA`, `hB` (`razeC_fits`, `raze_row`), the codes' bits its `hK`, `hV` (`codesC_fits`, `codes_faithful_wf`),
     the `fitsN` bits its `hk`, `hv` (`pickFits_of_fitsN`). -/
-theorem rep_unionC
-    -- not a size bound: `razeTo`'s read-back of two atom parts, proved only at the encodings `razeTo2_fits` covers
-    (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
-      (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
-        USize.size), Vals.RazeFits (.atom t) x y →
-      (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
-    (R S : Rel A B) (hb : (unionC R S).2 = true) : rep (unionC R S).1 = rep R ∪ rep S := by
+theorem rep_unionC (R S : Rel A B) (hb : (unionC R S).2 = true) : rep (unionC R S).1 = rep R ∪ rep S := by
   unfold unionC need at hb
   split at hb
   · rename_i hN
@@ -108,8 +102,8 @@ theorem rep_unionC
     have hr : ∀ (X : Obj) (cs : Array (Part X)) h, (X.razeC cs h).1 = X.raze cs h := by
       intro X; cases X <;> intros <;> rfl
     simp only [hr] at hkc hvc hkf hvf
-    exact rep_union R S hN (fun k hk => raze_row hat A R.key S.key (Obj.razeC_fits A _ _ _ rfl _ hka) _ k hk)
-      (fun k hk => raze_row hat B R.val S.val (Obj.razeC_fits B _ _ _ rfl _ hvb) _ k hk)
+    exact rep_union R S hN (raze_row A R.key S.key (Obj.razeC_fits A _ _ _ rfl _ hka) _)
+      (raze_row B R.val S.val (Obj.razeC_fits B _ _ _ rfl _ hvb) _)
       (oneOK_of_codesC A _ hkc) (oneOK_of_codesC B _ hvc) (pickFits_range A _ hkf) (pickFits_range B _ hvf)
   · exact absurd hb Bool.false_ne_true
 
@@ -156,14 +150,8 @@ theorem rep_comp (R : CRel A B) (S : CRel B C) (hb : (R.comp S).ok = true) :
 theorem rep_inter (R S : CRel A B) (hb : (R.inter S).ok = true) : rep (R.inter S).rel = rep R.rel ∩ rep S.rel := by
   have e : R.inter S = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_interC R.rel S.rel hb
 
-/-- `hat`: `rep_unionC`'s. -/
-theorem rep_union
-    (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
-      (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
-        USize.size), Vals.RazeFits (.atom t) x y →
-      (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
-    (R S : CRel A B) (hb : (R.union S).ok = true) : rep (R.union S).rel = rep R.rel ∪ rep S.rel := by
-  have e : R.union S = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_unionC hat R.rel S.rel hb
+theorem rep_union (R S : CRel A B) (hb : (R.union S).ok = true) : rep (R.union S).rel = rep R.rel ∪ rep S.rel := by
+  have e : R.union S = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_unionC R.rel S.rel hb
 
 end CRel
 

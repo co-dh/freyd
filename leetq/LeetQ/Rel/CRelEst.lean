@@ -4,7 +4,7 @@
   its pieces'; `ranC_oneFit`, `domC_oneFit`, `diffC_ok`, `antiJoinC_ok` read one piece's bit as the bundle the plain
   read-back (`rep_estOn`, `rep_thinOn`, `rep_orderedOn`, …) takes at it, so each `rep_<op>C` is that read-back under
   the twin's bit. What stays is not a size bound: the test's own spec, which a caller applies at the test bits each
-  `rep_<op>C` hands back, and `unionC`'s `hat` inside `suffix`.
+  `rep_<op>C` hands back.
 -/
 import LeetQ.Rel.CRelLoop
 import LeetQ.Rel.CRelPower
@@ -14,12 +14,6 @@ namespace LeetQ.Rel
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF Freyd Freyd.Alg Freyd.Alg.RelSet
 open LeetQ.Rel.Rep LeetQ.Rel.Rep.FoldN LeetQ.Rel.Rep.OpsN LeetQ.Rel.Rep.Prim LeetQ.Rel.Rep.ListN
-
--- `unionC`'s `hat` inside `suffix`, as `CRelLoop`'s (local there): `razeTo`'s read-back of two atom parts
-set_option quotPrecheck false in
-local notation "hatOK" => ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
-  (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
-    USize.size), Vals.RazeFits (.atom t) x y → (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList
 
 namespace Rep
 
@@ -160,9 +154,9 @@ def ordPairs {n : USize} (X : Vals (.arr B) n) : Rel (.prod B B) (.prod B B) :=
 
 /-- **`orderedOn` under `orderedOnC`'s bit**: `rep_orderedOn` at its pieces' bits — `suffix` by `rep_suffixC`, then
     `ranC_oneFit`, `unconsC_fits`, `compC_cmpOK`, `memC_ok`, `pairC_ok`, `antiJoinC_ok`, `domC_oneFit` — with the
-    test's bit at `ordPairs X` for its spec. What stays: `unionC`'s `hat`. -/
+    test's bit at `ordPairs X` for its spec. -/
 theorem rep_orderedOnC (qC : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B) × Bool) {n : USize}
-    (X : Vals (.arr B) n) (hat : hatOK) (hb : (orderedOnC qC X).2 = true) :
+    (X : Vals (.arr B) n) (hb : (orderedOnC qC X).2 = true) :
     (qC (ordPairs X)).2 = true ∧
       (∀ xs y zs z, (∃ i, X.row i = xs) → (y :: zs) <:+ xs → z ∈ zs → rep (ordPairs X) (y, z) (y, z)) ∧
       ∀ xs ys, rep (orderedOnC qC X).1 xs ys ↔ (∃ i, X.row i = xs) ∧ ys = xs ∧
@@ -170,36 +164,35 @@ theorem rep_orderedOnC (qC : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.p
   simp only [orderedOnC, Bool.and_eq_true] at hb
   obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨hS, hW⟩, hu⟩, hT⟩, hD⟩, hV⟩, hm⟩, hM⟩, hyz⟩, hE⟩, ht⟩, hbad⟩, hdb⟩, hC⟩, hdC⟩, hr⟩ := hb
   have hm' := memC_ok _ hm
-  exact ⟨ht, rep_orderedOn (fun r => (qC r).1) X (rep_suffixC X hat hS) _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
+  exact ⟨ht, rep_orderedOn (fun r => (qC r).1) X (rep_suffixC X hS) _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
     _ rfl _ rfl _ rfl _ rfl
     ⟨ranC_oneFit _ hW, fun _ e _ _ _ _ => by subst e; exact unconsC_fits _ hu, compC_cmpOK _ _ hT,
       ranC_oneFit _ hD, ranC_oneFit _ hV, hm'.1, hm'.2, compC_cmpOK _ _ hM, pairC_ok _ _ hyz, ranC_oneFit _ hE,
       antiJoinC_ok _ _ hbad, domC_oneFit _ hdb, compC_cmpOK _ _ hC, domC_oneFit _ hdC, antiJoinC_ok _ _ hr⟩⟩
 
 /-- **`ordered(Q)` under `orderedC`'s bit**: `rep_orderedOnC` at `pairsInC Q`, in `Pairwise` form
-    (`pairwise_of_orderedOn`), the test's bit its `hq` (`compC_cmpOK`). What stays: `unionC`'s `hat`. -/
-theorem rep_orderedC (Q : Rel B B) {n : USize} (X : Vals (.arr B) n) (hat : hatOK) (hb : (orderedC Q X).2 = true) :
+    (`pairwise_of_orderedOn`), the test's bit its `hq` (`compC_cmpOK`). -/
+theorem rep_orderedC (Q : Rel B B) {n : USize} (X : Vals (.arr B) n) (hb : (orderedC Q X).2 = true) :
     ∀ xs ys, rep (orderedC Q X).1 xs ys ↔ (∃ i, X.row i = xs) ∧ ys = xs ∧ xs.Pairwise (fun y z => rep Q y z) := by
-  obtain ⟨ht, h1, h2⟩ := rep_orderedOnC (pairsInC Q) X hat hb
+  obtain ⟨ht, h1, h2⟩ := rep_orderedOnC (pairsInC Q) X hb
   exact pairwise_of_orderedOn Q X _ (ordPairs X) (compC_cmpOK (ordPairs X) _ ht) h1 h2
 
-/-- **`sortSet(Q)` under `sortSetC`'s bit**: `rep_sortSet` at `rep_orderedC` and `compC`'s bit (`compC_cmpOK`). What
-    stays: `unionC`'s `hat`. -/
-theorem rep_sortSetC (Q : Rel B B) {n : USize} (Y : Vals (.arr B) n) (hat : hatOK) (hb : (sortSetC Q Y).2 = true) :
+/-- **`sortSet(Q)` under `sortSetC`'s bit**: `rep_sortSet` at `rep_orderedC` and `compC`'s bit (`compC_cmpOK`). -/
+theorem rep_sortSetC (Q : Rel B B) {n : USize} (Y : Vals (.arr B) n) (hb : (sortSetC Q Y).2 = true) :
     ∀ s ys, rep (sortSetC Q Y).1 s ys ↔
       rep (setify Y) ys s ∧ (∃ i, Y.row i = ys) ∧ ys.Pairwise (fun y z => rep Q y z) := by
   simp only [sortSetC, Bool.and_eq_true] at hb
-  exact rep_sortSet Q Y (rep_orderedC Q Y hat hb.1.2) (compC_cmpOK _ _ hb.2)
+  exact rep_sortSet Q Y (rep_orderedC Q Y hb.1.2) (compC_cmpOK _ _ hb.2)
 
 /-- **`thinL(Q)` under `thinLC`'s bit, elementwise**: an array `xs` of `X` goes to `ys` exactly when `ys` is a
     sublist of `xs` and each element of `xs` is `Q`-above some element of `ys`. Each piece read back by its twin
     (`rep_subseqC`, `ranC_oneFit`, `rep_setifyC`, `rep_memC`, `rep_compC`, `rep_rightDivC`, `rep_leftDivC`,
-    `rep_interC`), each piece named once read. What stays: `subseqC`'s `hat`. -/
-theorem rep_thinLC (Q : Rel B B) {n : USize} (X : Vals (.arr B) n) (hat : hatOK) (hb : (thinLC Q X).2 = true) :
+    `rep_interC`), each piece named once read. -/
+theorem rep_thinLC (Q : Rel B B) {n : USize} (X : Vals (.arr B) n) (hb : (thinLC Q X).2 = true) :
     ∀ xs ys, rep (thinLC Q X).1 xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Sublist xs ∧ ∀ a ∈ xs, ∃ y ∈ ys, rep Q y a := by
   simp only [thinLC, okbit] at hb ⊢
   obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨hU, hW⟩, hs⟩, hm⟩, hQS⟩, hRd⟩, hLd⟩, hT⟩, hH⟩, hG⟩, hr⟩ := hb
-  have eU := rep_subseqC X hat hU
+  have eU := rep_subseqC X hU
   have hWf := ranC_oneFit _ hW
   generalize (subseqC X).1 = U at eU hWf hW hs hm hQS hRd hLd hT hH hG hr ⊢
   have eW : ∀ a b, rep (ranC U).1 a b ↔ a = b ∧ ∃ x, rep U x a := fun a b => by
@@ -322,10 +315,9 @@ def ordered (Q : CRel B B) {n : USize} (X : Vals (.arr B) n) : CRel (.arr B) (.a
 def thinL (Q : CRel B B) {n : USize} (X : Vals (.arr B) n) : CRel (.arr B) (.arr B) :=
   guard Q.ok fun _ => let r := thinLC Q.rel X; ⟨r.1, r.2⟩
 
-/-- `hat`: `rep_subseqC`'s. -/
-theorem rep_thinL (Q : CRel B B) {n : USize} (X : Vals (.arr B) n) (hat : hatOK) (hb : (thinL Q X).ok = true) :
+theorem rep_thinL (Q : CRel B B) {n : USize} (X : Vals (.arr B) n) (hb : (thinL Q X).ok = true) :
     ∀ xs ys, rep (thinL Q X).rel xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Sublist xs ∧ ∀ a ∈ xs, ∃ y ∈ ys, rep Q.rel y a := by
-  have e : thinL Q X = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_thinLC Q.rel X hat hb
+  have e : thinL Q X = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_thinLC Q.rel X hb
 
 /-- `sortSet(Q)` on `Y`, ok where `Q` is and `sortSetC` ran within capacity. -/
 def sortSet (Q : CRel B B) {n : USize} (Y : Vals (.arr B) n) : CRel (.arr B) (.arr B) :=
@@ -367,25 +359,23 @@ theorem rep_thin (Q : CRel B B) (G : CRel A B) (hb : (thin Q G).ok = true) :
     ∀ a c, rep (thin Q G).rel a c ↔ rep G.rel a c ∧ ¬ ∃ b, rep G.rel a b ∧ rep Q.rel b c ∧ ¬ rep Q.rel c b := by
   have e : thin Q G = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_thinC Q.rel G.rel hb
 
-/-- `hat`: `rep_unionC`'s; the test's spec applies where `(q ⟨ordPairs X, true⟩).ok`, the first conjunct. -/
+/-- The test's spec applies where `(q ⟨ordPairs X, true⟩).ok`, the first conjunct. -/
 theorem rep_orderedOn (q : CRel (.prod B B) (.prod B B) → CRel (.prod B B) (.prod B B)) {n : USize}
-    (X : Vals (.arr B) n) (hat : hatOK) (hb : (orderedOn q X).ok = true) :
+    (X : Vals (.arr B) n) (hb : (orderedOn q X).ok = true) :
     (q ⟨ordPairs X, true⟩).ok = true ∧
       (∀ xs y zs z, (∃ i, X.row i = xs) → (y :: zs) <:+ xs → z ∈ zs → rep (ordPairs X) (y, z) (y, z)) ∧
       ∀ xs ys, rep (orderedOn q X).rel xs ys ↔ (∃ i, X.row i = xs) ∧ ys = xs ∧
         ∀ y zs, (y :: zs) <:+ xs → ∀ z ∈ zs, ∃ w, rep (q ⟨ordPairs X, true⟩).rel w (y, z) :=
-  rep_orderedOnC (testC q) X hat hb
+  rep_orderedOnC (testC q) X hb
 
-/-- `hat`: `rep_unionC`'s. -/
-theorem rep_ordered (Q : CRel B B) {n : USize} (X : Vals (.arr B) n) (hat : hatOK) (hb : (ordered Q X).ok = true) :
+theorem rep_ordered (Q : CRel B B) {n : USize} (X : Vals (.arr B) n) (hb : (ordered Q X).ok = true) :
     ∀ xs ys, rep (ordered Q X).rel xs ys ↔ (∃ i, X.row i = xs) ∧ ys = xs ∧ xs.Pairwise (fun y z => rep Q.rel y z) := by
-  have e : ordered Q X = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_orderedC Q.rel X hat hb
+  have e : ordered Q X = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_orderedC Q.rel X hb
 
-/-- `hat`: `rep_unionC`'s. -/
-theorem rep_sortSet (Q : CRel B B) {n : USize} (Y : Vals (.arr B) n) (hat : hatOK) (hb : (sortSet Q Y).ok = true) :
+theorem rep_sortSet (Q : CRel B B) {n : USize} (Y : Vals (.arr B) n) (hb : (sortSet Q Y).ok = true) :
     ∀ s ys, rep (sortSet Q Y).rel s ys ↔
       rep (Alg.setify Y) ys s ∧ (∃ i, Y.row i = ys) ∧ ys.Pairwise (fun y z => rep Q.rel y z) := by
-  have e : sortSet Q Y = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_sortSetC Q.rel Y hat hb
+  have e : sortSet Q Y = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_sortSetC Q.rel Y hb
 
 end CRel
 
