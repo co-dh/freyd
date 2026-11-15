@@ -95,8 +95,9 @@ theorem lamOn_top_fits {B : Obj} {m : USize} (R : Rel A B) (U : Vals A m)
 
 #print axioms lamOn_top_fits
 
-/-- **`rep (lamOn R U)`: `Λ(R)` total on `U`**: an array `lamOn R U` gives `a` holds exactly the values `R`
-    relates `a` to, and `lamOn R U` has a row at `a` exactly when `R` has a pair at `a` or `U` lists `a`.
+/-- **`rep (T ∪ N)`: `Λ(R)` total on `U`**, `T` the transpose at any order `vp` of the nub's rows (`lamOn R U` at the
+    values' sort): an array it gives `a` holds exactly the values `R`
+    relates `a` to, it has a row at `a` exactly when `R` has a pair at `a` or `U` lists `a`, and each row is `T`'s or the empty array.
     `rep_union_full` splits it into `Λ(R)` (`rep_transpose`) and `⊤` (`rep_top`) from the `U`-rows outside
     `dom R` (`rep_diff`, `rep_dom`) to the empty array. Hypotheses: those of each, at the parts named above. -/
 theorem rep_lamOn {B : Obj} {m : USize} (R : Rel A B) (U : Vals A m)
@@ -107,7 +108,8 @@ theorem rep_lamOn {B : Obj} {m : USize} (R : Rel A B) (U : Vals A m)
     (hv : Vals.PickFits B (Rel.val R) (List.range (Rel.n R).toNat))
     -- generic sides: the nub copies `R`'s cells, whose dictionaries, general cells, nested payloads no `R` fact bounds
     (hWk : A.CodesFit (#v[⟨(Rel.nub R).n, (Rel.nub R).key⟩] : Vector (Part A) 1))
-    (hW : B.CodesFit (#v[⟨(Rel.nub R).n, (Rel.nub R).val⟩] : Vector (Part B) 1))
+    -- the order `transpose` lists the nub's rows in, each once (`sortBy_nub_perm` at the values' sort)
+    (vp : ByteArray) (hvp : (ids vp).Perm (List.range (Rel.nub R).n.toNat))
     (h63 : (Rel.n R).toNat < 2 ^ 63)
     -- `rep_diff` at `idU U`, `dom R`; two parts coded jointly: a generic `A`'s ALP sum and dictionaries are unbounded
     (pc : Vector Code 2) (hpc : pc = pairs #v[LeetQ.Rel.Alg.idU U, LeetQ.Rel.Alg.dom R])
@@ -118,21 +120,22 @@ theorem rep_lamOn {B : Obj} {m : USize} (R : Rel A B) (U : Vals A m)
     -- `D`'s count is bounded only by `U`'s, a `USize`; `top`'s `cross` needs it below `2^63`
     (ht63 : (Rel.n D).toNat * USize.toNat 1 < 2 ^ 63)
     -- `rep_union_full` at `T`, `N`; `L` their raze
-    (T N : Rel A (.arr B)) (hT : T = lT(R)) (hN0 : N = LeetQ.Rel.Alg.top (Rel.key D) (LeetQ.Rel.Alg.nilVal B))
+    (T N : Rel A (.arr B)) (hT : T = transposeRuns (Rel.nub R) kcT(R) vp) (hN0 : N = LeetQ.Rel.Alg.top (Rel.key D) (LeetQ.Rel.Alg.nilVal B))
     (hN : (Rel.n T).toNat + (Rel.n N).toNat < USize.size)
     (hFk : Vals.RazeFits A (Rel.key T) (Rel.key N)) (hFv : Vals.RazeFits (.arr B) (Rel.val T) (Rel.val N))
     (L : Rel A (.arr B)) (hL : L = Uc(T, N, hN)) (ku vu : Code) (hku : ku = kcR(L)) (hvu : vu = vcR(L))
     (huK : cOK(ku, Rel.n L, Rel.key L)) (huV : cOK(vu, Rel.n L, Rel.val L))
     (huk : Vals.PickFits A (Rel.key L) (List.range (Rel.n L).toNat))
     (huv : Vals.PickFits (.arr B) (Rel.val L) (List.range (Rel.n L).toNat)) :
-    (∀ a Y, rep (LeetQ.Rel.Alg.lamOn R U) a Y → ∀ y, y ∈ Y ↔ rep R a y) ∧
-      (∀ a, (∃ Y, rep (LeetQ.Rel.Alg.lamOn R U) a Y) ↔ (∃ b, rep R a b) ∨ ∃ i, Vals.row U i = a) := by
-  subst hku hvu hL hN0 hD hT hpc hkc hvc
+    (∀ a Y, rep (T ∪ N) a Y → ∀ y, y ∈ Y ↔ rep R a y) ∧
+      (∀ a, (∃ Y, rep (T ∪ N) a Y) ↔ (∃ b, rep R a b) ∨ ∃ i, Vals.row U i = a) ∧
+      ∀ a Y, rep (T ∪ N) a Y → rep T a Y ∨ Y = [] := by
+  subst hku hvu hL hN0 hD hpc hkc hvc
   obtain ⟨htN, htA, htB⟩ := lamOn_top_fits R U hc hdU
-  obtain ⟨h1, h2⟩ := rep_transpose R hK hV hk hv hWk _ (sortBy_nub_perm _ hW) _ (transpose_eq _) h63
-  have hu := rep_union_full (lT(R)) (lN(R, U, B)) hN hFk hFv huK huV huk huv
-  have hL : ∀ a Y, rep (LeetQ.Rel.Alg.lamOn R U) a Y ↔ rep (lT(R)) a Y ∨ rep (lN(R, U, B)) a Y := fun a Y => by
-    rw [show LeetQ.Rel.Alg.lamOn R U = lT(R) ∪ lN(R, U, B) from rfl, hu]; exact Iff.rfl
+  obtain ⟨h1, h2⟩ := rep_transpose R hK hV hk hv hWk vp hvp T hT h63
+  have hu := rep_union_full T (lN(R, U, B)) hN hFk hFv huK huV huk huv
+  have hL : ∀ a Y, rep (T ∪ lN(R, U, B)) a Y ↔ rep T a Y ∨ rep (lN(R, U, B)) a Y := fun a Y => by
+    rw [hu]; exact Iff.rfl
   have hd : ∀ a b, rep (LeetQ.Rel.Alg.dom R) a b ↔ a = b ∧ ∃ c, rep R a c := fun a b => by
     rw [rep_dom_corefl R hK hk]; exact Iff.rfl
   have hD : ∀ a, (∃ i, Vals.row (Rel.key (lD(R, U))) i = a) ↔ (∃ i, Vals.row U i = a) ∧ ¬ ∃ c, rep R a c := by
@@ -146,7 +149,7 @@ theorem rep_lamOn {B : Obj} {m : USize} (R : Rel A B) (U : Vals A m)
       obtain ⟨i, hi, -⟩ := (rep_diff _ _ hc hdU hdU a a).2
         ⟨(idU_holds U a a).2 ⟨rfl, hU⟩, fun h => hR ((hd a a).1 h).2⟩
       exact ⟨i, hi⟩
-  have hT : ∀ a Y, rep (lN(R, U, B)) a Y ↔ (∃ i, Vals.row (Rel.key (lD(R, U))) i = a) ∧ Y = [] := fun a Y => by
+  have hNt : ∀ a Y, rep (lN(R, U, B)) a Y ↔ (∃ i, Vals.row (Rel.key (lD(R, U))) i = a) ∧ Y = [] := fun a Y => by
     rw [rep_top _ _ htN ht63 htA htB]
     show (∃ a', (a = a' ∧ ∃ i, Vals.row (Rel.key (lD(R, U))) i = a) ∧
       ∃ b', True ∧ (b' = Y ∧ ∃ j, Vals.row (LeetQ.Rel.Alg.nilVal B) j = b')) ↔ _
@@ -154,18 +157,19 @@ theorem rep_lamOn {B : Obj} {m : USize} (R : Rel A B) (U : Vals A m)
       ⟨fun ⟨_, h⟩ => h.symm, fun h => ⟨⟨0, by simp⟩, h.symm⟩⟩
     rw [← hnil]
     exact ⟨fun ⟨_, ⟨rfl, ha⟩, _, _, rfl, hb⟩ => ⟨ha, hb⟩, fun ⟨ha, hb⟩ => ⟨a, ⟨rfl, ha⟩, Y, trivial, rfl, hb⟩⟩
-  refine ⟨fun a Y h y => ?_, fun a => ⟨fun ⟨Y, h⟩ => ?_, fun h => ?_⟩⟩
+  refine ⟨fun a Y h y => ?_, fun a => ⟨fun ⟨Y, h⟩ => ?_, fun h => ?_⟩,
+    fun a Y h => ((hL a Y).1 h).imp id fun h => ((hNt a Y).1 h).2⟩
   · rcases (hL a Y).1 h with h | h
     · exact h1 a Y h y
-    · obtain ⟨hk', rfl⟩ := (hT a Y).1 h
+    · obtain ⟨hk', rfl⟩ := (hNt a Y).1 h
       exact ⟨fun hy => by simp at hy, fun hy => absurd ⟨y, hy⟩ ((hD a).1 hk').2⟩
   · rcases (hL a Y).1 h with h | h
     · exact Or.inl ((h2 a).1 ⟨Y, h⟩)
-    · exact Or.inr ((hD a).1 ((hT a Y).1 h).1).1
+    · exact Or.inr ((hD a).1 ((hNt a Y).1 h).1).1
   · by_cases hR : ∃ c, rep R a c
     · obtain ⟨Y, hY⟩ := (h2 a).2 hR
       exact ⟨Y, (hL a Y).2 (Or.inl hY)⟩
-    · exact ⟨[], (hL a []).2 (Or.inr ((hT a []).2 ⟨(hD a).2 ⟨h.resolve_left hR, hR⟩, rfl⟩))⟩
+    · exact ⟨[], (hL a []).2 (Or.inr ((hNt a []).2 ⟨(hD a).2 ⟨h.resolve_left hR, hR⟩, rfl⟩))⟩
 
 #print axioms rep_lamOn
 

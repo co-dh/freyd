@@ -880,6 +880,13 @@ def _root_.LeetQ.Rel.Obj.Ordered : Obj → Prop
   | .arr b => b.Ordered
   | .sum a b => a.Ordered ∧ b.Ordered
 
+/-- **`¬ Obj.lt` is antisymmetric where `Obj.key` is injective**: neither below the other means equal keys
+    (`lt_trichotomy`), so equal elements. `Ordered` alone does not give it: a float key (`rank64`) sends every NaN to
+    one key and `-0.0` to `+0.0`'s, so distinct elements of an ordered side can share a key. -/
+theorem _root_.LeetQ.Rel.Obj.eq_of_not_lt (A : Obj) (hA : ∀ x y : A.El, A.key x = A.key y → x = y) {x y : A.El}
+    (h1 : ¬ A.lt x y) (h2 : ¬ A.lt y x) : x = y :=
+  hA x y (((A.lt_trichotomy x y).resolve_left h1).resolve_right h2)
+
 /-- **Every atom but `.general` sorts stably by `Obj.lt`.** -/
 theorem sortsAsc_ordered_atom {t : QAtomicType} (h : t ≠ .general) : SortsAsc (.atom t) := by
   cases t

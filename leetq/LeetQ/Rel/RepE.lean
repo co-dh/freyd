@@ -85,8 +85,9 @@ theorem rep_E {B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) (M : Rel
   have hm : ∀ xs y, rep M xs y ↔ (∃ i, Vals.row X i = xs) ∧ ∃ x ∈ xs, rep R x y := fun xs y => by
     rw [hM]; exact rep_memComp R X hmv hmk hcc hcrn hcM hcA hcC xs y
   rw [show LeetQ.Rel.Alg.E R X = LeetQ.Rel.Alg.lamOn M X by rw [hM]; rfl]
-  obtain ⟨h1, h2⟩ := rep_lamOn M X kc vc hkc hvc hK hV hk hv hWk hW h63
-    pc hpc hc hmv D hD ht63 T N hT hN0 hN hFk hFv L hL ku vu hku hvu huK huV huk huv
+  subst hT hN0 hD
+  obtain ⟨h1, h2, -⟩ := rep_lamOn M X kc vc hkc hvc hK hV hk hv hWk _ (sortBy_nub_perm _ hW) h63
+    pc hpc hc hmv _ rfl ht63 _ _ (transpose_eq _) rfl hN hFk hFv L hL ku vu hku hvu huK huV huk huv
   have h2' : ∀ xs, (∃ Y, rep (LeetQ.Rel.Alg.lamOn M X) xs Y) ↔ ∃ i, Vals.row X i = xs := fun xs =>
     (h2 xs).trans ⟨fun h => h.elim (fun ⟨_, hb⟩ => ((hm _ _).1 hb).1) id, Or.inr⟩
   exact ⟨fun xs Y h => ⟨(h2' xs).1 ⟨Y, h⟩, fun y => (h1 xs Y h y).trans
