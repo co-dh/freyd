@@ -1,0 +1,44 @@
+--- a/LeetQ/Rel/Lang/Gen.lean
++++ b/LeetQ/Rel/Lang/Gen.lean
+@@ -208,24 +208,38 @@
+ 
+ /-- `νX : φ`: rounds of `φ` from `S` down to the greatest fixed point. -/
+ def nu (A B : Obj) (S : Fn false A B) (φ : CRel A B → Fn false A B) : Fn false A B := fun _ =>
+-  let s := S (); (CRel.fixOn (s.rel.n.toNat + 1) (fun X => φ X ()) s).1
++  let s := S (); (CRel.fixOn (s.rel.n.toNat + 1) (fun X => dbgTrace s!"NU in {X.rel.n}" fun _ => φ X ()) s).1
+ 
+ /-- One arc `A\(X C)` of an AC-3 body: `A`, `C`, `𝟙(V)`, `𝟙(D)`. -/
+ abbrev Arc (V D : Obj) := Fn false V V × Fn false D D × Fn false V V × Fn false D D
+ 
++/-- bench-only copy of `acFixC` that traces each round (rel-141b). -/
++def acLoop {V D : Obj} (as : List (Revise V D)) : Nat → Rel V D → Rel V V → Nat → (Rel V D × Nat) × Bool
++  | 0, X, _, k => ((X, k), true)
++  | n+1, X, U, k =>
++    if U.n == 0 then ((X, k), true) else
++    let d := acDeltaC as (X, U)
++    dbgTrace s!"ACFIX round {k+1}: {X.n} -> {d.1.1.n} delta {U.n}->{d.1.2.n}" fun _ =>
++    let r := acLoop as n d.1.1 d.1.2 (k+1); (r.1, d.2 && r.2)
++
++def acFixTr {V D : Obj} (s : Rel V D) (as : List (Revise V D)) (U : Rel V V) : (Rel V D × Nat) × Bool :=
++  let x := nubC s
++  dbgTrace s!"ACFIX start {x.1.n}" fun _ =>
++  let r := acLoop as (x.1.n.toNat + 1) x.1 U 0; (r.1, x.2 && r.2)
++
+ /-- `νX : s ∩ ⋂ₖ Aₖ\(X Cₖ)` by AC-3's delta rounds (`acFixC`), its arcs `a :: as`. -/
+ def nuAC (V D : Obj) (S : Fn false V D) (a : Arc V D) (as : List (Arc V D)) : Fn false V D := fun _ =>
+   let s := S ()
+   let rs := (a :: as).map fun (x, c, uv, ud) => (x (), c (), uv (), ud ())
+   let ok := rs.all fun (x, c, uv, ud) => x.ok && c.ok && uv.ok && ud.ok
+   let rv := rs.map fun (x, c, uv, ud) => (⟨x.rel, c.rel, uv.rel, ud.rel⟩ : Revise V D)
+-  let r := acFixC s.rel rv (a.2.2.1 ()).rel
++  let r := acFixTr s.rel rv (a.2.2.1 ()).rel
+   ⟨r.1.1, s.ok && ok && r.2⟩
+ 
+ /-- `μX : φ`: rounds of `φ` from `𝟘` up to the least fixed point, at most `|UA|·|UB|+1`. -/
+ def mu (A B : Obj) (UA : Fn false A A) (UB : Fn false B B) (φ : CRel A B → Fn false A B) : Fn false A B := fun _ =>
+   let u := UA (); let v := UB ()
+-  also (u.ok && v.ok) (CRel.fixOn (u.rel.n.toNat * v.rel.n.toNat + 1) (fun X => φ X ()) ⟨Alg.zero, true⟩).1
++  also (u.ok && v.ok) (CRel.fixOn (u.rel.n.toNat * v.rel.n.toNat + 1) (fun X => dbgTrace s!"MU in {X.rel.n}" fun _ => φ X ()) ⟨Alg.zero, true⟩).1
+ 
+ /-! ### Plans: the bit-rule nodes kept, every other sub-term its table -/
+ 
