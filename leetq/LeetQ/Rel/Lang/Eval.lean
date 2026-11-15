@@ -45,12 +45,20 @@ def Val.at? (A B : Obj) : Val → Option (Rel A B)
 /-- What one evaluation has computed of the shared sub-terms: per identity, each demand with its value. -/
 abbrev Memo := Std.HashMap Nat (Array ((A : Obj) × Rel A A × Val))
 
-abbrev EvM := StateM Memo
+/-- The memo, and whether every op run so far stayed within capacity (the `&&` of their ok bits). -/
+abbrev EvM := StateM (Memo × Bool)
+
+/-- An op twin's result: its ok bit `&&`ed into the run's, its value returned. -/
+def ck {α : Type} (r : α × Bool) : EvM α := modify (fun (m, o) => (m, o && r.2)) *> pure r.1
+
+/-- A fresh run of `m` (a callback an op calls on its own demands): its value and its ok bit. -/
+def runEv {α : Type} (m : EvM α) : α × Bool := let (r, _, o) := Id.run (m.run ({}, true)); (r, o)
 
 /-- A demand-run term `f` on the keys `P`, where its value is read only composed after rows into `P` (`RS`, a
     fold's or a loop's step): with no key, nothing reads it, so it is not run — the last round of a fold or loop
     meets no pair. -/
-def onKeys {A B : Obj} (f : Rel A A → Rel A B) (P : Rel A A) : Rel A B := if P.n == 0 then zero else f P
+def onKeys {A B : Obj} (f : Rel A A → Rel A B × Bool) (P : Rel A A) : Rel A B × Bool :=
+  if P.n == 0 then (zero, true) else f P
 
 /-- A closed sub-term's value as `hoist` leaves it: a value, a universe, or one under its identity. -/
 def closedVal? : {A B : Obj} → {d : Bool} → Tm A B d → Option (Rel A B)
@@ -97,12 +105,12 @@ def ev (cnt : Array Nat) (ρ : List (Nat × Val)) : {A B : Obj} → {d : Bool} �
   | _, _, _, .uni U, _ => pure (idU U)
   | _, _, _, .zero, _ => pure zero
   | _, _, _, .id, D => pure D
-  | _, _, _, .top V, D => return top D.val (← ev cnt ρ V ()).val
-  | _, _, _, .mem, D => pure (mem D.val)
+  | _, _, _, .top V, D => do ck (topC D.val (← ev cnt ρ V ()).val)
+  | _, _, _, .mem, D => ck (memC D.val)
   | _, _, _, .outl, D => pure (outl D)
   | _, _, _, .outr, D => pure (outr D)
-  | _, _, _, .inl, D => pure (inl D.val)
-  | _, _, _, .inr, D => pure (inr D.val)
+  | _, _, _, .inl, D => ck (inlC D.val)
+  | _, _, _, .inr, D => ck (inrC D.val)
   -- a closed `≫`/`∩`/`−`/`\` runs as bit matrices where its plan's objects are small (`Bits.run`), the
   -- inner nodes never tables; the choice is by size, so any closed term of these takes it
   | _, _, _, .comp (d := false) (e := e) R S, _ => do
@@ -110,100 +118,102 @@ def ev (cnt : Array Nat) (ρ : List (Nat × Val)) : {A B : Obj} → {d : Bool} �
     let D := demOf e r
     return Bits.run (.comp r (← Bits.orLeaf (evB cnt ρ S D) (ev cnt ρ S D)))
   | _, _, _, .comp (e := e) R S, D => do
-    let r ← ev cnt ρ R D; if r.n == 0 then pure zero else return r ≫ (← ev cnt ρ S (Dem.of e (ran r)))
+    let r ← ev cnt ρ R D; if r.n == 0 then pure zero else ck (compC r (← ev cnt ρ S (Dem.of e (← ck (ranC r)))))
   | _, _, _, .conv R, _ => return (← ev cnt ρ R ())°
   | _, _, _, .meet (d := false) (e := false) R S, _ => return Bits.run (.meet
       (← Bits.orLeaf (evB cnt ρ R ()) (ev cnt ρ R ())) (← Bits.orLeaf (evB cnt ρ S ()) (ev cnt ρ S ())))
   | _, _, _, .diff (d := false) (e := false) R S, _ => return Bits.run (.diff
       (← Bits.orLeaf (evB cnt ρ R ()) (ev cnt ρ R ())) (← Bits.orLeaf (evB cnt ρ S ()) (ev cnt ρ S ())))
-  | _, _, _, .meet (d := d) (e := e) R S, D => return (← ev cnt ρ R (Dem.l d e D)) ∩ (← ev cnt ρ S (Dem.r d e D))
-  | _, _, _, .join (d := d) (e := e) R S, D => return (← ev cnt ρ R (Dem.l d e D)) ∪ (← ev cnt ρ S (Dem.r d e D))
-  | _, _, _, .diff (d := d) (e := e) R S, D => return (← ev cnt ρ R (Dem.l d e D)) \ (← ev cnt ρ S (Dem.r d e D))
-  | _, _, _, .dom R, D => return dom (← ev cnt ρ R D)
-  | _, _, _, .ran R, _ => return ran (← ev cnt ρ R ())
+  | _, _, _, .meet (d := d) (e := e) R S, D => do ck (interC (← ev cnt ρ R (Dem.l d e D)) (← ev cnt ρ S (Dem.r d e D)))
+  | _, _, _, .join (d := d) (e := e) R S, D => do ck (unionC (← ev cnt ρ R (Dem.l d e D)) (← ev cnt ρ S (Dem.r d e D)))
+  | _, _, _, .diff (d := d) (e := e) R S, D => do ck (diffC (← ev cnt ρ R (Dem.l d e D)) (← ev cnt ρ S (Dem.r d e D)))
+  | _, _, _, .dom R, D => do ck (domC (← ev cnt ρ R D))
+  | _, _, _, .ran R, _ => do ck (ranC (← ev cnt ρ R ()))
   | _, _, _, .ldiv R S UB UC, _ => return Bits.run (.ldiv
       (← Bits.orLeaf (evB cnt ρ R ()) (ev cnt ρ R ())) (← Bits.orLeaf (evB cnt ρ S ()) (ev cnt ρ S ()))
       (← ev cnt ρ UB ()) (← ev cnt ρ UC ()))
-  | _, _, _, .rdiv R S UA UB, _ =>
-    return rightDiv (← ev cnt ρ R ()) (← ev cnt ρ S ()) (← ev cnt ρ UA ()).val (← ev cnt ρ UB ()).val
-  | _, _, _, .pair (d := d) (e := e) R S, D => return pair (← ev cnt ρ R (Dem.l d e D)) (← ev cnt ρ S (Dem.r d e D))
-  | _, _, _, .prod R S, _ => return Alg.prod (← ev cnt ρ R ()) (← ev cnt ρ S ())
-  | _, _, _, .junc R S, _ => return junc (← ev cnt ρ R ()) (← ev cnt ρ S ())
-  | _, _, _, .lam R, D => do let r ← ev cnt ρ R D; pure Λ(r)
-  | _, _, _, .E (d := d) R, D => return E (← ev cnt ρ R (Dem.of d (ran (mem D.val)))) D.val
-  | _, _, _, .map (d := d) R, D => return map (← ev cnt ρ R (Dem.of d (ran (mem D.val)))) D.val
+  | _, _, _, .rdiv R S UA UB, _ => do
+    ck (rightDivC (← ev cnt ρ R ()) (← ev cnt ρ S ()) (← ev cnt ρ UA ()).val (← ev cnt ρ UB ()).val)
+  | _, _, _, .pair (d := d) (e := e) R S, D => do ck (pairC (← ev cnt ρ R (Dem.l d e D)) (← ev cnt ρ S (Dem.r d e D)))
+  | _, _, _, .prod R S, _ => do ck (prodC (← ev cnt ρ R ()) (← ev cnt ρ S ()))
+  | _, _, _, .junc R S, _ => do ck (juncC (← ev cnt ρ R ()) (← ev cnt ρ S ()))
+  | _, _, _, .lam R, D => do ck (transposeC (← ev cnt ρ R D))
+  | _, _, _, .E (d := d) R, D => do ck (EC (← ev cnt ρ R (Dem.of d (← ck (ranC (← ck (memC D.val)))))) D.val)
+  | _, _, _, .map (d := d) R, D => do ck (mapC (← ev cnt ρ R (Dem.of d (← ck (ranC (← ck (memC D.val)))))) D.val)
   -- an order is its pair test, run on the pairs the operator compares: each call one evaluation, as a fold step
-  | _, _, _, .est Q, D => pure (estOn (fun P => Id.run ((ev cnt ρ Q P).run' {})) (mem D.val))
+  | _, _, _, .est Q, D => do ck (estOnC (fun P => runEv (ev cnt ρ Q P)) (← ck (memC D.val)))
   | _, _, _, .thin Q, D => do
-    let T := thinOn (fun P => Id.run ((ev cnt ρ Q P).run' {})) (mem D.val); pure (Λ(T) ∪ top (D \ dom T).key (nilVal _))
-  | _, _, _, .union, D => pure (Arr.union D.val)
-  | _, _, _, .tau, D => pure (τ D.val)
-  | _, _, _, .nil, D => pure (top D.val (nilVal _))
-  | _, _, _, .cons, D => pure (cons D)
-  | _, _, _, .uncons, D => pure (uncons D.val)
-  | _, _, _, .length, D => pure (length D.val)
-  | _, _, _, .total, D => pure (Arr.sum D.val)
-  | _, _, _, .inits, D => pure (Alg.inits D.val)
-  | _, _, _, .cat, D => pure (Alg.cat D)
-  | _, _, _, .uncat, D => pure (Alg.uncat D.val)
-  | _, _, _, .zip, D => pure (Alg.zip D)
-  | _, _, _, .snoc, D => pure (Alg.snoc D)
-  | _, _, _, .unsnoc, D => pure (Alg.unsnoc D.val)
+    let T ← ck (thinOnC (fun P => runEv (ev cnt ρ Q P)) (← ck (memC D.val)))
+    let N ← ck (topC (← ck (diffC D (← ck (domC T)))).key (nilVal _))
+    ck (unionC (← ck (transposeC T)) N)
+  | _, _, _, .union, D => ck (Arr.unionC D.val)
+  | _, _, _, .tau, D => ck (τC D.val)
+  | _, _, _, .nil, D => ck (topC D.val (nilVal _))
+  | _, _, _, .cons, D => ck (consC D)
+  | _, _, _, .uncons, D => ck (unconsC D.val)
+  | _, _, _, .length, D => ck (lengthC D.val)
+  | _, _, _, .total, D => ck (Arr.sumC D.val)
+  | _, _, _, .inits, D => ck (initsC D.val)
+  | _, _, _, .cat, D => ck (catC D)
+  | _, _, _, .uncat, D => ck (uncatC D.val)
+  | _, _, _, .zip, D => ck (zipC D)
+  | _, _, _, .snoc, D => ck (snocC D)
+  | _, _, _, .unsnoc, D => ck (unsnocC D.val)
   | _, _, _, .own R, D => ev cnt ρ R D
-  | _, _, _, .setify, D => pure (Alg.setify D.val)
-  | _, _, _, .bagify, D => pure (Alg.bagify D.val)
-  | _, _, _, .tic, D => pure (Alg.tic D)
-  | _, _, _, .atPos k, D => pure (Alg.atPos k D.val)
+  | _, _, _, .setify, D => ck (setifyC D.val)
+  | _, _, _, .bagify, D => ck (bagifyC D.val)
+  | _, _, _, .tic, D => ck (ticC D)
+  | _, _, _, .atPos k, D => ck (atPosC k D.val)
   -- the note's one-pass thinning, which refines the specification `Alg.thinL`
-  | _, _, _, .thinL Q, D => pure (thinLOn (fun P => Id.run ((ev cnt ρ Q P).run' {})) D.val)
-  | _, _, _, .merge Q, D => pure (mergeOn (fun P => Id.run ((ev cnt ρ Q P).run' {})) D)
+  | _, _, _, .thinL Q, D => ck (thinLOnC (fun P => runEv (ev cnt ρ Q P)) D.val)
+  | _, _, _, .merge Q, D => ck (mergeOnC (fun P => runEv (ev cnt ρ Q P)) D)
   -- one loop round's `F` is one evaluation, as a fold step's
-  | _, _, _, .loop (d := d) F, D => pure (loopOn (onKeys fun A => Id.run ((ev cnt ρ F (Dem.of d A)).run' {})) D)
-  | _, _, _, .succ U, D => pure (D ≫ succ U)
+  | _, _, _, .loop (d := d) F, D => ck (loopOnC (onKeys fun A => runEv (ev cnt ρ F (Dem.of d A))) D)
+  | _, _, _, .succ U, D => do ck (compC D (← ck (succC U)))
   -- a result outside the declared object has no row, as `succ` at its top
-  | _, _, _, .arith k U, D => pure (arith k D.val ≫ idU U)
-  | _, _, _, .leq U, _ => pure (leq U)
-  | _, _, _, .lt U, _ => pure (lt U)
+  | _, _, _, .arith k U, D => ck (compC (arith k D.val) (idU U))
+  | _, _, _, .leq U, _ => ck (leqC U)
+  | _, _, _, .lt U, _ => ck (ltC U)
   -- one fold step is one evaluation: what it shares, it shares within the step
   | _, _, _, .fold (d := d) e S, D => do
     let v ← ev cnt ρ e ()
-    pure (foldOn v.val (onKeys fun A => Id.run ((ev cnt ρ S (Dem.of d A)).run' {})) D.val)
+    ck (foldOnC v.val (onKeys fun A => runEv (ev cnt ρ S (Dem.of d A))) D.val)
   -- the pairs (i, xs) in demand, one fold row each, starting from its own key's seeds `(i,v)` from `e`: no
   -- array is folded from another key's seed, so the rows are the pairs, not the arrays times every key's seeds
   | _, _, _, .foldI (d := d) (d' := d') e S, D => do
-    let es ← ev cnt ρ e (Dem.of d (ran (outl D)))
-    let iv := pair (dom es) (es ≫ outl (ran es))
-    let r := num D 0
-    let G := foldRows (outr r) (outl r ≫ iv) (demandStep (onKeys fun A => Id.run ((ev cnt ρ S (Dem.of d' A)).run' {})))
-    pure (r° ≫ (G ≫ outr (ran G)))
+    let es ← ev cnt ρ e (Dem.of d (← ck (ranC (outl D))))
+    let iv ← ck (pairC (← ck (domC es)) (← ck (compC es (outl (← ck (ranC es))))))
+    let r ← ck (numC D 0)
+    let G ← ck (foldRowsC (outr r) (← ck (compC (outl r) iv)) (demandStepC (onKeys fun A => runEv (ev cnt ρ S (Dem.of d' A)))))
+    ck (compC r° (← ck (compC G (outr (← ck (ranC G))))))
   -- `R` at the keys of the pairs, its rows `(i,(a,b))` re-keyed as `((i,a),b)`, a join with the pairs: no pair
   -- meets a row of another source
   | _, _, _, .flat (d := d) R, D => do
-    let r ← ev cnt ρ R (Dem.of d (ran (outl D)))
-    let U := ran r
-    pure (D ≫ ((pair r° (outl U))° ≫ outr U))
+    let r ← ev cnt ρ R (Dem.of d (← ck (ranC (outl D))))
+    let U ← ck (ranC r)
+    ck (compC D (← ck (compC (← ck (pairC r° (outl U)))° (outr U))))
   | A, B, _, .var k, _ => pure (varVal ρ k A B)
   -- each round one evaluation, as a fold step: what the body shares, it shares within the round
   -- an AC-3 body runs by delta rounds (`acFix`), decided once before the rounds; any other body naively
   | A, B, _, .nu k S body, _ => do
     let s ← ev cnt ρ S ()
     match acArcs k body with
-    | some as@(a :: _) => pure (acFix s as a.UV).1
-    | _ => pure (fixOn (s.n.toNat + 1) (fun X => Id.run ((ev cnt ((k, ⟨A, B, X⟩) :: ρ) body ()).run' {})) s).1
+    | some as@(a :: _) => return (← ck (acFixC s as a.UV)).1
+    | _ => return (← ck (fixOnC (s.n.toNat + 1) (fun X => runEv (ev cnt ((k, ⟨A, B, X⟩) :: ρ) body ())) s)).1
   | A, B, _, .mu k UA UB body, _ => do
     let u ← ev cnt ρ UA (); let v ← ev cnt ρ UB ()
-    pure (fixOn (u.n.toNat * v.n.toNat + 1) (fun X => Id.run ((ev cnt ((k, ⟨A, B, X⟩) :: ρ) body ()).run' {})) zero).1
+    return (← ck (fixOnC (u.n.toNat * v.n.toNat + 1) (fun X => runEv (ev cnt ((k, ⟨A, B, X⟩) :: ρ) body ())) zero)).1
   | _, _, false, .share _ R, D => ev cnt ρ R D
   | A, B, true, .share k R, D => do
     if cnt.getD k 0 < 2 then ev cnt ρ R D else
-    let hit := ((← get).getD k #[]).findSome? fun ⟨A', D', v⟩ =>
+    let hit := ((← get).1.getD k #[]).findSome? fun ⟨A', D', v⟩ =>
       if h : A' = A then (let D'' : Rel A A := h ▸ D'; if D''.n == D.n && D'' == D then v.at? A B else none)
       else none
     match hit with
     | some V => pure V
     | none => do
       let V ← ev cnt ρ R D
-      modify fun m => m.insert k ((m.getD k #[]).push ⟨A, D, ⟨A, B, V⟩⟩)
+      modify fun (m, o) => (m.insert k ((m.getD k #[]).push ⟨A, D, ⟨A, B, V⟩⟩), o)
       pure V
 
 /-- `t` on the keys `D` as a bit-matrix plan (`Bits.TP`): a node with a bit rule kept, its parts on the demands
@@ -255,6 +265,8 @@ structure Share where
   vals : Std.HashMap Nat Val := {}
   /-- The fixed-point variables each identity reads unbound: a term with one has no value of its own. -/
   free : Std.HashMap Nat (List Nat) := {}
+  /-- Whether every closed value evaluated so far stayed within capacity. -/
+  ok : Bool := true
 
 abbrev HM := StateM Share
 
@@ -287,8 +299,8 @@ def node {A B : Obj} {d : Bool} (tag : Nat) (t : Tm A B d) (ps sub : List Nat) (
     match ((← get).vals[k]?).bind (Val.at? A B) with
     | some R => pure (.val R, k)
     | none => do
-      let R := Id.run ((ev (← get).cnt [] t ()).run' {})
-      modify fun s => { s with vals := s.vals.insert k ⟨A, B, R⟩ }
+      let (R, o) := runEv (ev (← get).cnt [] t ())
+      modify fun s => { s with vals := s.vals.insert k ⟨A, B, R⟩, ok := s.ok && o }
       pure (.val R, k)
 
 /-- Every sub-term interned bottom up: closed ones evaluated once per identity, so a fold's step recomputes only
@@ -370,7 +382,8 @@ def hoist : {A B : Obj} → {d : Bool} → Tm A B d → HM (Tm A B d × Nat)
 /-- A closed term's value: hoisted into the program's table, then evaluated. -/
 def value {A B : Obj} (sh : Share) (t : Tm A B false) : Rel A B × Share :=
   let ((t, _), sh) := Id.run ((hoist t).run sh)
-  (Id.run ((ev sh.cnt [] t ()).run' {}), sh)
+  let (R, o) := runEv (ev sh.cnt [] t ())
+  (R, { sh with ok := sh.ok && o })
 
 /-! ### Running a program -/
 
@@ -430,6 +443,8 @@ structure Out where
   /-- Each definition's declaration, as `sigText` prints it. -/
   sigs : List String := []
   objs : Objs := []
+  /-- Whether every op the program ran stayed within capacity (the `&&` of the ok bits of their twins). -/
+  ok : Bool := true
 
 /-- A top-level term's value, `r` its elaboration `e` with the objects `st`: on its source's universe when it
     needs keys. -/
@@ -492,7 +507,9 @@ def run (prog : Program) (start : Env × Out × Share := ({}, {}, {})) (wrap : S
         let res : Res := ⟨A, B, d, tm⟩
         env := { env with defs := (n, wrap n { arity := 0, apply := fun _ _ => pure (.rel (.tm res) s t) }) :: env.defs }
         match d, tm, types with
-        | false, tm, false => out := { out with vals := (n, ⟨A, B, Id.run ((ev sh.cnt [] tm ()).run' {})⟩, s, t) :: out.vals }
+        | false, tm, false =>
+          let (R, o) := runEv (ev sh.cnt [] tm ())
+          out := { out with vals := (n, ⟨A, B, R⟩, s, t) :: out.vals, ok := out.ok && o }
         | _, _, _ => pure ()
       | ps, b, ty => env := { env with defs := (n, wrap n (mkDef env n p ps b ty)) :: env.defs }
     | .print p e =>
@@ -520,7 +537,7 @@ def run (prog : Program) (start : Env × Out × Share := ({}, {}, {})) (wrap : S
         if !(R ⊑ S && (!eq || S ⊑ R)) then
           throw ⟨p, s!"check failed: {e.show} = {showRel env.objs s t R}, {f.show} = {showRel env.objs s t S}"⟩
       else throw ⟨p, s!"check: the sides have types {s} ⟶ {t} and {s'} ⟶ {t'}"⟩
-  pure (env, { out with objs := env.objs }, sh)
+  pure (env, { out with objs := env.objs, ok := out.ok && sh.ok }, sh)
 
 /-- A prelude definition as a program sees it: an error raised in its body at a use names the definition and its
     line in the prelude, at the use; one about the arguments (at the use) passes as it is. `perm` is its own
@@ -541,6 +558,8 @@ def preludeDef (n : String) (d : Def) : Def :=
 def runAfter (pre : Program) (prog : Parse.S → Except Err Program) : Except Err Out := do
   let (env, out, sh) ← (run pre ({}, {}, {}) preludeDef).mapError Err.inPrelude
   let (_, out, _) ← run (← prog (Parse.scope pre)) (env, out, sh)
+  -- the one place every program run passes: a capacity failure fails the `#guard (…).isOk` of each test
+  if !out.ok then throw ⟨{}, "an op ran out of capacity (its twin's ok bit is false)"⟩
   pure out
 
 /-- Parse and run a program's text after the prelude `pre`. -/
