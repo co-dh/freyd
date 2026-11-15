@@ -161,26 +161,12 @@ def thin (B : Obj) (Q : Fn true (.prod B B) (.prod B B)) : Fn true (.arr B) (.ar
   let T := CRel.thinOn (fun P => Q P.rel) (CRel.mem D.val)
   let df := CRel.diff ⟨D, true⟩ (CRel.dom T)
   CRel.union (CRel.transpose T) (also df.ok (ofC (topC df.rel.key (nilVal _))))
-def tau (A : Obj) : Fn true A (.arr A) := fun D => CRel.τ D.val
 def nil (A B : Obj) : Fn true A (.arr B) := fun D => ofC (topC D.val (nilVal _))
-def cons (B : Obj) : Fn true (.prod B (.arr B)) (.arr B) := fun D => CRel.cons ⟨D, true⟩
-def uncons (B : Obj) : Fn true (.arr B) (.prod B (.arr B)) := fun D => CRel.uncons D.val
-def length (B : Obj) : Fn true (.arr B) .long := fun D => CRel.length D.val
-def total : Fn true (.arr .long) .long := fun D => CRel.Arr.sum D.val
-def inits (B : Obj) : Fn true (.arr B) (.arr (.arr B)) := fun D => CRel.inits D.val
-def tails (B : Obj) : Fn true (.arr B) (.arr (.arr B)) := fun D => CRel.tails D.val
-def «prefix» (B : Obj) : Fn true (.arr B) (.arr B) := fun D => CRel.prefix D.val
-def suffix (B : Obj) : Fn true (.arr B) (.arr B) := fun D => CRel.suffix D.val
-def concat (B : Obj) : Fn true (.arr (.arr B)) (.arr B) := fun D => CRel.concat D.val
-def cat (B : Obj) : Fn true (.prod (.arr B) (.arr B)) (.arr B) := fun D => CRel.cat ⟨D, true⟩
-def uncat (B : Obj) : Fn true (.arr B) (.prod (.arr B) (.arr B)) := fun D => CRel.uncat D.val
-def zip (A B : Obj) : Fn true (.prod (.arr A) (.arr B)) (.arr (.prod A B)) := fun D => CRel.zip ⟨D, true⟩
-def snoc (B : Obj) : Fn true (.prod (.arr B) B) (.arr B) := fun D => CRel.snoc ⟨D, true⟩
-def unsnoc (B : Obj) : Fn true (.arr B) (.prod (.arr B) B) := fun D => CRel.unsnoc D.val
+/-- A row of `prims` (`Tm.prim`) on the keys in demand: its constant `f` read on their values, or composed after
+    them; `Expand.primE` gives `f` the row's constant at the objects. -/
+def ofVals (A B : Obj) (f : {n : USize} → Vals A n → CRel A B) : Fn true A B := fun D => f D.val
+def after (A B : Obj) (f : {K : Obj} → CRel K A → CRel K B) : Fn true A B := fun D => f ⟨D, true⟩
 def atPos (B : Obj) (k : Nat) : Fn true (.arr B) B := fun D => CRel.atPos k D.val
-def setify (B : Obj) : Fn true (.arr B) (.arr B) := fun D => CRel.setify D.val
-def bagify (B : Obj) : Fn true (.arr B) (.arr B) := fun D => CRel.bagify D.val
-def tic (B : Obj) : Fn true (.prod B (.arr B)) (.arr (.arr B)) := fun D => CRel.tic ⟨D, true⟩
 def thinL (B : Obj) (Q : Fn true (.prod B B) (.prod B B)) : Fn true (.arr B) (.arr B) := fun D =>
   CRel.thinLOn (fun P => Q P.rel) D.val
 def merge (B : Obj) (Q : Fn true (.prod B B) (.prod B B)) : Fn true (.prod (.arr B) (.arr B)) (.arr B) := fun D =>

@@ -39,18 +39,17 @@ def useDef (c : Lean.Name) (imported : Bool) (d : Def) : Def :=
         throw (if e.pos == p then e else ⟨p, s!"in `{c}` (its line {e.pos.line}): {e.msg}"⟩)
       let r ← if imported then tryCatch (d.apply p as) reword else d.apply p as
       -- the body's positions are its program's: at the use, so what `build` raises later is at the use
-      match c, r with
-      | `LeetQ.Rel.Programs.prelude.perm, .rel q s t => pure (.rel (.own (q.at p)) s t)
-      | `LeetQ.Rel.Programs.prelude.tails, .rel _ s@(.arr b) t => pure (.rel (.tails b) s t)
-      | `LeetQ.Rel.Programs.prelude.prefix, .rel _ s@(.arr b) t => pure (.rel (.«prefix» b) s t)
-      | `LeetQ.Rel.Programs.prelude.suffix, .rel _ s@(.arr b) t => pure (.rel (.suffix b) s t)
-      | `LeetQ.Rel.Programs.prelude.concat, .rel _ s t@(.arr b) => pure (.rel (.concat b) s t)
-      | `LeetQ.Rel.Programs.prelude.filter, .rel q s t =>
+      -- a prelude definition with a row of its own runs as that row's constant
+      let row := prims.find? fun x => x.prelude && c == `LeetQ.Rel.Programs.prelude ++ .mkSimple x.sym
+      match c, r, row with
+      | _, .rel _ s t, some x => pure (.rel (.prim x s t) s t)
+      | `LeetQ.Rel.Programs.prelude.perm, .rel q s t, _ => pure (.rel (.own (q.at p)) s t)
+      | `LeetQ.Rel.Programs.prelude.filter, .rel q s t, _ =>
         pure (.rel (match as with | [.rel a _ _] => .filter a | _ => if imported then q.at p else q) s t)
-      | `LeetQ.Rel.Programs.prelude.takewhile, .rel q s t =>
+      | `LeetQ.Rel.Programs.prelude.takewhile, .rel q s t, _ =>
         pure (.rel (match as with | [.rel a _ _] => .takewhile a | _ => if imported then q.at p else q) s t)
-      | _, .rel q s t => pure (.rel (if imported then q.at p else q) s t)
-      | _, .fam q i a b => pure (.fam (if imported then q.at p else q) i a b) }
+      | _, .rel q s t, _ => pure (.rel (if imported then q.at p else q) s t)
+      | _, .fam q i a b, _ => pure (.fam (if imported then q.at p else q) i a b) }
 
 /-! ### Printing a relation with the program's names -/
 
