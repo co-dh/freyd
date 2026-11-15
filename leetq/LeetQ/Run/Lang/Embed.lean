@@ -362,7 +362,7 @@ partial def atomOf (s : Syntax) (p : Lang.Pos) (n : String) (app objs pair : Opt
   -- the program's names, then the kernel table, then the resolver's (§2.3)
   let st ← get
   let ar := (st.known.lookup n).orElse fun _ =>
-    if (Parse.builtin n).isSome then none else (st.ext n).bind fun e => if e.isInfix || e.obj then none else some e.arity
+    if (Parse.builtin n).isSome then none else (st.ext n).bind fun e => if e.isInfix || e.obj || e.thm then none else some e.arity
   match ar, Parse.builtin n with
   | some 0, _ => do pure (.name p n :: (← after))
   | some _, _ => match app with

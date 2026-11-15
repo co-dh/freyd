@@ -40,7 +40,7 @@ rel_program mssBad where
       _ = fused := toShape
 
 /--
-error: line 38, col 7: the step `_ = fused` is not an instance of `toShape` : Programs.mss.mss.aop = Programs.mss.shape.aop
+error: line 40, col 7: the step `_ = fused` is not an instance of `toShape` : Programs.mss.mss.aop = Programs.mss.shape.aop
 Tactic `rewrite` failed: Did not find an occurrence of the pattern
   Programs.mss.shape.aop
 in the target expression
@@ -62,8 +62,8 @@ rel_program mssOwed where
 
 /--
 error: owed: 2 theorem(s) of `LeetQ.Rel.Lang.RelAopTest.mssOwed` with no calc and no `proof` item:
-  line 57, col 5: owedA : greedy = mss
-  line 58, col 5: owedB : scan ⊑ mss
+  line 60, col 5: owedA : greedy = mss
+  line 61, col 5: owedB : scan ⊑ mss
 -/
 #guard_msgs in
 rel_aop mssOwed

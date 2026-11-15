@@ -43,7 +43,7 @@ elab "#rel_parse " s:str : command => do
 #guard_msgs in #rel_parse "f : A ⟶ A ≜ $x"
 /-- info: parsed f:A⟶A≜$(fun x => x) -/
 #guard_msgs in #rel_parse "f : A ⟶ A ≜ $(fun x => x)"
-/-- error: line 49, col 21: `$` is no term of the Rel language: an antiquotation has no place in a program -/
+/-- error: line 50, col 21: `$` is no term of the Rel language: an antiquotation has no place in a program -/
 #guard_msgs in
 open LeetQ.Rel.Programs.prelude in
 rel_program antiquot where
@@ -72,7 +72,7 @@ rel_program thm where
 #guard (thm.filterMap fun | .«theorem» _ n _ _ _ _ _ ss => some (n, ss.length) | _ => none) ==
   [("unit", 0), ("good", 2), ("le", 2)]
 
-/-- error: line 77, col 7: theorem `t`: this step x is K ⟶ N, the statement's two is N ⟶ N -/
+/-- error: line 80, col 7: theorem `t`: this step x is LeetQ.Rel.Lang.EmbedTest.thm.K ⟶ LeetQ.Rel.Lang.EmbedTest.thm.N, the statement's two is LeetQ.Rel.Lang.EmbedTest.thm.N ⟶ LeetQ.Rel.Lang.EmbedTest.thm.N -/
 #guard_msgs in
 open LeetQ.Rel.Programs.prelude thm in
 rel_program thmType where
@@ -80,42 +80,42 @@ rel_program thmType where
       _ = x := unit
       _ = two := unit
 
-/-- error: line 84, col 11: `unit` is a theorem, not a relation -/
+/-- error: line 88, col 11: `unit` is a theorem, not a relation -/
 #guard_msgs in
 open LeetQ.Rel.Programs.prelude thm in
 rel_program thmAsRel where
     theorem t : two = two := calc
       _ = unit := unit
 
-/-- error: line 90, col 18: `two` is a definition; write `≜ two` -/
+/-- error: line 95, col 18: `two` is a definition; write `≜ two` -/
 #guard_msgs in
 open LeetQ.Rel.Programs.prelude thm in
 rel_program relAsThm where
     theorem t : two = two := calc
       _ = two := two
 
-/-- error: line 96, col 20: `unit` is a theorem, not a definition -/
+/-- error: line 102, col 20: `unit` is a theorem, not a definition -/
 #guard_msgs in
 open LeetQ.Rel.Programs.prelude thm in
 rel_program thmAsDef where
     theorem t : two = two := calc
       _ = two := ≜ unit
 
-/-- error: line 102, col 18: unknown theorem 'nope' -/
+/-- error: line 109, col 18: unknown theorem 'nope' -/
 #guard_msgs in
 open LeetQ.Rel.Programs.prelude thm in
 rel_program thmUnknown where
     theorem t : two = two := calc
       _ = two := nope
 
-/-- error: line 108, col 7: the chain of `t` ends at two 𝟙, not at its right side two -/
+/-- error: line 116, col 7: the chain of `t` ends at two 𝟙, not at its right side two -/
 #guard_msgs in
 open LeetQ.Rel.Programs.prelude thm in
 rel_program thmEnds where
     theorem t : two 𝟙 = two := calc
       _ = two 𝟙 := unit
 
-/-- error: line 114, col 7: `t` states `=`: a step `⊑` proves only `⊑` -/
+/-- error: line 123, col 7: `t` states `=`: a step `⊑` proves only `⊑` -/
 #guard_msgs in
 open LeetQ.Rel.Programs.prelude thm in
 rel_program thmLe where
@@ -128,7 +128,7 @@ rel_program thmData where
       _ = two := unit
 
 #guard !thmData.ok
-/-- info: ["line 118, col 7: check failed: x up = {(a, 2)}, x two = {(a, 2), (b, 2)}"] -/
+/-- info: ["line 128, col 7: check failed: x up = {(a, 2)}, x two = {(a, 2), (b, 2)}"] -/
 #guard_msgs in
 #eval thmData.failures.map toString
 

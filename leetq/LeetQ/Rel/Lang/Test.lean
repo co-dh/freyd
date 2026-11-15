@@ -601,7 +601,7 @@ def emptyErr : String := "the object of [] cannot be read off an empty array: wr
 #eval errAt (arrE ++ "print {(∗,[[]] [])}\n") 2 emptyErr (col := some 7)
 #eval errAt (arrE ++ "print {(∗,[])} ∪ {(∗,[])}\n") 2 emptyErr (col := some 7)
 -- an untyped definition names the type its body has, the object left open a variable
-#eval errAt (arrE ++ "e ≜ {(∗,[])}\n") 2 "`e` has no type; it is e : 1 ⟶ [α]"
+#eval errAt (arrE ++ "e ≜ {(∗,[])}\n") 2 "`e` has no type; it is e : LeetQ.Rel.Programs.prelude.«1» ⟶ [α]"
 -- the context determines it (§c): the other side of a check, the other operand, the declared type, the
 -- composition, the pair
 open LeetQ.Rel.Programs.prelude in
@@ -878,7 +878,7 @@ rel_program corPairs where
 #eval errAt "obj B = 0…1\n_≼_(R) ≜ R\n" 2 "the infix operator `≼` takes two parameters, `_≼_(R, S)`, found 1"
 -- a prelude name taken again, as a definition, an infix operator's name or an object, is the program's own: the
 -- local name wins over an opened one (module design §2.3)
-#eval do
+#eval show CM Unit from do
   for src in ["obj N = 0…9\nperm : N ⟶ N ≜ 𝟙(N)\n", "obj N = 0…9\n⊕ : N ⟶ N ≜ 𝟙(N)\n",
       "obj N = 0…9\n_sort_(R : N ⟶ N, S : N ⟶ N) : N ⟶ N ≜ R ∩ S\n", "obj 1 = {∗}\nobj N = 0…9\n"] do
     if let .error e ← readIn preludeScope src then throwError "{e}"

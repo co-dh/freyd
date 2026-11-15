@@ -62,7 +62,7 @@ rel_program sel where
 #guard sel.ok
 end
 
-/-- error: line 3, col 16: unknown name 'AC3' -/
+/-- error: line 70, col 17: expected ')' -/
 #guard_msgs in
 open LeetQ.Rel.Programs.prelude in
 rel_program selNo where
@@ -70,7 +70,7 @@ rel_program selNo where
     s : A ⟶ A ≜ AC3(≠, ≠, 𝟙)
 
 /-! Two `open`s that give one name: ambiguous. -/
-/-- error: x -/
+/-- error: line 78, col 17: ambiguous name `peer`: it is [LeetQ.Rel.Programs.mh.peer, LeetQ.Rel.Programs.mk.peer] -/
 #guard_msgs in
 open mh mk in
 rel_program amb where
@@ -78,7 +78,7 @@ rel_program amb where
     s : A ⟶ A ≜ peer
 
 /-! Without `open prelude`, `≠` is unknown; `prelude.«≠»` exists (above). -/
-/-- error: x -/
+/-- error: line 85, col 17: unknown name '≠' -/
 #guard_msgs in
 rel_program noPrelude where
     obj A = 0…2
@@ -86,13 +86,13 @@ rel_program noPrelude where
 
 /-! Closedness: a Lean constant that is not a Rel definition is an error, qualified or opened, whatever its
     type; a kernel name stays the kernel's. -/
-/-- error: x -/
+/-- error: line 93, col 17: `Nat.add` is not a Rel definition: Lean resolves it to [Nat.add] -/
 #guard_msgs in
 rel_program closedQ where
     obj A = 0…2
     s : A ⟶ A ≜ Nat.add
 
-/-- error: x -/
+/-- error: line 100, col 17: unknown name 'add' -/
 #guard_msgs in
 open Nat in
 rel_program closedOpen where
@@ -106,7 +106,7 @@ open Nat in
 
 def fake : CRel .long .long := default
 
-/-- error: x -/
+/-- error: line 113, col 17: `fake` is not a Rel definition: Lean resolves it to [LeetQ.Rel.Programs.fake] -/
 #guard_msgs in
 rel_program closedType where
     obj A = 0…2
@@ -126,17 +126,21 @@ open Nat in
 /-! Symbol names: `open mh («≺»)` makes `≺` readable; `mh.≺` reads unopened. -/
 section
 open mh («≺»)
-/-- info: x -/
+/-- info: ≺ -/
 #guard_msgs in
 #rel_read "print ≺"
 end
 
-/-- info: x -/
+/-- info: mh.≺ -/
 #guard_msgs in
 #rel_read "print mh.≺"
 
 /-! A run of letters with a qualified name in it: `mh.fpeer` is `mh.f` then `peer`, `Rmh.f` is `R` then `mh.f`. -/
-/-- info: x -/
+/--
+info: (mh.f peer)
+---
+info: (R mh.f)
+-/
 #guard_msgs in
 #rel_read "obj A = 0…2\npeer : A ⟶ A ≜ 𝟙\nR : A ⟶ A ≜ 𝟙\nprint mh.fpeer\nprint Rmh.f"
 
