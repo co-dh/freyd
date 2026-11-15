@@ -22,7 +22,7 @@ def plan : Except String Plan := planOf [] native1a "x" "out"
 
 -- two columns, each six `lit`s, a path `lit` and one `qlean_own_write`; nothing else is called
 #guard match plan with
-  | .ok p => p.main.size == 16 && p.main.all fun | .call s _ => s == "qlean_own_write" | .fail .. => false | _ => true
+  | .ok p => p.main.length == 16 && p.main.all fun | .call s _ => s == "qlean_own_write" | .fail .. => false | _ => true
   | .error _ => false
 
 end LeetQ.Rel.Lang.TestNative
