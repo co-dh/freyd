@@ -251,6 +251,87 @@ theorem symCmp_ne_gt (x y : ByteArray) : (Column.symCmp x y != .gt) = true ↔
   simp only [← bget, ByteArray.size, Array.length_toList]
   exact Iff.rfl
 
+/-- A grade sorted by a total preorder `le` that reads `x`'s order — `le i j` exactly when row `j` is not before
+    row `i` — with ties in index order is ascending by `Obj.lt`, ties in index order. -/
+theorem ascBy_of_le {t : QAtomicType} {n : USize} (x : Arr t n) (le : Nat → Nat → Bool) {g : List Nat}
+    (hle : ∀ i j (hi : i < n.toNat) (hj : j < n.toNat),
+      le i j = true ↔ ¬ (Obj.atom t).lt (x.get ⟨j, hj⟩) (x.get ⟨i, hi⟩))
+    (hs : g.Pairwise fun i j => le i j ∧ (le j i → i < j)) : g.Pairwise (ascBy (.atom t) (n := n) x (· < ·)) := by
+  refine hs.imp fun {i j} ⟨h1, h2⟩ hi hj => ?_
+  simp only [Vals.row_atom]
+  rcases (Obj.atom t).lt_trichotomy (x.get ⟨i, hi⟩) (x.get ⟨j, hj⟩) with h | h | h
+  · exact .inl h
+  · refine .inr ⟨h, h2 ((hle j i hj hi).2 ?_)⟩
+    unfold Obj.lt; rw [h]; exact List.lt_irrefl _
+  · exact absurd h ((hle i j hi hj).1 h1)
+
+/-- `symCmp`'s comparator is a total preorder: the symbol keys' `≤`. -/
+theorem symLe_trans {x y z : ByteArray} (h1 : (Column.symCmp x y != .gt) = true)
+    (h2 : (Column.symCmp y z != .gt) = true) : (Column.symCmp x z != .gt) = true := by
+  rw [symCmp_ne_gt] at h1 h2 ⊢
+  exact List.not_lt.2 (List.le_trans (List.not_lt.1 h1) (List.not_lt.1 h2))
+
+theorem symLe_total (x y : ByteArray) : ((Column.symCmp x y != .gt) || (Column.symCmp y x != .gt)) = true := by
+  rw [Bool.or_eq_true, symCmp_ne_gt, symCmp_ne_gt]
+  exact (List.le_total _ _).imp List.not_lt.2 List.not_lt.2 |>.symm
+
+/-- Two byte strings of one length: their symbol keys are ordered as their bytes. -/
+theorem symKey_lt_iff : ∀ (a b : List UInt8), a.length = b.length →
+    (a.map (·.toNat + 1) ++ [0] < b.map (·.toNat + 1) ++ [0] ↔ a.map (·.toNat) < b.map (·.toNat))
+  | [], [], _ => by simp
+  | u :: a, v :: b, hl => by
+    simp only [List.map_cons, List.cons_append, List.cons_lt_cons_iff, Nat.add_right_cancel_iff,
+      Nat.add_lt_add_iff_right, symKey_lt_iff a b (by simpa using hl)]
+  | [], _ :: _, hl | _ :: _, [], hl => by simp at hl
+
+/-! ## The guid: `gradeGuid` by its sixteen bytes -/
+
+/-- Element `i` of a guid column, its `Obj.key`, is its sixteen stored bytes. -/
+theorem key_guid {n : USize} (x : Arr .guid n) {b : ByteArray} (he : x.enc = .bytes b) (i : Nat)
+    (hi : i < n.toNat) :
+    (Obj.atom .guid).key (x.get ⟨i, hi⟩) = (b.extract (16 * i) (16 * i + 16)).data.toList.map (·.toNat) := by
+  have hs : b.size = n.toNat * 16 := by have := x.wf; rw [he] at this; exact this
+  rw [Arr.get_ne _ _ (by decide), he]
+  simp only [Enc.get, if_pos hi, Option.bind_some, Carrier.of?, Option.getD_some, Obj.key]
+  congr 1
+  rw [extract_toList]
+  apply List.ext_getElem (by simp; omega)
+  intro k h1 h2
+  simp only [Vector.toList_ofFn, List.getElem_ofFn, List.getElem_take, List.getElem_drop, bget]
+  rw [List.getElem?_eq_getElem (by simp at h2 ⊢; omega)]
+  simp only [Option.getD_some]; congr 1; omega
+
+theorem grade_guid {n : USize} (x : Arr .guid n) : ∃ g, gradeColumn .guid false n x.enc = some (.bytes g) ∧
+    (ids g).Perm (List.range n.toNat) ∧ (ids g).Pairwise (ascBy (.atom .guid) (n := n) x (· < ·)) := by
+  have hwf := x.wf
+  cases he : x.enc
+  case bytes b =>
+    rw [he] at hwf
+    have hs : b.size / 16 = n.toNat := by
+      have : b.size = n.toNat * 16 := hwf
+      omega
+    obtain ⟨hp, hsrt⟩ := range_mergeSort (le := fun i j => Column.symCmp (b.extract (16 * i) (16 * i + 16)) (b.extract (16 * j) (16 * j + 16)) != .gt)
+      (fun _ _ _ => symLe_trans) (fun _ _ => symLe_total _ _) (b.size / 16)
+    rw [hs] at hp hsrt
+    have hm : ∀ i ∈ (List.range n.toNat).mergeSort (fun i j => Column.symCmp (b.extract (16 * i) (16 * i + 16)) (b.extract (16 * j) (16 * j + 16)) != .gt),
+        i < 2 ^ 64 := fun i hi => Nat.lt_trans (List.mem_range.1 (hp.mem_iff.1 hi)) (usize_lt n)
+    refine ⟨_, rfl, ?_⟩
+    simp only [Order.gradeGuid, Bool.false_eq_true, ↓reduceIte, hs]
+    rw [ids_indices _ hm]
+    refine ⟨hp, ascBy_of_le x _ (fun i j hi hj => ?_) hsrt⟩
+    rw [symCmp_ne_gt]
+    show ¬ _ < _ ↔ ¬ (Obj.atom .guid).key _ < (Obj.atom .guid).key _
+    rw [key_guid x he j hj, key_guid x he i hi,
+      symKey_lt_iff _ _ (by
+        have : b.size = n.toNat * 16 := hwf
+        rw [Array.length_toList, Array.length_toList]
+        show (b.extract _ _).size = (b.extract _ _).size
+        simp only [ByteArray.size_extract]; omega)]
+  all_goals rw [he] at hwf; simp [Enc.WF] at hwf
+
+theorem sortsAsc_guid : SortsAsc (.atom .guid) := sortsAsc_atom .guid grade_guid
+
+#print axioms sortsAsc_guid
 #print axioms sortBy_asc
 #print axioms sortsAsc_prod
 #print axioms sortsAsc_num
