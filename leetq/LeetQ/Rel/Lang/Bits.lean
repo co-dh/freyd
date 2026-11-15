@@ -1,5 +1,4 @@
 import LeetQ.Rel.Lang.Elab
-import LeetQ.Rel.CRelRel
 
 /-! # Bit matrices: a closed term over small objects with no table at its inner nodes
 
@@ -35,19 +34,23 @@ inductive TP : Obj → Obj → Type where
   | diff {A B : Obj} (R S : TP A B) : TP A B
   | ldiv {A B C : Obj} (R : TP A B) (S : TP A C) (UB : Rel B B) (UC : Rel C C) : TP B C
 
-/-- The plan as a table and whether every node's op ran within capacity: `CRel`'s op (`Alg`'s C twin) at each node,
-    what `ev` computes for the term. -/
-def TP.tableC : {A B : Obj} → TP A B → CRel A B
-  | _, _, .leaf R => ⟨R, true⟩
-  | _, _, .comp R S => let r := R.tableC; if r.rel.n == 0 then ⟨zero, r.ok⟩ else r.comp S.tableC
-  | _, _, .conv R => let r := R.tableC; ⟨r.rel°, r.ok⟩
-  | _, _, .meet R S => R.tableC.inter S.tableC
-  | _, _, .join R S => R.tableC.union S.tableC
-  | _, _, .diff R S => let r := R.tableC; let s := S.tableC; let d := diffC r.rel s.rel; ⟨d.1, r.ok && s.ok && d.2⟩
-  | _, _, .ldiv R S UB UC => R.tableC.leftDiv S.tableC UB.val UC.val
+/-- A binary C twin `op` on two results with their bits: its relation, and the `&&` of the inputs' bits and its own. -/
+def opC {α β γ : Type} (op : α → β → γ × Bool) (r : α × Bool) (s : β × Bool) : γ × Bool :=
+  let c := op r.1 s.1; (c.1, r.2 && s.2 && c.2)
+
+/-- The plan as a table and whether every node's op ran within capacity: `Alg`'s C twin at each node, what `ev`
+    computes for the term. -/
+def TP.tableC : {A B : Obj} → TP A B → Rel A B × Bool
+  | _, _, .leaf R => (R, true)
+  | _, _, .comp R S => let r := R.tableC; if r.1.n == 0 then (zero, r.2) else opC compC r S.tableC
+  | _, _, .conv R => let r := R.tableC; (r.1°, r.2)
+  | _, _, .meet R S => opC interC R.tableC S.tableC
+  | _, _, .join R S => opC unionC R.tableC S.tableC
+  | _, _, .diff R S => opC diffC R.tableC S.tableC
+  | _, _, .ldiv R S UB UC => opC (leftDivC · · UB.val UC.val) R.tableC S.tableC
 
 /-- The plan as a table: `tableC`'s relation. -/
-def TP.table {A B : Obj} (p : TP A B) : Rel A B := p.tableC.rel
+def TP.table {A B : Obj} (p : TP A B) : Rel A B := p.tableC.1
 
 /-- A column of some object. -/
 abbrev Col := (X : Obj) × Part X
