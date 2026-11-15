@@ -240,7 +240,7 @@ rel_program sudokuac where
 不是原因的两条:
 
 - plan 本身已经是 run time 造的(`Gen.pcomp` … `Gen.pldiv`,`Lang/Gen.lean:232`–`:242`),矩阵大小在
-  `Bits.run?`(`Lang/Bits.lean:215`)从叶子读出。逼着展开的是 plan 的形状要穿过 def 的边界(第 6 条),
+  `Bits.run?`(`Lang/Bits.lean:215`)从叶子读出。逼着展开的是 route 的形状要穿过 def 的边界(第 6 条),
   不是大小。
 - ν 的 body 已经是一个 Lean `fun X`(`Lang/Expand.lean:218` `body`)。
 
@@ -261,7 +261,7 @@ csp.AC3 : (α β : Obj) → (Uα : CRel α α) → (Uβ : CRel β β)
 | type variable 变成 constant 的 `Obj` 参数;`Gen` 的函数本来就都收 `Obj` 参数                 | 3        | `Tm` 的 index 里要能出现 object variable —— 数据结构改动,见 L |
 | 关系参数是 λ 绑定的变量,和 fixed point 的 `X` 用同一个机制(`ρ`,`Lang/Expand.lean:177`)       | 4        | `fv`/`closed` 要分清 "参数" 和 "fixed point 变量"             |
 | body 用到 universe 的每个 type variable 多一个参数 `Uα`;调用处传它 instantiate 到的 object 的 universe | 5 | signature 变长;`≤`、`succ`、算术在 type variable 上要的是 `Arr .long m`,这种 variable 固定为 `.long`,只对 universe 泛化 |
-| 参数和结果都是 PLAN(`Gen.Pl`),不是 table:一次调用是一个 plan 节点,plan 在 run time 按这次调用的实参造出来,和现在一样穿过 `sup` | 6 | 没有 bit rule 的 body 包成 `pleaf`;要 table 的地方跑 `Bits.runC` |
+| 参数和结果都是 ROUTE(`Gen.Pl`),不是 table:一次调用是一个 route 节点,route 在 run time 按这次调用的实参造出来,和现在一样穿过 `sup` | 6 | 没有 bit rule 的 body 包成 `pleaf`;要 table 的地方跑 `Bits.runC` |
 | `arcs` 把参数当 closed;只依赖参数的子项用 Lean `let` 提到 `fun X` 外面(生成的代码里的 `let`,不是 Rel 里的) | 7 | `share`(`Lang/Expand.lean:184`)要多一种 "提到 λ 之内、`fun X` 之外" 的情况 |
 | constant 的参数固定为 `d = false`(closed 关系)                                               | 8        | 需要 key 的实参不能直接传,见 M                                |
 | 调用处在 `Tm` 里是一个新叶子:constant 的名字加实参                                           | 1, 6     | `Tm` 多一个 constructor —— 数据结构改动,见 L                  |
