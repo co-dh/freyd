@@ -42,7 +42,7 @@ lean_exe «relc-1a» where
 /-- The C `relc-1a` prints, linked with qlean's `libqleankernel.a` and `c/rt.c` and nothing of Lean's: the static
     library contributes only the objects the program calls, and `rt.c` the runtime symbols those reach. -/
 target «rel-native-1a» pkg : System.FilePath := do
-  let some q ← findPackage? `qlean | error "rel-native-1a: the package `qlean` is not in the workspace"
+  let some q ← findPackageByName? `qlean | error "rel-native-1a: the package `qlean` is not in the workspace"
   let dir := pkg.buildDir / "native"
   let inc := (← getLeanIncludeDir).toString
   let relc ← «relc-1a».fetch

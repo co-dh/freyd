@@ -25,6 +25,10 @@ def plan : Except String Plan := planOf [] native1a "x" "out"
   | .ok p => p.main.size == 16 && p.main.all fun | .call s _ => s == "qlean_own_write" | .fail .. => false | _ => true
   | .error _ => false
 
+end LeetQ.Rel.Lang.TestNative
+
+open LeetQ.Rel.Lang.Plan LeetQ.Rel.Lang.TestNative in
+/-- The `relc-1a` exe (`lakefile.lean`): `c FILE`, `lean DIR`, `plan DIR`, as the module doc says. -/
 def main (args : List String) : IO UInt32 := do
   try
     match args with
@@ -36,5 +40,3 @@ def main (args : List String) : IO UInt32 := do
     | _ => throw (IO.userError "usage: relc-1a c FILE | lean DIR | plan DIR")
     pure 0
   catch e => IO.eprintln e; pure 1
-
-end LeetQ.Rel.Lang.TestNative
