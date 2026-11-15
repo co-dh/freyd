@@ -333,4 +333,188 @@ theorem find?_none_of_any {α : Type} {p : α → Bool} {xs : Array α} (h : ¬ 
 
 #print axioms codeAll_eq
 
+theorem getD_setIf {α : Type} (xs : Array α) (i : Nat) (v : α) (j : Nat) (d : α) :
+    (xs.setIfInBounds i v).getD j d = if i = j ∧ i < xs.size then v else xs.getD j d := by
+  simp only [Array.getD_eq_getD_getElem?, Array.getElem?_setIfInBounds]
+  by_cases h : i = j <;> by_cases h' : i < xs.size <;> simp_all <;> simp [show ¬ j < xs.size by omega]
+
+/-- One step of `codeAll`'s inner loop: column `J k` gets the next `n k` longs of `I`. -/
+def fillStep (n J : Nat → Nat) (I : ByteArray) (r : MProd Nat (Array ByteArray)) (k : Nat) :
+    MProd Nat (Array ByteArray) := ⟨r.1 + n k, r.2.set! (J k) (I.extract (8 * r.1) (8 * (r.1 + n k)))⟩
+
+/-- The inner loop read back: column `J k` holds the extract at the counts before `k`, other columns unchanged. -/
+theorem fill_spec (n J : Nat → Nat) (I : ByteArray) (out0 : Array ByteArray) : ∀ m, (∀ k < m, J k < out0.size) →
+    (∀ k < m, ∀ k' < m, J k = J k' → k = k') →
+    ((List.range m).foldl (fillStep n J I) ⟨0, out0⟩).1 = ((List.range m).map n).sum ∧
+    ((List.range m).foldl (fillStep n J I) ⟨0, out0⟩).2.size = out0.size ∧
+    (∀ j, (∀ k < m, J k ≠ j) → ((List.range m).foldl (fillStep n J I) ⟨0, out0⟩).2.getD j .empty = out0.getD j .empty) ∧
+    ∀ k < m, ((List.range m).foldl (fillStep n J I) ⟨0, out0⟩).2.getD (J k) .empty =
+      I.extract (8 * ((List.range k).map n).sum) (8 * (((List.range k).map n).sum + n k))
+  | 0, _, _ => by simp
+  | m + 1, hJ, hinj => by
+    obtain ⟨h1, h2, h3, h4⟩ := fill_spec n J I out0 m (fun k hk => hJ k (by omega))
+      (fun k hk k' hk' => hinj k (by omega) k' (by omega))
+    rw [List.range_succ, List.foldl_append]
+    generalize (List.range m).foldl (fillStep n J I) ⟨0, out0⟩ = R at h1 h2 h3 h4
+    simp only [List.foldl_cons, List.foldl_nil, fillStep, List.map_append, List.map_cons,
+      List.map_nil, Array.set!_eq_setIfInBounds, Array.size_setIfInBounds, getD_setIf]
+    refine ⟨by rw [h1]; simp, h2, fun j hj => ?_, fun k hk => ?_⟩
+    · rw [if_neg (fun h => hj m (by omega) h.1)]; exact h3 j fun k hk => hj k (by omega)
+    · by_cases e : k = m
+      · subst e; rw [if_pos ⟨rfl, h2 ▸ hJ k (by omega)⟩, h1]
+      · rw [if_neg (fun h => e (hinj m (by omega) k (by omega) h.1).symm)]; exact h4 k (by omega)
+
+/-- The longs of an extract at long `o`: element `r` is element `o + r` of the whole. -/
+theorem ids_extract (I : ByteArray) (o n : Nat) (hn : 0 < n → o + n ≤ (ids I).length) :
+    (ids (I.extract (8 * o) (8 * (o + n)))).length = n ∧ ∀ r (h : r < (ids (I.extract (8 * o) (8 * (o + n)))).length)
+      (h' : o + r < (ids I).length), (ids (I.extract (8 * o) (8 * (o + n))))[r] = (ids I)[o + r] := by
+  have hL : (ids I).length = I.size / 8 := by rw [← len_eq_ids]; rfl
+  have hE : (ids (I.extract (8 * o) (8 * (o + n)))).length = n := by
+    rw [← len_eq_ids, len, ByteArray.size_extract]
+    rcases Nat.eq_zero_or_pos n with rfl | hp
+    · omega
+    · have := hn hp; omega
+  refine ⟨hE, fun r h h' => ?_⟩
+  rw [ids_getElem, ids_getElem, bitsAt_extract I (by rw [hE] at h; omega) (by have := hn (by omega); omega)]
+  congr 2; rw [Nat.add_mul]; omega
+
+/-- `A`'s column indices: each holds a column of `A`, every column of `A` is one, and no index repeats. -/
+theorem jsOf_spec (cs : Array Col) (A : Obj) (c : Col) :
+    (∀ k (hk : k < (jsOf cs A c).size), ∃ h : (jsOf cs A c)[k] < cs.size, cs[(jsOf cs A c)[k]].1 = A) ∧
+    (∀ j (hj : j < cs.size), cs[j].1 = A → ∃ k, ∃ hk : k < (jsOf cs A c).size, (jsOf cs A c)[k] = j) ∧
+    ∀ k k' (hk : k < (jsOf cs A c).size) (hk' : k' < (jsOf cs A c).size),
+      (jsOf cs A c)[k] = (jsOf cs A c)[k'] → k = k' := by
+  refine ⟨fun k hk => ?_, fun j hj hA => ?_, fun k k' hk hk' e => ?_⟩
+  · obtain ⟨h1, h2⟩ := Array.mem_filter.1 (Array.getElem_mem hk)
+    have h1' : (jsOf cs A c)[k] < cs.size := Array.mem_range.1 h1
+    rw [getD_lt cs h1'] at h2; exact ⟨h1', beq_iff_eq.1 h2⟩
+  · have hm : j ∈ jsOf cs A c := Array.mem_filter.2 ⟨Array.mem_range.2 hj, by rw [getD_lt cs hj]; exact beq_iff_eq.2 hA⟩
+    obtain ⟨k, hk, e⟩ := Array.mem_iff_getElem.1 hm; exact ⟨k, hk, e⟩
+  · have hnd : (jsOf cs A c).toList.Nodup := by
+      simp only [jsOf, Array.toList_filter, Array.toList_range]; exact List.nodup_range.filter _
+    have hpw := List.pairwise_iff_getElem.1 hnd
+    rcases Nat.lt_trichotomy k k' with h | h | h
+    · exact (hpw k k' (by simpa using hk) (by simpa using hk') h (by simpa using e)).elim
+    · exact h
+    · exact (hpw k' k (by simpa using hk') (by simpa using hk) h (by simpa using e.symm)).elim
+
+/-- The counts before part `k`, as the loop sums them. -/
+theorem off_range {A : Obj} (ps : Array (Part A)) (d : Part A) {k : Nat} (hk : k ≤ ps.size) :
+    ((List.range k).map fun i => (ps.getD i d).1.toNat).sum = ((ps.toList.take k).map (·.1.toNat)).sum := by
+  congr 1; apply List.ext_getElem (by simp; omega); intro i h1 h2
+  simp only [List.length_map, List.length_range] at h1
+  simp [Array.getElem?_eq_getElem (show i < ps.size by omega)]
+
+theorem row_congr {A : Obj} : ∀ {x y : Part A}, x = y → ∀ i hx hy, x.2.row ⟨i, hx⟩ = y.2.row ⟨i, hy⟩
+  | _, _, rfl, _, _, _ => rfl
+
+/-- The step coding a new object `c.1`: its columns get their extracts of the block, its pick is pushed. -/
+theorem step_new (cs : Array Col) (pre : List Col) (c : Col) (hc : c ∈ cs.toList)
+    (s : MProd (Array ByteArray) (Array Col)) (hI : Inv cs pre s) (hs : ¬ s.2.any (·.1 == c.1) = true)
+    (hok : (c.1.codesC (p := (partsOf cs c.1 c).size) ⟨partsOf cs c.1 c, rfl⟩).2 = true) {N : USize} (all : Vals c.1 N) :
+    Inv cs (pre ++ [c]) ⟨((List.range (jsOf cs c.1 c).size).foldl
+      (fillStep (fun k => ((partsOf cs c.1 c).getD k ⟨0, Vals.empty c.1⟩).1.toNat) (fun k => (jsOf cs c.1 c).getD k 0)
+        (gatherPacked (blockCode (partsOf cs c.1 c)).n
+          (Column.idWidthOf (len (blockCode (partsOf cs c.1 c)).groupIds.2)).toUSize 64 0
+          (blockCode (partsOf cs c.1 c)).groupIds.1 (tilLongs (blockCode (partsOf cs c.1 c)).n))) ⟨0, s.1⟩).2,
+      s.2.push ⟨c.1, Vals.pickPart c.1 all (blockCode (partsOf cs c.1 c)).groupIds.2⟩⟩ := by
+  obtain ⟨hsz, hpre, hcol⟩ := hI
+  obtain ⟨hjs1, hjs2, hjs3⟩ := jsOf_spec cs c.1 c
+  have hpsz : (partsOf cs c.1 c).size = (jsOf cs c.1 c).size := Array.size_map ..
+  have hget : ∀ k (hk : k < (partsOf cs c.1 c).size),
+      (partsOf cs c.1 c)[k] = castPart c.1 (cs.getD ((jsOf cs c.1 c)[k]'(hpsz ▸ hk)) c) := fun k hk => Array.getElem_map ..
+  obtain ⟨j0, hj0, e0⟩ := List.mem_iff_getElem.1 hc
+  have hj0' : j0 < cs.size := by simpa using hj0
+  have hp : 0 < (partsOf cs c.1 c).size := by
+    obtain ⟨k, hk, -⟩ := hjs2 j0 hj0' (by simp only [Array.getElem_toList] at e0; rw [e0]); omega
+  obtain ⟨hLU, hn, hIl, hrow⟩ := block_spec (partsOf cs c.1 c) hp hok
+  obtain ⟨f1, f2, f3, f4⟩ := fill_spec (fun k => ((partsOf cs c.1 c).getD k ⟨0, Vals.empty c.1⟩).1.toNat)
+    (fun k => (jsOf cs c.1 c).getD k 0)
+    (gatherPacked (blockCode (partsOf cs c.1 c)).n
+          (Column.idWidthOf (len (blockCode (partsOf cs c.1 c)).groupIds.2)).toUSize 64 0
+          (blockCode (partsOf cs c.1 c)).groupIds.1 (tilLongs (blockCode (partsOf cs c.1 c)).n)) s.1
+    (jsOf cs c.1 c).size (fun k hk => by simp only [getD_lt _ hk, hsz]; exact (hjs1 k hk).1)
+    (fun k hk k' hk' e => hjs3 k k' hk hk' (by simpa only [getD_lt _ hk, getD_lt _ hk'] using e))
+  have hq : (Vals.pickPart c.1 all (blockCode (partsOf cs c.1 c)).groupIds.2).1.toNat =
+      len (blockCode (partsOf cs c.1 c)).groupIds.2 := by
+    unfold Vals.pickPart need; rw [dif_pos hLU]; exact USize.toNat_ofNat_of_lt' hLU
+  refine ⟨f2.trans hsz, fun c' hc' => ?_, fun j hj B p e hany => ?_⟩
+  · rw [Array.any_push]
+    rcases List.mem_append.1 hc' with h' | h'
+    · rw [hpre c' h', Bool.true_or]
+    · rw [List.mem_singleton.1 h']; simp
+  rw [Array.any_push] at hany
+  by_cases hB : B = c.1
+  · subst hB
+    refine ⟨Vals.pickPart c.1 all (blockCode (partsOf cs c.1 c)).groupIds.2,
+      by rw [Array.find?_push, find?_none_of_any hs]; simp, ?_⟩
+    obtain ⟨k, hk, hjk⟩ := hjs2 j hj (by rw [e])
+    have hk' : k < (partsOf cs c.1 c).size := hpsz ▸ hk
+    have hpk : (partsOf cs c.1 c)[k] = p := by
+      have e' : cs.getD (jsOf cs c.1 c)[k] c = ⟨c.1, p⟩ := by rw [hjk, getD_lt cs hj]; exact e
+      rw [hget k hk', e', castPart, dif_pos rfl]
+    have hnk : ((partsOf cs c.1 c).getD k ⟨0, Vals.empty c.1⟩).1.toNat = p.1.toNat := by rw [getD_lt _ hk', hpk]
+    have hout := f4 k hk
+    simp only [getD_lt _ hk, hjk, hnk, off_range _ _ (Nat.le_of_lt hk')] at hout
+    rw [hout]
+    have hoff := off_lt (fun c : Part c.1 => c.1.toNat) (partsOf cs c.1 c).toList k (by simpa using hk')
+    obtain ⟨hE, hEr⟩ := ids_extract _ (((partsOf cs c.1 c).toList.take k).map (·.1.toNat)).sum p.1.toNat
+      (fun h0 => by rw [hIl, hn]; have := hoff (p.1.toNat - 1) (by simp [hpk]; omega); omega)
+    refine ⟨hE, fun r hr h => ?_⟩
+    obtain ⟨h', hlt, hiff⟩ := hrow k hk' r (by rw [hpk]; exact hr)
+    rw [hEr r h h', hq]
+    refine ⟨hlt, fun a ha => ?_⟩
+    rw [hiff a ha, row_congr hpk, uOf, partsOf_congr cs c.1 ⟨c.1, ⟨0, Vals.empty c.1⟩⟩ c]
+  · have hold : s.2.any (·.1 == B) = true := by simpa [Ne.symm hB] using hany
+    obtain ⟨q, hfq, hok'⟩ := hcol j hj B p e hold
+    refine ⟨q, by rw [Array.find?_push, hfq]; rfl, ?_⟩
+    rw [f3 j fun k hk hJ => hB (by rw [← (hjs1 k hk).2]; simp only [getD_lt _ hk] at hJ; simp only [hJ, e])]
+    exact hok'
+
+/-- One step of `codeAll`'s loop keeps `Inv`. -/
+theorem codeStep_inv (cs : Array Col) (pre : List Col) (c : Col) (s : MProd (Array ByteArray) (Array Col)) r
+    (hc : c ∈ cs.toList) (hI : Inv cs pre s) (h : codeStep cs c s = some r) :
+    ∃ s', r = .yield s' ∧ Inv cs (pre ++ [c]) s' := by
+  by_cases hs : s.2.any (·.1 == c.1) = true
+  · unfold codeStep at h; simp only [hs, if_true] at h; cases h
+    obtain ⟨hsz, hpre, hcol⟩ := hI
+    refine ⟨_, rfl, hsz, fun c' hc' => ?_, hcol⟩
+    rcases List.mem_append.1 hc' with h' | h'
+    · exact hpre c' h'
+    · rw [List.mem_singleton.1 h']; exact hs
+  unfold codeStep at h
+  simp only [hs, Bool.false_eq_true, if_false] at h
+  rw [Std.Legacy.Range.forIn_eq_forIn_range'] at h
+  cases hok : (c.fst.codesC (Vector.mk (partsOf cs c.fst c) rfl)).snd
+  · simp only [hok, guard] at h; cases h
+  simp only [hok, guard, if_true, pure_bind] at h
+  split at h
+  rotate_left
+  · simp at h
+  rename_i all ok _
+  cases ok
+  · cases h
+  simp only [if_true, pure_bind, List.forIn_pure_yield_eq_foldl, Obj.codesC_fst] at h
+  have hm : List.range' 0 [:(jsOf cs c.1 c).size].size = List.range (jsOf cs c.1 c).size := by
+    simp [List.range_eq_range']
+  rw [hm] at h
+  cases h
+  exact ⟨_, rfl, step_new cs pre c hc s hI hs hok all⟩
+
+/-- **`codeAll` read back**: one long column per column, every object picked once, every column read back against
+    its object's pick under `uOf`. -/
+theorem codeAll_inv (cs : Array Col) {out : Array ByteArray} {sps : Array Col} (h : codeAll cs = some (out, sps)) :
+    Inv cs cs.toList ⟨out, sps⟩ := by
+  rw [codeAll_eq] at h
+  cases hr : forIn cs (⟨Array.replicate cs.size .empty, #[]⟩ : MProd (Array ByteArray) (Array Col)) (codeStep cs) with
+  | none => rw [hr] at h; cases h
+  | some t =>
+    rw [hr] at h; cases h
+    rw [← Array.forIn_toList] at hr
+    have := forIn_inv cs.toList (codeStep cs) (Inv cs) (fun pre c s r hc hI h => codeStep_inv cs pre c s r hc hI h)
+      cs.toList (fun _ h => h) [] _ t ⟨by simp, by simp, fun _ _ _ _ _ h => by simp at h⟩ hr
+    simpa using this
+
+#print axioms codeAll_inv
+
 end LeetQ.Rel.Lang.Bits
