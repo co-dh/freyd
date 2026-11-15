@@ -69,7 +69,7 @@ rel_program thm where
 
 #guard thm.ok
 -- the chains stay in the program's constant, for `rel_aop` to read back
-#guard (thm.filterMap fun | .«theorem» _ n _ _ _ _ _ ss => some (n, ss.length) | _ => none) ==
+#guard (thm.filterMap fun | .«theorem» _ n _ _ _ _ _ _ ss => some (n, ss.length) | _ => none) ==
   [("unit", 0), ("good", 2), ("le", 2)]
 
 /-- error: line 80, col 7: theorem `t`: this step x is LeetQ.Rel.Lang.EmbedTest.thm.K ⟶ LeetQ.Rel.Lang.EmbedTest.thm.N, the statement's two is LeetQ.Rel.Lang.EmbedTest.thm.N ⟶ LeetQ.Rel.Lang.EmbedTest.thm.N -/

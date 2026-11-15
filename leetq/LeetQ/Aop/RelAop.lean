@@ -10,9 +10,14 @@ import AOP.A6_ConsList
     - A theorem `t` of `n` becomes `n.t.aop`. Its proof is the `calc` its steps give (`Trans.trans` of one proof per
       step, as Lean's `calc` builds it), or, with no steps, the Lean term of its `proof` item. A theorem with
       neither is owed: `rel_aop` lists every such theorem and declares nothing.
-    - A step `_ = x := ≜ y` is `rfl` (unfolding `y`'s `.aop` definition); `_ = x := t` cites `t`'s `.aop` theorem,
-      of `n` or of a program `n` is read after, under congruence: as stated, rewritten either way, or rewritten
-      after both sides are right-associated. A step that is no instance names its Rel line, the law, and Lean's error.
+    - A theorem `t(R : α ⟶ β, …) if h₁, … : e = f` is `∀ {α β : RelSet} (R : α ⟶ β) …, h₁ → … → e = f`: its object
+      variables implicit, its parameters explicit, each hypothesis (`e = f`, `e ⊑ f`, or a test `s(R) ≜ e ⊑ f`
+      applied, its inclusion) a premise, named `h₁`, `h₂`, … for its `proof` item.
+    - A step `_ = x := ≜ y` is `rfl` (unfolding `y`'s `.aop` definition); `_ = x := t(a, …)` cites `t`'s `.aop`
+      theorem, of `n` or of a program `n` is read after, at the arguments `a, …`, each of its hypotheses discharged
+      by a hypothesis of the theorem being proved or by a theorem proved before with no parameters (the step's own
+      tactic), under congruence: as stated, rewritten either way, or with both sides right-associated. A step that
+      is no instance names its Rel line, the law, and Lean's error; an undischarged hypothesis names itself.
 
     The model: each item `x := v` (or `x : T := v`) is a `let` every term is elaborated under. It names what has no
     AOP reading of its own: an object (`N := (⟨Int⟩ : RelSet.{0})`), a definition read as a given declaration
@@ -127,30 +132,109 @@ partial def ensure (defs : List Def) (model : List (String × Syntax × Option S
   liftCoreM <| addDecl (.defnDecl { name := c, levelParams := [], type := t, value := v, hints, safety := .safe })
   return c
 
-/-- The proof of the step `_ r x := why` at `p`, whose goal is `g`; `cite y` the `.aop` theorem `y` names. -/
-def step (p : Lang.Pos) (eq : Bool) (x : Lang.Expr) (why : Why) (g : Lean.Expr) (cite : String → TermElabM Name) :
-    TermElabM Lean.Expr := do
+/-- The tactic that closes a goal by the law `h`, under congruence: as stated, rewritten either way, or with both
+    sides right-associated, where `hk`, `h` composed with any `k` after it, finds a composite side of `h` that is no
+    subterm of the right-associated goal (`… ≫ (X ≫ (Y ≫ k))` holds `X ≫ Y` only as `hk`'s instance). Every branch
+    closes the goal or fails, so a rewrite that leaves a goal falls through to the next. -/
+def lawTac (h : Term) (hk : Option Term) : TermElabM (TSyntax `tactic) := do
+  let assoc ← match hk with
+    | some k => `(tactic| (
+        have hh := $h; have hk := $k; (try simp only [Cat.assoc] at hh hk ⊢)
+        first | (simp only [hh, hk]; done) | (simp only [← hh, ← hk]; done)))
+    | none => `(tactic| (
+        have hh := $h; (try simp only [Cat.assoc] at hh ⊢)
+        first | exact hh | (simp only [hh]; done) | (simp only [← hh]; done)))
+  -- `rw [h]` last: when no branch closes the goal, its error, the pattern it did not find, is the one reported
+  `(tactic| first | with_reducible exact $h | (rw [← $h:term]; done) | $assoc:tactic | (rw [$h:term]; done))
+
+/-- For an equation `h : l = r` between arrows into `B`, `fun k => congrArg (· ≫ k) h : ∀ {W} (k : B ⟶ W), l ≫ k = r ≫ k`;
+    none for an inclusion. -/
+def composedAfter (h : Lean.Expr) : TermElabM (Option Term) := do
+  let some (ty, _, _) := (← instantiateMVars (← inferType h)).eq? | return none
+  let b ← exprToSyntax (← instantiateMVars ty).appArg!
+  pure (some (← `(fun {W} (k : $b ⟶ W) => congrArg (· ≫ k) $(← exprToSyntax h))))
+
+/-- The goal `g` closed by `tac`, or the error `what` with Lean's. -/
+def closeBy (g : Lean.Expr) (tac : TSyntax `tactic) (what : MessageData) : TermElabM Lean.Expr := do
   let mv ← mkFreshExprMVar g
-  let (tac, law) ← match why with
-    | .unfold _ y => pure (← `(tactic| rfl), m!"`≜ {y}`")
-    | .thm _ y => do
-      let c ← cite y; let h := mkIdent c
-      pure (← `(tactic| first
-        | with_reducible exact $h
-        | rw [$h:ident]
-        | rw [← $h:ident]
-        | (have h' := $h; simp only [Cat.assoc] at h' ⊢; first | exact h' | rw [h'] | rw [← h'])),
-        m!"`{y}` : {← inferType (mkConst c)}")
-  let r := if eq then "=" else "⊑"
   try
     let gs ← Tactic.run mv.mvarId! (Tactic.evalTactic tac)
     unless gs.isEmpty do throwError "goals remain: {gs.map (·.name)}"
-  catch ex => throwError "{p}: the step `_ {r} {x.show}` is not an instance of {law}\n{ex.toMessageData}"
+  catch ex => throwError "{what}\n{ex.toMessageData}"
   instantiateMVars mv
+
+/-- The `.aop` theorem `c` instantiated: its objects by unification, its parameters at `args` (each read at the
+    parameter's type), each hypothesis discharged by `discharge`, which names the one it cannot. -/
+def instantiate (c : Name) (args : List Lang.Expr) (readArg : Lang.Expr → Lean.Expr → TermElabM Lean.Expr)
+    (discharge : Lean.Expr → TermElabM Lean.Expr) : TermElabM Lean.Expr := do
+  let mut (e, t, as) := (Lean.mkConst c, ← inferType (Lean.mkConst c), args)
+  repeat
+    let .forallE _ d b bi := t | break
+    let x ← if bi.isImplicit then mkFreshExprMVar d else match as with
+      | a :: rest => do as := rest; readArg a (← instantiateMVars d)
+      | [] => do synthesizeSyntheticMVarsNoPostponing; discharge (← instantiateMVars d)
+    (e, t) := (mkApp e x, b.instantiate1 x)
+  instantiateMVars e
+
+/-- The proof of the step `_ r x := why` at `p`, whose goal is `g`; `law y args` the `.aop` theorem `y` names,
+    instantiated at `args`. -/
+def step (p : Lang.Pos) (eq : Bool) (x : Lang.Expr) (why : Why) (g : Lean.Expr)
+    (law : String → List Lang.Expr → TermElabM Lean.Expr) : TermElabM Lean.Expr := do
+  let r := if eq then "=" else "⊑"
+  let what (m : MessageData) := m!"{p}: the step `_ {r} {x.show}` is not an instance of {m}"
+  match why with
+  | .unfold _ y => closeBy g (← `(tactic| rfl)) (what m!"`≜ {y}`")
+  | .thm _ y as => do
+    let h ← law y as
+    let tac ← lawTac (← exprToSyntax h) (← composedAfter h)
+    closeBy g tac (what m!"`{cited y as}` : {← inferType h}")
+
+where
+  cited (y : String) (as : List Lang.Expr) : String :=
+    if as.isEmpty then y else y ++ "(" ++ ", ".intercalate (as.map (·.show)) ++ ")"
+
+/-- `k` with the object variables of the parameters' types (implicit objects of `Rel(Set)`), the parameters, and
+    the hypotheses `hs` (`prop` of each, named `h₁`, `h₂`, … for a `proof` item) bound as locals: the binders of a
+    theorem with parameters, quantified over its objects. -/
+def withSig {α : Type} [Inhabited α] (x : String) (ps : List Param) (hs : List (Lang.Expr × Bool × Lang.Expr))
+    (vs : List String) (prop : List String → Lang.Expr × Bool × Lang.Expr → TermElabM Lean.Expr)
+    (k : List String → Array Lean.Expr → TermElabM α) : TermElabM α := do
+  let tys ← ps.mapM fun q => match q.ty with
+    | some t => pure (q.name, t)
+    | none => throwError "`{x}`: the parameter `{q.name}` has no type: rel_aop quantifies over typed parameters"
+  let os := (tys.flatMap fun (_, s, t) => s.vars ++ t.vars).eraseDups
+  let vs₁ := os.reverse ++ vs
+  let vs₂ := (tys.map (·.1)).reverse ++ vs₁
+  let sub (i : Nat) := String.map (fun c => Char.ofNat (c.toNat - '0'.toNat + 0x2080)) (toString i)
+  let objs : List (Name × BinderInfo × (Array Lean.Expr → TermElabM Lean.Expr)) :=
+    os.map fun o => (Name.mkSimple o, BinderInfo.implicit, fun _ => do elabType (← `(RelSet.{0})))
+  let pars : List (Name × BinderInfo × (Array Lean.Expr → TermElabM Lean.Expr)) :=
+    tys.map fun (q, s, t) => (Name.mkSimple q, BinderInfo.default, fun _ => do
+      elabType (← `($(← obj vs₁ s) ⟶ $(← obj vs₁ t))))
+  let hyps : List (Name × BinderInfo × (Array Lean.Expr → TermElabM Lean.Expr)) :=
+    (List.range hs.length).zip hs |>.map fun (i, h) => (Name.mkSimple ("h" ++ sub (i + 1)), BinderInfo.default,
+      fun _ => do let t ← prop vs₂ h; synthesizeSyntheticMVarsNoPostponing; instantiateMVars t)
+  withLocalDecls (objs ++ pars ++ hyps).toArray (k vs₂)
 
 /-- `e r f` for Rel's `=` (`eq`) or `⊑`. -/
 def relation (eq : Bool) (e f : Lean.Expr) : TermElabM Lean.Expr := do
   if eq then mkEq e f else elabType (← `($(← exprToSyntax e) ⊑ $(← exprToSyntax f)))
+
+/-- A hypothesis written `e = f`, `e ⊑ f`, or `t(R, …)` with `t` a test of `tests` (its inclusion, its parameters
+    put in place), as the pair of sides it states. -/
+def hypSides (tests : List (String × List Param × Lang.Expr × Lang.Expr)) :
+    Lang.Expr × Option (Bool × Lang.Expr) → Except String (Lang.Expr × Bool × Lang.Expr)
+  | (a, some (eq, b)) => pure (a, eq, b)
+  | (a, none) => do
+    let (p, n, as) ← match a with
+      | .app p n as => pure (p, n, as)
+      | .name p n => pure (p, n, [])
+      | _ => throw s!"{a.pos}: the hypothesis `{a.show}` is no `e = f`, `e ⊑ f`, nor a test applied"
+    let some (_, qs, e, f) := tests.find? (·.1 == n)
+      | throw s!"{p}: the hypothesis `{a.show}`: `{n}` is no test `{n}(…) ≜ e ⊑ f` of the program"
+    unless qs.length == as.length do throw s!"{p}: the test `{n}` takes {qs.length} argument(s), `{a.show}` gives {as.length}"
+    let σ := qs.map (·.name) |>.zip as
+    pure (e.subst σ, false, f.subst σ)
 
 @[command_elab relAop] def elabRelAop : CommandElab := fun stx => do
   let n ← liftCoreM (realizeGlobalConstNoOverloadWithInfo stx[1])
@@ -161,46 +245,66 @@ def relation (eq : Bool) (e f : Lean.Expr) : TermElabM Lean.Expr := do
   let progs ← (chain ++ [n]).reverse.mapM fun m => return (m, ← Embed.programOf m)
   let defs : List Def := progs.flatMap fun (m, p) =>
     (p.filterMap fun | .defn _ x ps (.rel e) ty => some (m, x, ps, e, ty) | _ => none).reverse
+  let tests := progs.flatMap fun (_, p) =>
+    (p.filterMap fun | .defn _ x ps (.test e f) _ => some (x, ps, e, f) | _ => none).reverse
   let thms := progs.flatMap fun (m, p) =>
-    (p.filterMap fun | .«theorem» _ x .. => some (m, x) | _ => none).reverse
+    (p.filterMap fun | .«theorem» _ x ps _ _ _ _ hs _ => some (m, x, ps, hs) | _ => none).reverse
   let own := (← Embed.programOf n).filterMap fun
-    | .«theorem» p x ps e f eq _ ss => some (p, x, ps, e, f, eq, ss) | _ => none
+    | .«theorem» p x ps e f eq _ hs ss => some (p, x, ps, hs, e, f, eq, ss) | _ => none
   -- the obligations are the theorems: each needs a chain or a `proof` item, never both
   for (x, i, _) in proofs do
     match own.find? (·.2.1 == x) with
-    | some (_, _, _, _, _, _, []) => pure ()
+    | some (_, _, _, _, _, _, _, []) => pure ()
     | some _ => throwErrorAt i "`{x}` has a calc: a `proof` item would be a second proof"
     | none => throwErrorAt i "`{x}` is no theorem of `{n}`"
-  let owed := own.filter fun (_, x, _, _, _, _, ss) => ss.isEmpty && !proofs.any (·.1 == x)
+  let owed := own.filter fun (_, x, _, _, _, _, _, ss) => ss.isEmpty && !proofs.any (·.1 == x)
   unless owed.isEmpty do
     throwError "owed: {owed.length} theorem(s) of `{n}` with no calc and no `proof` item:{String.join (owed.map
-      fun (p, x, _, e, f, eq, _) => s!"\n  {p}: {x} : {e.show} {if eq then "=" else "⊑"} {f.show}")}"
-  for (p, x, ps, e, f, eq, ss) in own do
-    unless ps.isEmpty do throwError "{p}: `{x}` has parameters: rel_aop reads a theorem with parameters once P3 types them"
-    let es := (e :: f :: ss.map (·.2.2.1)).map (inline defs ms)
-    let cs ← (es.flatMap (closed defs ms)).eraseDups.mapM fun y => return (y, ← ensure defs model y)
+      fun (p, x, _, _, e, f, eq, _) => s!"\n  {p}: {x} : {e.show} {if eq then "=" else "⊑"} {f.show}")}"
+  for (p, x, ps, hs, e, f, eq, ss) in own do
+    let hs ← hs.mapM fun h => match hypSides tests h with | .ok s => pure s | .error m => throwError m
+    -- a parameter shadows a definition of its name, as a model name does
+    let ms' := ms ++ ps.map (·.name)
+    let args := ss.flatMap fun | (_, _, _, .thm _ _ as) => as | _ => []
+    let es := (e :: f :: ss.map (·.2.2.1) ++ args ++ hs.flatMap fun (a, _, b) => [a, b]).map (inline defs ms')
+    let cs ← (es.flatMap (closed defs ms')).eraseDups.mapM fun y => return (y, ← ensure defs model y)
     let env ← getEnv
-    let cite (y : String) : TermElabM Name := do
-      let some (m, _) := thms.find? (·.2 == y) | throwError "`{y}` is no theorem of `{n}` nor of a program it is read after"
-      let c := aopName m y
-      unless env.contains c do throwError "`{y}` has no Lean proof yet: rel_aop `{m}` declares it, before this step"
-      pure c
-    let (ty, pf) ← liftTermElabM <| withModel model [] fun vs => withDefs cs vs fun vs => do
-      let (e', f') := (inline defs ms e, inline defs ms f)
-      let l ← read s!"the left side of `{x}`" vs e' none
-      let r ← read s!"the right side of `{x}`" vs f' (← inferType l)
+    -- what discharges a cited law's hypothesis: a hypothesis of `x`, or a theorem already proved that takes nothing
+    let facts := thms.filterMap fun (m, y, qs, hs) =>
+      if qs.isEmpty && hs.isEmpty && env.contains (aopName m y) then some (aopName m y) else none
+    let (ty, pf) ← liftTermElabM <| withModel model [] fun vs => withDefs cs vs fun vs =>
+      withSig x ps hs vs (fun vs (a, heq, b) => do
+        let l ← read s!"a hypothesis of `{x}`" vs (inline defs ms' a) none
+        relation heq l (← read s!"a hypothesis of `{x}`" vs (inline defs ms' b) (← inferType l))) fun vs xs => do
+      let l ← read s!"the left side of `{x}`" vs (inline defs ms' e) none
+      let r ← read s!"the right side of `{x}`" vs (inline defs ms' f) (← inferType l)
       let ty ← relation eq l r
+      -- the law `y` the step `_ … t` at `q` cites, at the arguments `as`, each hypothesis discharged
+      let law (q : Lang.Pos) (t : Lang.Expr) (y : String) (as : List Lang.Expr) : TermElabM Lean.Expr := do
+        let some (m, _, qs, _) := thms.find? (·.2.1 == y)
+          | throwError "{q}: `{y}` is no theorem of `{n}` nor of a program it is read after"
+        let c := aopName m y
+        unless env.contains c do throwError "{q}: `{y}` has no Lean proof yet: rel_aop `{m}` declares it, before this step"
+        unless qs.length == as.length do throwError "{q}: `{y}` takes {qs.length} argument(s), the step gives {as.length}"
+        let tac ← facts.foldrM (init := ← `(tactic| assumption)) fun c acc => do
+          `(tactic| first | $(← lawTac (mkIdent c) none):tactic | $acc:tactic)
+        instantiate c as (fun a d => read s!"{q}: the argument `{a.show}` of `{y}`" vs (inline defs ms' a) (some d))
+          fun d => closeBy d tac (m!"{q}: the step `_ … {t.show}` cites `{y}`, whose hypothesis{indentExpr d}\n" ++
+            m!"no hypothesis of `{x}` and no theorem proved before it that takes no parameters discharges")
       let pf ← match ss, proofs.find? (·.1 == x) with
         | [], some (_, _, _, v) => elabTermEnsuringType v ty
         | _, _ => do
           let (_, pf) ← ss.foldlM (init := (l, none)) fun (prev, acc) (q, seq, t, why) => do
-            let next ← read s!"{q}" vs (inline defs ms t) (← inferType l)
-            let pf ← step q seq t why (← relation seq prev next) cite
+            let next ← read s!"{q}" vs (inline defs ms' t) (← inferType l)
+            let pf ← step q seq t why (← relation seq prev next) (law q t)
             pure (next, some (← match acc with | none => pure pf | some a => mkAppM ``Trans.trans #[a, pf]))
           let some pf := pf | throwError "{p}: `{x}` has no steps"
           unless ← isDefEq (← inferType pf) ty do
             throwError "{p}: the calc of `{x}` proves {← inferType pf}, not {ty}"
           pure pf
+      synthesizeSyntheticMVarsNoPostponing
+      let ty ← mkForallFVars xs (← instantiateMVars ty)
+      let pf ← mkLambdaFVars xs (← instantiateMVars pf)
       pure (← close s!"the statement of `{x}`" ty, ← close s!"the proof of `{x}`" pf)
     liftCoreM <| addDecl (.thmDecl { name := aopName n x, levelParams := [], type := ty, value := pf })
 

@@ -393,7 +393,7 @@ def walk (prog : Program) (env : Env) (wrap : String → Def → Def) (own : Lea
       specs := st.specs
       pr := pr ++ [(e.show, ← top env (← Lean.getMCtx) p e r)]
     | .check p e f eq => let (c, sp) ← checkOf env p e f eq specs; specs := sp; cs := cs ++ [c]
-    | .«theorem» p n ps e f eq on steps =>
+    | .«theorem» p n ps e f eq on _ steps =>
       -- every term of the chain at the statement's type, the parameters at their declared ones (§3)
       let ((), st) ← (do
         let (_, env') ← bindSig env ps
