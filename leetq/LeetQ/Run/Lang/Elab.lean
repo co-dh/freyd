@@ -42,7 +42,9 @@ inductive Tm : Obj → Obj → Bool → Type where
   | pair {A B C : Obj} {d e : Bool} (R : Tm A B d) (S : Tm A C e) : Tm A (.prod B C) (d || e)
   | prod {A B C D : Obj} (R : Tm A B false) (S : Tm C D false) : Tm (.prod A C) (.prod B D) false
   | junc {A B C : Obj} (R : Tm A C false) (S : Tm B C false) : Tm (.sum A B) C false
-  | lam {A B : Obj} {d : Bool} (R : Tm A B d) : Tm A (.arr B) d
+  /-- `Λ(R)`, a map: total on the keys in demand, `[]` where `R` has no image, so it always runs on demand and a
+      closed use reads its source's universe (`closeRes`). -/
+  | lam {A B : Obj} {d : Bool} (R : Tm A B d) : Tm A (.arr B) true
   | E {A B : Obj} {d : Bool} (R : Tm A B d) : Tm (.arr A) (.arr B) true
   | map {A B : Obj} {d : Bool} (R : Tm A B d) : Tm (.arr A) (.arr B) true
   /-- The prelude's folds `filter(p)`, `takewhile(p)`, run as their mask forms (`Expand.preludeDef`). -/
@@ -583,9 +585,10 @@ def lJunc : Pre × OTy × OTy → Pre × OTy × OTy → M (Pre × OTy × OTy)
     pure (join (comp R (pair (comp (outl a c) (inl a b)) (outr a c)))
       (comp S (pair (comp (outl b c) (inr a b)) (outr b c))), .sum a b, c)
 
-/-- `Λ(R)` lifted: `⟨𝟙,Rπ₁⟩⟨π₂,Λ(Rᴵ)⟩`. -/
-def lLam : Pre × OTy × OTy → Pre × OTy × OTy
-  | (R, a, b) => (comp (pair (id I) (comp R (outl a b))) (pair (outr I a) (lam (keyed I R a b))), a, .arr b)
+/-- `Λ(R)` lifted on the sources `S : I ⟶ a` of each key, `Rπ₁` (`dom`) when none: `⟨𝟙,S⟩⟨π₂,Λ(Rᴵ)⟩`. `Λ` takes
+    `S = ⊤` onto `a`'s universe, being total; `E` and `thin` take `dom`, as their `a = [x]` has no universe. -/
+def lLam (S : Option Pre) : Pre × OTy × OTy → Pre × OTy × OTy
+  | (R, a, b) => (comp (pair (id I) (S.getD (comp R (outl a b)))) (pair (outr I a) (lam (keyed I R a b))), a, .arr b)
 
 /-- `X⦇e,S⦈` lifted, `X : I ⟶ a×[x]`, `e : I ⟶ v×v`, `S : I ⟶ (x×v)×v`: `⟨𝟙,X⟩⟨π₂π₁,⟨π₁,π₂π₂⟩⦇e,S'⦈ᴵ⟩`, where
     `⦇e,S'⦈ᴵ : I×[x] ⟶ v` folds each array at its key, carrier `I×v`, `S' ≜ ⟨π₂π₁,⟨π₁,π₂π₂⟩⟩⟨π₁,Sᴵ⟩`. -/
@@ -723,8 +726,8 @@ def appliedL (I : OTy) (p : Pos) (o : Op) (as : List Arg) : M Arg := do
   let r ← match o, fs with
     | .dom, [R] => pure (lDom R)
     | .ran, [R] => pure (lRan R)
-    | .lam, [R] => pure (lLam I R)
-    | .E, [R] => do let b ← fresh; pure (lLam I (← lComp I p (liftConst I p (.mem b) (.arr b) b) R))
+    | .lam, [R] => pure (lLam I (some (.top p I R.2.1 none)) R)
+    | .E, [R] => do let b ← fresh; pure (lLam I none (← lComp I p (liftConst I p (.mem b) (.arr b) b) R))
     | .P, _ => notLiftable p "P(R)"
     | o, _ => notLiftable p s!"{o.sym}( )"
   pure (.fam r.1 I r.2.1 r.2.2)
@@ -828,7 +831,7 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
       let G ← lThen p (← famOf I p x) (.mem e, .arr e, e)
       let Q ← famOf I p q
       let r ← if est then do lSame p Pre.meet G (← lLdiv I p (lConv G) (lConv Q))
-        else do pure (lLam I (← lSame p Pre.diff G (← lComp I p G (← lSame p Pre.diff Q (lConv Q)))))
+        else do pure (lLam I none (← lSame p Pre.diff G (← lComp I p G (← lSame p Pre.diff Q (lConv Q)))))
       pure (.fam r.1 I r.2.1 r.2.2)
     | _, _ =>
       let y ← elabE env m b
