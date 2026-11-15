@@ -230,7 +230,8 @@ plan   fun f7(D) =
 - 参数化的常量（module 设计 2.4：`csp.AC3 : (α β : Obj) → … → Pl … → Pl …`）：它的值改成 plan builder，一个
   `Obj` 和实参 builder 的 Lean 函数。调用叶子在建 plan 时调它，每个调用点得到按具体 `Obj` 展开的函数，
   结构相同的共用。Lean 只 elaborate 一次；C 里是每个 instantiation 一份代码。
-- Lean backend：`Plan.run : Plan → Regs → Regs × Bool`，逐条调同一批 `@[extern]`。它是 plan 的语义，
+- Lean backend：`Plan.run : Plan → Except String (Array Val × Writes)`，纯函数，逐条调同一批 `@[extern]`；
+  `IO` kernel 的调用只记进 `Writes`，由 `Plan.exec` 在输出边界按序执行。它是 plan 的语义，
   不是 compiler 旁边的第二个 interpreter —— 没有别的东西定义 plan 的意思。
 - C backend：`relc`（Lean 写的 emitter）把 plan 打印成一个 `.c`：每个 `Fun` 一个 `static` 函数，`call` 一行，
   `loop` 是 `for`，`if` 是 `if`。C 里没有 plan interpreter。
@@ -419,6 +420,15 @@ owner：`Run/*`、`Rel/Lang/*`、`Rel/Rep*` = ffreyd；`Rel/Programs/*` = aima�
   owner：ffreyd。
 - 门：四条；另外两个测试输入各逼出一条分支（一个 universe 小到走 bit，一个超过 2²⁷ bit 走 table）。
 - 判断点：这里量出每个 def 的 builder 加定理的代价。若明显贵于它的旧定义，停下来把范围缩到他点名的程序。
+- 已定：
+  - D — `Plan.run` 是 `Except String` 里的纯函数，写盘在边界（`Plan.exec`）。失败的 run 什么都不写；C 在
+    `fail` 之前已经写了的照样留下，所以门只比较成功的 run。
+  - G — `Kernel.std` 保留：toolchain 自己的 extern 由 `lean.h` 定义，C 里不另声明。
+  - I — bit-matrix 的树叫 `Route`（原名 `TP`）；"plan" 只指 native 的 `Plan`。
+- 证明的做法（`Rel/Lang/PlanSpec.lean`）：`Builds abi fs gs b rs out` 说 `b` 在寄存器 `rs` 之后追加的指令
+  跑完得到 `out`。每个 builder 原语一条引理 —— `Builds.emit1`（`lit` 就是 `emit1 (.lit v)`）、`Builds.emit`
+  （`call`）、`Builds.ite`，加 `runI_call` —— builder 的定理只用它们改写，不展开 `runB`。第一条是
+  `groupIdsB_builds`（`= Code.groupIds`）。
 
 ### 阶段 2 — 输入和输出（约 900 行）
 - 交付：`input`/`output` 声明；`c/relio.c`（csv/txt 的 reader 和 writer，`col` 的目录读写，universe 检查）；
