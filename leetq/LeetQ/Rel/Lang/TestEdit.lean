@@ -1,4 +1,3 @@
-import LeetQ.Rel.Lang.Test
 import LeetQ.Rel.Programs.Edit
 
 /-! The Rel language on B&dM's string edit (§9.2), the program `Programs.edit`: the specification
@@ -7,7 +6,7 @@ import LeetQ.Rel.Programs.Edit
 
 namespace LeetQ.Rel.Lang.TestEdit
 
-open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Lang.Test
+open LeetQ.Rel LeetQ.Rel.Lang
 
 /-- The least length of an edit sequence of `(xs, ys)`, each of `cpy`, `del`, `ins` costing one: every
     operation that applies at the heads, the cheapest rest taken. A copy is one choice among three, not
@@ -24,7 +23,7 @@ def strs : List (List Char) := [[]] ++ [['a'], ['b']] ++ [['a','a'], ['a','b'], 
 
 def word (s : List Char) : String := arrText false (s.map toString)
 
-/-- `spec length 𝟙(N)` as the printer writes it, its rows in the printer's order: by element (`Eval.cmpEl`),
+/-- `spec length 𝟙(N)` as the printer writes it, its rows in the printer's order: by element (`cmpEl`),
     an array lexicographically with a prefix first, which on strings is the order of `String`. -/
 def expected (term : String) : String :=
   let key (p : List Char × List Char) := (String.ofList p.1, String.ofList p.2)
@@ -32,14 +31,16 @@ def expected (term : String) : String :=
     (key p).1 < (key q).1 || ((key p).1 == (key q).1 && (key p).2 ≤ (key q).2)
   s!"{term} = \{" ++ ", ".intercalate (ps.map fun (x, y) => s!"(({word x}, {word y}), {cost x y})") ++ "}"
 
-def given : Except Err Out := runProgram Programs.edit
+-- `mle`'s lengths, printed after the program
+rel_program mleLength after Programs.edit where
+    print D mle length 𝟙(N)
 
-#guard given.isOk
-#guard (ok given).prints.head? == some (expected "spec length 𝟙(N)")
+#guard Programs.edit.ok
+#guard Programs.edit.prints.head? == some (expected "spec length 𝟙(N)")
 -- the second `print`, the shortest sequences of the pairs of two-letter strings, is for reading only
-#guard (ok given).prints.length == 2
--- the tabulation: the program's `check D mle ⊑ spec` and `check D mle length 𝟙(N) = (spec length 𝟙(N))` hold (a failed
--- one is an error), and `mle`'s lengths printed here are the edit-distance recursion's, on the same 49 pairs
-#guard (ok (runExt Programs.edit "print D mle length 𝟙(N)\n")).prints.getLast? == some (expected "D mle length 𝟙(N)")
+#guard Programs.edit.prints.length == 2
+-- the tabulation: the program's `check D mle ⊑ spec` and `check D mle length 𝟙(N) = (spec length 𝟙(N))` hold (`ok`),
+-- and `mle`'s lengths printed here are the edit-distance recursion's, on the same 49 pairs
+#guard mleLength.ok && mleLength.prints == [expected "D mle length 𝟙(N)"]
 
 end LeetQ.Rel.Lang.TestEdit
