@@ -114,7 +114,8 @@ abbrev Once := String × Nat × List (Obj × Obj) × Res
 
 /-- What a program reads: its closed definitions, its prints (text and term), its checks, its objects, and its
     definitions elaborated once. -/
-abbrev Read := List (String × Res) × List (String × Top) × List Chk × Objs × List Once × List (String × String)
+abbrev Read := List (String × Res) × List (String × Top) × List Chk × Objs × List Once × List (String × String) ×
+  List (String × String)
 
 /-- The object variables of a definition, in order, each once: its parameters' then its type's. -/
 def varsOf (qs : List Param) (ty : OExp × OExp) : List String :=
@@ -124,7 +125,7 @@ def varsOf (qs : List Param) (ty : OExp × OExp) : List String :=
     variable of its place, each parameter the variable after them (`Once`). A body that does not build so (it
     needs keys, or a universe of an object made of variables) is an error, which names `n`. -/
 def once (env : Env) (p : Pos) (n : String) (qs : List Param) (e : Expr) (ty : OExp × OExp) (vs : List String) :
-    Except Err Once := do
+    Except Err (Once × List (String × String)) := do
   let nv := vs.length
   let objs := vs.zipIdx.map (fun (v, k) => (v, ({ ty := .base v, uniVar := some k } : ObjInfo))) ++ env.objs
   let rigid := vs.map fun v => (v, OTy.base v)
@@ -146,7 +147,7 @@ def once (env : Env) (p : Pos) (n : String) (qs : List Param) (e : Expr) (ty : O
   -- term is (`top`): the constant returns a closed relation (decision M)
   let (q, s, _) := r.plain
   match ← build objs st p (.close p q s s!"`{n}` is elaborated once, to a constant returning a closed relation") with
-  | ⟨A, B, false, t⟩ => pure (n, nv, os, ⟨A, B, false, t⟩)
+  | ⟨A, B, false, t⟩ => pure ((n, nv, os, ⟨A, B, false, t⟩), st.expanded)
   | _ => throw ⟨p, s!"internal: `{n}` closed still needs keys"⟩
 
 /-- `n` elaborated once to the constant `c` (`once`), its object variables `vs`, declared `ty`: each use is the
@@ -157,13 +158,19 @@ def callDef (env : Env) (qs : List Param) (ty : OExp × OExp) (vs : List String)
       let r ← d.apply p as
       let (bs, m) ← (qs.zip as).foldlM (fun (bs, m) (P, a) => do
         let (b, j, m) ← bind env p P a m; pure (bs ++ [(P, b.2, j)], m)) (([], []) : List (Param × Arg × Option OTy) × List (String × OTy))
-      if let some (P, _) := bs.find? (·.2.2.isSome) then
-        throw ⟨p, s!"`{c}`: '{P.name}' is given a family; its constant takes only relations (decision M)"⟩
+      -- a use the constant cannot take expands the body, recorded (decision M, until step 5)
+      let expand (why : String) : M Arg := do
+        modify fun st => { st with expanded := st.expanded ++ [(c.toString, s!"{p}: {why}")] }; pure r
+      if let some (P, _) := bs.find? (·.2.2.isSome) then return ← expand s!"'{P.name}' is given a family"
       let .rel q s t := r | throw ⟨p, s!"internal: `{c}` given relations is a family"⟩
       -- a variable only the declared result names is fixed by the result's type, as `declared` fixes it
       let m ← vs.foldlM (fun m v => do if (m.lookup v).isSome then pure m else return (v, ← fresh) :: m) m
       unify p "" s (← oty env m ty.1); unify p "" t (← oty env m ty.2)
       let some us := vs.mapM (m.lookup ·) | throw ⟨p, s!"internal: `{c}` has an object variable no type names"⟩
+      -- an object made of others is no declared object; one still open is checked at `build`
+      let st ← get
+      if let some u := us.find? (fun u => match zonk st u with | .base _ | .mv _ => false | _ => true) then
+        return ← expand s!"an object variable is {zonk st u}, not a declared object"
       -- an argument that needs keys (`≠`) is read on its source's universe, as a top-level term is (`top`); the
       -- universe is looked up at `build`, in the objects of the program making the call, not of the one defining `n`
       let why := s!"`{c}` takes only closed relations (decision M)"
@@ -184,10 +191,12 @@ def top (env : Env) (st : St) (p : Pos) (e : Expr) (r : Arg) : Except Err Top :=
     built once for `emit` (`once`), and expanded at each use here, where its constant does not exist yet. -/
 def walk (prog : Program) (env : Env) (wrap : String → Def → Def) (own : Lean.Name) (calls : Lean.Name → Bool)
     (emitting : Bool) :
-    Except Err (Env × List (String × Res) × List (String × Top) × List Chk × List Once × List (String × String)) := do
+    Except Err (Env × List (String × Res) × List (String × Top) × List Chk × List Once × List (String × String) ×
+      List (String × String)) := do
   let mut env := env
   let mut os : List Once := []
   let mut xs : List (String × String) := []
+  let mut ex : List (String × String) := []
   let mut ds : List (String × Res) := []
   let mut pr : List (String × Top) := []
   let mut cs : List Chk := []
@@ -205,6 +214,7 @@ def walk (prog : Program) (env : Env) (wrap : String → Def → Def) (own : Lea
           if let some ty := ty then let (_, s, t) := r.plain; declared env p n rigid ty s t
           settleNil p r.plain.1
           pure r).run {}
+        ex := ex ++ st.expanded
         let (q, s, t) := r.plain
         let s := zonk st s; let t := zonk st t
         let each := wrap n (mkDef env n p [] (.rel e) ty)
@@ -227,12 +237,13 @@ def walk (prog : Program) (env : Env) (wrap : String → Def → Def) (own : Lea
             -- a body the spike cannot make a constant (arithmetic or a universe on an object variable: step 5) stays
             -- expanded at each use, as before; the reason is kept, emitted as `n.notOnce`
             match once env p n qs e ty vs with
-            | .ok o => os := os ++ [o]
+            | .ok (o, e) => os := os ++ [o]; ex := ex ++ e
             | .error e => xs := xs ++ [(n, s!"{e.pos}: {e.msg}")]
         | _, _ => pure ()
         env := { env with defs := (n, wrap n d) :: env.defs }
     | .print p e =>
       let (r, st) ← (do let r ← elabE env none e; settleNil p r.plain.1; pure r).run {}
+      ex := ex ++ st.expanded
       pr := pr ++ [(e.show, ← top env st p e r)]
     | .check p e f eq =>
       -- the two sides elaborated together, one type: an object one side leaves open is the other's (§c)
@@ -244,11 +255,12 @@ def walk (prog : Program) (env : Env) (wrap : String → Def → Def) (own : Lea
         catch _ => throw ⟨p, s!"check: the sides have types {zonk st s} ⟶ {zonk st t} and {zonk st s'} ⟶ {zonk st t'}"⟩
         settleNil p r.plain.1; settleNil p r'.plain.1
         pure (r, r') : M (Arg × Arg)).run {}
+      ex := ex ++ st.expanded
       let (⟨A, B, R⟩, s, t) ← top env st p e r
       let (⟨A', B', S⟩, s', t') ← top env st p f r'
       if h : A' = A ∧ B' = B then cs := cs ++ [(p, e.show, f.show, eq, s, t, ⟨A, B, R, h.1 ▸ h.2 ▸ S⟩)]
       else throw ⟨p, s!"check: the sides have types {s} ⟶ {t} and {s'} ⟶ {t'}"⟩
-  pure (env, ds, pr, cs, os, xs)
+  pure (env, ds, pr, cs, os, xs, ex)
 
 /-- What the program `own` declares, `prog`, read after the programs of `chain`, each with its constant, root
     first: the prelude, then the programs between (whose own prints and checks are not `prog`'s); a program with
@@ -263,8 +275,8 @@ def read (calls : Lean.Name → Bool) (chain : List (Lean.Name × Program)) (pro
     env := (← (walk rp {} preludeDef r calls false).mapError Err.inPrelude).1
     wrap := keep
     for (m, mp) in mid do env := (← walk mp env keep m calls false).1
-  let (e, ds, ps, cs, os, xs) ← walk prog env wrap own calls true
-  pure (ds, ps, cs, e.objs, os, xs)
+  let (e, ds, ps, cs, os, xs, ex) ← walk prog env wrap own calls true
+  pure (ds, ps, cs, e.objs, os, xs, ex)
 
 /-! ### The core term as an `Expr` -/
 
@@ -680,7 +692,7 @@ def objsE (objs : Objs) : MetaM Lean.Expr := do
     (each `print`'s line and ok bit), `n.prints` (the lines), `n.failures` (`failures`: each `check` that does not
     hold, and an op out of capacity) and `n.ok`, that there is none. -/
 def emit (n : Name) (r : Read) : MetaM Unit := do
-  let (ds, ps, cs, objs, os, xs) := r
+  let (ds, ps, cs, objs, os, xs, ex) := r
   -- one numbering over the whole program, as the code of each number is kept across it
   let ((ds, ps, cs), fs) := Prod.fst <| (do
     let fs ← os.mapM fun (x, nv, qs, ⟨A, B, d, t⟩) => return (x, nv, qs, (⟨A, B, d, ← number t⟩ : Res))
@@ -738,6 +750,9 @@ def emit (n : Name) (r : Read) : MetaM Unit := do
     mkApp4 (mkConst ``Prod.mk [0, 0]) (mkConst ``String) (mkConst ``String) (toExpr x) (toExpr c)))
   -- the parametric definitions not elaborated once, each with the reason (`walk`)
   addConst (n ++ `notOnce) (listT sty) (← mkListLit sty (xs.map fun (x, c) =>
+    mkApp4 (mkConst ``Prod.mk [0, 0]) (mkConst ``String) (mkConst ``String) (toExpr x) (toExpr c)))
+  -- the uses of a constant that expand its body instead (`callDef`); `n.expanded` is taken by the definitions
+  addConst (n ++ `notCalled) (listT sty) (← mkListLit sty (ex.map fun (x, c) =>
     mkApp4 (mkConst ``Prod.mk [0, 0]) (mkConst ``String) (mkConst ``String) (toExpr x) (toExpr c)))
   let ety := pairT (mkConst ``String) (mkConst ``Gen.Gv)
   addConst (n ++ `expanded) (listT ety) (← mkListLit ety entries)

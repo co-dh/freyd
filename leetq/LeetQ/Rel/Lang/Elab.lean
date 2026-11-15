@@ -280,6 +280,9 @@ structure St where
   ms : Array (Option OTy) := #[]
   /-- The fixed points so far: the next one's variable. -/
   fixes : Nat := 0
+  /-- The uses of a definition's constant that expand its body instead (decision M, until step 5): the constant
+      and where and why. -/
+  expanded : List (String × String) := []
 
 abbrev M := StateT St (Except Err)
 
