@@ -110,15 +110,37 @@ abbrev Res := (A : Obj) × (B : Obj) × (d : Bool) × Tm A B d
 
 /-! ### Objects as the program names them -/
 
+/-- The declared object `n` as Lean's unifier sees it: one constant per name, so `isDefEq` tells `X` from `N` though
+    both are stored as `.long` (F6); irreducible, so the unifier never reads a name as its storage. -/
+@[irreducible] def _root_.LeetQ.Rel.Obj.named (_ : String) : Obj := .long
+
 /-- An object up to its declared names: `X` and `N` are both `long` and still different objects. `𝒫A` and
-    `[A]` are both `arr`. `mv` is an object variable of the inference. -/
+    `[A]` are both `arr`. `mv` is an object variable of the inference, a Lean metavariable of type `Obj`. -/
 inductive OTy
   | base (n : String)
   | prod (a b : OTy)
   | sum (a b : OTy)
   | arr (a : OTy)
-  | mv (k : Nat)
-  deriving Repr, BEq, Inhabited
+  | mv (m : Lean.MVarId)
+  deriving BEq, Inhabited
+
+/-- `o` as an `Obj` term: a declared object its constant `Obj.named`, a variable its metavariable. -/
+def OTy.toExpr : OTy → Lean.Expr
+  | .base n => .app (.const ``Obj.named []) (Lean.mkStrLit n)
+  | .prod a b => Lean.mkApp2 (.const ``Obj.prod []) a.toExpr b.toExpr
+  | .sum a b => Lean.mkApp2 (.const ``Obj.sum []) a.toExpr b.toExpr
+  | .arr a => .app (.const ``Obj.arr []) a.toExpr
+  | .mv m => .mvar m
+
+/-- An `Obj` term read back: the unifier only assigns `toExpr`'s forms to the variables, so no other form occurs;
+    one would print as itself. -/
+def OTy.ofExpr : Lean.Expr → OTy
+  | .app (.const ``Obj.named _) (.lit (.strVal n)) => .base n
+  | .app (.app (.const ``Obj.prod _) a) b => .prod (ofExpr a) (ofExpr b)
+  | .app (.app (.const ``Obj.sum _) a) b => .sum (ofExpr a) (ofExpr b)
+  | .app (.const ``Obj.arr _) a => .arr (ofExpr a)
+  | .mvar m => .mv m
+  | e => .base s!"{e}"
 
 def OTy.exp : OTy → OExp
   | .base n => .name {} n
@@ -126,7 +148,7 @@ def OTy.exp : OTy → OExp
   | .sum a b => .sum a.exp b.exp
   -- `𝒫A` and `[A]` are one object, an array; printed as the array the interpreter holds
   | .arr a => .list a.exp
-  | .mv k => .var {} s!"?{k}"
+  | .mv m => .var {} (match m.name with | .num _ k => s!"?{k}" | n => s!"?{n}")
 
 instance : ToString OTy := ⟨(·.exp.show)⟩
 
@@ -316,7 +338,6 @@ abbrev Sig := Lean.Name × Bool × List (Bool × Bool) × Option (Lean.Name × B
 abbrev Once := Lean.Name × Lean.Name × List Bool × List (Obj × Obj × Bool) × Res × Bool
 
 structure St where
-  ms : Array (Option OTy) := #[]
   /-- The fixed points so far: the next one's variable. -/
   fixes : Nat := 0
   /-- The constants built so far at the forms the program's calls take, in the order `emit` adds them. -/
@@ -325,51 +346,37 @@ structure St where
       own scope does not hold the caller's objects nor the universes of its object variables. -/
   objs : Objs := []
 
-abbrev M := StateT St (Except Err)
+/-- Elaboration outside a term: the program's error, over Lean's metavariables. -/
+abbrev EM := ExceptT Err Lean.Meta.MetaM
 
-def fresh : M OTy := modifyGet fun s => (.mv s.ms.size, { s with ms := s.ms.push none })
+/-- The elaborator: its object variables are Lean's metavariables, solved by Lean's unifier (`unify`). -/
+abbrev M := StateT St EM
 
-/-- `o` with every solved variable replaced; `fuel` bounds the chain, which the occurs check keeps acyclic. -/
-def zonkF (s : St) : Nat → OTy → OTy
-  | 0, o => o
-  | f + 1, .mv k => match s.ms[k]? with | some (some o) => zonkF s f o | _ => .mv k
-  | f + 1, .prod a b => .prod (zonkF s (f + 1) a) (zonkF s (f + 1) b)
-  | f + 1, .sum a b => .sum (zonkF s (f + 1) a) (zonkF s (f + 1) b)
-  | f + 1, .arr a => .arr (zonkF s (f + 1) a)
-  | _, o => o
-termination_by f o => (f, sizeOf o)
+-- `throw`, `try … catch` here are the program's `Err`, not the `Exception` of the `MetaM` under it
+instance (priority := high) : MonadExcept Err EM := { throw := throwThe Err, tryCatch := tryCatchThe Err }
+instance (priority := high) : MonadExcept Err M := { throw := throwThe Err, tryCatch := tryCatchThe Err }
 
-def zonk (s : St) (o : OTy) : OTy := zonkF s (s.ms.size + 1) o
+def fresh : M OTy := do
+  let m ← Lean.mkFreshMVarId
+  discard <| Lean.Meta.mkFreshExprMVarWithId m (some (.const ``Obj []))
+  pure (.mv m)
 
-def OTy.size : OTy → Nat
-  | .prod a b | .sum a b => a.size + b.size + 1
-  | .arr a => a.size + 1
-  | _ => 1
+/-- `o` with every solved variable replaced, as the metavariable context `mc` has them. -/
+def zonk (mc : Lean.MetavarContext) (o : OTy) : OTy := .ofExpr (Lean.instantiateMVarsCore mc o.toExpr).1
 
-def occurs (k : Nat) : OTy → Bool
-  | .mv j => j == k
-  | .prod a b | .sum a b => occurs k a || occurs k b
-  | .arr a => occurs k a
-  | .base _ => false
+/-- `x` and `y` made one object by Lean's unifier, which leaves the variables as they were when it fails. -/
+def defEq (x y : OTy) : M Bool := Lean.Meta.isDefEq x.toExpr y.toExpr
 
 /-- Unify `x` (found) with `y` (expected); the error names both as the program wrote them. -/
 def unify (p : Pos) (what : String) (x y : OTy) : M Unit := do
-  let s ← get
-  let fx := zonk s x; let fy := zonk s y
-  let rec go : Nat → OTy → OTy → M Unit
-    | 0, _, _ => throw ⟨p, s!"{what}: the objects are too deep to compare"⟩
-    | f + 1, a, b => do
-      let s ← get
-      match zonk s a, zonk s b with
-      | .mv i, .mv j => if i == j then pure () else set { s with ms := s.ms.set! i (some (.mv j)) }
-      | .mv i, t | t, .mv i =>
-        if occurs i t then throw ⟨p, s!"{what}: found {fx}, expected {fy}: an object containing itself"⟩
-        else set { s with ms := s.ms.set! i (some t) }
-      | .base m, .base n => if m == n then pure () else throw ⟨p, s!"{what}: found {fx}, expected {fy}"⟩
-      | .prod a b, .prod c d | .sum a b, .sum c d => do go f a c; go f b d
-      | .arr a, .arr c => go f a c
-      | _, _ => throw ⟨p, s!"{what}: found {fx}, expected {fy}"⟩
-  go (s.ms.size + fx.size + fy.size + 1) fx fy
+  unless ← defEq x y do
+    let mc ← Lean.getMCtx
+    throw ⟨p, s!"{what}: found {zonk mc x}, expected {zonk mc y}"⟩
+
+/-- Where a match that fails part way goes back to: the elaborator's state and Lean's metavariables. -/
+def save : M (St × Lean.Meta.SavedState) := return (← get, ← Lean.Meta.saveState)
+
+def restore (s : St × Lean.Meta.SavedState) : M Unit := do set s.1; s.2.restore
 
 /-- The source of each `nil` in `x`, a definition's body at its use included. -/
 def Pre.nilSrcs : Pre → List OTy
@@ -387,7 +394,7 @@ def Pre.nilSrcs : Pre → List OTy
     `nil : 1 ⟶ [A]`, `one` the object `1` in scope (`Env.one`). A fold's seed `ran(nil)` drops that source, so only
     this rule gives it (§e). -/
 def settleNil (one : OTy) (p : Pos) (x : Pre) : M Unit := x.nilSrcs.forM fun a => do
-  if let .mv _ := zonk (← get) a then unify p "nil's source" a one
+  if let .mv _ := zonk (← Lean.getMCtx) a then unify p "nil's source" a one
 
 /-! ### Fixed points: where the variable occurs -/
 
@@ -860,8 +867,8 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
     if m.isSome then notLiftable p "refold( )"
     let (qc, a, t) := (← elabE env none c).plain; let (qs, s', b) := (← elabE env none s).plain
     let k ← modifyGet fun st => (st.fixes, { st with fixes := st.fixes + 1 })
-    let st ← get
-    let (gx, gb, mem) ← refoldG p k (zonk st a) (zonk st b) (zonk st t) (zonk st s')
+    let mc ← Lean.getMCtx
+    let (gx, gb, mem) ← refoldG p k (zonk mc a) (zonk mc b) (zonk mc t) (zonk mc s')
     unify p "the source of refold's algebra S, G(B)" s' gb
     pure (.rel (.refold p k ((mem.map (.comp qc)).getD (.zero a a)) (.comp (.comp qc gx) qs) a b) a b)
   | .op p o objs args => do
@@ -997,8 +1004,7 @@ inductive Match
 /-- `t` as `mk a b`, an unsolved variable solved to that form; none when `t` is another object. -/
 def split (p : Pos) (mk : OTy → OTy → OTy) (t : OTy) : M (Option (OTy × OTy)) := do
   let a ← fresh; let b ← fresh
-  let st ← get
-  try unify p "" t (mk a b); let s ← get; pure (some (zonk s a, zonk s b)) catch _ => do set st; pure none
+  if ← defEq t (mk a b) then let mc ← Lean.getMCtx; pure (some (zonk mc a, zonk mc b)) else pure none
 
 def Match.bind (r : Match) (k : List (String × OTy) → M Match) : M Match :=
   match r with | .ok vs => k vs | r => pure r
@@ -1009,8 +1015,7 @@ def pmatch (env : Env) (p : Pos) (vs : List (String × OTy)) : OExp → OTy → 
   | .var _ n, t => match vs.lookup n with
     | none => pure (.ok ((n, t) :: vs))
     | some o => do
-      let st ← get
-      try unify p "" t o; pure (.ok vs) catch _ => do set st; pure (.clash n (zonk st o) (zonk st t))
+      if ← defEq t o then pure (.ok vs) else let mc ← Lean.getMCtx; pure (.clash n (zonk mc o) (zonk mc t))
   | .prod x y, t => do match ← split p .prod t with
     | some (a, b) => (← pmatch env p vs x a).bind (pmatch env p · y b)
     | none => pure .no
@@ -1022,8 +1027,7 @@ def pmatch (env : Env) (p : Pos) (vs : List (String × OTy)) : OExp → OTy → 
     | none => pure .no
   | o@(.name ..), t => do
     let O ← oty env [] o
-    let st ← get
-    try unify p "" t O; pure (.ok vs) catch _ => do set st; pure .no
+    pure (if ← defEq t O then .ok vs else .no)
 
 /-- `x ⟶ y` matched against `s ⟶ t`. -/
 def both (env : Env) (p : Pos) (vs : List (String × OTy)) (x y : OExp) (s t : OTy) : M Match := do
@@ -1038,7 +1042,7 @@ def bind (env : Env) (p : Pos) (P : Param) (a : Arg) (vs : List (String × OTy))
   | none, .fam .. =>
     throw ⟨p, s!"parameter '{P.name}' is given a family but declares no type; write '{P.name} : A ⟶ B'"⟩
   | some (x, y), a => do
-    let st ← get
+    let sv ← save; let mc := sv.2.meta.mctx
     let decl := s!"'{P.name} : {x.show} ⟶ {y.show}'"
     let clash (r : Match) (s t : OTy) : M Unit := match r with
       | .clash n o o' => throw ⟨p, s!"`{n}` in the type of '{P.name}' is both {o} and {o'}: {decl} given {s} ⟶ {t}"⟩
@@ -1047,18 +1051,18 @@ def bind (env : Env) (p : Pos) (P : Param) (a : Arg) (vs : List (String × OTy))
     | .fam q i s t =>
       match ← both env p vs x y s t with
       | .ok vs => pure ((P.name, .fam q i (← oty env vs x) (← oty env vs y)), some i, vs)
-      | r => do set st; clash r (zonk st s) (zonk st t); throw ⟨p, s!"{decl} given a family of fibre {zonk st s} ⟶ {zonk st t}"⟩
+      | r => do restore sv; clash r (zonk mc s) (zonk mc t); throw ⟨p, s!"{decl} given a family of fibre {zonk mc s} ⟶ {zonk mc t}"⟩
     | .rel q s t =>
       -- one relation `A ⟶ B` first; failing that, a family `I ⟶ A×B` (§e)
       let r ← both env p vs x y s t
       if let .ok vs := r then return ((P.name, a), none, vs)
-      set st
+      restore sv
       let r' ← match ← split p .prod t with
         | some (u, v) => both env p vs x y u v
         | none => pure .no
       if let .ok vs := r' then return ((P.name, .fam q s (← oty env vs x) (← oty env vs y)), some s, vs)
-      set st
-      let s := zonk st s; let t := zonk st t
+      restore sv
+      let s := zonk mc s; let t := zonk mc t
       clash r s t; clash r' s t
       throw ⟨p, s!"{decl} given {s} ⟶ {t}: neither {x.show} ⟶ {y.show} nor a family I ⟶ {x.render true}×{y.render true}"⟩
 
@@ -1075,7 +1079,7 @@ where
 
 /-! ### Declared types -/
 
-def OTy.mvs : OTy → List Nat
+def OTy.mvs : OTy → List Lean.MVarId
   | .mv k => [k]
   | .prod a b | .sum a b => a.mvs ++ b.mvs
   | .arr a => a.mvs
@@ -1110,12 +1114,12 @@ def declared (env : Env) (p : Pos) (n : String) (vs : List (String × OTy)) (ty 
   let vs ← (ty.1.vars ++ ty.2.vars).foldlM (fun vs v => do
     if (vs.lookup v).isSome then pure vs else pure ((v, ← fresh) :: vs)) vs
   let a ← oty env vs ty.1; let b ← oty env vs ty.2
-  let st ← get
+  let mc ← Lean.getMCtx
   try
     unify p "" s a
     unify p "" t b
   catch _ => do
-    let s := zonk st s; let t := zonk st t
+    let s := zonk mc s; let t := zonk mc t
     throw ⟨p, s!"`{n}` is declared {OExp.arrow ty}, but its body is {gen [s, t] s} ⟶ {gen [s, t] t}"⟩
 
 /-- The parameters `ps` with their objects, each declared one's object variables rigid and an undeclared type
@@ -1136,12 +1140,12 @@ def inferSig (env : Env) (n : String) (ps : List Param) (b : Body) : M String :=
   let r ← match b with
     | .rel e => do let (_, s, t) := (← elabE env' none e).plain; pure (some (s, t))
     | .test e f => do let _ ← elabE env' none e; let _ ← elabE env' none f; pure none
-  let st ← get
+  let mc ← Lean.getMCtx
   let os := (bs.flatMap fun (_, s, t) => [s, t]) ++ (match r with | some (s, t) => [s, t] | none => [])
-  let os := os.map (zonk st)
+  let os := os.map (zonk mc)
   -- a variable is not a name in scope (§e), nor the one being defined
   let avoid := n :: env.defs.map (·.1)
-  let arr (s t : OTy) := s!"{gen os (zonk st s) avoid} ⟶ {gen os (zonk st t) avoid}"
+  let arr (s t : OTy) := s!"{gen os (zonk mc s) avoid} ⟶ {gen os (zonk mc t) avoid}"
   pure (sigText n ((ps.zip bs).map fun (P, q, s, t) => (q, some ((P.ty.map OExp.arrow).getD (arr s t))))
     (r.map fun (s, t) => arr s t))
 
@@ -1168,8 +1172,7 @@ def mkDef (env : Env) (n : String) (dp : Pos) (ps : List Param) (body : Body) (t
         let mut k? : Option Nat := none
         for (i, k) in ix.toList.zipIdx do
           if k?.isNone then
-            let st ← get
-            try unify p "" j i; k? := some k catch _ => set st
+            if ← defEq j i then k? := some k
         match k? with
         | some k => pl := pl ++ [some k]
         | none => pl := pl ++ [some ix.size]; ix := ix.push j
@@ -1345,7 +1348,7 @@ def divTest {A B C : Obj} {e : Bool} (c : Tm (.prod A C) (.prod A C) true) (s : 
 
 section Build
 
-variable (objs : Objs) (st : St) (dp : Pos)
+variable (objs : Objs) (mc : Lean.MetavarContext) (dp : Pos)
 
 /-- A solved object's `Obj`: every declared base object is `long`, an object variable as `ObjInfo.obj` stores it. -/
 def objOf : OTy → Except Err Obj
@@ -1355,7 +1358,7 @@ def objOf : OTy → Except Err Obj
   | .arr a => return .arr (← objOf a)
   | .mv _ => throw ⟨dp, "an object is not determined; write the constant's objects, as in ⊤(A,B) or 𝟙(A)"⟩
 
-def toObj (o : OTy) : Except Err Obj := objOf objs dp (zonk st o)
+def toObj (o : OTy) : Except Err Obj := objOf objs dp (zonk mc o)
 
 def internal {α : Type} (what : String) : Except Err α := throw ⟨dp, s!"internal: {what}"⟩
 
@@ -1386,14 +1389,14 @@ def uniPart (o : OTy) (A : Obj) : Except Err (Option (Tm A A false)) := do
 
 /-- `uniPart`, or the error naming the whole object `o` that has no universe. -/
 def uniTm (p : Pos) (o : OTy) (A : Obj) (what : String) : Except Err (Tm A A false) := do
-  match ← uniPart objs dp (zonk st o) A with
+  match ← uniPart objs dp (zonk mc o) A with
   | some t => pure t
-  | none => throw ⟨p, s!"{what}: {zonk st o} has no universe; compose a set of its elements before it (§a)"⟩
+  | none => throw ⟨p, s!"{what}: {zonk mc o} has no universe; compose a set of its elements before it (§a)"⟩
 
 /-- The universe of a number object, for `succ`, the value verbs (`plus`, …), `≤`, `<`: a declared object's,
     or the one a constant is given for an object variable. -/
 def numU (p : Pos) (o : OTy) (op : String) : Except Err (Tm .long .long false) :=
-  match zonk st o with
+  match zonk mc o with
   | .base n => match objs.lookup n with
     | some { uni := some ⟨_, U⟩, .. } => pure (.uni (A := .long) U)
     | some { uniVar := some k, obj := .atom .long, .. } => pure (.var k)
@@ -1403,7 +1406,7 @@ def numU (p : Pos) (o : OTy) (op : String) : Except Err (Tm .long .long false) :
 
 /-- The element `w` of the declared base object `o`: its position among the named elements, or the number. -/
 def code (p : Pos) (o : OTy) (w : String) : Except Err Int64 :=
-  match zonk st o with
+  match zonk mc o with
   | .base n => match objs.lookup n with
     | some i => match i.range, i.elems.idxOf? w, w.toInt? with
       | some (lo, hi), _, some k => if lo ≤ k ∧ k ≤ hi then pure (Int64.ofInt k)
@@ -1443,7 +1446,7 @@ def litCol (p : Pos) (n : USize) (o : OTy) (rows : List Tup) : Except Err ((A : 
     else throw ⟨p, s!"a literal relates elements of declared objects, found {o}"⟩
   | o => do
     let cs ← rows.mapM fun
-      | .leaf w => code objs st p o w
+      | .leaf w => code objs mc p o w
       | r => throw ⟨p, s!"a literal's element of {o} is a word, found {r.show}"⟩
     if h : cs.length.toUSize = n then (let c : Arr .long n := h ▸ col cs; pure ⟨.long, c⟩) else internal dp "literal rows"
 
@@ -1454,7 +1457,7 @@ def corAt (A B : Obj) : Cor → Except Err (Tm (.prod A B) (.prod A B) true)
 /-- A built term read whole: closed as it is, or on demand run on the universe of its source `a`. -/
 def closeRes (p : Pos) (a : OTy) (why : String) : Res → Except Err Res
   | ⟨A, B, false, t⟩ => pure ⟨A, B, false, t⟩
-  | ⟨A, B, true, t⟩ => return ⟨A, B, false, .comp (← uniTm objs st dp p a A why) t⟩
+  | ⟨A, B, true, t⟩ => return ⟨A, B, false, .comp (← uniTm objs mc dp p a A why) t⟩
 
 /-- The pair test of an order parameter at its object `B`,or the error naming the leaf that is not testable. -/
 def paramOf (why : String) : Except Err Cor → Except Err ((B : Obj) × Tm (.prod B B) (.prod B B) true)
@@ -1468,19 +1471,19 @@ mutual
     universes, whose absence is the error of §a. -/
 def build : Pre → Except Err Res
   | .tm r => pure r
-  | .zero a b => return ⟨← toObj objs st dp a, ← toObj objs st dp b, false, .zero⟩
-  | .id a => return ⟨_, _, true, .id (A := ← toObj objs st dp a)⟩
+  | .zero a b => return ⟨← toObj objs mc dp a, ← toObj objs mc dp b, false, .zero⟩
+  | .id a => return ⟨_, _, true, .id (A := ← toObj objs mc dp a)⟩
   | .top p a b tgt => do
-    let A ← toObj objs st dp a; let B ← toObj objs st dp b
+    let A ← toObj objs mc dp a; let B ← toObj objs mc dp b
     let V ← match tgt with
-      | none => uniTm objs st dp p b B "⊤'s target"
+      | none => uniTm objs mc dp p b B "⊤'s target"
       | some q => do closed? dp (← build q)
     pure ⟨A, B, true, .top V⟩
-  | .mem b => return ⟨_, _, true, .mem (B := ← toObj objs st dp b)⟩
-  | .outl a b => return ⟨_, _, true, .outl (A := ← toObj objs st dp a) (B := ← toObj objs st dp b)⟩
-  | .outr a b => return ⟨_, _, true, .outr (A := ← toObj objs st dp a) (B := ← toObj objs st dp b)⟩
-  | .inl a b => return ⟨_, _, true, .inl (A := ← toObj objs st dp a) (B := ← toObj objs st dp b)⟩
-  | .inr a b => return ⟨_, _, true, .inr (A := ← toObj objs st dp a) (B := ← toObj objs st dp b)⟩
+  | .mem b => return ⟨_, _, true, .mem (B := ← toObj objs mc dp b)⟩
+  | .outl a b => return ⟨_, _, true, .outl (A := ← toObj objs mc dp a) (B := ← toObj objs mc dp b)⟩
+  | .outr a b => return ⟨_, _, true, .outr (A := ← toObj objs mc dp a) (B := ← toObj objs mc dp b)⟩
+  | .inl a b => return ⟨_, _, true, .inl (A := ← toObj objs mc dp a) (B := ← toObj objs mc dp b)⟩
+  | .inr a b => return ⟨_, _, true, .inr (A := ← toObj objs mc dp a) (B := ← toObj objs mc dp b)⟩
   | .comp p q => do
     let ⟨A, B, d, t⟩ ← build p; let ⟨B', C, _, u⟩ ← build q
     if h : B' = B then pure ⟨A, C, d, .comp t (h ▸ u)⟩ else internal dp "composition objects disagree"
@@ -1492,7 +1495,7 @@ def build : Pre → Except Err Res
     match convTm t with
     | .ok ⟨e, u⟩ => pure ⟨B, A, e, u⟩
     | .error leaf => do
-      let U ← uniTm objs st dp pos a A s!"the converse of {leaf} does not run on demand, so R° reads R whole"
+      let U ← uniTm objs mc dp pos a A s!"the converse of {leaf} does not run on demand, so R° reads R whole"
       pure ⟨B, A, false, .conv (.comp U t)⟩
   | .conv p => do let r ← build p; let ⟨A, B, _, _⟩ := r; pure ⟨B, A, false, .conv (← closed? dp (A := A) (B := B) r)⟩
   -- a side that cannot run is tested on the pairs the other side gives (`test`)
@@ -1517,11 +1520,11 @@ def build : Pre → Except Err Res
   | .ldiv pos p q b c => do
     let r ← build p; let s ← build q; let ⟨A, B, _, _⟩ := r; let ⟨_, C, _, _⟩ := s
     let R ← closed? dp (A := A) (B := B) r; let S ← closed? dp (A := A) (B := C) s
-    pure ⟨B, C, false, .ldiv R S (← uniTm objs st dp pos b B "R\\S") (← uniTm objs st dp pos c C "R\\S")⟩
+    pure ⟨B, C, false, .ldiv R S (← uniTm objs mc dp pos b B "R\\S") (← uniTm objs mc dp pos c C "R\\S")⟩
   | .rdiv pos p q a b => do
     let r ← build p; let s ← build q; let ⟨A, C, _, _⟩ := r; let ⟨B, _, _, _⟩ := s
     let R ← closed? dp (A := A) (B := C) r; let S ← closed? dp (A := B) (B := C) s
-    pure ⟨A, B, false, .rdiv R S (← uniTm objs st dp pos a A "R/S") (← uniTm objs st dp pos b B "R/S")⟩
+    pure ⟨A, B, false, .rdiv R S (← uniTm objs mc dp pos a A "R/S") (← uniTm objs mc dp pos b B "R/S")⟩
   | .pair p q => do
     let ⟨A, _, _, t⟩ ← build p; let s ← build q; let ⟨_, C, _, _⟩ := s
     let ⟨_, u⟩ ← at? dp (A := A) (B := C) s; pure ⟨A, _, _, .pair t u⟩
@@ -1561,24 +1564,24 @@ def build : Pre → Except Err Res
     if h : B = A then pure ⟨_, _, _, .takewhile (h ▸ t)⟩ else internal dp "takewhile's predicate is not on one object"
   | .est p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .est c⟩
   | .thin p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .thin c⟩
-  | .nil a b => return ⟨_, _, true, .nil (A := ← toObj objs st dp a) (B := ← toObj objs st dp b)⟩
+  | .nil a b => return ⟨_, _, true, .nil (A := ← toObj objs mc dp a) (B := ← toObj objs mc dp b)⟩
   | .prim r s t => do
-    let A ← toObj objs st dp s; let B ← toObj objs st dp t
+    let A ← toObj objs mc dp s; let B ← toObj objs mc dp t
     if r.fits A B then pure ⟨A, B, true, .prim r⟩ else internal dp s!"{r.sym}'s objects"
   | .own p => do
     let ⟨A, B, d, t⟩ ← build p
     if h : B = A then pure ⟨A, A, d, .own (h ▸ t)⟩ else internal dp "perm's objects"
-  | .atPos k b => return ⟨_, _, true, .atPos k (B := ← toObj objs st dp b)⟩
+  | .atPos k b => return ⟨_, _, true, .atPos k (B := ← toObj objs mc dp b)⟩
   | .thinL p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .thinL c⟩
   | .merge p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .merge c⟩
   | .loop p => do
     match ← build p with
     | r@⟨.prod X Y, _, _, _⟩ => do let ⟨_, F⟩ ← at? dp (A := .prod X Y) (B := X) r; pure ⟨_, _, true, .loop F⟩
     | _ => internal dp "loop's argument"
-  | .succ p n => return ⟨_, _, true, .succ (← numU objs st p n "succ")⟩
-  | .arith p k n => return ⟨_, _, true, .arith k (← numU objs st p n (Op.arith k).sym)⟩
-  | .leq p n => return ⟨_, _, false, .leq (← numU objs st p n "≤")⟩
-  | .lt p n => return ⟨_, _, false, .lt (← numU objs st p n "<")⟩
+  | .succ p n => return ⟨_, _, true, .succ (← numU objs mc p n "succ")⟩
+  | .arith p k n => return ⟨_, _, true, .arith k (← numU objs mc p n (Op.arith k).sym)⟩
+  | .leq p n => return ⟨_, _, false, .leq (← numU objs mc p n "≤")⟩
+  | .lt p n => return ⟨_, _, false, .lt (← numU objs mc p n "<")⟩
   | .fold e s => do
     let r ← build e; let ⟨V, _, _, _⟩ := r
     match ← build s with
@@ -1602,18 +1605,18 @@ def build : Pre → Except Err Res
     | _ => internal dp "a family's objects"
   | .lit p a b ps =>
     needSize ps.length "literal rows" (fun _ => internal dp "literal rows") fun n => do
-    let ⟨A, k⟩ ← litCol objs st dp p n (zonk st a) (ps.map (·.1))
-    let ⟨B, v⟩ ← litCol objs st dp p n (zonk st b) (ps.map (·.2))
+    let ⟨A, k⟩ ← litCol objs mc dp p n (zonk mc a) (ps.map (·.1))
+    let ⟨B, v⟩ ← litCol objs mc dp p n (zonk mc b) (ps.map (·.2))
     pure ⟨A, B, false, .val ⟨n, k, v⟩⟩
-  | .close p q a why => do closeRes objs st dp p a why (← build q)
+  | .close p q a why => do closeRes objs mc dp p a why (← build q)
   -- the children and the body run on the nodes in demand, no universe read
   | .refold p k ch q a b => do
-    let A ← toObj objs st dp a; let B ← toObj objs st dp b
+    let A ← toObj objs mc dp a; let B ← toObj objs mc dp b
     let ⟨_, c⟩ ← at? dp (A := A) (B := A) (← build ch)
     let ⟨_, t⟩ ← at? dp (A := A) (B := B) (← build q)
     pure ⟨A, B, true, .refold k s!"the refold at {p}" c t⟩
-  | .var _ k a b none => return ⟨← toObj objs st dp a, ← toObj objs st dp b, false, .var k⟩
-  | .var _ k a b (some false) => return ⟨← toObj objs st dp a, ← toObj objs st dp b, true, .var k⟩
+  | .var _ k a b none => return ⟨← toObj objs mc dp a, ← toObj objs mc dp b, false, .var k⟩
+  | .var _ k a b (some false) => return ⟨← toObj objs mc dp a, ← toObj objs mc dp b, true, .var k⟩
   -- a parameter given a pair test runs nowhere; `test` reads it
   | .var pos _ _ _ (some true) =>
     throw ⟨pos, "this parameter is tested on the pairs it compares, not run: its argument is a pair test (§a)"⟩
@@ -1621,24 +1624,24 @@ def build : Pre → Except Err Res
   | .call pos c _ _ _ _ _ _ _ _ true =>
     throw ⟨pos, s!"`{c}` is tested on the pairs it compares, not run: its constant is its pair test (§a)"⟩
   | .call pos c us xs ts _ a b d cv false => do
-    let A ← toObj objs st dp a; let B ← toObj objs st dp b
-    let os ← (us.filter (·.2.1)).mapM fun (u, _) => toObj objs st dp u
+    let A ← toObj objs mc dp a; let B ← toObj objs mc dp b
+    let os ← (us.filter (·.2.1)).mapM fun (u, _) => toObj objs mc dp u
     pure ⟨A, B, d, ← callArgs pos c us xs ts (Tm.call (A := A) (B := B) d c os cv)⟩
   -- the body read whole each round, on its source's universe when it needs keys
   | .fix p least k S q a b => do
-    let A ← toObj objs st dp a; let B ← toObj objs st dp b
+    let A ← toObj objs mc dp a; let B ← toObj objs mc dp b
     let why := s!"{if least then "μ" else "ν"}'s body is read whole each round"
-    let body ← closed? dp (A := A) (B := B) (← closeRes objs st dp p a why (← build q))
+    let body ← closed? dp (A := A) (B := B) (← closeRes objs mc dp p a why (← build q))
     if least then
       -- a chain from `𝟘` on universes of `n` and `m` elements stops within `n·m+1` rounds, so their `cap` never
       -- fails a monotonic body; an array object has no such bound, and `muCap` only guards termination
-      let cap := match uniSize objs (zonk st a), uniSize objs (zonk st b) with
+      let cap := match uniSize objs (zonk mc a), uniSize objs (zonk mc b) with
         | some n, some m => max muCap (n * m + 2)
         | _, _ => muCap
       pure ⟨A, B, false, .mu k s!"the μ at {p}" cap body⟩
     else match S with
       | some s => do
-        let s ← closed? dp (A := A) (B := B) (← closeRes objs st dp p a why (← build s))
+        let s ← closed? dp (A := A) (B := B) (← closeRes objs mc dp p a why (← build s))
         pure ⟨A, B, false, .nu k s body⟩
       | none => internal dp "ν without its bound"
 termination_by x => (sizeOf x, 0)
@@ -1649,10 +1652,10 @@ termination_by x => (sizeOf x, 0)
 def callArgs (pos : Pos) (c : Lean.Name) (us : List (OTy × Bool × Bool)) (xs : List Pre) (ts : List Bool) {A B : Obj}
     {d : Bool} (f : Tm A B d) : Except Err (Tm A B d) := do
   let f ← us.foldlM (init := f) fun f (u, gen, reads) => do
-    let U ← toObj objs st dp u
+    let U ← toObj objs mc dp u
     unless gen || U == .long do
-      throw ⟨pos, s!"`{c}`: an object variable is {zonk st u} here; its constant is not generic over it, a number object"⟩
-    if reads then return .arg f (← uniTm objs st dp pos u U s!"`{c}`") else pure f
+      throw ⟨pos, s!"`{c}`: an object variable is {zonk mc u} here; its constant is not generic over it, a number object"⟩
+    if reads then return .arg f (← uniTm objs mc dp pos u U s!"`{c}`") else pure f
   xs.attach.zipIdx.foldlM (init := f) fun f (⟨x, h⟩, i) => do
     have : sizeOf x < sizeOf xs := List.sizeOf_lt_of_mem h
     if ts.getD i false then let ⟨_, _, t⟩ ← test x; return .arg f t
@@ -1669,13 +1672,13 @@ def test (p : Pre) : Except Err Cor :=
     | .close _ q _ _ => test q
     -- a constant that is a pair test, `τ(c(…)) : A×B ⟶ A×B` (`once`)
     -- a parameter given a pair test (`Form`)
-    | .var _ k a b (some true) => do pure ⟨← toObj objs st dp a, ← toObj objs st dp b, .var k⟩
+    | .var _ k a b (some true) => do pure ⟨← toObj objs mc dp a, ← toObj objs mc dp b, .var k⟩
     | .call pos c us xs ts _ a b _ _ true => do
-      let A ← toObj objs st dp a; let B ← toObj objs st dp b
-      let os ← (us.filter (·.2.1)).mapM fun (u, _) => toObj objs st dp u
+      let A ← toObj objs mc dp a; let B ← toObj objs mc dp b
+      let os ← (us.filter (·.2.1)).mapM fun (u, _) => toObj objs mc dp u
       pure ⟨A, B, ← callArgs pos c us xs ts (Tm.call (A := .prod A B) (B := .prod A B) true c os none)⟩
     | .conv q => do let ⟨A, B, c⟩ ← test q; pure ⟨B, A, .comp swapTm (.comp c swapTm)⟩
-    | .top _ a b none => do pure ⟨← toObj objs st dp a, ← toObj objs st dp b, .id⟩
+    | .top _ a b none => do pure ⟨← toObj objs mc dp a, ← toObj objs mc dp b, .id⟩
     | .meet q r => do let c ← test q; let ⟨A, B, c₁⟩ := c; pure ⟨A, B, .meet c₁ (← corAt dp A B (← test r))⟩
     | .join q r => do let c ← test q; let ⟨A, B, c₁⟩ := c; pure ⟨A, B, .join c₁ (← corAt dp A B (← test r))⟩
     | .diff q r => do let c ← test q; let ⟨A, B, c₁⟩ := c; pure ⟨A, B, .diff c₁ (← corAt dp A B (← test r))⟩
