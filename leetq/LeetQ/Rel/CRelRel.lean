@@ -124,18 +124,37 @@ theorem rep_pairC (R : Rel A B) (S : Rel A C) (hb : (pairC R S).2 = true) :
   obtain ⟨hrn, hM, hA, hB, hC⟩ := h _ rfl
   exact rep_pair R S (codes_faithful_wf A _ hcf).1 hrn hM hA hB hC
 
-/-- **`transposeC`'s bit gives `rep_transpose`'s premises**: `nubC`'s bits give `hK`, `hV` (`oneOK_of_codesC`), the
-    `fitsN` bits `hk`, `hv`; the nub sides' codes bits `hWk`, `hW` (`codesC_fits`, `nubC`'s `.1` read as `nub` by
-    `simp`, the twin sitting as an argument of `keyPart`/`valPart`); the decided count `h63`. -/
+/-- **`transposeByC o`'s bit gives `rep_transpose`'s premises but the order's**: `nubC`'s bits give `hK`, `hV`
+    (`oneOK_of_codesC`), the `fitsN` bits `hk`, `hv`; the nub keys' codes bit `hWk` (`codesC_fits`, `nubC`'s `.1`
+    read as `nub` by `simp`, the twin sitting as an argument of `keyPart`); `o`'s own bit at the nub; the decided
+    count `h63`. -/
+theorem transposeByC_ok (o : Rel A B → ByteArray × Bool) (R : Rel A B) (hb : (transposeByC o R).2 = true) :
+    oneOK(A, R.n, R.key) ∧ oneOK(B, R.n, R.val) ∧ Vals.PickFits A R.key (List.range R.n.toNat) ∧
+      Vals.PickFits B R.val (List.range R.n.toNat) ∧
+      A.CodesFit (#v[⟨(Rel.nub R).n, (Rel.nub R).key⟩] : Vector (Part A) 1) ∧
+      (o (Rel.nub R)).2 = true ∧ R.n.toNat < 2 ^ 63 := by
+  simp only [transposeByC, nubC_fst] at hb
+  simp only [keyPart, nubC, okbit] at hb
+  exact ⟨oneOK_of_codesC A R.key (by simp only [hb]), oneOK_of_codesC B R.val (by simp only [hb]),
+    by simp only [okbit, hb]⟩
+
+/-- **`valSortC`'s bit makes its order a permutation of the rows**: the bit is the values' codes' (`sortByC_snd`),
+    which `sortBy_nub_perm` takes as their fit (`codesC_fits`). -/
+theorem valSortC_perm (d : Rel A B) (hb : (valSortC d).2 = true) :
+    (ids (valSortC d).1).Perm (List.range d.n.toNat) := by
+  simp only [valSortC, Obj.sortByC_snd] at hb
+  exact sortBy_nub_perm d (Obj.codesC_fits B _ hb)
+
+/-- **`transposeC`'s bit gives `rep_transpose`'s premises**: `transposeByC_ok` at `valSortC`, whose bit is the nub
+    values' codes' (`sortByC_snd`), their fit `hW` (`codesC_fits`). -/
 theorem transposeC_ok (R : Rel A B) (hb : (transposeC R).2 = true) :
     oneOK(A, R.n, R.key) ∧ oneOK(B, R.n, R.val) ∧ Vals.PickFits A R.key (List.range R.n.toNat) ∧
       Vals.PickFits B R.val (List.range R.n.toNat) ∧
       A.CodesFit (#v[⟨(Rel.nub R).n, (Rel.nub R).key⟩] : Vector (Part A) 1) ∧
       B.CodesFit (#v[⟨(Rel.nub R).n, (Rel.nub R).val⟩] : Vector (Part B) 1) ∧ R.n.toNat < 2 ^ 63 := by
-  simp only [transposeC, transposeByC, nubC_fst, Obj.sortByC_snd] at hb
-  simp only [keyPart, valPart, valSortC, Obj.sortByC_snd, nubC, okbit] at hb
-  exact ⟨oneOK_of_codesC A R.key (by simp only [hb]), oneOK_of_codesC B R.val (by simp only [hb]),
-    by simp only [okbit, hb]⟩
+  obtain ⟨hK, hV, hk, hv, hWk, ho, h63⟩ := transposeByC_ok valSortC R hb
+  simp only [valSortC, Obj.sortByC_snd] at ho
+  exact ⟨hK, hV, hk, hv, hWk, Obj.codesC_fits B _ ho, h63⟩
 
 /-- **`rep (Λ(R))` is the power transpose of `rep R` under `transposeC`'s bit**: `rep_transpose` at
     `transposeC_ok`. -/

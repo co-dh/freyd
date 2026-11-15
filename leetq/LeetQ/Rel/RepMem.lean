@@ -65,6 +65,50 @@ theorem rep_mem {n : USize} (X : Vals (.arr B) n) (hv : Vals.PickFits (.arr B) X
     · rw [pick_row B X.2.2.2 _ _ _ hvf ⟨z, hz'⟩, dif_pos (by rw [e2]; exact hrj), ← hjx]
       exact congrArg X.2.2.2.row (Fin.ext e2)
 
+/-- **`mem X`'s rows, as a list**: each row of `X` paired with each of its elements, the elements in position
+    order, the rows in order — `slicesOf_copies` read through `pick_row` at each copy's row and payload position.
+    Hypotheses: `rep_mem`'s. -/
+theorem mem_rows {n : USize} (X : Vals (.arr B) n) (hv : Vals.PickFits (.arr B) X (List.range n.toNat))
+    (hk :Vals.PickFits (.arr B) X ((List.range n.toNat).flatMap fun r =>
+      if h : r < n.toNat then List.replicate (X.row ⟨r, h⟩).length r else [])) :
+    (List.range (Alg.mem X).n.toNat).map (fun t => if h : t < (Alg.mem X).n.toNat then
+      ((Alg.mem X).key.row ⟨t, h⟩, (Alg.mem X).val.row ⟨t, h⟩) else ((Obj.arr B).dflt, B.dflt)) =
+    (List.range n.toNat).flatMap fun r => if h : r < n.toNat then (X.row ⟨r, h⟩).map (X.row ⟨r, h⟩, ·) else [] := by
+  obtain ⟨hEU, hcp⟩ := slicesOf_copies X hv
+  have hkf := (copies_rows X hv).symm ▸ hk
+  have hvf := (copies_pos X hv).symm ▸ (pickFits_payload X hv).2
+  have hle : ∀ r (hr : r < n.toNat), sH(X, r, hr) ≤ X.1.toNat := fun _ _ => Nat.min_le_right _ _
+  -- a copy's row and payload position, read as `pick_row` reads them
+  let F : Nat × Nat → (Obj.arr B).El × B.El := fun p =>
+    (if h : p.1 < n.toNat then X.row ⟨p.1, h⟩ else (Obj.arr B).dflt,
+      if h : p.2 < X.1.toNat then X.2.2.2.row ⟨p.2, h⟩ else B.dflt)
+  have e1 : (List.range (Alg.mem X).n.toNat).map (fun t => if h : t < (Alg.mem X).n.toNat then
+      ((Alg.mem X).key.row ⟨t, h⟩, (Alg.mem X).val.row ⟨t, h⟩) else ((Obj.arr B).dflt, B.dflt)) =
+      ((List.range (len sE(n, X))).map fun z =>
+        ((Column.bitsAt sE(n, X) (z * 8) 8).toNat, (Column.bitsAt sP(n, X) (z * 8) 8).toNat)).map F := by
+    -- `mem X` as the structure `expand` builds: its guard discharged where no row index depends on it
+    have hM : ∃ (kk : Vals (.arr B) (len sE(n, X)).toUSize) (vv : Vals B (len sE(n, X)).toUSize),
+        Alg.mem X = ⟨_, kk, vv⟩ ∧ ∀ t, (kk.row t, vv.row t) =
+          F ((Column.bitsAt sE(n, X) (t.1 * 8) 8).toNat, (Column.bitsAt sP(n, X) (t.1 * 8) 8).toNat) := by
+      simp only [Alg.mem, memC, expand, need_fst, pickC_fst]
+      simp only [need]
+      rw [dif_pos hEU]
+      exact ⟨_, _, rfl, fun t => by rw [pick_row (.arr B) X _ _ _ hkf t, pick_row B X.2.2.2 _ _ _ hvf t]⟩
+    obtain ⟨kk, vv, hM, hrow⟩ := hM
+    rw [hM, List.map_map, show List.range (len sE(n, X)) = List.range (len sE(n, X)).toUSize.toNat by
+      rw [USize.toNat_ofNat_of_lt' hEU]]
+    exact List.map_congr_left fun t ht => by rw [dif_pos (List.mem_range.1 ht)]; exact hrow ⟨t, _⟩
+  rw [e1, hcp, List.map_flatMap]
+  refine flatMap_congr fun r hr => ?_
+  have hr' := List.mem_range.1 hr
+  rw [dif_pos hr', dif_pos hr', List.map_map]
+  have hF : ∀ j ∈ List.range (sH(X, r, hr') - sL(X, r, hr')), (F ∘ fun j => (r, sL(X, r, hr') + j)) j =
+      (X.row ⟨r, hr'⟩, if h : sL(X, r, hr') + j < X.1.toNat then X.2.2.2.row ⟨_, h⟩ else B.dflt) := fun j _ => by
+    simp only [Function.comp_apply, F, dif_pos hr']
+  rw [List.map_congr_left hF]
+  conv => rhs; arg 2; rw [arr_row]
+  rw [List.map_map]; rfl
+
 end Mem
 
 /-! ## `num`: the rows numbered from `k` -/

@@ -104,15 +104,15 @@ local notation "oT" => Code.runStarts (Code.gather kcT pT)
 set_option hygiene false in
 local notation "loT" => ByteArray.extract (oT) 0 (ByteArray.size (oT) - 8)
 
-/-- **`sortBy` lists the nub's rows once each**: `vp` at `transpose`'s order, `sortBy_perm` at `til n`, given the
-    fit of the nub's values (`hW`). -/
-theorem sortBy_nub_perm (R : Rel A B) (hW : B.CodesFit (#v[⟨(Rel.nub R).n, (Rel.nub R).val⟩] : Vector (Part B) 1)) :
-    (ids (Obj.sortBy B (Rel.nub R).val (tilLongs (Rel.nub R).n))).Perm (List.range (Rel.nub R).n.toNat) := by
-  have hU : (Rel.nub R).n.toNat < USize.size := (Rel.nub R).n.toNat_lt_size
-  have htil : (ids (tilLongs (Rel.nub R).n)).Perm (List.range (Rel.nub R).n.toNat) := by
+/-- **`sortBy` lists a relation's rows once each**: `vp` at `transpose`'s order (`d` the nub), `sortBy_perm` at
+    `til n`, given the fit of `d`'s values (`hW`). -/
+theorem sortBy_nub_perm (d : Rel A B) (hW : B.CodesFit (#v[⟨d.n, d.val⟩] : Vector (Part B) 1)) :
+    (ids (Obj.sortBy B d.val (tilLongs d.n))).Perm (List.range d.n.toNat) := by
+  have hU : d.n.toNat < USize.size := d.n.toNat_lt_size
+  have htil : (ids (tilLongs d.n)).Perm (List.range d.n.toNat) := by
     refine List.Perm.of_eq (List.ext_getElem (by rw [← len_eq_ids, len_tilLongs, List.length_range]) ?_)
     intro j h1 h2
-    have hj : j < (Rel.nub R).n.toNat := by simpa using h2
+    have hj : j < d.n.toNat := by simpa using h2
     rw [ids_getElem h1, tilLongs_bitsAt _ hj, List.getElem_range, UInt64.toNat_ofNat',
       Nat.mod_eq_of_lt (by have := USize.size_le; omega)]
   exact (sortBy_perm B _ hW _ (by rw [len_tilLongs]; exact hU)
