@@ -114,7 +114,7 @@ abbrev Once := String × Nat × List (Obj × Obj) × Res
 
 /-- What a program reads: its closed definitions, its prints (text and term), its checks, its objects, and its
     definitions elaborated once. -/
-abbrev Read := List (String × Res) × List (String × Top) × List Chk × Objs × List Once
+abbrev Read := List (String × Res) × List (String × Top) × List Chk × Objs × List Once × List (String × String)
 
 /-- The object variables of a definition, in order, each once: its parameters' then its type's. -/
 def varsOf (qs : List Param) (ty : OExp × OExp) : List String :=
@@ -142,10 +142,12 @@ def once (env : Env) (p : Pos) (n : String) (qs : List Param) (e : Expr) (ty : O
     declared env' p n rigid ty s t
     settleNil p q
     pure (r, os) : M (Arg × List (Obj × Obj))).run { fixes := nv + qs.length }
-  let (q, _, _) := r.plain
-  match ← build objs st p q with
+  -- a body that needs keys is read on its source's universe, a variable's when the source is one, as a top-level
+  -- term is (`top`): the constant returns a closed relation (decision M)
+  let (q, s, _) := r.plain
+  match ← build objs st p (.close p q s s!"`{n}` is elaborated once, to a constant returning a closed relation") with
   | ⟨A, B, false, t⟩ => pure (n, nv, os, ⟨A, B, false, t⟩)
-  | _ => throw ⟨p, s!"`{n}` needs keys"⟩
+  | _ => throw ⟨p, s!"internal: `{n}` closed still needs keys"⟩
 
 /-- `n` elaborated once to the constant `c` (`once`), its object variables `vs`, declared `ty`: each use is the
     call `c(…)` (`Pre.call`); the expansion `d` gives its type and is what the analyses read. A family argument is
@@ -162,10 +164,10 @@ def callDef (env : Env) (qs : List Param) (ty : OExp × OExp) (vs : List String)
       let m ← vs.foldlM (fun m v => do if (m.lookup v).isSome then pure m else return (v, ← fresh) :: m) m
       unify p "" s (← oty env m ty.1); unify p "" t (← oty env m ty.2)
       let some us := vs.mapM (m.lookup ·) | throw ⟨p, s!"internal: `{c}` has an object variable no type names"⟩
-      -- an argument that needs keys (`≠`) is read on its source's universe, as a top-level term is (`top`)
-      let st ← get
-      let xs := bs.map fun (_, b, _) => let (x, a, _) := b.plain; if (uniOf env.objs (zonk st a)).isSome then Pre.close p x a noLeft else x
-      pure (.rel (.call p c us xs q s t) s t) }
+      -- an argument that needs keys (`≠`) is read on its source's universe, as a top-level term is (`top`); the
+      -- universe is looked up at `build`, in the objects of the program making the call, not of the one defining `n`
+      let why := s!"`{c}` takes only closed relations (decision M)"
+      pure (.rel (.call p c us (bs.map fun (_, b, _) => let (x, a, _) := b.plain; Pre.close p x a why) q s t) s t) }
 
 /-- A top-level term, `r` its elaboration `e` with the objects `st`: closed on its source's universe when it needs
     keys, refused where that object has none. -/
@@ -181,9 +183,11 @@ def top (env : Env) (st : St) (p : Pos) (e : Expr) (r : Arg) : Except Err Top :=
     term. A parametric definition is called where `calls` holds its constant `own.x`; else, when `emitting`, it is
     built once for `emit` (`once`), and expanded at each use here, where its constant does not exist yet. -/
 def walk (prog : Program) (env : Env) (wrap : String → Def → Def) (own : Lean.Name) (calls : Lean.Name → Bool)
-    (emitting : Bool) : Except Err (Env × List (String × Res) × List (String × Top) × List Chk × List Once) := do
+    (emitting : Bool) :
+    Except Err (Env × List (String × Res) × List (String × Top) × List Chk × List Once × List (String × String)) := do
   let mut env := env
   let mut os : List Once := []
+  let mut xs : List (String × String) := []
   let mut ds : List (String × Res) := []
   let mut pr : List (String × Top) := []
   let mut cs : List Chk := []
@@ -220,7 +224,11 @@ def walk (prog : Program) (env : Env) (wrap : String → Def → Def) (own : Lea
           let c := own ++ Lean.Name.mkSimple n
           if calls c then env := { env with defs := (n, wrap n (callDef env qs ty vs c d)) :: env.defs }; continue
           if emitting then
-            os := os ++ [← (once env p n qs e ty vs).mapError fun e => ⟨e.pos, s!"`{n}` is not elaborated once: {e.msg}"⟩]
+            -- a body the spike cannot make a constant (arithmetic or a universe on an object variable: step 5) stays
+            -- expanded at each use, as before; the reason is kept, emitted as `n.notOnce`
+            match once env p n qs e ty vs with
+            | .ok o => os := os ++ [o]
+            | .error e => xs := xs ++ [(n, s!"{e.pos}: {e.msg}")]
         | _, _ => pure ()
         env := { env with defs := (n, wrap n d) :: env.defs }
     | .print p e =>
@@ -240,7 +248,7 @@ def walk (prog : Program) (env : Env) (wrap : String → Def → Def) (own : Lea
       let (⟨A', B', S⟩, s', t') ← top env st p f r'
       if h : A' = A ∧ B' = B then cs := cs ++ [(p, e.show, f.show, eq, s, t, ⟨A, B, R, h.1 ▸ h.2 ▸ S⟩)]
       else throw ⟨p, s!"check: the sides have types {s} ⟶ {t} and {s'} ⟶ {t'}"⟩
-  pure (env, ds, pr, cs, os)
+  pure (env, ds, pr, cs, os, xs)
 
 /-- What the program `own` declares, `prog`, read after the programs of `chain`, each with its constant, root
     first: the prelude, then the programs between (whose own prints and checks are not `prog`'s); a program with
@@ -255,8 +263,8 @@ def read (calls : Lean.Name → Bool) (chain : List (Lean.Name × Program)) (pro
     env := (← (walk rp {} preludeDef r calls false).mapError Err.inPrelude).1
     wrap := keep
     for (m, mp) in mid do env := (← walk mp env keep m calls false).1
-  let (e, ds, ps, cs, os) ← walk prog env wrap own calls true
-  pure (ds, ps, cs, e.objs, os)
+  let (e, ds, ps, cs, os, xs) ← walk prog env wrap own calls true
+  pure (ds, ps, cs, e.objs, os, xs)
 
 /-! ### The core term as an `Expr` -/
 
@@ -672,7 +680,7 @@ def objsE (objs : Objs) : MetaM Lean.Expr := do
     (each `print`'s line and ok bit), `n.prints` (the lines), `n.failures` (`failures`: each `check` that does not
     hold, and an op out of capacity) and `n.ok`, that there is none. -/
 def emit (n : Name) (r : Read) : MetaM Unit := do
-  let (ds, ps, cs, objs, os) := r
+  let (ds, ps, cs, objs, os, xs) := r
   -- one numbering over the whole program, as the code of each number is kept across it
   let ((ds, ps, cs), fs) := Prod.fst <| (do
     let fs ← os.mapM fun (x, nv, qs, ⟨A, B, d, t⟩) => return (x, nv, qs, (⟨A, B, d, ← number t⟩ : Res))
@@ -727,6 +735,9 @@ def emit (n : Name) (r : Read) : MetaM Unit := do
   -- the definitions with no `rep_x` yet, each with the first combinator `GenSpec` has no lemma for
   let sty := pairT (mkConst ``String) (mkConst ``String)
   addConst (n ++ `unproved) (listT sty) (← mkListLit sty (unproved.map fun (x, c) =>
+    mkApp4 (mkConst ``Prod.mk [0, 0]) (mkConst ``String) (mkConst ``String) (toExpr x) (toExpr c)))
+  -- the parametric definitions not elaborated once, each with the reason (`walk`)
+  addConst (n ++ `notOnce) (listT sty) (← mkListLit sty (xs.map fun (x, c) =>
     mkApp4 (mkConst ``Prod.mk [0, 0]) (mkConst ``String) (mkConst ``String) (toExpr x) (toExpr c)))
   let ety := pairT (mkConst ``String) (mkConst ``Gen.Gv)
   addConst (n ++ `expanded) (listT ety) (← mkListLit ety entries)
