@@ -1202,10 +1202,30 @@ def swapTm {A B : Obj} : Tm (.prod A B) (.prod B A) true := .pair .outr .outl
 def pairTest {A B : Obj} {d : Bool} (t : Tm A B d) : Tm (.prod A B) (.prod A B) true :=
   .dom (.meet .outr (.comp .outl t))
 
+/-- `t°` read through one projection of its source `A₁×A₂`: `Zπ₁°` (`.inl Z`) or `Zπ₂°` (`.inr Z`), `Z` run
+    on demand. It does not run alone, but a meet with the other projection does (`Proj.meet`). -/
+abbrev Proj (B A₁ A₂ : Obj) := (e : Bool) × (Tm B A₁ e ⊕ Tm B A₂ e)
+
+/-- `P` before `Zπᵢ°`: `(PZ)πᵢ°`. -/
+def Proj.pre {C B A₁ A₂ : Obj} {d : Bool} (p : Tm C B d) : Proj B A₁ A₂ → Proj C A₁ A₂
+  | ⟨_, .inl z⟩ => ⟨_, .inl (.comp p z)⟩
+  | ⟨_, .inr z⟩ => ⟨_, .inr (.comp p z)⟩
+
+/-- `Xπᵢ° ∩ Yπⱼ°`: across the two projections the pair `⟨X,Y⟩`, which runs (`Gen.rpair_eq_meet_proj`); on
+    one, `(X∩Y)πᵢ°` (`Gen.meet_comp_conv_graph`). -/
+def Proj.meet {B A₁ A₂ : Obj} : Proj B A₁ A₂ → Proj B A₁ A₂ → ((e : Bool) × Tm B (.prod A₁ A₂) e) ⊕ Proj B A₁ A₂
+  | ⟨_, .inl x⟩, ⟨_, .inr y⟩ => .inl ⟨_, .pair x y⟩
+  | ⟨_, .inr x⟩, ⟨_, .inl y⟩ => .inl ⟨_, .pair y x⟩
+  | ⟨_, .inl x⟩, ⟨_, .inl y⟩ => .inr ⟨_, .inl (.meet x y)⟩
+  | ⟨_, .inr x⟩, ⟨_, .inr y⟩ => .inr ⟨_, .inr (.meet x y)⟩
+
+mutual
+
 /-- `R°` for `R` run on demand (§a), itself run on demand: pushed to the leaves by `(RS)° = S°R°`,
     `(R∩S)° = R°∩S°` (and `∪`, `−`), `⟨R,S⟩° = π₁R° ∩ π₂S°`, a coreflexive is its own converse, and a builtin
-    by its named converse (`cons° = uncons`), and the prelude's `perm` as its own (`Tm.own`). A closed part is
-    conversed whole. The error is the leaf whose converse does not run on demand. -/
+    by its named converse (`cons° = uncons`), and the prelude's `perm` as its own (`Tm.own`). A side that reads
+    its source through one projection is met with one through the other (`convProj`), so `(R×S)° = R°×S°`. A
+    closed part is conversed whole. The error is the leaf whose converse does not run on demand. -/
 def convTm {A B : Obj} {d : Bool} (t : Tm A B d) : Except String ((e : Bool) × Tm B A e) :=
   if h : d = false then pure ⟨false, .conv (h ▸ t)⟩ else
   match t with
@@ -1227,7 +1247,15 @@ def convTm {A B : Obj} {d : Bool} (t : Tm A B d) : Except String ((e : Bool) × 
   | .dom R => pure ⟨_, .dom R⟩
   | .own R => pure ⟨_, .own R⟩
   | .comp R S => do let ⟨_, s⟩ ← convTm S; let ⟨_, r⟩ ← convTm R; pure ⟨_, .comp s r⟩
-  | .meet R S => do let ⟨_, r⟩ ← convTm R; let ⟨_, s⟩ ← convTm S; pure ⟨_, .meet r s⟩
+  | .meet R S => match convTm R, convTm S with
+    | .ok ⟨_, r⟩, .ok ⟨_, s⟩ => pure ⟨_, .meet r s⟩
+    | r, s => do
+      let l := match r, s with | .error l, _ => l | _, .error l => l | _, _ => ""
+      match A, R, S with
+      | .prod _ _, R, S => match convProj R, convProj S with
+        | .ok x, .ok y => match Proj.meet x y with | .inl p => pure p | .inr _ => throw l
+        | _, _ => throw l
+      | _, _, _ => throw l
   | .join R S => do let ⟨_, r⟩ ← convTm R; let ⟨_, s⟩ ← convTm S; pure ⟨_, .join r s⟩
   | .diff R S => do let ⟨_, r⟩ ← convTm R; let ⟨_, s⟩ ← convTm S; pure ⟨_, .diff r s⟩
   -- `⟨R,S⟩° = π₁R° ∩ π₂S°`; with one side's converse only, the other is tested on the pairs it gives:
@@ -1237,7 +1265,14 @@ def convTm {A B : Obj} {d : Bool} (t : Tm A B d) : Except String ((e : Bool) × 
     | .ok ⟨_, r⟩, .error _ => pure ⟨_, .comp (.pair (.comp .outl r) .outr) (.comp (pairTest S) .outl)⟩
     | .error _, .ok ⟨_, s⟩ =>
       pure ⟨_, .comp (.pair .outl (.comp .outr s)) (.comp swapTm (.comp (pairTest R) (.comp swapTm .outr)))⟩
-    | .error l, .error _ => throw l
+    -- neither runs: each side read through one projection, `⟨π₁P, π₂Q⟩° = ⟨π₁P°, π₂Q°⟩`, i.e. `(P×Q)° = P°×Q°`
+    | .error l, .error _ => match A, R, S with
+      | .prod _ _, R, S => match convProj R, convProj S with
+        | .ok x, .ok y => match Proj.meet (Proj.pre .outl x) (Proj.pre .outr y) with
+          | .inl p => pure p
+          | .inr _ => throw l
+        | _, _ => throw l
+      | _, _, _ => throw l
   | .share _ R => convTm R
   | .cons => pure ⟨_, .uncons⟩
   | .uncons => pure ⟨_, .cons⟩
@@ -1283,6 +1318,24 @@ def convTm {A B : Obj} {d : Bool} (t : Tm A B d) : Except String ((e : Bool) × 
   | .fold .. => throw "⦇e,S⦈"
   | .foldI .. => throw "a lifted fold"
   | .flat _ => throw "a lifted family"
+
+/-- `t° = Zπᵢ°` (`Proj`): `π₁° = 𝟙π₁°`, `(RS)° = S°(Zπᵢ°)`, and a meet or pair of two on one projection
+    (`Proj.meet`). The error is only that `t` is not of that form: the caller reports its own leaf. -/
+def convProj {A₁ A₂ B : Obj} {d : Bool} (t : Tm (.prod A₁ A₂) B d) : Except String (Proj B A₁ A₂) :=
+  match t with
+  | .outl => pure ⟨_, .inl .id⟩
+  | .outr => pure ⟨_, .inr .id⟩
+  | .comp R S => do let ⟨_, s⟩ ← convTm S; pure (Proj.pre s (← convProj R))
+  | .share _ R => convProj R
+  | .meet R S => do match Proj.meet (← convProj R) (← convProj S) with
+    | .inr z => pure z
+    | .inl _ => throw "a meet across both projections"
+  | .pair R S => do match Proj.meet (Proj.pre .outl (← convProj R)) (Proj.pre .outr (← convProj S)) with
+    | .inr z => pure z
+    | .inl _ => throw "a pair across both projections"
+  | _ => throw "not read through one projection"
+
+end
 
 /-- A pair test: `τ(R) : A×B ⟶ A×B`, the coreflexive on the pairs `(a,b)` in demand with `a R b`. -/
 abbrev Cor := (A : Obj) × (B : Obj) × Tm (.prod A B) (.prod A B) true
