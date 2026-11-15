@@ -164,6 +164,7 @@ def uncons (B : Obj) : Fn true (.arr B) (.prod B (.arr B)) := fun D => CRel.unco
 def length (B : Obj) : Fn true (.arr B) .long := fun D => CRel.length D.val
 def total : Fn true (.arr .long) .long := fun D => CRel.Arr.sum D.val
 def inits (B : Obj) : Fn true (.arr B) (.arr (.arr B)) := fun D => CRel.inits D.val
+def tails (B : Obj) : Fn true (.arr B) (.arr (.arr B)) := fun D => CRel.tails D.val
 def cat (B : Obj) : Fn true (.prod (.arr B) (.arr B)) (.arr B) := fun D => CRel.cat ⟨D, true⟩
 def uncat (B : Obj) : Fn true (.arr B) (.prod (.arr B) (.arr B)) := fun D => CRel.uncat D.val
 def zip (A B : Obj) : Fn true (.prod (.arr A) (.arr B)) (.arr (.prod A B)) := fun D => CRel.zip ⟨D, true⟩

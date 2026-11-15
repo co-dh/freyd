@@ -28,7 +28,8 @@ def objInfo (env : Env) (n : String) : ObjDef → Except Err ObjInfo
 /-- A prelude definition as a program sees it: an error raised in its body at a use names the definition and its
     line in the prelude, at the use; one about the arguments (at the use) passes as it is. `perm` is its own
     converse, the one converse rule kept for a definition (`Tm.own`): `perm° = perm` is a theorem the
-    language cannot derive from the fold `perm` is. -/
+    language cannot derive from the fold `perm` is. `tails` runs as its slice form,
+    read back against the list function the prelude's fold is (`rep_tailsC`). -/
 def preludeDef (n : String) (d : Def) : Def :=
   { d with apply := fun p as => do
       let r ← tryCatch (d.apply p as) fun e =>
@@ -36,6 +37,7 @@ def preludeDef (n : String) (d : Def) : Def :=
       -- the body's positions are the prelude's: at the use, so what `build` raises later is at the use
       match n, r with
       | "perm", .rel q s t => pure (.rel (.own (q.at p)) s t)
+      | "tails", .rel _ s@(.arr b) t => pure (.rel (.tails b) s t)
       | _, .rel q s t => pure (.rel (q.at p) s t)
       | _, .fam q i a b => pure (.fam (q.at p) i a b) }
 
@@ -535,6 +537,7 @@ partial def node (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bo
   | .arr B, _, _, .length => return g ``Gen.length #[oE B]
   | _, _, _, .total => return mkConst ``Gen.total
   | .arr B, _, _, .inits => return g ``Gen.inits #[oE B]
+  | .arr B, _, _, .tails => return g ``Gen.tails #[oE B]
   | _, .arr B, _, .cat => return g ``Gen.cat #[oE B]
   | .arr B, _, _, .uncat => return g ``Gen.uncat #[oE B]
   | .prod (.arr A) (.arr B), _, _, .zip => return g ``Gen.zip #[oE A, oE B]
