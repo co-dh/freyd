@@ -23,6 +23,7 @@ deriving instance ToExpr for Lang.Expr
 deriving instance ToExpr for Body
 deriving instance ToExpr for Param
 deriving instance ToExpr for ObjDef
+deriving instance ToExpr for Why
 deriving instance ToExpr for Decl
 
 /-! ### The grammar -/
@@ -36,7 +37,7 @@ def symToks : List Token :=
 
 /-- The tokens of the Rel categories' own productions (`where`, `_`, `≜`, …), read from the parser tables. -/
 def relGrammarTokens (env : Environment) : List Token :=
-  let cats := [`relWord, `relHead, `relObj, `relType, `relLit, `rel, `relParam, `relItem, `relStmt]
+  let cats := [`relWord, `relHead, `relObj, `relType, `relLit, `rel, `relParam, `relItem, `relStep, `relStmt]
   cats.flatMap fun n => match (parserExtension.getState env).categories.find? n with
     | none => []
     | some c => let t := c.tables
@@ -117,6 +118,7 @@ declare_syntax_cat relLit
 declare_syntax_cat rel
 declare_syntax_cat relParam
 declare_syntax_cat relItem
+declare_syntax_cat relStep
 declare_syntax_cat relStmt (behavior := both)
 
 -- a word: a name, an element, a number
@@ -173,14 +175,20 @@ syntax (name := sCheck) &"check" rel ("⊑" <|> "=") rel : relStmt
 syntax (name := sDefn) relWord ("(" relParam,+ ")")? (relType)? "≜" rel ("⊑" rel)? ("where" relItem,+)? : relStmt
 syntax (name := sInfix) "_" relWord "_" "(" relParam,+ ")" (relType)? "≜" rel ("⊑" rel)? ("where" relItem,+)? :
   relStmt
+-- Lean's `theorem … := calc` (§3, §8): `theorem` and `calc` stay names (`kwName`), so a Lean `theorem` command
+-- after a program still ends it (`kwBack`); each step on its own line, indented past the statement, read from its
+-- own position so that juxtaposition reaches along its line (`sameLine`)
+syntax (name := cStep) "_" ("⊑" <|> "=") rel " := " ("≜")? relWord : relStep
+syntax (name := sTheorem) &"theorem " relWord ("(" relParam,+ ")")? (&" on " rel:max)? ":" rel ("⊑" <|> "=") rel
+  (" := " &"calc" (colGt withPosition(relStep))+)? : relStmt
 
 /-- A program's statements, each at its own position, read with the program's tokens (`relTokens`). -/
 @[run_parser_attribute_hooks] def relStmts : Parser := relTokens (many (withPosition (kwBack (categoryParser `relStmt 0))))
 
 -- one block, so the program's lines stay as they are (no per-line keyword) and its scope runs through them
 syntax (name := relProgram) (docComment)? "rel_program " ident (&" after " ident)? " where" relStmts : command
-/-- A variant of a program: its definitions, the `where` ones in place of those of their names, its checks dropped
-    (they state the base's own values), and only the declarations up to the definition `upto` names. -/
+/-- A variant of a program: its definitions, the `where` ones in place of those of their names, its checks and
+    theorems dropped (they state the base's own values), and only the declarations up to the definition `upto` names. -/
 syntax (name := relVariant) (docComment)? "rel_program " ident &" from " ident (&" upto " relWord)? " where" relStmts :
   command
 
@@ -357,25 +365,31 @@ partial def atomOf (s : Syntax) (p : Lang.Pos) (n : String) (app objs pair : Opt
     | none, some a => do pure [.op p o [] (← args a)]
     | none, none => failAt s "expected '('"
   | none, none =>
+    if (← get).thms.contains n then throw ⟨p, s!"`{n}` is a theorem, not a relation"⟩
     if !(← Parse.isInfix n) then do pure (.name p n :: (← after))
     else if app.isSome || objs.isSome then failAt s s!"`{n}` is an infix operator: write `R {n} S`, not `{n}(R, S)`"
     else pure [.name p n]
 
 end
 
-/-- A definition: `w` its name, `key` it or its infix key `_w_`. -/
-def defn (s : Syntax) (w key : String) (ps : Array Syntax) (ty body test wh : Syntax) : C Decl := do
-  let p ← posOf s
-  Parse.fresh p w (← get).taken
+/-- The parameters `ps` of the definition or theorem `w`, each a name no builtin takes, each once. -/
+def params (s : Syntax) (w : String) (ps : Array Syntax) : C (List Param) := do
   let ps ← ps.toList.mapM fun q => do
     let n ← wordOf q[0]
     if (Parse.builtin n).isSome then failAt q s!"`{n}` is a builtin; choose another name"
     pure (⟨n, ← q[1].getOptional?.mapM typeOf⟩ : Param)
-  if key != w && ps.length != 2 then
-    failAt s s!"the infix operator `{w}` takes two parameters, `{key}(R, S)`, found {ps.length}"
   let _ ← ps.foldlM (fun (seen : List String) q => do
     if seen.contains q.name then failAt s s!"`{q.name}` is already a parameter of `{w}`"
     pure (q.name :: seen)) []
+  pure ps
+
+/-- A definition: `w` its name, `key` it or its infix key `_w_`. -/
+def defn (s : Syntax) (w key : String) (ps : Array Syntax) (ty body test wh : Syntax) : C Decl := do
+  let p ← posOf s
+  Parse.fresh p w (← get).taken
+  let ps ← params s w ps
+  if key != w && ps.length != 2 then
+    failAt s s!"the infix operator `{w}` takes two parameters, `{key}(R, S)`, found {ps.length}"
   let ty ← ty.getOptional?.mapM typeOf
   let outer := (← get).known
   modify fun st => { st with known := ps.map (fun q => (q.name, 0)) ++ st.known }
@@ -424,6 +438,36 @@ def stmt (s : Syntax) : C Decl := do
         Parse.adv; pure (n, Parse.infixKey n)
     defn s w key (opt s[1]) s[2] s[4] s[5] s[6]
   | ``sInfix => do let n ← wordOf s[1]; defn s n (Parse.infixKey n) s[4].getSepArgs s[6] s[8] s[9] s[10]
+  | ``sTheorem => do
+    let n ← wordOf s[1]
+    Parse.fresh p n (← get).taken
+    let ps ← params s n (opt s[2])
+    if s[3].getNumArgs != 0 && !ps.isEmpty then
+      failAt s[3] s!"`on` evaluates a theorem with no parameters; `{n}` has {ps.length}"
+    let outer := (← get).known
+    modify fun st => { st with known := ps.map (fun q => (q.name, 0)) ++ st.known }
+    let on ← if s[3].getNumArgs == 0 then pure none else some <$> expr s[3][1]
+    let e ← expr s[5]; let f ← expr s[7]; let eq := atomIn s[6] == "="
+    -- a reason resolves in the program and its chain only: a cross-program name waits for the registry (§3)
+    let steps ← (if s[8].getNumArgs == 0 then #[] else s[8][2].getArgs).toList.mapM fun t => do
+      unless t.getKind == ``cStep do failAt t "expected a step `_ = e := n`"
+      let q ← posOf t; let x ← expr t[2]; let r ← posOf t[5]; let m ← wordOf t[5]
+      let st ← get
+      let isDef := st.known.any (fun k => k.1 == m || k.1 == Parse.infixKey m) && !ps.any (·.name == m)
+      let why ← if t[4].getNumArgs == 0 then
+          if st.thms.contains m then pure (Why.thm r m)
+          else failAt t[5] (if isDef then s!"`{m}` is a definition; write `≜ {m}`" else s!"unknown theorem '{m}'")
+        else if isDef then pure (Why.unfold r m)
+          else failAt t[5] (if st.thms.contains m then s!"`{m}` is a theorem, not a definition"
+            else s!"unknown definition '{m}'")
+      if eq && atomIn t[1] != "=" then failAt t s!"`{n}` states `=`: a step `⊑` proves only `⊑`"
+      pure (q, atomIn t[1] == "=", x, why)
+    -- the chain starts at the left side (`_`) and must end at the right one, compared as the parser reads both
+    if let some (q, _, x, _) := steps.getLast? then
+      if x.render 0 true != f.render 0 true then
+        throw ⟨q, s!"the chain of `{n}` ends at {x.show}, not at its right side {f.show}"⟩
+    modify fun st => { st with known := outer }
+    pure (.«theorem» p n ps e f eq on steps)
   | _ => failAt s "expected a declaration"
 
 /-- The program of the statements `ss`, read in the scope `s₀`, each statement in the scope those before it leave
@@ -506,7 +550,7 @@ def namesAfter (pre : Name) : CommandElabM (List Name) := do
       match named d with
       | some x => unless base.any (named · == some x) do throwErrorAt stx "`{x}` is no definition of `{b}`"
       | none => throwErrorAt stx "a variant only replaces definitions"
-    let kept := base.filter fun | .check .. => false | _ => true
+    let kept := base.filter fun | .check .. | .«theorem» .. => false | _ => true
     let kept ← if stx[5].getNumArgs == 0 then pure kept else do
       let x ← match (wordOf stx[5][1]).run (← getFileMap) |>.run' s with
         | .ok x => pure x

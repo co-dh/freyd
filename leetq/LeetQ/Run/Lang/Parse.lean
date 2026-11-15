@@ -22,6 +22,8 @@ structure S where
   /-- Every name defined or declared, with where ("at line 3", "in the prelude"): a second definition of it is an
       error. -/
   taken : List (String × String) := []
+  /-- The theorems so far: a `calc` step cites them, a term may not name them (§3). -/
+  thms : List String := []
   /-- Inside a parameter's type: an object may be an object variable (§e). -/
   vars : Bool := false
 
@@ -177,6 +179,7 @@ def num : P Int := do
 def after (s : S) (prog : Program) : S := prog.foldl (init := s) fun s d => match d with
   | .defn p k ps _ _ => { s with known := (k, ps.length) :: s.known, taken := (k, at_ p) :: s.taken }
   | .obj p n _ => { s with objs := n :: s.objs, taken := (n, at_ p) :: s.taken }
+  | .«theorem» p n .. => { s with thms := n :: s.thms, taken := (n, at_ p) :: s.taken }
   | _ => s
 
 /-- The scope a program is read in after the prelude `pre` (§c, `Programs.prelude`), itself read in the empty

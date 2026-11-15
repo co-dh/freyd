@@ -186,6 +186,22 @@ def top (env : Env) (st : St) (p : Pos) (e : Expr) (r : Arg) : Except Err Top :=
   | false, tm => pure (⟨A, B, tm⟩, zonk st s, zonk st t)
   | true, _ => throw ⟨p, s!"{e.show}: {zonk st s} has no universe; compose a set of its elements before it (§a)"⟩
 
+/-- `check e = f` at `p` (`⊑` when `eq` is false), with the uses of a constant that expanded its body: the two sides
+    elaborated together, one type, an object one side leaves open being the other's (§c). -/
+def checkOf (env : Env) (p : Pos) (e f : Expr) (eq : Bool) : Except Err (Chk × List (String × String)) := do
+  let ((r, r'), st) ← (do
+    let r ← elabE env none e; let r' ← elabE env none f
+    let (_, s, t) := r.plain; let (_, s', t') := r'.plain
+    let st ← get
+    try unify p "" s' s; unify p "" t' t
+    catch _ => throw ⟨p, s!"check: the sides have types {zonk st s} ⟶ {zonk st t} and {zonk st s'} ⟶ {zonk st t'}"⟩
+    settleNil p r.plain.1; settleNil p r'.plain.1
+    pure (r, r') : M (Arg × Arg)).run {}
+  let (⟨A, B, R⟩, s, t) ← top env st p e r
+  let (⟨A', B', S⟩, s', t') ← top env st p f r'
+  if h : A' = A ∧ B' = B then pure ((p, e.show, f.show, eq, s, t, ⟨A, B, R, h.1 ▸ h.2 ▸ S⟩), st.expanded)
+  else throw ⟨p, s!"check: the sides have types {s} ⟶ {t} and {s'} ⟶ {t'}"⟩
+
 /-- The declarations of `prog`, in order, from the environment `env`: each closed definition (no keys) with its
     core term, each `print` and `check` with its terms; nothing evaluated: a definition is in scope as its built
     term. A parametric definition is called where `calls` holds its constant `own.x`; else, when `emitting`, it is
@@ -246,21 +262,25 @@ def walk (prog : Program) (env : Env) (wrap : String → Def → Def) (own : Lea
       let (r, st) ← (do let r ← elabE env none e; settleNil p r.plain.1; pure r).run {}
       ex := ex ++ st.expanded
       pr := pr ++ [(e.show, ← top env st p e r)]
-    | .check p e f eq =>
-      -- the two sides elaborated together, one type: an object one side leaves open is the other's (§c)
-      let ((r, r'), st) ← (do
-        let r ← elabE env none e; let r' ← elabE env none f
-        let (_, s, t) := r.plain; let (_, s', t') := r'.plain
-        let st ← get
-        try unify p "" s' s; unify p "" t' t
-        catch _ => throw ⟨p, s!"check: the sides have types {zonk st s} ⟶ {zonk st t} and {zonk st s'} ⟶ {zonk st t'}"⟩
-        settleNil p r.plain.1; settleNil p r'.plain.1
-        pure (r, r') : M (Arg × Arg)).run {}
-      ex := ex ++ st.expanded
-      let (⟨A, B, R⟩, s, t) ← top env st p e r
-      let (⟨A', B', S⟩, s', t') ← top env st p f r'
-      if h : A' = A ∧ B' = B then cs := cs ++ [(p, e.show, f.show, eq, s, t, ⟨A, B, R, h.1 ▸ h.2 ▸ S⟩)]
-      else throw ⟨p, s!"check: the sides have types {s} ⟶ {t} and {s'} ⟶ {t'}"⟩
+    | .check p e f eq => let (c, e') ← checkOf env p e f eq; cs := cs ++ [c]; ex := ex ++ e'
+    | .«theorem» p n ps e f eq on steps =>
+      -- every term of the chain at the statement's type, the parameters at their declared ones (§3)
+      let _ ← (do
+        let (_, env') ← bindSig env ps
+        let (_, s, t) := (← elabE env' none e).plain
+        for (q, x, what) in (p, f, "its right side") :: steps.map fun (q, _, x, _) => (q, x, "this step") do
+          let (_, s', t') := (← elabE env' none x).plain
+          let st ← get
+          try unify q "" s' s; unify q "" t' t
+          catch _ => throw ⟨q, s!"theorem `{n}`: {what} {x.show} is {zonk st s'} ⟶ {zonk st t'}, " ++
+            s!"the statement's {e.show} is {zonk st s} ⟶ {zonk st t}"⟩
+        : M Unit).run {}
+      -- `on A`: each link of the chain (the statement itself when there is none) evaluated as a `check`
+      if let some a := on then
+        let mut x := e
+        for (q, k, y) in if steps.isEmpty then [(p, eq, f)] else steps.map fun (q, k, y, _) => (q, k, y) do
+          let (c, e') ← checkOf env q (.comp a x) (.comp a y) k
+          cs := cs ++ [c]; ex := ex ++ e'; x := y
   pure (env, ds, pr, cs, os, xs, ex)
 
 /-- What the program `own` declares, `prog`, read after the programs of `chain`, each with its constant, root

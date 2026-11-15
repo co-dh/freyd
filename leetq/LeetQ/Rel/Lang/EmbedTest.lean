@@ -48,4 +48,78 @@ elab "#rel_parse " s:str : command => do
 rel_program antiquot after Programs.prelude where
     f : 1 ⟶ 1 ≜ 𝟙 ∪ $(fun x => x)
 
+/-! `theorem n : e = f := calc` (`doc/rel-mss-proof-design.md` §3, §8): each step `_ = x := n` cites a theorem, `≜ n`
+    a definition; `on A` evaluates each step as a `check`. -/
+
+rel_program thm after Programs.prelude where
+    obj N = 0…3
+    obj K = {a,b}
+    two : N ⟶ N ≜ {(1,2),(2,2)}
+    up : N ⟶ N ≜ {(1,2)}
+    x : K ⟶ N ≜ {(a,1),(b,2)}
+    theorem unit : two 𝟙 = two
+    theorem good on x : two 𝟙 = two := calc
+      _ = {(1,2),(2,2)} := ≜ two
+      _ = two := ≜ two
+    theorem le on x : up ⊑ two := calc
+      _ ⊑ two 𝟙 := unit
+      _ = two := unit
+
+#guard thm.ok
+-- the chains stay in the program's constant, for `rel_aop` to read back
+#guard (thm.filterMap fun | .«theorem» _ n _ _ _ _ _ ss => some (n, ss.length) | _ => none) ==
+  [("unit", 0), ("good", 2), ("le", 2)]
+
+/-- error: line 77, col 7: theorem `t`: this step x is K ⟶ N, the statement's two is N ⟶ N -/
+#guard_msgs in
+rel_program thmType after thm where
+    theorem t : two = two := calc
+      _ = x := unit
+      _ = two := unit
+
+/-- error: line 84, col 11: `unit` is a theorem, not a relation -/
+#guard_msgs in
+rel_program thmAsRel after thm where
+    theorem t : two = two := calc
+      _ = unit := unit
+
+/-- error: line 90, col 18: `two` is a definition; write `≜ two` -/
+#guard_msgs in
+rel_program relAsThm after thm where
+    theorem t : two = two := calc
+      _ = two := two
+
+/-- error: line 96, col 20: `unit` is a theorem, not a definition -/
+#guard_msgs in
+rel_program thmAsDef after thm where
+    theorem t : two = two := calc
+      _ = two := ≜ unit
+
+/-- error: line 102, col 18: unknown theorem 'nope' -/
+#guard_msgs in
+rel_program thmUnknown after thm where
+    theorem t : two = two := calc
+      _ = two := nope
+
+/-- error: line 108, col 7: the chain of `t` ends at two 𝟙, not at its right side two -/
+#guard_msgs in
+rel_program thmEnds after thm where
+    theorem t : two 𝟙 = two := calc
+      _ = two 𝟙 := unit
+
+/-- error: line 114, col 7: `t` states `=`: a step `⊑` proves only `⊑` -/
+#guard_msgs in
+rel_program thmLe after thm where
+    theorem t : up = two := calc
+      _ ⊑ two := unit
+
+rel_program thmData after thm where
+    theorem t on x : up = two := calc
+      _ = two := unit
+
+#guard !thmData.ok
+/-- info: ["line 118, col 7: check failed: x up = {(a, 2)}, x two = {(a, 2), (b, 2)}"] -/
+#guard_msgs in
+#eval thmData.failures.map toString
+
 end LeetQ.Rel.Lang.EmbedTest
