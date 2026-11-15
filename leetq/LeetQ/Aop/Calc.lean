@@ -49,17 +49,18 @@ def ppType (ty : Lean.Expr) : TermElabM String := do
   pure (toString (← withOptions (pp.mvars.set · false) (ppExpr ty)))
 
 /-- `w` filled from the context: the one hypothesis of its type (local instances are the statement's hypotheses),
-    for a class else instance search. Objects still unknown wait for the expected type; two hypotheses that both fit
-    are an error naming them, never a pick. -/
+    for a class else instance search. Objects still unknown wait for the expected type unless one hypothesis fits
+    already: knowing them only removes candidates, and a fold's relator is fixed by nothing else. Two hypotheses
+    that both fit are an error naming them, never a pick. -/
 def fill (w : Lean.Expr) (p : Lang.Pos) (what why : String) : TermElabM Unit := do
   if (← w.mvarId!.isAssigned) then return
   let ty ← instantiateMVars (← inferType w)
-  if ty.hasExprMVar then tryPostpone
   let tys ← ppType ty
   let set (c : Lean.Expr) := do unless ← isDefEq w c do outside p what m!"cannot use `{c}` as `{tys}`"
   let cs ← (← getLCtx).foldlM (init := #[]) fun cs d => do
     if d.isImplementationDetail || (← whnfR d.type).getAppFn.constName? != ty.getAppFn.constName? then return cs
     return if ← withoutModifyingState (isDefEq d.type ty) then cs.push d.toExpr else cs
+  if ty.hasExprMVar && cs.size != 1 then tryPostpone
   match cs with
   | #[c] => set c
   | #[] =>
@@ -271,7 +272,15 @@ syntax (name := relTerm) "rel(" withoutPosition(rel) ")" : term
     let hs ← IO.mkRef #[]
     let r ← elabTermEnsuringType (← toTerm vars folds hs e) ty?
     synthesizeSyntheticMVars (postpone := .yes)
-    for h in ← hs.get do h
+    -- each hole that fills fixes objects of the others (a coproduct, the relator of its fold): retry until none moves
+    let mut todo ← hs.get
+    repeat
+      let n := todo.size
+      todo ← todo.filterM fun h => catchInternalId postponeExceptionId (h *> pure false) fun _ => pure true
+      if todo.size == n then break
+    for h in todo do h
+    -- the term names its locals by synthetic identifiers or by `fill`: a use the unused-variable linter cannot see
+    for f in (collectFVars {} (← instantiateMVars r)).fvarIds do addTermInfo' stx (.fvar f)
     pure r
 
 end LeetQ.Rel.Lang.Calc
