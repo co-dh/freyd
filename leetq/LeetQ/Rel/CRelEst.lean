@@ -289,25 +289,26 @@ def testC (q : CRel (.prod B B) (.prod B B) → CRel (.prod B B) (.prod B B)) :
 
 /-- `pairsIn Q D`, ok where `Q`, `D` are and `pairsInC` ran within capacity. -/
 def pairsIn (Q : CRel B B) (D : CRel (.prod B B) (.prod B B)) : CRel (.prod B B) (.prod B B) :=
-  let r := pairsInC Q.rel D.rel; ⟨r.1, Q.ok && D.ok && r.2⟩
+  guard (Q.ok && D.ok) fun _ => let r := pairsInC Q.rel D.rel; ⟨r.1, r.2⟩
 
 /-- `swapIn q D`, ok where `D` is, the test was and `swapInC` ran within capacity. -/
 def swapIn (q : CRel (.prod B B) (.prod B B) → CRel (.prod B B) (.prod B B)) (D : CRel (.prod B B) (.prod B B)) :
-    CRel (.prod B B) (.prod B B) := let r := swapInC (testC q) D.rel; ⟨r.1, D.ok && r.2⟩
+    CRel (.prod B B) (.prod B B) := guard D.ok fun _ => let r := swapInC (testC q) D.rel; ⟨r.1, r.2⟩
 
 /-- `estOn q G`, ok where `G` is, the test was and `estOnC` ran within capacity. -/
 def estOn (q : CRel (.prod B B) (.prod B B) → CRel (.prod B B) (.prod B B)) (G : CRel A B) : CRel A B :=
-  let r := estOnC (testC q) G.rel; ⟨r.1, G.ok && r.2⟩
+  guard G.ok fun _ => let r := estOnC (testC q) G.rel; ⟨r.1, r.2⟩
 
 /-- `thinOn q G`, ok where `G` is, the test was and `thinOnC` ran within capacity. -/
 def thinOn (q : CRel (.prod B B) (.prod B B) → CRel (.prod B B) (.prod B B)) (G : CRel A B) : CRel A B :=
-  let r := thinOnC (testC q) G.rel; ⟨r.1, G.ok && r.2⟩
+  guard G.ok fun _ => let r := thinOnC (testC q) G.rel; ⟨r.1, r.2⟩
 
 /-- `est(Q)` on `G`, ok where `Q`, `G` are and `estC` ran within capacity. -/
-def est (Q : CRel B B) (G : CRel A B) : CRel A B := let r := estC Q.rel G.rel; ⟨r.1, Q.ok && G.ok && r.2⟩
+def est (Q : CRel B B) (G : CRel A B) : CRel A B := guard (Q.ok && G.ok) fun _ => let r := estC Q.rel G.rel; ⟨r.1, r.2⟩
 
 /-- `thin(Q)` on `G`, ok where `Q`, `G` are and `thinC` ran within capacity. -/
-def thin (Q : CRel B B) (G : CRel A B) : CRel A B := let r := thinC Q.rel G.rel; ⟨r.1, Q.ok && G.ok && r.2⟩
+def thin (Q : CRel B B) (G : CRel A B) : CRel A B :=
+  guard (Q.ok && G.ok) fun _ => let r := thinC Q.rel G.rel; ⟨r.1, r.2⟩
 
 /-- `orderedOn q` on `X`, ok where the test was and `orderedOnC` ran within capacity. -/
 def orderedOn (q : CRel (.prod B B) (.prod B B) → CRel (.prod B B) (.prod B B)) {n : USize} (X : Vals (.arr B) n) :
@@ -315,37 +316,37 @@ def orderedOn (q : CRel (.prod B B) (.prod B B) → CRel (.prod B B) (.prod B B)
 
 /-- `ordered(Q)` on `X`, ok where `Q` is and `orderedC` ran within capacity. -/
 def ordered (Q : CRel B B) {n : USize} (X : Vals (.arr B) n) : CRel (.arr B) (.arr B) :=
-  let r := orderedC Q.rel X; ⟨r.1, Q.ok && r.2⟩
+  guard Q.ok fun _ => let r := orderedC Q.rel X; ⟨r.1, r.2⟩
 
 /-- `thinL(Q)` on `X`, ok where `Q` is and `thinLC` ran within capacity. -/
 def thinL (Q : CRel B B) {n : USize} (X : Vals (.arr B) n) : CRel (.arr B) (.arr B) :=
-  let r := thinLC Q.rel X; ⟨r.1, Q.ok && r.2⟩
+  guard Q.ok fun _ => let r := thinLC Q.rel X; ⟨r.1, r.2⟩
 
 /-- `hat`: `rep_subseqC`'s. -/
 theorem rep_thinL (Q : CRel B B) {n : USize} (X : Vals (.arr B) n) (hat : hatOK) (hb : (thinL Q X).ok = true) :
-    ∀ xs ys, rep (thinL Q X).rel xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Sublist xs ∧ ∀ a ∈ xs, ∃ y ∈ ys, rep Q.rel y a :=
-  rep_thinLC Q.rel X hat (by simp only [thinL, Bool.and_eq_true] at hb; exact hb.2)
+    ∀ xs ys, rep (thinL Q X).rel xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Sublist xs ∧ ∀ a ∈ xs, ∃ y ∈ ys, rep Q.rel y a := by
+  have e : thinL Q X = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_thinLC Q.rel X hat hb
 
 /-- `sortSet(Q)` on `Y`, ok where `Q` is and `sortSetC` ran within capacity. -/
 def sortSet (Q : CRel B B) {n : USize} (Y : Vals (.arr B) n) : CRel (.arr B) (.arr B) :=
-  let r := sortSetC Q.rel Y; ⟨r.1, Q.ok && r.2⟩
+  guard Q.ok fun _ => let r := sortSetC Q.rel Y; ⟨r.1, r.2⟩
 
 theorem rep_pairsIn (Q : CRel B B) (D : CRel (.prod B B) (.prod B B)) (hb : (pairsIn Q D).ok = true) :
-    ∀ p p', rep (pairsIn Q D).rel p p' ↔ rep D.rel p p' ∧ rep Q.rel p'.1 p'.2 :=
-  rep_pairsInC Q.rel D.rel (by simp only [pairsIn, Bool.and_eq_true] at hb; exact hb.2)
+    ∀ p p', rep (pairsIn Q D).rel p p' ↔ rep D.rel p p' ∧ rep Q.rel p'.1 p'.2 := by
+  have e : pairsIn Q D = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_pairsInC Q.rel D.rel hb
 
 theorem rep_swapIn (q : CRel (.prod B B) (.prod B B) → CRel (.prod B B) (.prod B B)) (D : CRel (.prod B B) (.prod B B))
     (hb : (swapIn q D).ok = true) :
     ∀ p p', rep (swapIn q D).rel p p' ↔ p = p' ∧ ∃ u v w, ((∃ y, rep D.rel p (y, u)) ∧ ∃ z, rep D.rel p (v, z)) ∧
-      rep (q ⟨Alg.ran (Alg.pair (outr D.rel) (outl D.rel)), true⟩).rel (u, v) w :=
-  rep_swapInC (testC q) D.rel (by simp only [swapIn, Bool.and_eq_true] at hb; exact hb.2)
+      rep (q ⟨Alg.ran (Alg.pair (outr D.rel) (outl D.rel)), true⟩).rel (u, v) w := by
+  have e : swapIn q D = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_swapInC (testC q) D.rel hb
 
 /-- The test's spec applies where `(q ⟨D, true⟩).ok`, the first conjunct. -/
 theorem rep_estOn (q : CRel (.prod B B) (.prod B B) → CRel (.prod B B) (.prod B B)) (G : CRel A B)
     (hb : (estOn q G).ok = true) :
     (q ⟨Alg.ran (Alg.pair G.rel G.rel), true⟩).ok = true ∧ ∀ a b, rep (estOn q G).rel a b ↔ rep G.rel a b ∧
-      ¬ ∃ c, rep G.rel a c ∧ c ≠ b ∧ ¬ rep (q ⟨Alg.ran (Alg.pair G.rel G.rel), true⟩).rel (b, c) (b, c) :=
-  rep_estOnC (testC q) G.rel (by simp only [estOn, Bool.and_eq_true] at hb; exact hb.2)
+      ¬ ∃ c, rep G.rel a c ∧ c ≠ b ∧ ¬ rep (q ⟨Alg.ran (Alg.pair G.rel G.rel), true⟩).rel (b, c) (b, c) := by
+  have e : estOn q G = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_estOnC (testC q) G.rel hb
 
 /-- The test's spec applies where `(q ⟨D, true⟩).ok`, the first conjunct; `swapIn`'s bit reads it back
     (`rep_swapInC`). -/
@@ -355,16 +356,16 @@ theorem rep_thinOn (q : CRel (.prod B B) (.prod B B) → CRel (.prod B B) (.prod
       (swapInC (testC q) (Alg.ran (Alg.pair G.rel G.rel))).2 = true ∧ ∀ a c, rep (thinOn q G).rel a c ↔
       rep G.rel a c ∧ ¬ ∃ b b' y, rep G.rel a b ∧ rep G.rel a b' ∧
         rep (q ⟨Alg.ran (Alg.pair G.rel G.rel), true⟩).rel (b, b') (y, c) ∧
-        ¬ rep (swapInC (testC q) (Alg.ran (Alg.pair G.rel G.rel))).1 (b, b') (y, c) :=
-  rep_thinOnC (testC q) G.rel (by simp only [thinOn, Bool.and_eq_true] at hb; exact hb.2)
+        ¬ rep (swapInC (testC q) (Alg.ran (Alg.pair G.rel G.rel))).1 (b, b') (y, c) := by
+  have e : thinOn q G = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_thinOnC (testC q) G.rel hb
 
 theorem rep_est (Q : CRel B B) (G : CRel A B) (hb : (est Q G).ok = true) :
-    ∀ a b, rep (est Q G).rel a b ↔ rep G.rel a b ∧ ∀ c, rep G.rel a c → c ≠ b → rep Q.rel b c :=
-  rep_estC Q.rel G.rel (by simp only [est, Bool.and_eq_true] at hb; exact hb.2)
+    ∀ a b, rep (est Q G).rel a b ↔ rep G.rel a b ∧ ∀ c, rep G.rel a c → c ≠ b → rep Q.rel b c := by
+  have e : est Q G = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_estC Q.rel G.rel hb
 
 theorem rep_thin (Q : CRel B B) (G : CRel A B) (hb : (thin Q G).ok = true) :
-    ∀ a c, rep (thin Q G).rel a c ↔ rep G.rel a c ∧ ¬ ∃ b, rep G.rel a b ∧ rep Q.rel b c ∧ ¬ rep Q.rel c b :=
-  rep_thinC Q.rel G.rel (by simp only [thin, Bool.and_eq_true] at hb; exact hb.2)
+    ∀ a c, rep (thin Q G).rel a c ↔ rep G.rel a c ∧ ¬ ∃ b, rep G.rel a b ∧ rep Q.rel b c ∧ ¬ rep Q.rel c b := by
+  have e : thin Q G = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_thinC Q.rel G.rel hb
 
 /-- `hat`: `rep_unionC`'s; the test's spec applies where `(q ⟨ordPairs X, true⟩).ok`, the first conjunct. -/
 theorem rep_orderedOn (q : CRel (.prod B B) (.prod B B) → CRel (.prod B B) (.prod B B)) {n : USize}
@@ -377,14 +378,14 @@ theorem rep_orderedOn (q : CRel (.prod B B) (.prod B B) → CRel (.prod B B) (.p
 
 /-- `hat`: `rep_unionC`'s. -/
 theorem rep_ordered (Q : CRel B B) {n : USize} (X : Vals (.arr B) n) (hat : hatOK) (hb : (ordered Q X).ok = true) :
-    ∀ xs ys, rep (ordered Q X).rel xs ys ↔ (∃ i, X.row i = xs) ∧ ys = xs ∧ xs.Pairwise (fun y z => rep Q.rel y z) :=
-  rep_orderedC Q.rel X hat (by simp only [ordered, Bool.and_eq_true] at hb; exact hb.2)
+    ∀ xs ys, rep (ordered Q X).rel xs ys ↔ (∃ i, X.row i = xs) ∧ ys = xs ∧ xs.Pairwise (fun y z => rep Q.rel y z) := by
+  have e : ordered Q X = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_orderedC Q.rel X hat hb
 
 /-- `hat`: `rep_unionC`'s. -/
 theorem rep_sortSet (Q : CRel B B) {n : USize} (Y : Vals (.arr B) n) (hat : hatOK) (hb : (sortSet Q Y).ok = true) :
     ∀ s ys, rep (sortSet Q Y).rel s ys ↔
-      rep (Alg.setify Y) ys s ∧ (∃ i, Y.row i = ys) ∧ ys.Pairwise (fun y z => rep Q.rel y z) :=
-  rep_sortSetC Q.rel Y hat (by simp only [sortSet, Bool.and_eq_true] at hb; exact hb.2)
+      rep (Alg.setify Y) ys s ∧ (∃ i, Y.row i = ys) ∧ ys.Pairwise (fun y z => rep Q.rel y z) := by
+  have e : sortSet Q Y = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_sortSetC Q.rel Y hat hb
 
 end CRel
 

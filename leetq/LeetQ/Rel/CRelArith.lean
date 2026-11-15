@@ -140,11 +140,12 @@ def inl {n : USize} (X : Vals A n) : CRel A (.sum A B) := let r := inlC X; ⟨r.
 def inr {n : USize} (Y : Vals B n) : CRel B (.sum A B) := let r := inrC Y; ⟨r.1, r.2⟩
 
 /-- `[R, S]`, ok where both inputs are and `juncC` ran within capacity. -/
-def junc (R : CRel A C) (S : CRel B C) : CRel (.sum A B) C := let r := juncC R.rel S.rel; ⟨r.1, R.ok && S.ok && r.2⟩
+def junc (R : CRel A C) (S : CRel B C) : CRel (.sum A B) C :=
+  guard (R.ok && S.ok) fun _ => let r := juncC R.rel S.rel; ⟨r.1, r.2⟩
 
 /-- `R + S`, ok where both inputs are and `sumC` ran within capacity. -/
 def sum (R : CRel A C) (S : CRel B D) : CRel (.sum A B) (.sum C D) :=
-  let r := sumC R.rel S.rel; ⟨r.1, R.ok && S.ok && r.2⟩
+  guard (R.ok && S.ok) fun _ => let r := sumC R.rel S.rel; ⟨r.1, r.2⟩
 
 /-- `<` on `U`, ok where `ltC` ran within capacity. -/
 def lt {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (h : t ≠ .general := by decide) :
@@ -171,14 +172,14 @@ theorem rep_inr {n : USize} (Y : Vals B n) (hb : (inr (A := A) Y).ok = true) :
   rep_inrC Y hb
 
 theorem rep_junc (R : CRel A C) (S : CRel B C) (hb : (R.junc S).ok = true) :
-    rep (R.junc S).rel = Freyd.Alg.junc (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩) (rep R.rel) (rep S.rel) :=
-  rep_juncC R.rel S.rel (by simp only [junc, Bool.and_eq_true] at hb; exact hb.2)
+    rep (R.junc S).rel = Freyd.Alg.junc (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩) (rep R.rel) (rep S.rel) := by
+  have e : R.junc S = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_juncC R.rel S.rel hb
 
 theorem rep_sum (R : CRel A C) (S : CRel B D) (hb : (R.sum S).ok = true) :
     rep (R.sum S).rel =
       ((sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩).u₁° ≫ rep R.rel ≫ (sumCop (⟨C.El⟩ : RelSet.{0}) ⟨D.El⟩).u₁) ∪
-      ((sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩).u₂° ≫ rep S.rel ≫ (sumCop (⟨C.El⟩ : RelSet.{0}) ⟨D.El⟩).u₂) :=
-  rep_sumC R.rel S.rel (by simp only [sum, Bool.and_eq_true] at hb; exact hb.2)
+      ((sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩).u₂° ≫ rep S.rel ≫ (sumCop (⟨C.El⟩ : RelSet.{0}) ⟨D.El⟩).u₂) := by
+  have e : R.sum S = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_sumC R.rel S.rel hb
 
 theorem rep_lt {n : USize} (U : Vals (.atom .long) n) (h : QAtomicType.long ≠ .general) (hb : (lt U h).ok = true)
     (a b : Int64) : rep (lt U h).rel a b ↔ (∃ i, U.row i = a) ∧ (∃ j, U.row j = b) ∧ a < b :=

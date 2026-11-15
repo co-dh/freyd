@@ -284,7 +284,8 @@ open QLean QLean.Kernel LeetQ.Rel.Alg Freyd Freyd.Alg Freyd.Alg.RelSet LeetQ.Rel
 variable {A B C D E : Obj}
 
 /-- `R ≫ ¬ran(T)`, ok where both inputs are and `antiJoinC` ran within capacity. -/
-def antiJoin (R : CRel A B) (T : CRel B B) : CRel A B := let r := antiJoinC R.rel T.rel; ⟨r.1, R.ok && T.ok && r.2⟩
+def antiJoin (R : CRel A B) (T : CRel B B) : CRel A B :=
+  guard (R.ok && T.ok) fun _ => let r := antiJoinC R.rel T.rel; ⟨r.1, r.2⟩
 
 /-- `⊤` on the universes `Ua`, `Ub`, ok where `topC` ran within capacity. -/
 def top {ma mb : USize} (Ua : Vals A ma) (Ub : Vals B mb) : CRel A B := let r := topC Ua Ub; ⟨r.1, r.2⟩
@@ -293,60 +294,61 @@ def top {ma mb : USize} (Ua : Vals A ma) (Ub : Vals B mb) : CRel A B := let r :=
 def distinctCorefl (t : Obj) {n : USize} (x : Vals t n) : CRel t t := let r := distinctCoreflC t x; ⟨r.1, r.2⟩
 
 /-- `dom R`, ok where `R` is and `domC` ran within capacity. -/
-def dom (R : CRel A B) : CRel A A := let r := domC R.rel; ⟨r.1, R.ok && r.2⟩
+def dom (R : CRel A B) : CRel A A := guard R.ok fun _ => let r := domC R.rel; ⟨r.1, r.2⟩
 
 /-- `ran R`, ok where `R` is and `ranC` ran within capacity. -/
-def ran (R : CRel A B) : CRel B B := let r := ranC R.rel; ⟨r.1, R.ok && r.2⟩
+def ran (R : CRel A B) : CRel B B := guard R.ok fun _ => let r := ranC R.rel; ⟨r.1, r.2⟩
 
 /-- `Λ(R)`, ok where `R` is and `transposeC` ran within capacity. -/
-def transpose (R : CRel A B) : CRel A (.arr B) := let r := transposeC R.rel; ⟨r.1, R.ok && r.2⟩
+def transpose (R : CRel A B) : CRel A (.arr B) := guard R.ok fun _ => let r := transposeC R.rel; ⟨r.1, r.2⟩
 
 /-- `∋` on the arrays `X`, ok where `memC` ran within capacity. -/
 def mem {n : USize} (X : Vals (.arr B) n) : CRel (.arr B) B := let r := memC X; ⟨r.1, r.2⟩
 
 /-- `⟨R, S⟩`, ok where both inputs are and `pairC` ran within capacity. -/
-def pair (R : CRel A B) (S : CRel A C) : CRel A (.prod B C) := let r := pairC R.rel S.rel; ⟨r.1, R.ok && S.ok && r.2⟩
+def pair (R : CRel A B) (S : CRel A C) : CRel A (.prod B C) :=
+  guard (R.ok && S.ok) fun _ => let r := pairC R.rel S.rel; ⟨r.1, r.2⟩
 
 /-- The rows of `R` numbered from `k`, ok where `R` is and `numC` ran within capacity. -/
-def num (R : CRel A B) (k : USize) : CRel .long B := let r := numC R.rel k; ⟨r.1, R.ok && r.2⟩
+def num (R : CRel A B) (k : USize) : CRel .long B := guard R.ok fun _ => let r := numC R.rel k; ⟨r.1, r.2⟩
 
 /-- `R × S`, ok where both inputs are and `prodC` ran within capacity. -/
 def prod (R : CRel A B) (S : CRel D E) : CRel (.prod A D) (.prod B E) :=
-  let r := prodC R.rel S.rel; ⟨r.1, R.ok && S.ok && r.2⟩
+  guard (R.ok && S.ok) fun _ => let r := prodC R.rel S.rel; ⟨r.1, r.2⟩
 
 /-- `R \ S` on the universes `Ub`, `Uc`, ok where both inputs are and `leftDivC` ran within capacity. -/
 def leftDiv {mb mc : USize} (R : CRel A B) (S : CRel A C) (Ub : Vals B mb) (Uc : Vals C mc) : CRel B C :=
-  let r := leftDivC R.rel S.rel Ub Uc; ⟨r.1, R.ok && S.ok && r.2⟩
+  guard (R.ok && S.ok) fun _ => let r := leftDivC R.rel S.rel Ub Uc; ⟨r.1, r.2⟩
 
 /-- `R / S` on the universes `Ua`, `Ub`, ok where both inputs are and `rightDivC` ran within capacity. -/
 def rightDiv {ma mb : USize} (R : CRel A C) (S : CRel B C) (Ua : Vals A ma) (Ub : Vals B mb) : CRel A B :=
-  let r := rightDivC R.rel S.rel Ua Ub; ⟨r.1, R.ok && S.ok && r.2⟩
+  guard (R.ok && S.ok) fun _ => let r := rightDivC R.rel S.rel Ua Ub; ⟨r.1, r.2⟩
 
 /-- `R /ₛ S` on the universes `Ua`, `Ub`, ok where both inputs are and `symDivC` ran within capacity. -/
 def symDiv {ma mb : USize} (R : CRel A C) (S : CRel B C) (Ua : Vals A ma) (Ub : Vals B mb) : CRel A B :=
-  let r := symDivC R.rel S.rel Ua Ub; ⟨r.1, R.ok && S.ok && r.2⟩
+  guard (R.ok && S.ok) fun _ => let r := symDivC R.rel S.rel Ua Ub; ⟨r.1, r.2⟩
 
 theorem rep_symDiv {ma mb : USize} (R : CRel A C) (S : CRel B C) (Ua : Vals A ma) (Ub : Vals B mb)
     (hb : (R.symDiv S Ua Ub).ok = true) (x : A.El) (y : B.El) :
     rep (R.symDiv S Ua Ub).rel x y ↔ (∀ c, rep R.rel x c ↔ rep S.rel y c) ∧
-      ((∃ c, rep R.rel x c) ∨ ((∃ p, Ua.row p = x) ∧ ∃ j, Ub.row j = y)) :=
-  rep_symDivC R.rel S.rel Ua Ub (by simp only [symDiv, Bool.and_eq_true] at hb; exact hb.2) x y
+      ((∃ c, rep R.rel x c) ∨ ((∃ p, Ua.row p = x) ∧ ∃ j, Ub.row j = y)) := by
+  have e : R.symDiv S Ua Ub = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_symDivC R.rel S.rel Ua Ub hb x y
 
 theorem rep_leftDiv {mb mc : USize} (R : CRel A B) (S : CRel A C) (Ub : Vals B mb) (Uc : Vals C mc)
     (hb : (R.leftDiv S Ub Uc).ok = true) (b : B.El) (c : C.El) :
     rep (R.leftDiv S Ub Uc).rel b c ↔ (∀ a, rep R.rel a b → rep S.rel a c) ∧
-      ((∃ a, rep R.rel a b) ∨ ((∃ p, Ub.row p = b) ∧ ∃ j, Uc.row j = c)) :=
-  rep_leftDivC R.rel S.rel Ub Uc (by simp only [leftDiv, Bool.and_eq_true] at hb; exact hb.2) b c
+      ((∃ a, rep R.rel a b) ∨ ((∃ p, Ub.row p = b) ∧ ∃ j, Uc.row j = c)) := by
+  have e : R.leftDiv S Ub Uc = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_leftDivC R.rel S.rel Ub Uc hb b c
 
 theorem rep_rightDiv {ma mb : USize} (R : CRel C A) (S : CRel B A) (Ua : Vals C ma) (Ub : Vals B mb)
     (hb : (R.rightDiv S Ua Ub).ok = true) (x : C.El) (y : B.El) :
     rep (R.rightDiv S Ua Ub).rel x y ↔ (∀ c, rep S.rel y c → rep R.rel x c) ∧
-      ((∃ c, rep S.rel y c) ∨ ((∃ p, Ua.row p = x) ∧ ∃ j, Ub.row j = y)) :=
-  rep_rightDivC R.rel S.rel Ua Ub (by simp only [rightDiv, Bool.and_eq_true] at hb; exact hb.2) x y
+      ((∃ c, rep S.rel y c) ∨ ((∃ p, Ua.row p = x) ∧ ∃ j, Ub.row j = y)) := by
+  have e : R.rightDiv S Ua Ub = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_rightDivC R.rel S.rel Ua Ub hb x y
 
 theorem rep_antiJoin (R : CRel A B) (T : CRel B B) (hb : (R.antiJoin T).ok = true) :
-    rep (R.antiJoin T).rel = rep R.rel ≫ corefl (A := (⟨B.El⟩ : RelSet.{0})) fun b => ¬ ∃ y, rep T.rel y b :=
-  rep_antiJoinC R.rel T.rel (by simp only [antiJoin, Bool.and_eq_true] at hb; exact hb.2)
+    rep (R.antiJoin T).rel = rep R.rel ≫ corefl (A := (⟨B.El⟩ : RelSet.{0})) fun b => ¬ ∃ y, rep T.rel y b := by
+  have e : R.antiJoin T = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_antiJoinC R.rel T.rel hb
 
 theorem rep_top {ma mb : USize} (Ua : Vals A ma) (Ub : Vals B mb) (hb : (top Ua Ub).ok = true) :
     rep (top Ua Ub).rel = corefl (A := (⟨A.El⟩ : RelSet.{0})) (fun a => ∃ i, Ua.row i = a) ≫
@@ -357,32 +359,32 @@ theorem rep_distinctCorefl (t : Obj) {n : USize} (x : Vals t n) (hb : (distinctC
     rep (distinctCorefl t x).rel = corefl (A := (⟨t.El⟩ : RelSet.{0})) fun a => ∃ i, x.row i = a :=
   rep_distinctCoreflC t x hb
 
-theorem rep_dom (R : CRel A B) (hb : R.dom.ok = true) : rep R.dom.rel = 𝟙 _ ∩ rep R.rel ≫ (rep R.rel)° :=
-  rep_domC R.rel (by simp only [dom, Bool.and_eq_true] at hb; exact hb.2)
+theorem rep_dom (R : CRel A B) (hb : R.dom.ok = true) : rep R.dom.rel = 𝟙 _ ∩ rep R.rel ≫ (rep R.rel)° := by
+  have e : R.dom = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_domC R.rel hb
 
-theorem rep_ran (R : CRel A B) (hb : R.ran.ok = true) : rep R.ran.rel = 𝟙 _ ∩ (rep R.rel)° ≫ (rep R.rel)°° :=
-  rep_ranC R.rel (by simp only [ran, Bool.and_eq_true] at hb; exact hb.2)
+theorem rep_ran (R : CRel A B) (hb : R.ran.ok = true) : rep R.ran.rel = 𝟙 _ ∩ (rep R.rel)° ≫ (rep R.rel)°° := by
+  have e : R.ran = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_ranC R.rel hb
 
 theorem rep_transpose (R : CRel A B) (hb : R.transpose.ok = true) :
     (∀ a X, rep R.transpose.rel a X → ∀ x, x ∈ X ↔ rep R.rel a x) ∧
-      (∀ a, (∃ X, rep R.transpose.rel a X) ↔ ∃ b, rep R.rel a b) :=
-  rep_transposeC R.rel (by simp only [transpose, Bool.and_eq_true] at hb; exact hb.2)
+      (∀ a, (∃ X, rep R.transpose.rel a X) ↔ ∃ b, rep R.rel a b) := by
+  have e : R.transpose = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_transposeC R.rel hb
 
 theorem rep_mem {n : USize} (X : Vals (.arr B) n) (hb : (mem X).ok = true) (xs : (Obj.arr B).El) (x : B.El) :
     rep (mem X).rel xs x ↔ (∃ i, X.row i = xs) ∧ x ∈ xs :=
   rep_memC X hb xs x
 
 theorem rep_pair (R : CRel A B) (S : CRel A C) (hb : (R.pair S).ok = true) :
-    rep (R.pair S).rel = rpair (rep R.rel) (rep S.rel) :=
-  rep_pairC R.rel S.rel (by simp only [pair, Bool.and_eq_true] at hb; exact hb.2)
+    rep (R.pair S).rel = rpair (rep R.rel) (rep S.rel) := by
+  have e : R.pair S = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_pairC R.rel S.rel hb
 
 theorem rep_num (R : CRel A B) (k : USize) (hb : (R.num k).ok = true) (a : Obj.long.El) (y : B.El) :
-    rep (R.num k).rel a y ↔ ∃ i : Fin R.rel.n.toNat, a = Int64.ofNat (k.toNat + i.1) ∧ R.rel.val.row i = y :=
-  rep_numC R.rel k (by simp only [num, Bool.and_eq_true] at hb; exact hb.2) a y
+    rep (R.num k).rel a y ↔ ∃ i : Fin R.rel.n.toNat, a = Int64.ofNat (k.toNat + i.1) ∧ R.rel.val.row i = y := by
+  have e : R.num k = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_numC R.rel k hb a y
 
 theorem rep_prod (R : CRel A B) (S : CRel D E) (hb : (R.prod S).ok = true) :
-    rep (R.prod S).rel = rprodMap (rep R.rel) (rep S.rel) :=
-  rep_prodC R.rel S.rel (by simp only [prod, Bool.and_eq_true] at hb; exact hb.2)
+    rep (R.prod S).rel = rprodMap (rep R.rel) (rep S.rel) := by
+  have e : R.prod S = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_prodC R.rel S.rel hb
 
 end CRel
 

@@ -269,7 +269,7 @@ namespace CRel
 variable {K X Y B : Obj}
 
 /-- `tic`, ok where `P` is and `ticC` ran within capacity. -/
-def tic (P : CRel K (.prod B (.arr B))) : CRel K (.arr (.arr B)) := let r := ticC P.rel; ⟨r.1, P.ok && r.2⟩
+def tic (P : CRel K (.prod B (.arr B))) : CRel K (.arr (.arr B)) := guard P.ok fun _ => let r := ticC P.rel; ⟨r.1, r.2⟩
 
 /-- `suffix` on the arrays `X`, ok where `suffixC` ran within capacity. -/
 def suffix {n : USize} (X : Vals (.arr B) n) : CRel (.arr B) (.arr B) := let r := suffixC X; ⟨r.1, r.2⟩
@@ -277,16 +277,16 @@ def suffix {n : USize} (X : Vals (.arr B) n) : CRel (.arr B) (.arr B) := let r :
 /-- `loopOn` on a step over `CRel`s, ok where `P` is, every round's step was and `loopOnC` ran within capacity. The
     step sees its input as ok: its bit is already in the loop's. -/
 def loopOn (F : CRel (.prod X Y) (.prod X Y) → CRel (.prod X Y) X) (P : CRel K (.prod X (.arr Y))) : CRel K X :=
-  let r := loopOnC (fun D => let s := F ⟨D, true⟩; (s.rel, s.ok)) P.rel; ⟨r.1, P.ok && r.2⟩
+  guard P.ok fun _ => let r := loopOnC (fun D => let s := F ⟨D, true⟩; (s.rel, s.ok)) P.rel; ⟨r.1, r.2⟩
 
 /-- `loop(F)`, ok where `F` and `P` are and `loopC` ran within capacity. -/
 def loop (F : CRel (.prod X Y) X) (P : CRel K (.prod X (.arr Y))) : CRel K X :=
-  let r := loopC F.rel P.rel; ⟨r.1, F.ok && P.ok && r.2⟩
+  guard (F.ok && P.ok) fun _ => let r := loopC F.rel P.rel; ⟨r.1, r.2⟩
 
 theorem rep_tic (P : CRel K (.prod B (.arr B))) (hb : (tic P).ok = true) :
     ∀ k zss, rep (tic P).rel k zss ↔ ∃ b bs, rep P.rel k (b, bs) ∧
-      zss = (List.range (bs.length + 1)).map fun j => (b :: bs).take (j + 1) :=
-  rep_ticC P.rel (by simp only [tic, Bool.and_eq_true] at hb; exact hb.2)
+      zss = (List.range (bs.length + 1)).map fun j => (b :: bs).take (j + 1) := by
+  have e : tic P = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_ticC P.rel hb
 
 /-- `hat`: `rep_unionC`'s. -/
 theorem rep_suffix {n : USize} (X : Vals (.arr B) n) (hat : hatOK) (hb : (suffix X).ok = true) :
@@ -301,24 +301,24 @@ theorem rep_loopOn (F : CRel (.prod X Y) (.prod X Y) → CRel (.prod X Y) X) (P 
       ∀ cy c', Fr i cy c' ↔ rep (F ⟨Alg.ran (loopPairs ((fun s => (loopRound (fun D => let s := F ⟨D, true⟩;
         (s.rel, s.ok)) s).1)^[i] (Alg.zero, P.rel)).2), true⟩).rel cy c') :
     ∀ k c, rep (loopOn F P).rel k c ↔ ∃ c₀ xs, rep P.rel k (c₀, xs) ∧ ∃ g : Nat → X.El, g 0 = c₀ ∧
-      (∀ t (ht : t < xs.length), Fr t (g t, xs[t]'ht) (g (t + 1))) ∧ c = g xs.length :=
-  rep_loopOnC _ P.rel hat (by simp only [loopOn, Bool.and_eq_true] at hb; exact hb.2) Fr hS
+      (∀ t (ht : t < xs.length), Fr t (g t, xs[t]'ht) (g (t + 1))) ∧ c = g xs.length := by
+  have e : loopOn F P = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_loopOnC _ P.rel hat hb Fr hS
 
 /-- `hat`: `rep_unionC`'s. -/
 theorem rep_loop (F : CRel (.prod X Y) X) (P : CRel K (.prod X (.arr Y))) (hat : hatOK) (hb : (loop F P).ok = true) :
     ∀ k c, rep (loop F P).rel k c ↔ ∃ c₀ xs, rep P.rel k (c₀, xs) ∧ ∃ g : Nat → X.El, g 0 = c₀ ∧
-      (∀ t (ht : t < xs.length), rep F.rel (g t, xs[t]'ht) (g (t + 1))) ∧ c = g xs.length :=
-  rep_loopC F.rel P.rel hat (by simp only [loop, Bool.and_eq_true] at hb; exact hb.2)
+      (∀ t (ht : t < xs.length), rep F.rel (g t, xs[t]'ht) (g (t + 1))) ∧ c = g xs.length := by
+  have e : loop F P = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_loopC F.rel P.rel hat hb
 
 /-- `mergeOn` on a test over `CRel`s, ok where `P` is, every round's test was and `mergeOnC` ran within capacity.
     The test sees its input as ok: its bit is already in the merge's. -/
 def mergeOn (q : CRel (.prod B B) (.prod B B) → CRel (.prod B B) (.prod B B)) (P : CRel K (.prod (.arr B) (.arr B))) :
     CRel K (.arr B) :=
-  let r := mergeOnC (fun D => let s := q ⟨D, true⟩; (s.rel, s.ok)) P.rel; ⟨r.1, P.ok && r.2⟩
+  guard P.ok fun _ => let r := mergeOnC (fun D => let s := q ⟨D, true⟩; (s.rel, s.ok)) P.rel; ⟨r.1, r.2⟩
 
 /-- `merge(Q)`, ok where `Q` and `P` are and `mergeC` ran within capacity. -/
 def merge (Q : CRel B B) (P : CRel K (.prod (.arr B) (.arr B))) : CRel K (.arr B) :=
-  let r := mergeC Q.rel P.rel; ⟨r.1, Q.ok && P.ok && r.2⟩
+  guard (Q.ok && P.ok) fun _ => let r := mergeC Q.rel P.rel; ⟨r.1, r.2⟩
 
 /-- `hat`: `rep_unionC`'s; `hq` the test's spec on a coreflexive where the test was ok. -/
 theorem rep_mergeOn (q : CRel (.prod B B) (.prod B B) → CRel (.prod B B) (.prod B B))
@@ -327,19 +327,19 @@ theorem rep_mergeOn (q : CRel (.prod B B) (.prod B B) → CRel (.prod B B) (.pro
       rep D = corefl (A := (⟨(Obj.prod B B).El⟩ : RelSet.{0})) S → (q ⟨D, true⟩).ok = true →
       ∀ a b, S (a, b) → ((∃ c, rep (q ⟨D, true⟩).rel (a, b) c) ↔ le a b = true))
     (hb : (mergeOn q P).ok = true) :
-    ∀ k zs, rep (mergeOn q P).rel k zs ↔ ∃ xs ys, rep P.rel k (xs, ys) ∧ zs = List.merge xs ys le :=
-  rep_mergeOnC _ P.rel le hat hq (by simp only [mergeOn, Bool.and_eq_true] at hb; exact hb.2)
+    ∀ k zs, rep (mergeOn q P).rel k zs ↔ ∃ xs ys, rep P.rel k (xs, ys) ∧ zs = List.merge xs ys le := by
+  have e : mergeOn q P = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_mergeOnC _ P.rel le hat hq hb
 
 /-- `hat`: `rep_unionC`'s; `hle`: `le` decides `Q`. -/
 theorem rep_merge (Q : CRel B B) (P : CRel K (.prod (.arr B) (.arr B))) (le : B.El → B.El → Bool)
     (hle : ∀ a b, le a b = true ↔ rep Q.rel a b) (hat : hatOK) (hb : (merge Q P).ok = true) :
-    ∀ k zs, rep (merge Q P).rel k zs ↔ ∃ xs ys, rep P.rel k (xs, ys) ∧ zs = List.merge xs ys le :=
-  rep_mergeC Q.rel P.rel le hle hat (by simp only [merge, Bool.and_eq_true] at hb; exact hb.2)
+    ∀ k zs, rep (merge Q P).rel k zs ↔ ∃ xs ys, rep P.rel k (xs, ys) ∧ zs = List.merge xs ys le := by
+  have e : merge Q P = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_mergeC Q.rel P.rel le hle hat hb
 
 /-- `fixOn` on a step over `CRel`s, with the rounds run: ok where `X₀` is, every round's step was and `fixOnC` ran
     within capacity. The step sees its input as ok: its bit is already in the loop's. -/
 def fixOn {A : Obj} (n : Nat) (φ : CRel A B → CRel A B) (X₀ : CRel A B) : CRel A B × Nat :=
-  let r := fixOnC n (fun D => let s := φ ⟨D, true⟩; (s.rel, s.ok)) X₀.rel; (⟨r.1.1, X₀.ok && r.2⟩, r.1.2)
+  guard X₀.ok fun _ => let r := fixOnC n (fun D => let s := φ ⟨D, true⟩; (s.rel, s.ok)) X₀.rel; (⟨r.1.1, r.2⟩, r.1.2)
 
 /-- `hφ` the step's spec where its bit is set; `hm`, `hch` the chain (`rep_fixOn`'s). -/
 theorem rep_fixOn {A : Obj} (n : Nat) (φ : CRel A B → CRel A B) (X₀ : CRel A B)
@@ -351,9 +351,10 @@ theorem rep_fixOn {A : Obj} (n : Nat) (φ : CRel A B → CRel A B) (X₀ : CRel 
       (j < n → Φ (rep (fixOn n φ X₀).1.rel) = rep (fixOn n φ X₀).1.rel) ∧
       (∀ Y, rep X₀.rel ⊑ Y → Φ Y ⊑ Y → rep (fixOn n φ X₀).1.rel ⊑ Y) ∧
       (∀ U : Rel A B, (∀ i, Φ^[i] (rep X₀.rel) ⊑ rep U) → U.n.toNat + 1 < n → j < n) := by
-  -- unfolded first: the conclusion's `.2` against `fixOnC`'s otherwise sends `whnf` into `iter`'s recursion
-  simp only [fixOn, Bool.and_eq_true] at hb ⊢
-  exact rep_fixOnC n _ X₀.rel Φ hb.2 hφ hm hch
+  have e : fixOn n φ X₀ = _ := guard_eq (·.1.ok) hb
+  -- reduced first: the conclusion's `.2` against `fixOnC`'s otherwise sends `whnf` into `iter`'s recursion
+  rw [e] at hb ⊢; dsimp only at hb ⊢
+  exact rep_fixOnC n _ X₀.rel Φ hb hφ hm hch
 
 #print axioms rep_fixOn
 

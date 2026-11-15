@@ -533,8 +533,7 @@ theorem rep_foldOn {E V : Obj} {m n : USize} (e : Vals V m) (S : CRel (.prod E V
 
 /-- `fold` of one `CRel` step, ok where `S` is and `foldC` ran within capacity. -/
 def fold {E V : Obj} {m n : USize} (e : Vals V m) (S : CRel (.prod E V) V) (X : Vals (.arr E) n) : CRel (.arr E) V :=
-  let r := foldC e S.rel X
-  ⟨r.1, S.ok && r.2⟩
+  guard S.ok fun _ => let r := foldC e S.rel X; ⟨r.1, r.2⟩
 
 /-- **`CRel.fold` read back under its bit**: `rep_foldC`. -/
 theorem rep_fold {E V : Obj} {m n : USize} (e : Vals V m) (S : CRel (.prod E V) V) (X : Vals (.arr E) n)
@@ -548,8 +547,8 @@ theorem rep_fold {E V : Obj} {m n : USize} (e : Vals V m) (S : CRel (.prod E V) 
         (∃ p, e.row p = ys[xs.length]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_self _) hy.symm)) ∧
         (∀ t (ht : t < xs.length), rep S.rel (xs[t]'ht, ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm))
           (ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm))) ∧
-        w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) :=
-  rep_foldC e S.rel X hat (by simp only [fold, Bool.and_eq_true] at hb; exact hb.2)
+        w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) := by
+  have e' : fold e S X = _ := guard_eq ok hb; rw [e'] at hb ⊢; exact rep_foldC e S.rel X hat hb
 
 /-- `sum` as a `CRel`, ok where `sumC` ran within capacity. -/
 def Arr.sum {n : USize} (X : Vals (.arr .long) n) : CRel (.arr .long) .long :=
@@ -586,8 +585,7 @@ theorem rep_length {E : Obj} {n : USize} (X : Vals (.arr E) n)
 
 /-- `map` as a `CRel`, ok where `R` is and `mapC` ran within capacity. -/
 def map {A B : Obj} {n : USize} (R : CRel A B) (X : Vals (.arr A) n) : CRel (.arr A) (.arr B) :=
-  let r := mapC R.rel X
-  ⟨r.1, R.ok && r.2⟩
+  guard R.ok fun _ => let r := mapC R.rel X; ⟨r.1, r.2⟩
 
 /-- **`CRel.map` read back under its bit**: `rep_mapC`. -/
 theorem rep_map {A B : Obj} {n : USize} (R : CRel A B) (X : Vals (.arr A) n)
@@ -598,7 +596,7 @@ theorem rep_map {A B : Obj} {n : USize} (R : CRel A B) (X : Vals (.arr A) n)
     (hb : (map R X).ok = true) :
     ∀ (xs : List A.El) ys, rep (map R X).rel xs ys ↔ (∃ i, X.row i = xs) ∧ ys.length = xs.length ∧
       ∀ t (ht : t < xs.length) (ht' : t < ys.length), rep R.rel (xs[t]'ht) (ys[t]'ht') :=
-  rep_mapC R.rel X hat (by simp only [map, Bool.and_eq_true] at hb; exact hb.2)
+  by have e : map R X = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_mapC R.rel X hat hb
 
 /-- `perm` as a `CRel`, ok where `permC` ran within capacity. -/
 def perm {B : Obj} {n : USize} (X : Vals (.arr B) n) : CRel (.arr B) (.arr B) :=

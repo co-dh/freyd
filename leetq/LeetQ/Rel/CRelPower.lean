@@ -168,14 +168,15 @@ variable {A B : Obj}
 def τ {n : USize} (X : Vals A n) : CRel A (.arr A) := let r := τC X; ⟨r.1, r.2⟩
 
 /-- `Λ(R)` total on `U`, ok where `R` is and `lamOnC` ran within capacity. -/
-def lamOn {m : USize} (R : CRel A B) (U : Vals A m) : CRel A (.arr B) := let r := lamOnC R.rel U; ⟨r.1, R.ok && r.2⟩
+def lamOn {m : USize} (R : CRel A B) (U : Vals A m) : CRel A (.arr B) :=
+  guard R.ok fun _ => let r := lamOnC R.rel U; ⟨r.1, r.2⟩
 
 /-- `setify` on `X`, ok where `setifyC` ran within capacity. -/
 def setify {n : USize} (X : Vals (.arr B) n) : CRel (.arr B) (.arr B) := let r := setifyC X; ⟨r.1, r.2⟩
 
 /-- `E(R)` on `X`, ok where `R` is and `EC` ran within capacity. -/
 def E {n : USize} (R : CRel A B) (X : Vals (.arr A) n) : CRel (.arr A) (.arr B) :=
-  let r := EC R.rel X; ⟨r.1, R.ok && r.2⟩
+  guard R.ok fun _ => let r := EC R.rel X; ⟨r.1, r.2⟩
 
 /-- `union` on the arrays of arrays `X`, ok where `Arr.unionC` ran within capacity. -/
 def Arr.union {n : USize} (X : Vals (.arr (.arr A)) n) : CRel (.arr (.arr A)) (.arr A) :=
@@ -183,13 +184,13 @@ def Arr.union {n : USize} (X : Vals (.arr (.arr A)) n) : CRel (.arr (.arr A)) (.
 
 /-- `P(R)` from `X` to `Y`, ok where `R` is and `PC` ran within capacity. -/
 def P {n m : USize} (R : CRel A B) (X : Vals (.arr A) n) (Y : Vals (.arr B) m) : CRel (.arr A) (.arr B) :=
-  let r := PC R.rel X Y; ⟨r.1, R.ok && r.2⟩
+  guard R.ok fun _ => let r := PC R.rel X Y; ⟨r.1, r.2⟩
 
 theorem rep_P {n m : USize} (R : CRel A B) (X : Vals (.arr A) n) (Y : Vals (.arr B) m) (hb : (R.P X Y).ok = true)
     (xs : (Obj.arr A).El) (ys : (Obj.arr B).El) :
     rep (R.P X Y).rel xs ys ↔ (∃ i, X.row i = xs) ∧ (∃ j, Y.row j = ys) ∧
-      (∀ a ∈ xs, ∃ b ∈ ys, rep R.rel a b) ∧ (∀ b ∈ ys, ∃ a ∈ xs, rep R.rel a b) :=
-  rep_PC R.rel X Y (by simp only [P, Bool.and_eq_true] at hb; exact hb.2) xs ys
+      (∀ a ∈ xs, ∃ b ∈ ys, rep R.rel a b) ∧ (∀ b ∈ ys, ∃ a ∈ xs, rep R.rel a b) := by
+  have e : R.P X Y = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_PC R.rel X Y hb xs ys
 
 theorem rep_τ {n : USize} (X : Vals A n) (hb : (τ X).ok = true) :
     (∀ a Y, rep (τ X).rel a Y → ∀ x, x ∈ Y ↔ x = a) ∧ (∀ a, (∃ Y, rep (τ X).rel a Y) ↔ ∃ i, Vals.row X i = a) :=
@@ -197,8 +198,8 @@ theorem rep_τ {n : USize} (X : Vals A n) (hb : (τ X).ok = true) :
 
 theorem rep_lamOn {m : USize} (R : CRel A B) (U : Vals A m) (hb : (R.lamOn U).ok = true) :
     (∀ a Y, rep (R.lamOn U).rel a Y → ∀ y, y ∈ Y ↔ rep R.rel a y) ∧
-      (∀ a, (∃ Y, rep (R.lamOn U).rel a Y) ↔ (∃ b, rep R.rel a b) ∨ ∃ i, Vals.row U i = a) :=
-  rep_lamOnC R.rel U (by simp only [lamOn, Bool.and_eq_true] at hb; exact hb.2)
+      (∀ a, (∃ Y, rep (R.lamOn U).rel a Y) ↔ (∃ b, rep R.rel a b) ∨ ∃ i, Vals.row U i = a) := by
+  have e : R.lamOn U = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_lamOnC R.rel U hb
 
 theorem rep_setify {n : USize} (X : Vals (.arr B) n) (hb : (setify X).ok = true) :
     (∀ xs Y, rep (setify X).rel xs Y → (∃ i, Vals.row X i = xs) ∧ ∀ y, y ∈ Y ↔ y ∈ xs) ∧
@@ -207,8 +208,8 @@ theorem rep_setify {n : USize} (X : Vals (.arr B) n) (hb : (setify X).ok = true)
 
 theorem rep_E {n : USize} (R : CRel A B) (X : Vals (.arr A) n) (hb : (R.E X).ok = true) :
     (∀ xs Y, rep (R.E X).rel xs Y → (∃ i, Vals.row X i = xs) ∧ ∀ y, y ∈ Y ↔ ∃ x ∈ xs, rep R.rel x y) ∧
-      (∀ xs, (∃ Y, rep (R.E X).rel xs Y) ↔ ∃ i, Vals.row X i = xs) :=
-  rep_EC R.rel X (by simp only [E, Bool.and_eq_true] at hb; exact hb.2)
+      (∀ xs, (∃ Y, rep (R.E X).rel xs Y) ↔ ∃ i, Vals.row X i = xs) := by
+  have e : R.E X = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_EC R.rel X hb
 
 theorem rep_arrUnion {n : USize} (X : Vals (.arr (.arr A)) n) (hb : (Arr.union X).ok = true) :
     (∀ xss Y, rep (Arr.union X).rel xss Y → (∃ i, Vals.row X i = xss) ∧ ∀ y, y ∈ Y ↔ ∃ xs ∈ xss, y ∈ xs) ∧

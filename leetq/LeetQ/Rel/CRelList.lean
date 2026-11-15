@@ -313,16 +313,17 @@ def tails (X : Vals (.arr B) n) : CRel (.arr B) (.arr (.arr B)) := let r := tail
 def uncat (X : Vals (.arr B) n) : CRel (.arr B) (.prod (.arr B) (.arr B)) := let r := uncatC X; ⟨r.1, r.2⟩
 
 /-- `cons`, ok where `P` is and `consC` ran within capacity. -/
-def cons (P : CRel K (.prod B (.arr B))) : CRel K (.arr B) := let r := consC P.rel; ⟨r.1, P.ok && r.2⟩
+def cons (P : CRel K (.prod B (.arr B))) : CRel K (.arr B) := guard P.ok fun _ => let r := consC P.rel; ⟨r.1, r.2⟩
 
 /-- `cat`, ok where `P` is and `catC` ran within capacity. -/
-def cat (P : CRel K (.prod (.arr B) (.arr B))) : CRel K (.arr B) := let r := catC P.rel; ⟨r.1, P.ok && r.2⟩
+def cat (P : CRel K (.prod (.arr B) (.arr B))) : CRel K (.arr B) := guard P.ok fun _ => let r := catC P.rel; ⟨r.1, r.2⟩
 
 /-- `snoc`, ok where `P` is and `snocC` ran within capacity. -/
-def snoc (P : CRel K (.prod (.arr B) B)) : CRel K (.arr B) := let r := snocC P.rel; ⟨r.1, P.ok && r.2⟩
+def snoc (P : CRel K (.prod (.arr B) B)) : CRel K (.arr B) := guard P.ok fun _ => let r := snocC P.rel; ⟨r.1, r.2⟩
 
 /-- `zip`, ok where `P` is and `zipC` ran within capacity. -/
-def zip (P : CRel K (.prod (.arr A) (.arr B))) : CRel K (.arr (.prod A B)) := let r := zipC P.rel; ⟨r.1, P.ok && r.2⟩
+def zip (P : CRel K (.prod (.arr A) (.arr B))) : CRel K (.arr (.prod A B)) :=
+  guard P.ok fun _ => let r := zipC P.rel; ⟨r.1, r.2⟩
 
 /-- `α ≜ [nil, cons]` on `I` and `P`, ok where `alphaC` ran within capacity. -/
 def alpha (I : Vals K 1) (P : Vals (.prod B (.arr B)) n) : CRel (.sum K (.prod B (.arr B))) (.arr B) :=
@@ -359,20 +360,20 @@ theorem rep_uncat (X : Vals (.arr B) n) (hb : (uncat X).ok = true) :
   rep_uncatC X hb
 
 theorem rep_cons (P : CRel K (.prod B (.arr B))) (hb : (cons P).ok = true) :
-    ∀ k ys, rep (cons P).rel k ys ↔ ∃ b bs, rep P.rel k (b, bs) ∧ ys = b :: bs :=
-  rep_consC P.rel (by simp only [cons, Bool.and_eq_true] at hb; exact hb.2)
+    ∀ k ys, rep (cons P).rel k ys ↔ ∃ b bs, rep P.rel k (b, bs) ∧ ys = b :: bs := by
+  have e : cons P = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_consC P.rel hb
 
 theorem rep_cat (P : CRel K (.prod (.arr B) (.arr B))) (hb : (cat P).ok = true) :
-    ∀ k zs, rep (cat P).rel k zs ↔ ∃ xs ys, rep P.rel k (xs, ys) ∧ zs = xs ++ ys :=
-  rep_catC P.rel (by simp only [cat, Bool.and_eq_true] at hb; exact hb.2)
+    ∀ k zs, rep (cat P).rel k zs ↔ ∃ xs ys, rep P.rel k (xs, ys) ∧ zs = xs ++ ys := by
+  have e : cat P = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_catC P.rel hb
 
 theorem rep_snoc (P : CRel K (.prod (.arr B) B)) (hb : (snoc P).ok = true) :
-    ∀ k ys, rep (snoc P).rel k ys ↔ ∃ bs b, rep P.rel k (bs, b) ∧ ys = bs ++ [b] :=
-  rep_snocC P.rel (by simp only [snoc, Bool.and_eq_true] at hb; exact hb.2)
+    ∀ k ys, rep (snoc P).rel k ys ↔ ∃ bs b, rep P.rel k (bs, b) ∧ ys = bs ++ [b] := by
+  have e : snoc P = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_snocC P.rel hb
 
 theorem rep_zip (P : CRel K (.prod (.arr A) (.arr B))) (hb : (zip P).ok = true) :
-    ∀ k zs, rep (zip P).rel k zs ↔ ∃ xs ys, rep P.rel k (xs, ys) ∧ zs = List.zip xs ys :=
-  rep_zipC P.rel (by simp only [zip, Bool.and_eq_true] at hb; exact hb.2)
+    ∀ k zs, rep (zip P).rel k zs ↔ ∃ xs ys, rep P.rel k (xs, ys) ∧ zs = List.zip xs ys := by
+  have e : zip P = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_zipC P.rel hb
 
 open Freyd Freyd.Alg Freyd.Alg.RelSet in
 theorem rep_alpha (I : Vals K 1) (P : Vals (.prod B (.arr B)) n) (hb : (alpha I P).ok = true) :
