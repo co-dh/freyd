@@ -106,11 +106,11 @@ def name : P String := do
   match s.cs[s.i]? with
   | some c =>
     if isSym c then do adv; pure c.toString else
-    let r := (List.range (s.cs.size - s.i)).takeWhile (fun k => isIdCont (s.cs[s.i + k]!)) |>.length
+    let r := (List.range (s.cs.size - s.i)).takeWhile (fun k => s.cs[s.i + k]?.any isIdCont) |>.length
     let inScope (n : String) := s.known.any (fun k => k.1 == n || k.1 == infixKey n) || (builtin n).isSome
     let cut := (List.range r).reverse.find? fun k =>
       inScope (String.ofList (s.cs.extract s.i (s.i + k + 1)).toList) &&
-        (k + 1 == r || isLetter (s.cs[s.i + k + 1]!))
+        (k + 1 == r || s.cs[s.i + k + 1]?.any isLetter)
     let k := (cut.map (· + 1)).getD r
     for _ in List.range k do adv
     pure (String.ofList (s.cs.extract s.i (s.i + k)).toList)

@@ -58,25 +58,33 @@ def also {A B : Obj} (b : Bool) (r : CRel A B) : CRel A B := ⟨r.rel, b && r.ok
 def unhex (s : String) : ByteArray := Id.run do
   let u := s.toUTF8; let d (c : UInt8) : UInt8 := if c ≤ 57 then c - 48 else c - 87
   let mut b := ByteArray.emptyWithCapacity (u.size / 2)
-  for i in [0:u.size / 2] do b := b.push (d u[2 * i]! * 16 + d u[2 * i + 1]!)
+  for h : i in [0:u.size / 2] do
+    have := h.upper; b := b.push (d u[2 * i] * 16 + d u[2 * i + 1])
   pure b
 
-/-- The column of `t` whose payload is the hex text `s`, `bits` a boolean's (`Enc.bits`), else `Enc.bytes`;
-    `Enc.WF` is decided, so a payload that does not fit `n` is a panic, never a wrong column. -/
-def atom (t : QAtomicType) (n : USize) (bits : Bool) (s : String) : Arr t n :=
+/-- The column of `t` whose payload is the hex text `s`, `bits` a boolean's (`Enc.bits`), else `Enc.bytes`, and
+    its fit as its ok bit: `Enc.WF` is decided, so a payload that does not fit `n` is a blank column with bit
+    false, never a wrong column read as right. -/
+def atom (t : QAtomicType) (n : USize) (bits : Bool) (s : String) : Arr t n × Bool :=
   let e := if bits then Enc.bits (unhex s) else Enc.bytes (unhex s)
-  if h : Enc.WF t n e then Arr.mk e h
-  else @panic _ ⟨Arr.mk (Enc.blank t n) (Enc.blank_WF t n)⟩ s!"internal: a rebuilt payload does not fit {n} rows"
+  if h : Enc.WF t n e then (Arr.mk e h, true) else (Arr.mk (Enc.blank t n) (Enc.blank_WF t n), false)
 
-def arrV (B : Obj) (n m : USize) (lo hi : Arr .long n) (p : Vals B m) : Vals (.arr B) n := ⟨m, lo, hi, p⟩
-def sumV (A B : Obj) (n l r : USize) (tag : Arr .boolean n) (idx : Arr .long n) (x : Vals A l) (y : Vals B r) :
-    Vals (.sum A B) n := ⟨l, r, tag, idx, x, y⟩
+/-- A rebuilt column from its rebuilt parts, its bit the `&&` of theirs. -/
+def pairV (A B : Obj) (n : USize) (x : Vals A n × Bool) (y : Vals B n × Bool) : Vals (.prod A B) n × Bool :=
+  ((x.1, y.1), x.2 && y.2)
+def arrV (B : Obj) (n m : USize) (lo hi : Arr .long n × Bool) (p : Vals B m × Bool) : Vals (.arr B) n × Bool :=
+  (⟨m, lo.1, hi.1, p.1⟩, lo.2 && hi.2 && p.2)
+def sumV (A B : Obj) (n l r : USize) (tag : Arr .boolean n × Bool) (idx : Arr .long n × Bool) (x : Vals A l × Bool)
+    (y : Vals B r × Bool) : Vals (.sum A B) n × Bool :=
+  (⟨l, r, tag.1, idx.1, x.1, y.1⟩, tag.2 && idx.2 && x.2 && y.2)
+def relV (A B : Obj) (n : USize) (k : Vals A n × Bool) (v : Vals B n × Bool) : Rel A B × Bool :=
+  (⟨n, k.1, v.1⟩, k.2 && v.2)
 
 /-! ### Code -/
 
 def const (A B : Obj) (c : CRel A B) : Fn false A B := fun _ => c
-def val (A B : Obj) (R : Rel A B) : Fn false A B := fun _ => ⟨R, true⟩
-def uni (A : Obj) (m : USize) (U : Vals A m) : Fn false A A := fun _ => ⟨idU U, true⟩
+def val (A B : Obj) (R : Rel A B × Bool) : Fn false A B := fun _ => ofC R
+def uni (A : Obj) (m : USize) (U : Vals A m × Bool) : Fn false A A := fun _ => ⟨idU U.1, U.2⟩
 def zero (A B : Obj) : Fn false A B := fun _ => ⟨Alg.zero, true⟩
 def id (A : Obj) : Fn true A A := fun D => ⟨D, true⟩
 def top (A B : Obj) (V : Fn false B B) : Fn true A B := fun D => let v := V (); also v.ok (ofC (topC D.val v.rel.val))
@@ -169,12 +177,13 @@ def onKeys {A B : Obj} (d : Bool) (F : Fn d A B) (P : CRel A A) : CRel A B :=
 
 def loop (X Y : Obj) (d : Bool) (F : Fn d (.prod X Y) X) : Fn true (.prod X (.arr Y)) X := fun D =>
   CRel.loopOn (onKeys d F) ⟨D, true⟩
-def succ (m : USize) (U : Arr .long m) : Fn true .long .long := fun D => CRel.comp ⟨D, true⟩ (CRel.succ U)
+def succ (m : USize) (U : Arr .long m × Bool) : Fn true .long .long := fun D =>
+  also U.2 (CRel.comp ⟨D, true⟩ (CRel.succ U.1))
 /-- A result outside the declared object has no row, as `succ` at its top. -/
-def arith (k : UInt8) (m : USize) (U : Arr .long m) : Fn true (.prod .long .long) .long := fun D =>
-  CRel.comp ⟨Alg.arith k D.val, true⟩ ⟨idU U, true⟩
-def leq (m : USize) (U : Arr .long m) : Fn false .long .long := fun _ => CRel.leq U
-def lt (m : USize) (U : Arr .long m) : Fn false .long .long := fun _ => CRel.lt U
+def arith (k : UInt8) (m : USize) (U : Arr .long m × Bool) : Fn true (.prod .long .long) .long := fun D =>
+  CRel.comp ⟨Alg.arith k D.val, true⟩ ⟨idU U.1, U.2⟩
+def leq (m : USize) (U : Arr .long m × Bool) : Fn false .long .long := fun _ => also U.2 (CRel.leq U.1)
+def lt (m : USize) (U : Arr .long m × Bool) : Fn false .long .long := fun _ => also U.2 (CRel.lt U.1)
 def fold (E V : Obj) (d : Bool) (e : Fn false V V) (S : Fn d (.prod E V) V) : Fn true (.arr E) V := fun D =>
   let v := e (); also v.ok (CRel.foldOn v.rel.val (onKeys d S) D.val)
 

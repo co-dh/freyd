@@ -157,8 +157,7 @@ def atomE (t : QLean.QAtomicType) (n : USize) (x : Arr t n) : Except String Lean
 def valsE : (A : Obj) → (n : USize) → Vals A n → Except String Lean.Expr
   | .atom t, n, x => atomE t n x
   | .prod a b, n, x => do
-    pure (mkApp4 (mkConst ``Prod.mk [0, 0]) (mkApp2 (mkConst ``Vals) (oE a) (uE n))
-      (mkApp2 (mkConst ``Vals) (oE b) (uE n)) (← valsE a n x.1) (← valsE b n x.2))
+    pure (g ``Gen.pairV #[oE a, oE b, uE n, ← valsE a n x.1, ← valsE b n x.2])
   | .arr b, n, ⟨m, lo, hi, p⟩ => do
     pure (g ``Gen.arrV #[oE b, uE n, uE m, ← atomE .long n lo, ← atomE .long n hi, ← valsE b m p])
   | .sum a b, n, ⟨l, r, tag, idx, x, y⟩ => do
@@ -166,7 +165,7 @@ def valsE : (A : Obj) → (n : USize) → Vals A n → Except String Lean.Expr
       ← valsE a l x, ← valsE b r y])
 
 def relE {A B : Obj} (R : Rel A B) : Except String Lean.Expr := do
-  pure (g ``Rel.mk #[oE A, oE B, uE R.n, ← valsE A R.n R.key, ← valsE B R.n R.val])
+  pure (g ``Gen.relV #[oE A, oE B, uE R.n, ← valsE A R.n R.key, ← valsE B R.n R.val])
 
 def liftE {α : Type} (x : Except String α) : RM α := match x with
   | .ok a => pure a

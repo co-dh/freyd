@@ -53,12 +53,12 @@ def out : Out := ok (runExt Programs.detab (String.join (asPrints.map fun e => s
 #guard (ok (runProgram Programs.detab)).prints == []
 #guard out.prints.length == 8
 -- the note's run: detab of ab, a tab, c d
-#guard out.prints[0]! == s!"x detab = {shown [detabL x]}"
+#guard out.prints[0]? == some s!"x detab = {shown [detabL x]}"
 -- the specification is every shortest preimage; q has two
 #guard (out.prints.drop 2).take 3 == inputs.map fun (v, y) => s!"{v} Λ(H) est(R) = {shown (shortest y)}"
-#guard (shortest (inputs[1]!).2).length == 2
+#guard (inputs[1]?.map fun v => (shortest v.2).length) == some 2
 -- the program gives one shortest preimage
-#guard (shortest (detabL x)).any fun s => out.prints[1]! == s!"x detab entab = {shown [s]}"
+#guard (shortest (detabL x)).any fun s => out.prints[1]? == some s!"x detab entab = {shown [s]}"
 #guard (out.prints.drop 5).zip inputs |>.all fun (l, v, y) => (shortest y).any fun s => l == s!"{v} entab = {shown [s]}"
 
 end LeetQ.Rel.Lang.TestDetab

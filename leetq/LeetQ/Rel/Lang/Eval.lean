@@ -67,11 +67,11 @@ def acArcs (k : Nat) : {V D : Obj} → {d : Bool} → Tm V D d → Option (List 
   | _, _, _, _ => none
 
 /-- The fixed-point variable `k` in the round being run: `build` puts a variable only inside the fixed point
-    binding it, so a missing one is its bug. -/
-def varVal (ρ : List (Nat × Val)) (k : Nat) (A B : Obj) : Rel A B :=
+    binding it, so a missing one is its bug: `𝟘` with bit false, never a value read as right. -/
+def varVal (ρ : List (Nat × Val)) (k : Nat) (A B : Obj) : Rel A B × Bool :=
   match (ρ.lookup k).bind (Val.at? A B) with
-  | some R => R
-  | none => @panic (Rel A B) ⟨zero⟩ s!"internal: the fixed-point variable {k} is not bound here"
+  | some R => (R, true)
+  | none => (zero, false)
 
 /-- The demand of `S` in `R S`: `ran(R)` where `S` takes one, `R`'s plan as its table. -/
 def demOf {A B : Obj} : (e : Bool) → Bits.TP A B → Dem e B
@@ -174,7 +174,7 @@ def ev (cnt : Array Nat) (ρ : List (Nat × Val)) : {A B : Obj} → {d : Bool} �
     let r ← ev cnt ρ R (Dem.of d (← ck (ranC (outl D))))
     let U ← ck (ranC r)
     ck (compC D (← ck (compC (← ck (pairC r° (outl U)))° (outr U))))
-  | A, B, _, .var k, _ => pure (varVal ρ k A B)
+  | A, B, _, .var k, _ => ck (varVal ρ k A B)
   -- each round one evaluation, as a fold step: what the body shares, it shares within the round
   -- an AC-3 body runs by delta rounds (`acFix`), decided once before the rounds; any other body naively
   | A, B, _, .nu k S body, _ => do
@@ -205,7 +205,7 @@ def evB (cnt : Array Nat) (ρ : List (Nat × Val)) :
     {A B : Obj} → {d : Bool} → Tm A B d → Dem d A → EvM (Option (Bits.TP A B))
   | _, _, _, .val R, _ => pure (some (.leaf R))
   | _, _, _, .uni U, _ => pure (some (.leaf (idU U)))
-  | A, B, _, .var k, _ => pure (some (.leaf (varVal ρ k A B)))
+  | A, B, _, .var k, _ => return some (.leaf (← ck (varVal ρ k A B)))
   | _, _, _, .share _ R, D => evB cnt ρ R D
   | _, _, _, .own R, D => evB cnt ρ R D
   | _, _, _, .comp (e := e) R S, D => do
