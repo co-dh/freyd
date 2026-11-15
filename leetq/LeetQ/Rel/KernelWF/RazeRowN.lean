@@ -30,11 +30,16 @@ theorem off_mapIdx {α β : USize → Type} (cs : Array ((n : USize) × α n))
     (((cs.mapIdx f).toList.take l).map (·.1.toNat)).sum = ((cs.toList.take l).map (·.1.toNat)).sum := by
   congr 1; apply List.ext_getElem (by simp); intro i _ _; simp [h]
 
-theorem row_congr {A : Obj} : ∀ {x y : Part A}, x = y → ∀ i hx hy, x.2.row ⟨i, hx⟩ = y.2.row ⟨i, hy⟩
+/-- A function of a part and a row index, at equal parts. -/
+theorem sig_congr {β : USize → Type} {T : Type} (f : ∀ n, β n → Fin n.toNat → T) :
+    ∀ {x y : (n : USize) × β n}, x = y → ∀ i hx hy, f x.1 x.2 ⟨i, hx⟩ = f y.1 y.2 ⟨i, hy⟩
   | _, _, rfl, _, _, _ => rfl
 
-theorem get_congr {t : QAtomicType} : ∀ {x y : (n : USize) × Arr t n}, x = y → ∀ i hx hy, x.2.get ⟨i, hx⟩ = y.2.get ⟨i, hy⟩
-  | _, _, rfl, _, _, _ => rfl
+theorem row_congr {A : Obj} {x y : Part A} (e : x = y) (i hx hy) : x.2.row ⟨i, hx⟩ = y.2.row ⟨i, hy⟩ :=
+  sig_congr (fun _ v k => Vals.row v k) e i hx hy
+
+theorem get_congr {t : QAtomicType} {x y : (n : USize) × Arr t n} (e : x = y) (i hx hy) :
+    x.2.get ⟨i, hx⟩ = y.2.get ⟨i, hy⟩ := sig_congr (fun _ v k => Arr.get v k) e i hx hy
 
 /-- Parts razed, `hT` its list the parts' lists one after another: element `(counts before l) + j` is part `l`'s
     element `j`. -/
@@ -191,6 +196,107 @@ theorem raze_rowN : ∀ (A : Obj) (ps : Array (Part A))
     rw [dif_pos (by omega), dif_pos hx, ← hrow _ hx (by omega)]
     exact congrArg _ (Fin.ext (by dsimp only; omega))
   | .sum a b, ps, hN, hb, l, hl, j, hj, q, hq, e => by
-    sorry
+    simp only [Obj.razeC] at hb
+    split at hb
+    rotate_left
+    · cases hb
+    rename_i hf
+    simp only [Bool.and_eq_true, decide_eq_true_eq] at hb
+    obtain ⟨⟨⟨⟨h63l, h63r⟩, hp⟩, ha⟩, hbb⟩ := hb
+    have hfit : Vals.PickFits (.sum a b) ps[l].2 (List.range ps[l].1.toNat) :=
+      pickFits_of_fitsN _ _ _ (Array.all_eq_true_iff_forall_mem.1 hp _ (Array.getElem_mem hl)) _ (by simp)
+    have hH : ((ps.map fun c => (⟨c.1, c.2.held⟩ : Part (.sum a b)))[l]'(by simpa using hl)) = ⟨ps[l].1, ps[l].2.held⟩ :=
+      Array.getElem_map ..
+    -- each side's values before part `l` and part `l`'s own fit below that side's count
+    have hleL : ((((ps.map fun c => (⟨c.1, c.2.held⟩ : Part (.sum a b))).map
+        fun c => (⟨c.2.1, c.2.2.2.2.2.1⟩ : Part a)).toList.take l).map (·.1.toNat)).sum + ps[l].2.held.1.toNat ≤
+        (((ps.map fun c => (⟨c.1, c.2.held⟩ : Part (.sum a b))).map
+          fun c => (⟨c.2.1, c.2.2.2.2.2.1⟩ : Part a)).toList.map fun c : Part a => c.1.toNat).sum := by
+      have := take_sum_le (((ps.map fun c => (⟨c.1, c.2.held⟩ : Part (.sum a b))).map
+        fun c => (⟨c.2.1, c.2.2.2.2.2.1⟩ : Part a)).toList.map (·.1.toNat)) (k := l) (by simpa using hl)
+      simpa using this
+    have hleR : ((((ps.map fun c => (⟨c.1, c.2.held⟩ : Part (.sum a b))).map
+        fun c => (⟨c.2.2.1, c.2.2.2.2.2.2⟩ : Part b)).toList.take l).map (·.1.toNat)).sum + ps[l].2.held.2.1.toNat ≤
+        (((ps.map fun c => (⟨c.1, c.2.held⟩ : Part (.sum a b))).map
+          fun c => (⟨c.2.2.1, c.2.2.2.2.2.2⟩ : Part b)).toList.map fun c : Part b => c.1.toNat).sum := by
+      have := take_sum_le (((ps.map fun c => (⟨c.1, c.2.held⟩ : Part (.sum a b))).map
+        fun c => (⟨c.2.2.1, c.2.2.2.2.2.2⟩ : Part b)).toList.map (·.1.toNat)) (k := l) (by simpa using hl)
+      simpa using this
+    have l63 : (((ps.map fun c => (⟨c.1, c.2.held⟩ : Part (.sum a b))).map
+        fun c => (⟨c.2.1, c.2.2.2.2.2.1⟩ : Part a)).toList.map fun c : Part a => c.1.toNat).sum < 2 ^ 63 := h63l
+    have r63 : (((ps.map fun c => (⟨c.1, c.2.held⟩ : Part (.sum a b))).map
+        fun c => (⟨c.2.2.1, c.2.2.2.2.2.2⟩ : Part b)).toList.map fun c : Part b => c.1.toNat).sum < 2 ^ 63 := h63r
+    generalize hDL : ((((ps.map fun c => (⟨c.1, c.2.held⟩ : Part (.sum a b))).map
+      fun c => (⟨c.2.1, c.2.2.2.2.2.1⟩ : Part a)).toList.take l).map (·.1.toNat)).sum = dl at hleL
+    generalize hDR : ((((ps.map fun c => (⟨c.1, c.2.held⟩ : Part (.sum a b))).map
+      fun c => (⟨c.2.2.1, c.2.2.2.2.2.2⟩ : Part b)).toList.take l).map (·.1.toNat)).sum = dr at hleR
+    have hdl : (((ps.map fun c => (⟨c.1, c.2.held⟩ : Part (.sum a b))).map (·.2.1.toNat)).extract 0 l).foldl
+        (· + ·) 0 = dl := by
+      rw [extract_foldl, ← hDL]; congr 1; apply List.ext_getElem (by simp); intro i _ _; simp
+    have hdr : (((ps.map fun c => (⟨c.1, c.2.held⟩ : Part (.sum a b))).map (·.2.2.1.toNat)).extract 0 l).foldl
+        (· + ·) 0 = dr := by
+      rw [extract_foldl, ← hDR]; congr 1; apply List.ext_getElem (by simp); intro i _ _; simp
+    have c1 : ((ps.map fun c => (⟨c.1, c.2.held⟩ : Part (.sum a b)))[l]'(by simpa using hl)).2.1 = ps[l].2.held.1 := by
+      rw [hH]
+    have c2 : ((ps.map fun c => (⟨c.1, c.2.held⟩ : Part (.sum a b)))[l]'(by simpa using hl)).2.2.1 =
+        ps[l].2.held.2.1 := by rw [hH]
+    have eT : ((ps.map fun c => (⟨c.1, c.2.held⟩ : Part (.sum a b)))[l]'(by simpa using hl)).2.2.2.1.get
+        ⟨j, by simpa using hj⟩ = ps[l].2.held.2.2.1.get ⟨j, hj⟩ := sig_congr (fun _ v k => v.2.2.1.get k) hH j _ hj
+    have eX : ((ps.map fun c => (⟨c.1, c.2.held⟩ : Part (.sum a b)))[l]'(by simpa using hl)).2.2.2.2.1.get
+        ⟨j, by simpa using hj⟩ = ps[l].2.held.2.2.2.1.get ⟨j, hj⟩ := sig_congr (fun _ v k => v.2.2.2.1.get k) hH j _ hj
+    generalize hR : (Obj.sum a b).raze ps hN = R
+    have hL : R.1 = (((ps.map fun c => (⟨c.1, c.2.held⟩ : Part (.sum a b))).map
+        fun c => (⟨c.2.1, c.2.2.2.2.2.1⟩ : Part a)).toList.map fun c : Part a => c.1.toNat).sum.toUSize := by
+      subst hR; rw [Obj.raze.eq_4]; unfold need; rw [dif_pos hf]
+    have hRr : R.2.1 = (((ps.map fun c => (⟨c.1, c.2.held⟩ : Part (.sum a b))).map
+        fun c => (⟨c.2.2.1, c.2.2.2.2.2.2⟩ : Part b)).toList.map fun c : Part b => c.1.toNat).sum.toUSize := by
+      subst hR; rw [Obj.raze.eq_4]; unfold need; rw [dif_pos hf]
+    have hLn : R.1.toNat = (((ps.map fun c => (⟨c.1, c.2.held⟩ : Part (.sum a b))).map
+        fun c => (⟨c.2.1, c.2.2.2.2.2.1⟩ : Part a)).toList.map fun c : Part a => c.1.toNat).sum := by
+      rw [hL]; exact USize.toNat_ofNat_of_lt' hf.1
+    have hRn : R.2.1.toNat = (((ps.map fun c => (⟨c.1, c.2.held⟩ : Part (.sum a b))).map
+        fun c => (⟨c.2.2.1, c.2.2.2.2.2.2⟩ : Part b)).toList.map fun c : Part b => c.1.toNat).sum := by
+      rw [hRr]; exact USize.toNat_ofNat_of_lt' hf.2
+    have hXA : HEq R.2.2.2.2.1 (a.raze _ hf.1) := by subst hR; rw [Obj.raze.eq_4]; unfold need; rw [dif_pos hf]
+    have hXB : HEq R.2.2.2.2.2 (b.raze _ hf.2) := by subst hR; rw [Obj.raze.eq_4]; unfold need; rw [dif_pos hf]
+    have hRA : ∀ i (hi : i < ps[l].2.held.1.toNat) (h' : dl + i < R.1.toNat),
+        Vals.row R.2.2.2.2.1 ⟨dl + i, h'⟩ = Vals.row ps[l].2.held.2.2.2.2.1 ⟨i, hi⟩ := fun i hi h' =>
+      (row_heq _ _ ⟨_, h'⟩ ⟨dl + i, by rw [← hL]; exact h'⟩ hL hXA rfl).trans
+        ((raze_rowN a _ hf.1 ha (l := l) (by simpa using hl) (j := i) (by simpa using hi) _ _ (by rw [← hDL])).trans
+          (row_congr (y := ⟨ps[l].2.held.1, ps[l].2.held.2.2.2.2.1⟩) ((Array.getElem_map ..).trans (congrArg (fun c : Part (.sum a b) => (⟨c.2.1, c.2.2.2.2.2.1⟩ : Part a)) hH)) i _ _))
+    have hRB : ∀ i (hi : i < ps[l].2.held.2.1.toNat) (h' : dr + i < R.2.1.toNat),
+        Vals.row R.2.2.2.2.2 ⟨dr + i, h'⟩ = Vals.row ps[l].2.held.2.2.2.2.2 ⟨i, hi⟩ := fun i hi h' =>
+      (row_heq _ _ ⟨_, h'⟩ ⟨dr + i, by rw [← hRr]; exact h'⟩ hRr hXB rfl).trans
+        ((raze_rowN b _ hf.2 hbb (l := l) (by simpa using hl) (j := i) (by simpa using hi) _ _ (by rw [← hDR])).trans
+          (row_congr (y := ⟨ps[l].2.held.2.1, ps[l].2.held.2.2.2.2.2⟩) ((Array.getElem_map ..).trans (congrArg (fun c : Part (.sum a b) => (⟨c.2.2.1, c.2.2.2.2.2.2⟩ : Part b)) hH)) i _ _))
+    have hT : R.2.2.1.get ⟨q, hq⟩ = ps[l].2.held.2.2.1.get ⟨j, hj⟩ := by
+      rw [← hR, Obj.raze.eq_4]
+      unfold need
+      rw [dif_pos hf]
+      dsimp only
+      rw [razeTo_getN _ _ (razeTo_toList_boolean _ _ _) (by simpa using hl) (j := j) (by simpa using hj) q hq
+        (by rw [off_map, off_map] <;> first | exact e | intro; rfl)]
+      exact get_congr (y := ⟨ps[l].1, ps[l].2.held.2.2.1⟩) ((Array.getElem_map ..).trans (congrArg
+        (fun c : Part (.sum a b) => (⟨c.1, c.2.2.2.1⟩ : (n : USize) × Arr .boolean n)) hH)) j _ hj
+    have hI : (R.2.2.2.1.get ⟨q, hq⟩).toInt = ((min (max (ps[l].2.held.2.2.2.1.get ⟨j, hj⟩).toInt 0).toNat
+        ((if ps[l].2.held.2.2.1.get ⟨j, hj⟩ then ps[l].2.held.2.1.toNat else ps[l].2.held.1.toNat) - 1) +
+        (if ps[l].2.held.2.2.1.get ⟨j, hj⟩ then dr else dl) : Nat) : Int) := by
+      rw [← hR, Obj.raze.eq_4]; unfold need; rw [dif_pos hf]; dsimp only
+      have hjH : j < ((ps.map fun c => (⟨c.1, c.2.held⟩ : Part (.sum a b)))[l]'(by simpa using hl)).1.toNat := by
+        rw [hH]; exact hj
+      rw [razeTo_getN _ _ (razeTo_toList_mapIdx _ _ _ _ fun _ _ => ⟨_, rfl⟩) (by simpa using hl) (j := j)
+        (by rw [Array.getElem_mapIdx]; exact hjH) q hq (by rw [off_mapIdx, off_map] <;> first | exact e | intros; rfl),
+        get_congr (Array.getElem_mapIdx ..) j _ hjH]
+      dsimp only
+      rw [hdl, hdr, place_off_get _ (by rw [c1]; omega) (by rw [c2]; omega), eT, eX, c2, c1]
+    rw [← held_row ps[l].2 hfit ⟨j, hj⟩, row_sum_eq R, row_sum_eq ps[l].2.held, hT]
+    have hs := held_side ps[l].2 ⟨j, hj⟩
+    cases ht : ps[l].2.held.2.2.1.get ⟨j, hj⟩
+    · simp only [ht, Bool.false_eq_true, ↓reduceIte] at hI ⊢
+      exact congrArg Sum.inl (side_read_at _ _ (by rw [hLn]; omega) (fun i hi => hRA i hi _) hI (hs.2 ht))
+    · simp only [ht, ↓reduceIte] at hI ⊢
+      exact congrArg Sum.inr (side_read_at _ _ (by rw [hRn]; omega) (fun i hi => hRB i hi _) hI (hs.1 ht))
+
+#print axioms raze_rowN
 
 end LeetQ.Rel.KernelWF
