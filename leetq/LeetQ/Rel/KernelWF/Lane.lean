@@ -2,7 +2,7 @@
   The lane facts every code spec reads: which layout `laneKind` names, a lane width as a `USize`, a code
   at a byte lane as its little-endian field, and a payload that holds all its ids.
 -/
-import LeetQ.Rel.Code
+import LeetQ.Run.Code
 import QLean.Verify.Ids
 import QLean.Verify.Encoding
 

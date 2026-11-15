@@ -3,7 +3,7 @@
   kernels over a `Rel`'s two payloads, with the order, the power side, the list functions and the
   predicates built on them. The codes they compare through are in `LeetQ.Rel.Code`.
 -/
-import LeetQ.Rel.Code
+import LeetQ.Run.Code
 
 namespace LeetQ.Rel.Alg
 

@@ -8,7 +8,7 @@ import LeetQ.Rel.KernelWF.BagSpec
 import LeetQ.Rel.KernelWF.JoinContent
 import LeetQ.Rel.KernelWF.RowsSpec
 import LeetQ.Rel.KernelWF.ComposeKey
-import LeetQ.Rel.KernelWF.Raze
+import LeetQ.Run.KernelWF.Raze
 
 namespace LeetQ.Rel.Lang.Bits
 

@@ -1,4 +1,4 @@
-import LeetQ.Rel.Lang.Syntax
+import LeetQ.Run.Lang.Syntax
 
 /-! The scope and the words of the Rel language, read by `Embed` from the tokens of a `rel_program` (§c).
 

@@ -2,7 +2,7 @@
   What `pick` CONTAINS: row `k` of `x@i` is row `i[k]` of `x`, the index read unsigned, wherever that
   long is below `x`'s count. Stated over `Enc.get`, the reader `Arr.get` goes through.
 -/
-import LeetQ.Rel.Code
+import LeetQ.Run.Code
 import QLean.Eval.Val
 
 namespace LeetQ.Rel.KernelWF

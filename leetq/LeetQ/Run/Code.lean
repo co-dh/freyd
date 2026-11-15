@@ -10,8 +10,8 @@
   The spec of each operator is the List-level relation on `toList`; `#guard`s below hold each one
   on small literal relations, and the laws that the kernels' Lean bodies make reachable are proved.
 -/
-import LeetQ.Rel.KernelWF.Gather
-import LeetQ.Rel.ValEq
+import LeetQ.Run.KernelWF.Gather
+import LeetQ.Run.ValEq
 import QLean.Kernel.Sort
 import QLean.Kernel.Structural
 import QLean.Kernel.Reduce
@@ -19,7 +19,7 @@ import QLean.Kernel.Elementwise
 import QLean.Kernel.Coc
 import QLean.Verify.Grade
 import QLean.Verify.Chain
-import LeetQ.Rel.KernelWF.Reduce
+import LeetQ.Run.KernelWF.Reduce
 
 namespace LeetQ.Rel.Alg
 

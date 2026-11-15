@@ -5,7 +5,7 @@
   valid UTF-8, where `String.fromUTF8?` answers and is injective.
 -/
 import LeetQ.Rel.KernelWF.CodesSpec
-import LeetQ.Rel.KernelWF.Raze
+import LeetQ.Run.KernelWF.Raze
 
 namespace LeetQ.Rel.Alg
 

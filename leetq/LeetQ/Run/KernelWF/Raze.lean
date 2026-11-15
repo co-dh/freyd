@@ -13,7 +13,7 @@ import QLean.Verify.Ids
 import QLean.Verify.Alp
 import QLean.Verify.EwEnc
 import QLean.Verify.Gather
-import LeetQ.Rel.Core
+import LeetQ.Run.Core
 
 -- the lane widths a `Code` may have: one home for the disjunction every `Code.w` hypothesis states (here, the
 -- earliest module stating it: an id pack's lane is `w = 0 ∨ laneOK(w)`)

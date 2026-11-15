@@ -1,4 +1,4 @@
-import LeetQ.Rel.Alg
+import LeetQ.Run.Alg
 
 /-! # AC-3 (arc consistency, Mackworth's algorithm 3): the delta-round kernel of `νX : s ∩ ⋂ₖ Aₖ\(X Cₖ)`
 

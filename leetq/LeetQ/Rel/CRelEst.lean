@@ -7,11 +7,11 @@
   `rep_<op>C` hands back.
 -/
 import LeetQ.Rel.CRelLoop
-import LeetQ.Rel.CRelLoopDef
+import LeetQ.Run.CRelLoopDef
 import LeetQ.Rel.CRelPower
-import LeetQ.Rel.CRelPowerDef
+import LeetQ.Run.CRelPowerDef
 import LeetQ.Rel.RepSort
-import LeetQ.Rel.CRelEstDef
+import LeetQ.Run.CRelEstDef
 
 namespace LeetQ.Rel
 

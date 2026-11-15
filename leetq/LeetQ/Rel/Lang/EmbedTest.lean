@@ -1,4 +1,4 @@
-import LeetQ.Rel.Lang.Embed
+import LeetQ.Run.Lang.Embed
 import LeetQ.Rel.Programs.Prelude
 /-! The Rel language written inside Lean (`Embed`): the grammar's closedness, a Lean term in a body is an
     error (a keyword in it is a Rel name). The programs written with it are `LeetQ.Rel.Programs`, run by the

@@ -1,4 +1,4 @@
-import LeetQ.Rel.CRelDef
+import LeetQ.Run.CRelDef
 
 section
 namespace LeetQ.Rel

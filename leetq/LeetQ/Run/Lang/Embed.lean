@@ -1,5 +1,5 @@
-import LeetQ.Rel.Lang.Parse
-import LeetQ.Rel.Lang.Expand
+import LeetQ.Run.Lang.Parse
+import LeetQ.Run.Lang.Expand
 import Lean
 
 /-! The Rel language as a closed Lean syntax category, its one grammar: `rel_program n where` and the program's

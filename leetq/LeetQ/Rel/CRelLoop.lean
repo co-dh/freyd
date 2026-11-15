@@ -6,12 +6,12 @@
   a step's spec (`loopOn`'s `F`, at the rounds whose step bit is set).
 -/
 import LeetQ.Rel.CRelFold
-import LeetQ.Rel.CRelFoldDef
+import LeetQ.Run.CRelFoldDef
 import LeetQ.Rel.CRelList
-import LeetQ.Rel.CRelListDef
+import LeetQ.Run.CRelListDef
 import LeetQ.Rel.RepLoop
 import LeetQ.Rel.RepMerge
-import LeetQ.Rel.CRelLoopDef
+import LeetQ.Run.CRelLoopDef
 
 namespace LeetQ.Rel
 

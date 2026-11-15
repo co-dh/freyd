@@ -5,16 +5,16 @@
   the step's own spec (`hS`, at the rounds whose step bit is set), not a size bound.
 -/
 import LeetQ.Rel.CRelRel
-import LeetQ.Rel.CRelRelDef
+import LeetQ.Run.CRelRelDef
 import LeetQ.Rel.RepFold
 import LeetQ.Rel.RepArith
 import LeetQ.Rel.CRelArith
-import LeetQ.Rel.CRelArithDef
+import LeetQ.Run.CRelArithDef
 import LeetQ.Rel.CRelList
-import LeetQ.Rel.CRelListDef
+import LeetQ.Run.CRelListDef
 import LeetQ.Rel.RepSubseq
 import LeetQ.Rel.RepThin
-import LeetQ.Rel.CRelFoldDef
+import LeetQ.Run.CRelFoldDef
 
 namespace LeetQ.Rel
 

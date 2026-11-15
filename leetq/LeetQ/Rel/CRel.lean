@@ -7,7 +7,7 @@
 import LeetQ.Rel.KernelWF.CodesAll
 import LeetQ.Rel.KernelWF.RazeFoR
 import LeetQ.Rel.OkBit
-import LeetQ.Rel.CRelDef
+import LeetQ.Run.CRelDef
 
 namespace LeetQ.Rel
 

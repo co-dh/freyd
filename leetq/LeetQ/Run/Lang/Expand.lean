@@ -1,5 +1,6 @@
 import Lean
-import LeetQ.Rel.Lang.GenSpec
+import LeetQ.Run.Lang.Gen
+import LeetQ.Run.Lang.Elab
 
 /-! The expander of `rel_program n`: each closed definition `x ≜ …` becomes the Lean definition `n.rel.x : CRel A B`,
     a composition of `CRel` ops (`Gen`), so its ok bit is the `&&` of the ops it runs. At elaboration time the
@@ -562,13 +563,23 @@ end
 /-- The theorem of each shared constant (`n.c.c<i>.rep`), and the first combinator met with no lemma. -/
 abbrev PM := StateT (Std.HashMap Name Name × Option Name) RM
 
-/-- The lemma `n` at the proofs `hs` of its parts, its objects inferred from them; none where a part has none. -/
+/-- The constant `n`, which the proofs cite by name: the expander runs as native code, so it does not import the
+    proof modules (`GenSpec`); the module running `rel_program` does, through `Programs.Prelude`. -/
+def need (n : Name) : MetaM Name := do
+  unless (← getEnv).contains n do
+    throwError "rel_program expansion: `{n}` is not in scope; import `LeetQ.Rel.Lang.GenSpec`, which brings it"
+  pure n
+
+/-- The `GenSpec` lemma `Gen.s` (`need`). -/
+def gs (s : Name) : MetaM Name := need (`LeetQ.Rel.Lang.Gen ++ s)
+
+/-- The lemma `Gen.n` at the proofs `hs` of its parts, its objects inferred from them; none where a part has none. -/
 def lem (n : Name) (hs : List (Option Lean.Expr)) : PM (Option Lean.Expr) := do
   let some as := hs.mapM id | return none
-  some <$> mkAppM n as.toArray
+  some <$> mkAppM (← gs n) as.toArray
 
-/-- A leaf lemma whose objects only the term gives. -/
-def lemO (n : Name) (as : Array (Option Lean.Expr)) : PM (Option Lean.Expr) := some <$> mkAppOptM n as
+/-- A leaf lemma `Gen.n` whose objects only the term gives. -/
+def lemO (n : Name) (as : Array (Option Lean.Expr)) : PM (Option Lean.Expr) := do some <$> mkAppOptM (← gs n) as
 
 mutual
 
@@ -585,9 +596,9 @@ partial def prf (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Boo
   -- `const_sound` at `c` itself, so the kernel meets `c =?= node(t) ()` and unfolds `c`, never the data
   let T := (← inferType p).appArg!
   let some (.defnInfo ci) := (← getEnv).find? c | throwError "rel_program expansion: internal: no definition `{c}`"
-  let hb := g ``Gen.Sound.eq #[oE A, oE B, ci.value.appFn!, T, p]
-  let ty := g ``Gen.Sound #[bE false, oE A, oE B, cd, T]
-  addDecl (.thmDecl { name := h, levelParams := [], type := ty, value := g ``Gen.const_sound #[oE A, oE B, mkConst c, T, hb] })
+  let hb := g (← gs `Sound.eq) #[oE A, oE B, ci.value.appFn!, T, p]
+  let ty := g (← gs `Sound) #[bE false, oE A, oE B, cd, T]
+  addDecl (.thmDecl { name := h, levelParams := [], type := ty, value := g (← gs `const_sound) #[oE A, oE B, mkConst c, T, hb] })
   modify fun (m, g) => (m.insert c h, g)
   pure (some (mkConst h))
 
@@ -596,17 +607,17 @@ partial def pprf (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bo
     PM (Option Lean.Expr) := do
   let p {X Y : Obj} {e : Bool} (u : Tm X Y e) := prf pre ρ u
   let q {X Y : Obj} {e : Bool} (u : Tm X Y e) := pprf pre ρ u
-  if closed t then return ← lem ``Gen.pleaf_sound [← p t]
+  if closed t then return ← lem `pleaf_sound [← p t]
   match A, B, d, t with
-  | _, _, _, .val _ | _, _, _, .uni _ | _, _, _, .var _ => lem ``Gen.pleaf_sound [← prfNode pre ρ t]
+  | _, _, _, .val _ | _, _, _, .uni _ | _, _, _, .var _ => lem `pleaf_sound [← prfNode pre ρ t]
   | _, _, _, .share _ R | _, _, _, .own R => q R
-  | _, _, _, .comp R S => lem ``Gen.pcomp_sound [← q R, ← q S]
-  | _, _, _, .conv R => lem ``Gen.pconv_sound [← q R]
-  | _, _, _, .meet R S => lem ``Gen.pmeet_sound [← q R, ← q S]
-  | _, _, _, .join R S => lem ``Gen.pjoin_sound [← q R, ← q S]
-  | _, _, _, .diff R S => lem ``Gen.pdiff_sound [← q R, ← q S]
-  | _, _, _, .ldiv R S UB UC => lem ``Gen.pldiv_sound [← q R, ← q S, ← p UB, ← p UC]
-  | _, _, _, _ => lem ``Gen.pleaf_sound [← p t]
+  | _, _, _, .comp R S => lem `pcomp_sound [← q R, ← q S]
+  | _, _, _, .conv R => lem `pconv_sound [← q R]
+  | _, _, _, .meet R S => lem `pmeet_sound [← q R, ← q S]
+  | _, _, _, .join R S => lem `pjoin_sound [← q R, ← q S]
+  | _, _, _, .diff R S => lem `pdiff_sound [← q R, ← q S]
+  | _, _, _, .ldiv R S UB UC => lem `pldiv_sound [← q R, ← q S, ← p UB, ← p UC]
+  | _, _, _, _ => lem `pleaf_sound [← p t]
 
 /-- A proof of `Gen.Sound (node t) T`, one `GenSpec` lemma per node, following `node`. -/
 partial def prfNode (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bool} (t : Tm A B d) :
@@ -614,33 +625,33 @@ partial def prfNode (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d :
   let p {X Y : Obj} {e : Bool} (u : Tm X Y e) := prf pre ρ u
   let q {X Y : Obj} {e : Bool} (u : Tm X Y e) := pprf pre ρ u
   match A, B, d, t with
-  | _, _, _, .val R => lem ``Gen.val_sound [some (← liftE (relE R))]
-  | A, _, _, .uni (m := m) U => lemO ``Gen.uni_sound #[oE A, uE m, ← liftE (valsE A m U)]
-  | A, B, _, .zero => lemO ``Gen.zero_sound #[oE A, oE B]
-  | A, _, _, .id => lemO ``Gen.id_sound #[oE A]
+  | _, _, _, .val R => lem `val_sound [some (← liftE (relE R))]
+  | A, _, _, .uni (m := m) U => lemO `uni_sound #[oE A, uE m, ← liftE (valsE A m U)]
+  | A, B, _, .zero => lemO `zero_sound #[oE A, oE B]
+  | A, _, _, .id => lemO `id_sound #[oE A]
   | A, _, _, .top V => match ← p V with
-    | some h => lemO ``Gen.top_sound #[oE A, none, none, none, h]
+    | some h => lemO `top_sound #[oE A, none, none, none, h]
     | none => pure none
-  | _, B, _, .mem => lemO ``Gen.mem_sound #[oE B]
-  | .prod A B, _, _, .outl => lemO ``Gen.outl_sound #[oE A, oE B]
-  | .prod A B, _, _, .outr => lemO ``Gen.outr_sound #[oE A, oE B]
-  | A, .sum _ B, _, .inl => lemO ``Gen.inl_sound #[oE A, oE B]
-  | B, .sum A _, _, .inr => lemO ``Gen.inr_sound #[oE A, oE B]
-  | _, _, true, .comp R S => lem ``Gen.comp_sound [← p R, ← p S]
-  | _, _, false, .comp R S => lem ``Gen.compB_sound [← q R, ← q S]
-  | _, _, _, .conv R => lem ``Gen.conv_sound [← p R]
-  | _, _, _, .meet (d := false) (e := false) R S => lem ``Gen.meetB_sound [← q R, ← q S]
-  | _, _, _, .diff (d := false) (e := false) R S => lem ``Gen.diffB_sound [← q R, ← q S]
-  | _, _, _, .meet R S => lem ``Gen.meet_sound [← p R, ← p S]
-  | _, _, _, .join R S => lem ``Gen.join_sound [← p R, ← p S]
-  | _, _, _, .diff R S => lem ``Gen.diff_sound [← p R, ← p S]
-  | _, _, _, .dom R => lem ``Gen.dom_sound [← p R]
-  | _, _, _, .ran R => lem ``Gen.ran_sound [← p R]
-  | _, _, _, .ldiv R S UB UC => lem ``Gen.ldivB_sound [← q R, ← q S, ← p UB, ← p UC]
-  | _, _, _, .rdiv R S UA UB => lem ``Gen.rdiv_sound [← p R, ← p S, ← p UA, ← p UB]
-  | _, _, _, .pair R S => lem ``Gen.pair_sound [← p R, ← p S]
-  | _, _, _, .prod R S => lem ``Gen.prod_sound [← p R, ← p S]
-  | _, _, _, .junc R S => lem ``Gen.junc_sound [← p R, ← p S]
+  | _, B, _, .mem => lemO `mem_sound #[oE B]
+  | .prod A B, _, _, .outl => lemO `outl_sound #[oE A, oE B]
+  | .prod A B, _, _, .outr => lemO `outr_sound #[oE A, oE B]
+  | A, .sum _ B, _, .inl => lemO `inl_sound #[oE A, oE B]
+  | B, .sum A _, _, .inr => lemO `inr_sound #[oE A, oE B]
+  | _, _, true, .comp R S => lem `comp_sound [← p R, ← p S]
+  | _, _, false, .comp R S => lem `compB_sound [← q R, ← q S]
+  | _, _, _, .conv R => lem `conv_sound [← p R]
+  | _, _, _, .meet (d := false) (e := false) R S => lem `meetB_sound [← q R, ← q S]
+  | _, _, _, .diff (d := false) (e := false) R S => lem `diffB_sound [← q R, ← q S]
+  | _, _, _, .meet R S => lem `meet_sound [← p R, ← p S]
+  | _, _, _, .join R S => lem `join_sound [← p R, ← p S]
+  | _, _, _, .diff R S => lem `diff_sound [← p R, ← p S]
+  | _, _, _, .dom R => lem `dom_sound [← p R]
+  | _, _, _, .ran R => lem `ran_sound [← p R]
+  | _, _, _, .ldiv R S UB UC => lem `ldivB_sound [← q R, ← q S, ← p UB, ← p UC]
+  | _, _, _, .rdiv R S UA UB => lem `rdiv_sound [← p R, ← p S, ← p UA, ← p UB]
+  | _, _, _, .pair R S => lem `pair_sound [← p R, ← p S]
+  | _, _, _, .prod R S => lem `prod_sound [← p R, ← p S]
+  | _, _, _, .junc R S => lem `junc_sound [← p R, ← p S]
   | _, _, _, .own R | _, _, _, .share _ R => p R
   | _, _, _, _ =>
     let f := (← node pre ρ t).getAppFn.constName?
@@ -729,8 +740,8 @@ def emit (n : Name) (r : Read) : MetaM Unit := do
         | some p =>
           let kc := mkConst k
           let ty ← mkArrow (← mkEq (← mkAppM ``CRel.ok #[kc]) (toExpr true))
-            (← mkEq (← mkAppM ``Rep.rep #[← mkAppM ``CRel.rel #[kc]]) (← inferType p).appArg!)
-          let pv ← mkAppM ``Gen.Sound.eq #[p]
+            (← mkEq (← mkAppM (← need `LeetQ.Rel.Rep.rep) #[← mkAppM ``CRel.rel #[kc]]) (← inferType p).appArg!)
+          let pv ← mkAppM (← gs `Sound.eq) #[p]
           addDecl (.thmDecl { name := n ++ Name.mkSimple s!"rep_{x}", levelParams := [], type := ty, value := pv })
           pure none
         | none => pure (((← get).2.map toString).getD "?")

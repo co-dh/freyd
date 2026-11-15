@@ -5,7 +5,7 @@
   one-part codes and fits.
 -/
 import LeetQ.Rel.CRelRel
-import LeetQ.Rel.CRelRelDef
+import LeetQ.Run.CRelRelDef
 
 namespace LeetQ.Rel.Rep
 

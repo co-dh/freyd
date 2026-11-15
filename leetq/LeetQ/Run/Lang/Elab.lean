@@ -1,5 +1,5 @@
-import LeetQ.Rel.Algebra
-import LeetQ.Rel.Lang.Syntax
+import LeetQ.Run.Algebra
+import LeetQ.Run.Lang.Syntax
 
 /-! The elaborator of the Rel language (`doc/rel-lang-design.md` §a, §e): names resolved, every term typed
     `A ⟶ B` over the declared objects, definitions expanded, a body whose declared parameter is given a family

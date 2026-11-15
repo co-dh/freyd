@@ -5,7 +5,7 @@
   is `inl` of `X`'s row `k`, then `inr` of `Y`'s row `k - n`). The `2^63` bounds are where the kernels read a
   position as a signed long: past them `Int64.ofNat` wraps negative and the answers differ.
 -/
-import LeetQ.Rel.Alg
+import LeetQ.Run.Alg
 import LeetQ.Rel.KernelWF.RazeSpec
 import QLean.Verify.Structural
 import QLean.Verify.Chain

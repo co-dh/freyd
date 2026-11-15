@@ -3,7 +3,7 @@
   `razeColumn` answers (`raze_len`). Each `_isSome` names the weakest hypothesis under which the kernel
   body answers; each declining input is a hypothesis.
 -/
-import LeetQ.Rel.KernelWF.Raze
+import LeetQ.Run.KernelWF.Raze
 import QLean.Kernel.Scan
 import QLean.Kernel.Search
 import QLean.Dep.Table

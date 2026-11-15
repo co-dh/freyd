@@ -4,9 +4,9 @@
   bound its read-back theorem takes, so `rep_<op>C` holds under that one bit.
 -/
 import LeetQ.Rel.CRel
-import LeetQ.Rel.CRelDef
+import LeetQ.Run.CRelDef
 import LeetQ.Rel.RepOrd
-import LeetQ.Rel.CRelArithDef
+import LeetQ.Run.CRelArithDef
 
 namespace LeetQ.Rel
 

@@ -4,7 +4,7 @@
 -/
 import LeetQ.Rel.KernelWF.JoinContent
 import LeetQ.Rel.KernelWF.CodesAll
-import LeetQ.Rel.KernelWF.Reduce
+import LeetQ.Run.KernelWF.Reduce
 
 namespace LeetQ.Rel.Alg
 

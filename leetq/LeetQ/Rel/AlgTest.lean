@@ -2,7 +2,7 @@
   Guards of the relation algebra: every operator against its `toList` spec on small literal relations.
   Nothing imports this file; it is built so a guard that fails fails the build.
 -/
-import LeetQ.Rel.Alg
+import LeetQ.Run.Alg
 
 namespace LeetQ.Rel.Alg
 

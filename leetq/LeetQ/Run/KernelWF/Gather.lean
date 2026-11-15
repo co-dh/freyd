@@ -7,7 +7,7 @@ import QLean.Kernel.Structural
 import QLean.Verify.Gather
 import QLean.Verify.Raw
 import QLean.Verify.Alp
-import LeetQ.Rel.KernelWF.Raze
+import LeetQ.Run.KernelWF.Raze
 
 namespace LeetQ.Rel.KernelWF
 

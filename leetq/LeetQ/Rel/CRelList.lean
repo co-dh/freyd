@@ -5,11 +5,11 @@
   pieces' bits, each piece's `_ok` lemma reading it as that piece's premises.
 -/
 import LeetQ.Rel.CRelRel
-import LeetQ.Rel.CRelRelDef
+import LeetQ.Run.CRelRelDef
 import LeetQ.Rel.CRelArith
-import LeetQ.Rel.CRelArithDef
+import LeetQ.Run.CRelArithDef
 import LeetQ.Rel.RepPerm
-import LeetQ.Rel.CRelListDef
+import LeetQ.Run.CRelListDef
 
 namespace LeetQ.Rel
 

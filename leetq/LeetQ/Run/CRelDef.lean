@@ -1,5 +1,5 @@
-import LeetQ.Rel.Alg
-import LeetQ.Rel.Core
+import LeetQ.Run.Alg
+import LeetQ.Run.Core
 
 section
 namespace LeetQ.Rel

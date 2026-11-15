@@ -3,9 +3,9 @@
   table side computes it under `tableC`'s one bit. The bit side is read at the codes: `Bits.Enc` says a matrix holds,
   at bit `i·w + j`, a relation between the elements `ua i`, `ub j`, and each bit rule maps encodings to encodings.
 -/
-import LeetQ.Rel.Lang.Bits
+import LeetQ.Run.Lang.Bits
 import LeetQ.Rel.CRelFold
-import LeetQ.Rel.CRelFoldDef
+import LeetQ.Run.CRelFoldDef
 import LeetQ.Rel.KernelWF.BitRows
 import LeetQ.Rel.KernelWF.MemberSpec
 import LeetQ.Rel.RepArith

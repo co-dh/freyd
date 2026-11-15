@@ -4,9 +4,9 @@
   premise of the op's read-back (`rep_tau`, `rep_lamOn`, …), so `rep_τC` … `rep_arrUnionC` hold under that bit alone.
 -/
 import LeetQ.Rel.CRelRel
-import LeetQ.Rel.CRelRelDef
+import LeetQ.Run.CRelRelDef
 import LeetQ.Rel.RepEst
-import LeetQ.Rel.CRelPowerDef
+import LeetQ.Run.CRelPowerDef
 
 namespace LeetQ.Rel
 

@@ -5,14 +5,14 @@
   inputs' bits with it.
 -/
 import LeetQ.Rel.CRel
-import LeetQ.Rel.CRelDef
+import LeetQ.Run.CRelDef
 import LeetQ.Rel.RepMem
 import LeetQ.Rel.RepLambda
 import LeetQ.Rel.RepOps2
 import LeetQ.Rel.RepDiv
 import LeetQ.Rel.RepSymDiv
 import LeetQ.Rel.RepLoop
-import LeetQ.Rel.CRelRelDef
+import LeetQ.Run.CRelRelDef
 
 namespace LeetQ.Rel
 

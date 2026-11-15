@@ -1,11 +1,11 @@
-import LeetQ.Rel.Lang.Gen
+import LeetQ.Run.Lang.Gen
 import LeetQ.Rel.Lang.BitsSpecRun
 import LeetQ.Rel.CRelRel
-import LeetQ.Rel.CRelRelDef
+import LeetQ.Run.CRelRelDef
 import LeetQ.Rel.CRelArith
-import LeetQ.Rel.CRelArithDef
+import LeetQ.Run.CRelArithDef
 import LeetQ.Rel.CRelFold
-import LeetQ.Rel.CRelFoldDef
+import LeetQ.Run.CRelFoldDef
 
 /-! The code of `Gen` read back: one lemma per combinator, saying that where its ok bit is set its relation is
     the allegory's operation on its parts' relations, so `Expand` assembles the correctness of a definition from
