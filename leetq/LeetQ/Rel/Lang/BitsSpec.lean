@@ -309,4 +309,113 @@ theorem rep_compB {R : TP A B} {S : TP B C} {uc : Nat → C.El} (na : Nat) (i j 
 
 #print axioms rep_compB
 
+/-! ### A table's code pairs as bits: `scatterPacked` at one bit -/
+
+/-- Bit `i` is `resAt`'s one-bit field `i`. -/
+theorem bitAt_resAt (P : ByteArray) (i : Nat) : Column.bitAt P i = ((Column.resAt P 0 1 i).toNat == 1) := by
+  have h := resAt_field P 1 8 i (Or.inl ⟨rfl, rfl⟩)
+  rw [Nat.mul_one] at h
+  rw [h, Column.bitAt]
+  generalize P[i / 8]?.getD 0 = x
+  have hs : ((i % 8).toUInt8).toNat % 8 = i % 8 := by simp <;> omega
+  apply Bool.eq_iff_iff.2
+  simp only [beq_iff_eq, ← UInt8.toNat_inj, UInt8.toNat_and, UInt8.toNat_shiftRight, hs, Nat.shiftRight_eq_div_pow,
+    Nat.and_one_is_mod, UInt8.toNat_one]
+
+/-- `k · w + v` with `v < w` determines `k` and `v`. -/
+theorem mul_add_inj {w a b c d : Nat} (hb : b < w) (hd : d < w) : a * w + b = c * w + d ↔ a = c ∧ b = d := by
+  refine ⟨fun h => ?_, fun ⟨h1, h2⟩ => h1 ▸ h2 ▸ rfl⟩
+  have h2 := congrArg (· / w) h
+  simp only at h2
+  rw [Nat.add_comm (a * w), Nat.add_comm (c * w), Nat.add_mul_div_right _ _ (by omega),
+    Nat.add_mul_div_right _ _ (by omega), Nat.div_eq_of_lt hb, Nat.div_eq_of_lt hd] at h2
+  simp only [Nat.zero_add] at h2; subst h2; omega
+
+/-- **`Bits.ofCodes`, one bit**: bit `(a, b)` is set iff some row `r` holds the codes `(a, b)`. -/
+theorem ofCodes_at {na w : Nat} {k v : ByteArray} (hl : len v = len k) (hk : ∀ x ∈ ids k, x < na)
+    (hv : ∀ x ∈ ids v, x < w) (hfit : na * w ≤ 2 ^ 27) (hm : len k < USize.size) {a b : Nat} (ha : a < na)
+    (hb : b < w) :
+    (Bits.ofCodes na w k v).at a b = true ↔
+      ∃ (r : Nat) (h1 : r < (ids k).length) (h2 : r < (ids v).length), (ids k)[r]'h1 = a ∧ (ids v)[r]'h2 = b := by
+  have hw : w ≤ 2 ^ 27 := Nat.le_trans (Nat.le_mul_of_pos_left _ (by omega)) hfit
+  have hna : na ≤ 2 ^ 27 := Nat.le_trans (Nat.le_mul_of_pos_right _ (by omega)) hfit
+  have hn : (len k).toUSize.toNat = len k := USize.toNat_ofNat_of_lt' hm
+  have hkl : (ids k).length = len k := (len_eq_ids k).symm
+  have hvl : (ids v).length = len k := by rw [← len_eq_ids, hl]
+  -- the index column: `k[r] · w + v[r]`
+  have hwU : (w.toUInt64).toNat = w := by simp; omega
+  obtain ⟨M, hM⟩ : ∃ M, M = Kernel.Ew.val Ew.mul Ew.i64 Ew.va nul k (one w.toUInt64) (len k).toUSize := ⟨_, rfl⟩
+  have hix : ∀ r (hr : r < len k), (Column.bitsAt (Kernel.Ew.val Ew.add Ew.i64 Ew.vv nul M v (len k).toUSize)
+      (r * 8) 8).toNat = (ids k)[r]'(hkl ▸ hr) * w + (ids v)[r]'(hvl ▸ hr) := by
+    intro r hr
+    have hr' : r < (len k).toUSize.toNat := by rw [hn]; exact hr
+    have hkr : (ids k)[r]'(hkl ▸ hr) < na := hk _ (List.getElem_mem _)
+    have hvr : (ids v)[r]'(hvl ▸ hr) < w := hv _ (List.getElem_mem _)
+    have hlt := idx_lt hkr hvr
+    have hkw : (ids k)[r]'(hkl ▸ hr) * w ≤ (ids k)[r]'(hkl ▸ hr) * w + (ids v)[r]'(hvl ▸ hr) := Nat.le_add_right _ _
+    have ek := ids_get (b := k) rfl (hkl ▸ hr)
+    have ev := ids_get (b := v) rfl (hvl ▸ hr)
+    have em : (Column.bitsAt M (r * 8) 8).toNat = (ids k)[r]'(hkl ▸ hr) * w := by
+      have h := (valStep_key (Column.bitsAt k (r * 8) 8) (Column.bitsAt (one w.toUInt64) 0 8)
+        (by rw [ek]; omega) (by rw [bitsAt_one, hwU]; omega)).1 (by rw [ek, bitsAt_one, hwU]; omega)
+      rw [ek, bitsAt_one, hwU] at h
+      rw [hM, val_va_get _ _ _ _ hr', bitsAt_one]; exact h
+    have h := (valStep_key (Column.bitsAt M (r * 8) 8) (Column.bitsAt v (r * 8) 8)
+      (by rw [em]; omega) (by rw [ev]; omega)).2 (by rw [em, ev]; omega)
+    rw [em, ev] at h
+    rw [val_vv_get _ _ _ _ hr']; exact h
+  -- the matrix the codes are scattered into: no bit set
+  have hz : (zeros (na + 1)).size / 8 = na + 1 := by
+    rw [zeros, KernelWF.Ew.val_size, USize.toNat_ofNat_of_lt'
+      (Nat.lt_of_lt_of_le (by omega : na + 1 < 2 ^ 32) USize.le_size)]
+    show (na + 1) * 8 / 8 = _; omega
+  have hwT : w.toUSize.toNat = w := toUSize_fit hw
+  have hdsz : (Bits.const false na w).b.size = (na * w + 7) / 8 := by
+    simp only [Bits.const, bitRowsOver]; rw [KernelWF.packOf_size, hz, hwT]; simp
+  have hd : ∀ t < na * w, Column.bitAt (Bits.const false na w).b t = false := by
+    intro t ht
+    simp only [Bits.const, bitRowsOver]
+    rw [bitAt_packOf _ _ _ (by rw [hz, hwT]; simpa using ht)]
+    simp [segRange]
+  have hab := idx_lt ha hb
+  simp only [Bits.ofCodes, Bits.at]
+  rw [← hM]
+  have hix8 : (Kernel.Ew.val Ew.add Ew.i64 Ew.vv nul M v (len k).toUSize).size / 8 = len k := by
+    rw [KernelWF.Ew.val_size, hn]; show len k * 8 / 8 = _; omega
+  generalize Kernel.Ew.val Ew.add Ew.i64 Ew.vv nul M v (len k).toUSize = IX at hix hix8 ⊢
+  rw [bitAt_resAt]
+  obtain ⟨-, hsc⟩ := scatterPacked_sub 1 8 (Or.inl ⟨rfl, rfl⟩) 1 (by simp) (Bits.const false na w).b IX ⟨#[1]⟩ 0 true
+  rw [hsc _ (by rw [hdsz]; omega), hix8]
+  cases hL : ((List.range (len k)).filter fun r => (Column.bitsAt IX (r * 8) 8).toNat == a * w + b).getLast? with
+  | none =>
+    have hnil := List.getLast?_eq_none_iff.1 hL
+    simp only
+    rw [← bitAt_resAt, hd _ hab]
+    simp only [Bool.false_eq_true, false_iff]
+    rintro ⟨r, h1, h2, e1, e2⟩
+    have hr : r < len k := hkl ▸ h1
+    have := List.filter_eq_nil_iff.1 hnil r (List.mem_range.2 hr)
+    rw [hix r hr] at this
+    exact this (by simp [e1, e2])
+  | some r =>
+    have hmem := List.mem_of_getLast? hL
+    rw [List.mem_filter, List.mem_range] at hmem
+    obtain ⟨hr, he⟩ := hmem
+    rw [hix r hr, beq_iff_eq, mul_add_inj (hv _ (List.getElem_mem _)) hb] at he
+    have h1 : (Column.resAt ⟨#[1]⟩ 0 1 0).toNat = 1 := by rw [resAt_field _ 1 8 _ (Or.inl ⟨rfl, rfl⟩)]; decide
+    simp only [↓reduceIte, USize.toNat_zero, Nat.add_zero, h1]
+    exact ⟨fun _ => ⟨r, hkl ▸ hr, hvl ▸ hr, he.1, he.2⟩, fun _ => rfl⟩
+
+/-- **A leaf as bits**: where `R`'s pairs at codes `a < na`, `b < nb` are the rows holding the codes `(a, b)`, the
+    scattered code pairs hold `R`. -/
+theorem rep_leafB {R : Rel A B} {na nb : Nat} {k v : ByteArray} (hl : len v = len k) (hk : ∀ x ∈ ids k, x < na)
+    (hv : ∀ x ∈ ids v, x < nb) (hfit : na * nb ≤ 2 ^ 27) (hm : len k < USize.size)
+    (hR : ∀ a < na, ∀ b < nb, rep R (ua a) (ub b) ↔
+      ∃ (r : Nat) (h1 : r < (ids k).length) (h2 : r < (ids v).length), (ids k)[r]'h1 = a ∧ (ids v)[r]'h2 = b) :
+    (Bits.ofCodes na nb k v).Enc ua ub (TP.leaf R).den := fun a ha b hb =>
+  (ofCodes_at hl hk hv hfit hm ha hb).trans (hR a ha b hb).symm
+
+#print axioms ofCodes_at
+#print axioms rep_leafB
+
 end LeetQ.Rel.Lang.Bits
