@@ -102,8 +102,8 @@ Both are engine-side (`doc/rel-avoid-cons.md` class N and M); the program text h
 | B2 | `Λ(boss°)` has no row at a leaf                               | `kids` adds `leaf nil`; none, or a total `Λ`          |
 | B3 | `est(RR)`, `RR ≜ (π₁R π₁°) ∩ (π₂R π₂°)`: "not testable on     | `party_greedy` as stated has no check; needs a pair   |
 |    | pairs"                                                        | test for a product order                              |
-| B4 | `est(R°)` and a monomorphic `R : [E] ⟶ [E]` are refused:      | `R` is generic in `r` and written already conversed;  |
-|    | "converse of sum"                                             | nothing needed                                        |
+| B4 | resolved: `est(R(rating)°)` and a monomorphic `R : [E] ⟶ [E]` | `R` can take the book's `R ≜ cost ≤ cost°` with       |
+|    | run (τ(Q°) is τ(Q) on swapped pairs; Test.lean `estConv`)     | `est(R°)`; Party.lean still uses the conversed form   |
 | B5 | `μ` on `E ⟶ N×N` builds the universe of `N×N`: `0…1500` runs, | costs bounded by about 1500; needs `μ` not building   |
 |    | `0…2000` is OOM                                               | the target universe (or option H)                     |
 | B6 | `μ` is not semi-naive: height+1 rounds, each over all rows    | work is n·height, not linear; needs a delta `μ`       |
