@@ -250,8 +250,9 @@ def g (n : Name) (as : Array Lean.Expr) : Lean.Expr := mkAppN (mkConst n) as
 
 /-- The bytes `b` as hex text, two lowercase digits a byte (`Gen.unhex` reads it back). -/
 def hex (b : ByteArray) : String :=
-  let d (x : UInt8) : Char := if x < 10 then Char.ofNat (48 + x.toNat) else Char.ofNat (87 + x.toNat)
-  b.foldl (fun s x => (s.push (d (x / 16))).push (d (x % 16))) ""
+  -- ASCII bytes then one UTF-8 check: `String.push` per digit dominated the expansion's profile
+  let d (x : UInt8) : UInt8 := if x < 10 then 48 + x else 87 + x
+  String.fromUTF8! (b.foldl (fun o x => (o.push (d (x / 16))).push (d (x % 16))) (.emptyWithCapacity (2 * b.size)))
 
 /-- An atom column rebuilt from its payload (`Gen.atom`): a fixed-width or boolean one; a symbol, general,
     Frame-of-Reference or ALP payload is not rebuilt, and says so. -/
