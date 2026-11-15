@@ -410,13 +410,6 @@ def showRel (objs : Objs) (s t : OTy) {A B : Obj} (R : Rel A B) : String :=
   let ps := R.nub.toList.mergeSort fun (x, y) (x', y') => ((cmpEl objs s A x x').then (cmpEl objs t B y y')) != .gt
   "{" ++ ", ".intercalate (ps.map fun (x, y) => s!"({showEl objs false s A x}, {showEl objs false t B y})") ++ "}"
 
-/-- An object with a variable left in it. -/
-def OTy.poly : OTy → Bool
-  | .mv _ => true
-  | .prod a b | .sum a b => a.poly || b.poly
-  | .arr a => a.poly
-  | .base _ => false
-
 structure Out where
   /-- Every closed definition's value, with its objects as the program names them. -/
   vals : List (String × Val × OTy × OTy) := []
@@ -437,12 +430,6 @@ def topVal (sh : Share) (env : Env) (st : St) (p : Pos) (e : Expr) (r : Arg) :
   match d, tm with
   | false, tm => let (R, sh) := value sh tm; pure ((⟨A, B, R⟩, zonk st s, zonk st t), sh)
   | true, _ => throw ⟨p, s!"{e.show}: {zonk st s} has no universe; compose a set of its elements before it (§a)"⟩
-
-def objInfo (env : Env) (n : String) : ObjDef → Except Err ObjInfo
-  | .elems ws => pure { ty := .base n, elems := ws, uni := some ⟨_, col ((List.range ws.length).map Int64.ofNat)⟩ }
-  | .range lo hi =>
-    pure { ty := .base n, range := some (lo, hi), uni := some ⟨_, col ((List.range (hi + 1 - lo).toNat).map fun k : Nat => Int64.ofInt (lo + k))⟩ }
-  | .alias o => do let (t, _) ← (oty env [] o).run {}; pure { ty := t }
 
 /-- Run a program: each declaration in order; a definition with no parameters is built once and, when it is
     closed or its source has a universe, evaluated once into a value its users share. One sharing table runs
@@ -520,20 +507,6 @@ def run (prog : Program) (start : Env × Out × Share := ({}, {}, {})) (wrap : S
           throw ⟨p, s!"check failed: {e.show} = {showRel env.objs s t R}, {f.show} = {showRel env.objs s t S}"⟩
       else throw ⟨p, s!"check: the sides have types {s} ⟶ {t} and {s'} ⟶ {t'}"⟩
   pure (env, { out with objs := env.objs, ok := out.ok && sh.ok }, sh)
-
-/-- A prelude definition as a program sees it: an error raised in its body at a use names the definition and its
-    line in the prelude, at the use; one about the arguments (at the use) passes as it is. `perm` is its own
-    converse, the one converse rule kept for a definition (`Tm.own`): `perm° = perm` is a theorem the
-    language cannot derive from the fold `perm` is. -/
-def preludeDef (n : String) (d : Def) : Def :=
-  { d with apply := fun p as => do
-      let r ← tryCatch (d.apply p as) fun e =>
-        throw (if e.pos == p then e else ⟨p, s!"in the prelude's `{n}` (its line {e.pos.line}): {e.msg}"⟩)
-      -- the body's positions are the prelude's: at the use, so what `build` raises later is at the use
-      match n, r with
-      | "perm", .rel q s t => pure (.rel (.own (q.at p)) s t)
-      | _, .rel q s t => pure (.rel (q.at p) s t)
-      | _, .fam q i a b => pure (.fam (q.at p) i a b) }
 
 /-- Run the program `prog` reads in the prelude `pre`'s scope, after `pre`: one environment and one sharing table
     through both. An error of the prelude's own says it is in the prelude. -/
