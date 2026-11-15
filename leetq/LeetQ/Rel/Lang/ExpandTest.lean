@@ -22,9 +22,9 @@ namespace LeetQ.Rel.Lang.ExpandTest
 open LeetQ.Rel LeetQ.Rel.Lang
 
 /-- Every difference between `runProgram prog` and the expansion `gs` (the prelude's `pre` read after it). -/
-def diffs (prog : Program) (gs pre : List (String × Gen.Gv)) : List String :=
+def diffs (prog : Program) (gs pre : List (String × Gen.Gv)) : Nat × List String :=
   match runProgram prog with
-  | .error e => [s!"runProgram: {e}"]
+  | .error e => (0, [s!"runProgram: {e}"])
   | .ok out =>
     let all := gs ++ pre
     -- the obligations are the interpreter's values: each needs an expansion that prints the same
@@ -36,11 +36,12 @@ def diffs (prog : Program) (gs pre : List (String × Gen.Gv)) : List String :=
           if a != b then some s!"{x}: interpreter {a}, expansion {b}" else none
         else some s!"{x}: the expansion's objects differ"
     let ok := (all.filter fun (x, _) => out.vals.any (·.1 == x)).all fun (_, ⟨_, _, c⟩) => c.ok
-    vs ++ (if ok != out.ok then [s!"ok bit: interpreter {out.ok}, expansion {ok}"] else [])
+    (out.vals.length, vs ++ (if ok != out.ok then [s!"ok bit: interpreter {out.ok}, expansion {ok}"] else []))
 
-/-- Fails naming every difference. -/
-def check (n : String) (d : List String) : IO Unit :=
-  unless d.isEmpty do throw (IO.userError s!"{n}: {d.length} differences\n" ++ "\n".intercalate d)
+/-- Fails naming every difference; else says how many definitions agree. -/
+def check (n : String) : Nat × List String → IO Unit
+  | (k, []) => IO.println s!"{n}: {k} definitions agree"
+  | (_, d) => throw (IO.userError (s!"{n}: {d.length} differences\n" ++ "\n".intercalate d))
 
 open Programs in
 #eval check "prelude" (diffs [] [] prelude.expanded)
