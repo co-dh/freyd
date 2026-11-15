@@ -149,6 +149,18 @@ partial def Expr.subst (σ : List (String × Expr)) : Expr → Expr
   -- `x` is bound in the body, so an outer `x` is not replaced there
   | .fix p l x b => .fix p l x (b.subst (σ.filter (·.1 != x)))
 
+/-- Every name `e` mentions, bound or free, operators applied included: a variable not among them captures nothing
+    in `e`. -/
+partial def Expr.names : Expr → List String
+  | .name _ n => [n]
+  | .op _ _ _ as => as.flatMap (·.names)
+  | .app _ n as => n :: as.flatMap (·.names)
+  | .comp a b | .bin _ _ a b | .pair _ a b | .junc _ a b | .fold _ a b => a.names ++ b.names
+  | .inf _ n a b => n :: (a.names ++ b.names)
+  | .conv _ a | .compl _ a => a.names
+  | .lit .. => []
+  | .fix _ _ x b => x :: b.names
+
 /-- A body: a relation, or a test `e ⊑ f` (§e). -/
 inductive Body
   | rel (e : Expr)

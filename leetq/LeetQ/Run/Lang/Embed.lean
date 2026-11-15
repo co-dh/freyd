@@ -158,6 +158,8 @@ syntax (name := rFold1) "⦇" rel "⦈" : rel
 syntax (name := rLit) "{" relLit,+ "}" : rel
 syntax:max (name := rCompl) "∼" rel:max : rel
 syntax:max (name := rConv) rel:max "°" : rel
+-- `R*`, at the level of `°`, so `R°*`, `R*°` need no parentheses; `*` is no name (`Parse.reserved`)
+syntax:max (name := rStar) rel:max "*" : rel
 syntax:60 (name := rComp) rel:60 sameLine rel:61 : rel
 syntax:60 (name := rBin) rel:60 ("∩" <|> "∪" <|> "−" <|> "/" <|> "\\" <|> "×") rel:61 : rel
 -- `μX : φ`, `νX : φ`, one identifier then the body to the end: below every operator, so an operand only in
@@ -314,6 +316,19 @@ partial def prim (s : Syntax) : C (List Lang.Expr) := do
     | [] => failAt s "expected a term"
   | ``rConv => match (← prim s[0]).reverse with
     | e :: es => pure ((.conv (← posOf s[1]) e :: es).reverse)
+    | [] => failAt s "expected a term"
+  -- `e*` on the last of the terms, as `°`: the closure `μX : 𝟙 ∪ e X`, no op of its own, so typed, checked and run
+  -- as every `μ`; `X` primed past every name of `e` and of the scope, so it captures none
+  | ``rStar => match (← prim s[0]).reverse with
+    | e :: es => do
+      let st ← get
+      let used := e.names ++ st.known.map (·.1) ++ st.taken.map (·.1) ++ st.objs
+      let xs := (List.range (used.length + 1)).map fun k => "X" ++ String.ofList (List.replicate k '\'')
+      match xs.find? fun x => !used.contains x && (Parse.builtin x).isNone with
+      | some x =>
+        let q ← posOf s[1]
+        pure ((.fix q true x (.bin q .join (.op q .id [] []) (.comp e (.name q x))) :: es).reverse)
+      | none => failAt s "no variable for the μ of `*` is free of the names in scope"
     | [] => failAt s "expected a term"
   | k =>
     -- Lean gives every category `$x`, at any quotation depth: outside a quotation it is no term of the language

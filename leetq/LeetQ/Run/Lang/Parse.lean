@@ -52,7 +52,7 @@ def isLetter (c : Char) : Bool := c.isAlpha || (0x370 ≤ c.val && c.val ≤ 0x3
 def isIdCont (c : Char) : Bool := isLetter c || c.isDigit || isSub c || c == '\''
 /-- The characters of the grammar itself; any other non-letter is a one-character name (`⊤ ≤ ≼ ∋`). -/
 def reserved : List Char :=
-  ['(', ')', ',', '⟨', '⟩', '[', ']', '⦇', '⦈', '{', '}', '°', '∼', '≜', '⊑', '=', ':', '⟶', '…', '-', '𝒫'] ++
+  ['(', ')', ',', '⟨', '⟩', '[', ']', '⦇', '⦈', '{', '}', '°', '*', '∼', '≜', '⊑', '=', ':', '⟶', '…', '-', '𝒫'] ++
     Bin.table.map (·.1)
 def isSym (c : Char) : Bool := !(c.isWhitespace || isIdCont c || reserved.contains c)
 /-- The form of an object variable: one lowercase Greek letter `α`…`ω`, then only primes and subscript digits. -/

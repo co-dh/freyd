@@ -896,6 +896,26 @@ rel_program closure after Programs.prelude where
     c : N ⟶ N ≜ μX : 𝟙 ∪ (R X)
     check c = {(0,0),(1,1),(2,2),(3,3),(4,4),(0,1),(0,2),(0,3),(1,2),(1,3),(2,3)}
 #guard closure.ok
+-- postfix `*`, at the level of `°`: `R*` reads as that `μ`, its variable primed past every name in scope (the object
+-- `X` here) and in its operand (`X'` here); `°` and `*` chain either way
+#eval readsAll [("R*", "(μX' : (𝟙 ∪ (R X')))"), ("R°*", "(μX' : (𝟙 ∪ (R° X')))"), ("R*°", "(μX' : (𝟙 ∪ (R X')))°"),
+  ("R S*", "(R (μX' : (𝟙 ∪ (S X'))))"), ("(R X')*", "(μX'' : (𝟙 ∪ ((R X') X'')))")]
+-- `R*` against the hand-written `μ` and its value; `R°*` and `R*°` against its converse; `X`, a name of the
+-- program, is not captured by the `μ` of `(R X)*`
+rel_program star after Programs.prelude where
+    obj N = 0…4
+    R : N ⟶ N ≜ {(0,1),(1,2),(2,3)}
+    X : N ⟶ N ≜ {(3,4)}
+    c : N ⟶ N ≜ μZ : 𝟙 ∪ (R Z)
+    check R* = c
+    check R* = {(0,0),(1,1),(2,2),(3,3),(4,4),(0,1),(0,2),(0,3),(1,2),(1,3),(2,3)}
+    check R°* = c°
+    check R*° = c°
+    check (R X)* = μZ : 𝟙 ∪ (R X Z)
+    check (R X)* = {(0,0),(1,1),(2,2),(3,3),(4,4),(2,4)}
+#guard star.ok
+-- `*` is no name
+#eval errAt "obj B = 0…1\n* : B ⟶ B ≜ 𝟙(B)\n" 0 "expected"
 -- the points with an infinite `R`-path: the rounds from `𝟙` written out, which stop changing at the second
 rel_program infPath after Programs.prelude where
     obj N = 0…5
@@ -941,7 +961,7 @@ rel_program muGrow after Programs.prelude where
     g : B ⟶ [B] ≜ μX : r ∪ (⟨X, r⟩ cat)
 #guard !muGrow.ok
 #guard muGrow.failures.map (·.msg) == ["an op ran out of capacity (its twin's ok bit is false); in g, or the μ at " ++
-  "line 941, col 19 ran its cap of 1024 rounds without reaching a fixed point"]
+  "line 961, col 19 ran its cap of 1024 rounds without reaching a fixed point"]
 -- `X` under an operator not monotonic in its argument, or in an antitone place; `ν` with no bound
 #eval errAt "obj B = 0…1\nf : B ⟶ B ≜ νX : ⊤(B,B) ∩ (Λ(X)∋)\n" 2
   "νX: X occurs under Λ at 2:30; Λ is not monotonic in its argument, so the fixed point need not exist"
