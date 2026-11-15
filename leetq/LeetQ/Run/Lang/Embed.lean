@@ -501,11 +501,18 @@ def stmt (s : Syntax) : C Decl := do
     -- a reason is the program's theorem or definition, else the registry's one the resolver gives
     let steps ← (if s[9].getNumArgs == 0 then #[] else s[9][2].getArgs).toList.mapM fun t => do
       unless t.getKind == ``cStep do failAt t "expected a step `_ = e := n`"
-      let q ← posOf t; let x ← expr t[2]; let r ← posOf t[5]; let m ← wordOf t[5]
+      let q ← posOf t; let x ← expr t[2]; let r ← posOf t[5]
+      -- a qualified reason, `laws.estMap`, is read as a term reads `m.x`; a bare one is one word
+      let m ← match t[5][0] with
+        | .ident _ _ c _ => if c.isAtomic then wordOf t[5] else onText t[5] (tokText t[5][0]) Parse.name
+        | _ => wordOf t[5]
       let st ← get
-      -- a name not the program's is the registry's, through the resolver (§2.3)
+      -- a name not the program's is the registry's, through the resolver (§2.3), whose refusal (ambiguous) is the error
       let own := st.known.any (fun k => k.1 == m || k.1 == Parse.infixKey m) || st.thms.contains m
-      let ex := if own || ps.any (·.name == m) then none else st.ext m
+      let ex ← if own || ps.any (·.name == m) then pure none else match st.res m with
+        | .ext e => pure (some e)
+        | .bad _ msg => failAt t[5] msg
+        | .none => pure none
       if let some e := ex then modify fun st => { st with used := e.const :: st.used }
       let isDef := (st.known.any (fun k => k.1 == m || k.1 == Parse.infixKey m) && !ps.any (·.name == m)) ||
         ex.any (fun e => !e.obj && !e.thm)
@@ -513,7 +520,7 @@ def stmt (s : Syntax) : C Decl := do
       let args ← if t[6].getNumArgs == 0 then pure [] else t[6][1].getSepArgs.toList.mapM expr
       if t[4].getNumArgs != 0 && !args.isEmpty then failAt t[6] s!"`≜ {m}` unfolds a definition: it takes no arguments"
       let why ← if t[4].getNumArgs == 0 then
-          if isThm then pure (Why.thm r m args)
+          if isThm then pure (Why.thm r m (if st.thms.contains m then none else ex.map (·.const)) args)
           else failAt t[5] (if isDef then s!"`{m}` is a definition; write `≜ {m}`" else s!"unknown theorem '{m}'")
         else if isDef then pure (Why.unfold r m)
           else failAt t[5] (if isThm then s!"`{m}` is a theorem, not a definition"

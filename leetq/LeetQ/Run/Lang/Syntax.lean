@@ -295,9 +295,10 @@ inductive ObjDef
   deriving Repr, Inhabited
 
 /-- A `calc` step's reason (`doc/rel-mss-proof-design.md` §3): `:= n(R, …)` cites the theorem `n` at the
-    arguments `args` (none when it has no parameters), `:= ≜ n` unfolds or folds back the definition `n`. -/
+    arguments `args` (none when it has no parameters), `:= ≜ n` unfolds or folds back the definition `n`. The
+    cited theorem as the resolver found it: `c`, the registry's constant, or none for the program's own `n`. -/
 inductive Why
-  | thm (p : Pos) (n : String) (args : List Expr)
+  | thm (p : Pos) (n : String) (c : Option Lean.Name) (args : List Expr)
   | unfold (p : Pos) (n : String)
   deriving Repr, Inhabited
 

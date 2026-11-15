@@ -179,13 +179,13 @@ def instantiate (c : Name) (args : List Lang.Expr) (readArg : Lang.Expr → Lean
 /-- The proof of the step `_ r x := why` at `p`, whose goal is `g`; `law y args` the `.aop` theorem `y` names,
     instantiated at `args`. -/
 def step (p : Lang.Pos) (eq : Bool) (x : Lang.Expr) (why : Why) (g : Lean.Expr)
-    (law : String → List Lang.Expr → TermElabM Lean.Expr) : TermElabM Lean.Expr := do
+    (law : String → Option Name → List Lang.Expr → TermElabM Lean.Expr) : TermElabM Lean.Expr := do
   let r := if eq then "=" else "⊑"
   let what (m : MessageData) := m!"{p}: the step `_ {r} {x.show}` is not an instance of {m}"
   match why with
   | .unfold _ y => closeBy g (← `(tactic| rfl)) (what m!"`≜ {y}`")
-  | .thm _ y as => do
-    let h ← law y as
+  | .thm _ y c as => do
+    let h ← law y c as
     let tac ← lawTac (← exprToSyntax h) (← composedAfter h)
     closeBy g tac (what m!"`{cited y as}` : {← inferType h}")
 
@@ -265,7 +265,7 @@ def hypSides (tests : List (String × List Param × Lang.Expr × Lang.Expr)) :
     let hs ← hs.mapM fun h => match hypSides tests h with | .ok s => pure s | .error m => throwError m
     -- a parameter shadows a definition of its name, as a model name does
     let ms' := ms ++ ps.map (·.name)
-    let args := ss.flatMap fun | (_, _, _, .thm _ _ as) => as | _ => []
+    let args := ss.flatMap fun | (_, _, _, .thm _ _ _ as) => as | _ => []
     let es := (e :: f :: ss.map (·.2.2.1) ++ args ++ hs.flatMap fun (a, _, b) => [a, b]).map (inline defs ms')
     let cs ← (es.flatMap (closed defs ms')).eraseDups.mapM fun y => return (y, ← ensure defs model y)
     let env ← getEnv
@@ -280,10 +280,12 @@ def hypSides (tests : List (String × List Param × Lang.Expr × Lang.Expr)) :
       let r ← read s!"the right side of `{x}`" vs (inline defs ms' f) (← inferType l)
       let ty ← relation eq l r
       -- the law `y` the step `_ … t` at `q` cites, at the arguments `as`, each hypothesis discharged
-      let law (q : Lang.Pos) (t : Lang.Expr) (y : String) (as : List Lang.Expr) : TermElabM Lean.Expr := do
-        let some (m, _, qs, _) := thms.find? (·.2.1 == y)
+      -- `c`, the registry's theorem the parser resolved `y` to, or none: the program's own `y`
+      let law (q : Lang.Pos) (t : Lang.Expr) (y : String) (c : Option Name) (as : List Lang.Expr) :
+          TermElabM Lean.Expr := do
+        let some (m, k, qs, _) := thms.find? fun (m, k, _) => c.elim (m == n && k == y) (· == m.str k)
           | throwError "{q}: `{y}` is no theorem of `{n}` nor of a program it is read after"
-        let c := aopName m y
+        let c := aopName m k
         unless env.contains c do throwError "{q}: `{y}` has no Lean proof yet: rel_aop `{m}` declares it, before this step"
         unless qs.length == as.length do throwError "{q}: `{y}` takes {qs.length} argument(s), the step gives {as.length}"
         let tac ← facts.foldrM (init := ← `(tactic| assumption)) fun c acc => do

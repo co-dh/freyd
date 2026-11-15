@@ -79,15 +79,24 @@ rel_aop laws
 #guard_msgs in
 #check @laws.estMap.aop
 
+-- a bare citation two opened programs declare is ambiguous, and the error names both
+/-- error: line 88, col 20: ambiguous name `estMap`: it is [LeetQ.Rel.Programs.mss.estMap, LeetQ.Rel.Lang.RelAopTest.laws.estMap] -/
+#guard_msgs in
 open LeetQ.Rel.Programs.prelude Programs.mss laws in
-/-- A cited law whose hypothesis nothing discharges: `estMap` at `oplus` needs `dom(oplus) = 𝟙`, which no
-    hypothesis of `bad` and no theorem of `laws` states. -/
-rel_program lawsBad where
-    theorem bad : Λ(oplus)est(≥) = oplus := calc
+rel_program lawsAmbiguous where
+    theorem twice : Λ(oplus)est(≥) = oplus := calc
       _ = oplus := estMap(oplus, ≥)
 
+open LeetQ.Rel.Programs.prelude Programs.mss laws in
+/-- A cited law whose hypothesis nothing discharges: `laws.estMap` at `oplus` needs `dom(oplus) = 𝟙`, which no
+    hypothesis of `bad` and no theorem of `laws` states. The program-qualified name picks `laws`'s law where
+    `mss` declares an `estMap` too. -/
+rel_program lawsBad where
+    theorem bad : Λ(oplus)est(≥) = oplus := calc
+      _ = oplus := laws.estMap(oplus, ≥)
+
 /--
-error: line 87, col 7: the step `_ … oplus` cites `estMap`, whose hypothesis
+error: line 96, col 7: the step `_ … oplus` cites `laws.estMap`, whose hypothesis
   dom oplus = 𝟙(Int × Int)
 no hypothesis of `bad` and no theorem proved before it that takes no parameters discharges
 Tactic `assumption` failed
