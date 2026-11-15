@@ -19,8 +19,7 @@ rel_program sudokupc9 after prelude where
     g : Cell ⟶ D ≜ {(0,4),(6,8),(8,5),(10,3),(21,7),(28,2),(34,6),(40,8),(42,4),(49,1),(57,6),(59,3),(61,7),(63,5),(66,2),(72,1),(74,4)}
 
     peer : Cell ⟶ Cell ≜ (unit unit°) ∩ ≠
-    revise(A : α ⟶ α, C : β ⟶ β, X : α ⟶ β) : α ⟶ β ≜ A\(X C)
-    AC3(A : α ⟶ α, C : β ⟶ β, s : α ⟶ β) : α ⟶ β ≜ νX : s ∩ revise(A,C,X)
+    AC3(A : α ⟶ α, C : β ⟶ β, s : α ⟶ β) : α ⟶ β ≜ νX : s ∩ (A\(X C))
     s₀ : Cell ⟶ D ≜ g°\𝟙(D)
     s : Cell ⟶ D ≜ AC3(peer, ≠, s₀)
 

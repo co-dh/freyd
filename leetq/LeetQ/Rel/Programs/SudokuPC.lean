@@ -45,8 +45,7 @@ rel_program sudokupc after prelude where
     g : Cell ⟶ D ≜ {(0,4),(13,1),(15,4)}          -- "4............1.4"
 
     peer : Cell ⟶ Cell ≜ (unit unit°) ∩ ≠
-    revise(A : α ⟶ α, C : β ⟶ β, X : α ⟶ β) : α ⟶ β ≜ A\(X C)
-    AC3(A : α ⟶ α, C : β ⟶ β, s : α ⟶ β) : α ⟶ β ≜ νX : s ∩ revise(A,C,X)
+    AC3(A : α ⟶ α, C : β ⟶ β, s : α ⟶ β) : α ⟶ β ≜ νX : s ∩ (A\(X C))
     s₀ : Cell ⟶ D ≜ g°\𝟙(D)
     s : Cell ⟶ D ≜ AC3(peer, ≠, s₀)
 

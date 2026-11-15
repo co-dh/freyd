@@ -899,9 +899,8 @@ rel_program square after Programs.prelude where
     sqc : D ⟶ D ≜ sq°
     uV : V ⟶ V ≜ 𝟙(V)
     uD : D ⟶ D ≜ 𝟙(D)
-    revise(A : α ⟶ α, C : β ⟶ β, X : α ⟶ β) : α ⟶ β ≜ A\(X C)
     s : V ⟶ D ≜ ⊤(V,D)
-    z : V ⟶ D ≜ νZ : s ∩ revise(A,sq,Z) ∩ revise(A°,sq°,Z)
+    z : V ⟶ D ≜ νZ : s ∩ (A\(Z sq)) ∩ (A°\(Z sq°))
     check z = {(x,0),(x,1),(x,2),(x,3),(y,0),(y,1),(y,4),(y,9)}
 #guard square.ok
 -- `X` under an operator not monotonic in its argument, or in an antitone place; `ν` with no bound; `μ` on an array
