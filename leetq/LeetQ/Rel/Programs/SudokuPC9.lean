@@ -9,7 +9,8 @@ and `π₁\` another. -/
 
 namespace LeetQ.Rel.Programs
 
-rel_program sudokupc9 after csp where
+open LeetQ.Rel.Programs.prelude csp in
+rel_program sudokupc9 where
     obj Cell = 0…80                               -- the cell in row r, column k is 9r+k
     obj Unit = 0…26                               -- rows 0…8, columns 9…17, boxes 18…26
     obj D = 1…9

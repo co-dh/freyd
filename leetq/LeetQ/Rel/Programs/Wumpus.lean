@@ -4,7 +4,8 @@ import LeetQ.Rel.Programs.Prelude
 
 namespace LeetQ.Rel.Programs
 
-rel_program wumpus after prelude where
+open LeetQ.Rel.Programs.prelude in
+rel_program wumpus where
     obj C = {11,12,13,14,21,22,23,24,31,32,33,34,41,42,43,44}   -- the cells [x,y], written xy
     obj N = 0…5                                   -- the steps of the route
 

@@ -4,7 +4,8 @@ import LeetQ.Rel.Programs.Prelude
 
 namespace LeetQ.Rel.Programs
 
-rel_program edit after prelude where
+open LeetQ.Rel.Programs.prelude in
+rel_program edit where
     obj A = {a,b}                                 -- the alphabet
     obj Op = A+(A+A)                              -- Op ::= cpy A ∣ del A ∣ ins A
     obj N = 0…6                                   -- lengths, and the fold rounds

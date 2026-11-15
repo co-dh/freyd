@@ -8,7 +8,8 @@ as the relation `c` and recovers the guests with `win` and `guests`. Design: doc
 
 namespace LeetQ.Rel.Programs
 
-rel_program partyPlan after prelude where
+open LeetQ.Rel.Programs.prelude in
+rel_program partyPlan where
     obj E = {a,b,c,d,e,f,g,h,i,k,l,m}             -- one forest: exStaff a…f, a chain g h i, a tie k l, one employee m
     obj N = 0…40                                  -- ratings and their totals, non-negative
 

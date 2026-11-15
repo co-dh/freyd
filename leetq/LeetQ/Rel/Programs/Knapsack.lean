@@ -7,7 +7,8 @@ whose total weight is within the capacity, one of greatest total value. -/
 
 namespace LeetQ.Rel.Programs
 
-rel_program knapsack after prelude where
+open LeetQ.Rel.Programs.prelude in
+rel_program knapsack where
     obj N = 0…60                                  -- values, weights and their totals
     obj K = {a,b,c,d}                             -- the instances, each its own items
 

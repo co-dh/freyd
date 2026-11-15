@@ -35,7 +35,8 @@ over every `m` at once. -/
 
 namespace LeetQ.Rel.Programs
 
-rel_program sudokupc after csp where
+open LeetQ.Rel.Programs.prelude csp in
+rel_program sudokupc where
     obj Cell = 0…15                               -- the cell in row r, column k is 4r+k
     obj Unit = 0…11                               -- rows 0…3, columns 4…7, boxes 8…11
     obj D = 1…4

@@ -51,7 +51,8 @@ def agrees (n : String) : Bool := match packs n with
 #guard ((packs "knap").getD []).map (·.1) == [0, 1, 2, 3]
 #guard ((packs "knap").getD []).all ((packs "s").getD []).contains
 
-rel_program shown after Programs.knapsack where
+open LeetQ.Rel.Programs.prelude Programs.knapsack in
+rel_program shown where
     print s
     print p
     print knap
@@ -63,7 +64,8 @@ rel_program shown after Programs.knapsack where
   "p = {(a, (5, 4) (6, 5)), (b, (2, 2) (9, 8)), (c, [(1, 9)]), (d, (5, 4) (5, 5)), (d, (5, 4) (5, 6))}",
   "knap = {(a, (5, 4) (6, 5)), (b, (2, 2) (9, 8)), (c, [(1, 9)]), (d, (5, 4) (5, 5))}"]
 
-rel_program wrong after Programs.knapsack where
+open LeetQ.Rel.Programs.prelude Programs.knapsack in
+rel_program wrong where
     check p = X subseq
 
 -- a `check` that fails is a failure: the guards above would not see a silently skipped one

@@ -19,9 +19,15 @@ structure S where
   known : List (String × Nat) := []
   /-- The declared objects. -/
   objs : List String := []
-  /-- Every name defined or declared, with where ("at line 3", "in the prelude"): a second definition of it is an
-      error. -/
+  /-- Every name the program defines or declares, with where ("at line 3"): a second definition of it is an
+      error; a name another program gives is no clash (it is shadowed). -/
   taken : List (String × String) := []
+  /-- The resolver (module design §2.3): a written name to another program's registered definition or object,
+      by Lean's namespace and `open`s; `ns`, whether a written prefix (`csp`) is a namespace. -/
+  res : String → Found := fun _ => .none
+  ns : String → Bool := fun _ => false
+  /-- The constants the resolver gave a name read so far: the program's names that reach other programs. -/
+  used : List Lean.Name := []
   /-- The theorems so far: a `calc` step cites them, a term may not name them (§3). -/
   thms : List String := []
   /-- Inside a parameter's type: an object may be an object variable (§e). -/
@@ -38,6 +44,8 @@ def adv : P Unit := modify fun s => match s.cs[s.i]? with
   | some '\n' => { s with i := s.i + 1, line := s.line + 1, col := 1 }
   | _ => { s with i := s.i + 1, col := s.col + 1 }
 
+def advN (k : Nat) : P Unit := for _ in List.range k do adv
+
 def found : P String := do
   match ← peek with
   | none => pure "the end of the text"
@@ -52,7 +60,7 @@ def isLetter (c : Char) : Bool := c.isAlpha || (0x370 ≤ c.val && c.val ≤ 0x3
 def isIdCont (c : Char) : Bool := isLetter c || c.isDigit || isSub c || c == '\''
 /-- The characters of the grammar itself; any other non-letter is a one-character name (`⊤ ≤ ≼ ∋`). -/
 def reserved : List Char :=
-  ['(', ')', ',', '⟨', '⟩', '[', ']', '⦇', '⦈', '{', '}', '°', '*', '∼', '≜', '⊑', '=', ':', '⟶', '…', '-', '𝒫'] ++
+  ['(', ')', ',', '⟨', '⟩', '[', ']', '⦇', '⦈', '{', '}', '°', '*', '∼', '≜', '⊑', '=', ':', '⟶', '…', '-', '𝒫', '.'] ++
     Bin.table.map (·.1)
 def isSym (c : Char) : Bool := !(c.isWhitespace || isIdCont c || reserved.contains c)
 /-- The form of an object variable: one lowercase Greek letter `α`…`ω`, then only primes and subscript digits. -/
@@ -100,22 +108,72 @@ def builtin (n : String) : Option (Op × Nat) := (Op.table.find? (·.1 == n)).ma
 /-- The key of the infix operator `n`, as its declaration `_n_(R,S)` names it (§c). -/
 def infixKey (n : String) : String := s!"_{n}_"
 
-def isInfix (n : String) : P Bool := do pure ((← get).known.any (·.1 == infixKey n))
+/-- The definition or object the resolver gives `n`, when one. -/
+def S.ext (s : S) (n : String) : Option Ext := match s.res n with | .ext e => some e | _ => none
 
-/-- A name in a term: the longest prefix of the run that is in scope and ends where a letter starts. -/
-def name : P String := do
+/-- `n` is an infix operator: the program's `_n_`, else, unless the program names `n`, a registered infix. -/
+def isInfix (n : String) : P Bool := do
+  let s ← get
+  pure (s.known.any (·.1 == infixKey n) || (!s.known.any (·.1 == n) && (s.ext n).any (·.isInfix)))
+
+/-- The program's name, a builtin, or one the resolver gives (§2.3): what a run of letters is cut at. -/
+def S.inScope (s : S) (n : String) : Bool :=
+  s.known.any (fun k => k.1 == n || k.1 == infixKey n) || (builtin n).isSome ||
+    match s.res n with | .ext _ => true | .bad b _ => b | .none => false
+
+/-- The length of the run of identifier characters at `i`. -/
+def S.runLen (s : S) (i : Nat) : Nat := (List.range (s.cs.size - i)).takeWhile (fun k => s.cs[i + k]?.any isIdCont) |>.length
+
+def S.text (s : S) (a b : Nat) : String := String.ofList (s.cs.extract a b).toList
+
+/-- The name `n` read at `p`: in scope, or one the resolver refuses with a reason (ambiguous, no Rel definition),
+    which is the error. -/
+def resolved (p : Pos) (n : String) : P String := do
+  let s ← get
+  if !(s.known.any (fun k => k.1 == n || k.1 == infixKey n) || (builtin n).isSome) then
+    match s.res n with
+    | .bad _ m => throw ⟨p, m⟩
+    | .ext e => set { s with used := e.const :: s.used }
+    | .none => pure ()
+  pure n
+
+/-- The longest prefix `k` of the `r` characters at the cursor that `ok` holds of and that ends where a letter
+    starts; the whole run when none. -/
+def cutAt (s : S) (r : Nat) (ok : String → Bool) : Nat :=
+  let cut := (List.range r).reverse.find? fun k => ok (s.text s.i (s.i + k + 1)) && (k + 1 == r || s.cs[s.i + k + 1]?.any isLetter)
+  (cut.map (· + 1)).getD r
+
+/-- After the namespace `m` and its `.`: the member, a one-character name or the longest prefix of the run the
+    resolver knows as `m.x` (`csp.AC3peer` is `csp.AC3` then `peer`); a run that is a namespace again goes on. -/
+partial def qual (p : Pos) (m : String) : P String := do
+  adv
   let s ← get
   match s.cs[s.i]? with
   | some c =>
-    if isSym c then do adv; pure c.toString else
-    let r := (List.range (s.cs.size - s.i)).takeWhile (fun k => s.cs[s.i + k]?.any isIdCont) |>.length
-    let inScope (n : String) := s.known.any (fun k => k.1 == n || k.1 == infixKey n) || (builtin n).isSome
-    let cut := (List.range r).reverse.find? fun k =>
-      inScope (String.ofList (s.cs.extract s.i (s.i + k + 1)).toList) &&
-        (k + 1 == r || s.cs[s.i + k + 1]?.any isLetter)
-    let k := (cut.map (· + 1)).getD r
-    for _ in List.range k do adv
-    pure (String.ofList (s.cs.extract s.i (s.i + k)).toList)
+    if isSym c then do adv; resolved p s!"{m}.{c}" else
+    let r := s.runLen s.i
+    if r == 0 then expected "a name after '.'"
+    let w := s!"{m}.{s.text s.i (s.i + r)}"
+    if s.cs[s.i + r]? == some '.' && s.ns w then return ← (do advN r; qual p w)
+    let k := cutAt s r fun x => match s.res s!"{m}.{x}" with | .ext _ | .bad true _ => true | _ => false
+    advN k
+    resolved p s!"{m}.{s.text s.i (s.i + k)}"
+  | none => expected "a name after '.'"
+
+/-- A name in a term: `m.x` where the run before `.` is a namespace (§2.3), else the longest prefix of the run
+    that is in scope and ends where a letter starts. -/
+def name : P String := do
+  let s ← get
+  let p ← pos
+  match s.cs[s.i]? with
+  | some c =>
+    if isSym c then do adv; resolved p c.toString else
+    let r := s.runLen s.i
+    let w := s.text s.i (s.i + r)
+    if s.cs[s.i + r]? == some '.' && s.ns w then return ← (do advN r; qual p w)
+    let k := cutAt s r s.inScope
+    advN k
+    resolved p (s.text s.i (s.i + k))
   | none => expected "a name"
 
 mutual
@@ -139,12 +197,20 @@ partial def oprim : P OExp := do
   | some '[' => adv; let o ← object; tok ']'; pure (.list o)
   | some '(' => adv; let o ← object; tok ')'; pure o
   | _ =>
-    let w ← word
+    let w ← qword
     let s ← get
     -- a variable is not a declared object and not a definition in scope (§e)
     if s.objs.contains w then pure (.name p w)
     else if s.vars && isVar w && !s.known.any (·.1 == w) then pure (.var p w)
-    else throw ⟨p, s!"expected an object, found '{w}'"⟩
+    else match s.res w with
+      | .ext e => if e.obj then do set { s with used := e.const :: s.used }; pure (.name p w) else throw ⟨p, s!"expected an object, found '{w}'"⟩
+      | .bad _ m => throw ⟨p, m⟩
+      | .none => throw ⟨p, s!"expected an object, found '{w}'"⟩
+
+/-- A word, or `m.w` where `m` is a namespace (`board9.Cell`). -/
+partial def qword : P String := do
+  let w ← word
+  if (← peek) == some '.' && (← get).ns w then do adv; let v ← qword; pure s!"{w}.{v}" else pure w
 
 end
 
@@ -182,10 +248,36 @@ def after (s : S) (prog : Program) : S := prog.foldl (init := s) fun s d => matc
   | .«theorem» p n .. => { s with thms := n :: s.thms, taken := (n, at_ p) :: s.taken }
   | _ => s
 
-/-- The scope a program is read in after the prelude `pre` (§c, `Programs.prelude`), itself read in the empty
-    scope: its names and objects, each name taken "in the prelude". -/
-def scope (pre : Program) : S :=
-  let s := after { cs := #[] } pre
-  { s with taken := s.taken.map fun (n, _) => (n, "in the prelude") }
+/-- The operator `n` of an infix key `_n_`, read back by the reader that reads its declaration; none for a name. -/
+def unInfix (k : String) : Option String :=
+  match (do tok '_'; let n ← word; tok '_'; if (← peek).isSome then expected "the end" else pure n : P String).run'
+    { cs := k.toList.toArray } with
+  | .ok n => some n
+  | .error _ => none
+
+/-- The constant of the definition or object `k` (an infix key `_n_` is `n`, the infix bit kept in the registry)
+    of the program `home`. -/
+def constOf (home : Lean.Name) (k : String) : Lean.Name := home.str ((unInfix k).getD k)
+
+/-- The entry of the program `home`'s declaration `d`, when it is a definition or an object. -/
+def extOf (home : Lean.Name) : Decl → Option (String × Ext)
+  | .defn _ k ps .. => some (k, { const := constOf home k, arity := ps.length, isInfix := (unInfix k).isSome })
+  | .obj _ k _ => some (k, { const := home.str k, obj := true })
+  | .«theorem» _ k .. => some (k, { const := home.str k, thm := true })
+  | _ => none
+
+/-- The parts of a written name `m.x` (`csp.AC3`, `csp.≼`), as `name` reads them: words between `.`s. -/
+partial def parts (t : String) : List String :=
+  match go.run' { cs := t.toList.toArray } with | .ok ps => ps | .error _ => [t]
+where go : P (List String) := do
+  let w ← word
+  if (← peek) == some '.' then do adv; pure (w :: (← go)) else pure [w]
+
+/-- The resolver of a text read outside any Lean scope (a test, `typesOf`): every name of the programs `homes`
+    unqualified, a later one shadowing, as if each were `open`ed in order. -/
+def openAll (homes : List (Lean.Name × Program)) (n : String) : Found :=
+  match (homes.flatMap fun (h, prog) => (prog.filterMap (extOf h)).filter fun (k, _) => k == n || k == infixKey n).getLast? with
+  | some (_, e) => .ext e
+  | none => .none
 
 end LeetQ.Rel.Lang.Parse

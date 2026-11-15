@@ -4,7 +4,8 @@ import LeetQ.Rel.Programs.Prelude
 
 namespace LeetQ.Rel.Programs
 
-rel_program chess after prelude where
+open LeetQ.Rel.Programs.prelude in
+rel_program chess where
     obj Sq = 0…63                                 -- the squares, a1 = 0, b1 = 1, …, h8 = 63
     obj Pc = {P,N,B,R,Q,K,p,n,b,r,q,k}            -- the pieces, white then black: colour*6 + kind
     obj Bd = 𝒫(Sq×Pc)                             -- a board: the set of its (square, piece) rows

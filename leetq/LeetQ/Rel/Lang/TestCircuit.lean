@@ -13,7 +13,8 @@ def sorted (xs : List (List Int64)) : List (List Int64) := xs.mergeSort fun a b 
 def rowsA {v : Obj} (f : v.El → List Int64) (R : Rel (.arr .long) v) : List (List Int64) :=
   sorted (R.toList.map fun (xs, y) => xs ++ f y)
 
-rel_program shown after Programs.circuit where
+open LeetQ.Rel.Programs.prelude Programs.circuit in
+rel_program shown where
     print answer
 
 #guard Programs.circuit.ok

@@ -17,7 +17,8 @@ def shown (l : List Nat) : String := "{(∗, " ++ arrText false (l.map toString)
 
 def sorted (l : List Nat) : List Nat := l.mergeSort fun a b => decide (a ≤ b)
 
-rel_program given after Programs.selsort where
+open LeetQ.Rel.Programs.prelude Programs.selsort in
+rel_program given where
     print x
     print y
     print z
@@ -26,7 +27,8 @@ rel_program given after Programs.selsort where
 -- the inputs are the lists above: the program printed with one `print` per input appended
 #guard given.prints == inputs.map fun (n, l) => s!"{n} = {shown l}"
 
-rel_program sorts after Programs.selsort where
+open LeetQ.Rel.Programs.prelude Programs.selsort in
+rel_program sorts where
     print x perm ordered(≤)
     print y perm ordered(≤)
     print z perm ordered(≤)

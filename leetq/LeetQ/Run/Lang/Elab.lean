@@ -371,9 +371,10 @@ def Pre.nilSrcs : Pre → List OTy
   | .bagify _ | .tic _ | .atPos .. | .succ .. | .arith .. | .leq .. | .lt .. | .lit .. => []
 
 /-- A `nil` whose source no context fixed, once the whole term is elaborated, starts at `1`: B&dM's
-    `nil : 1 ⟶ [A]`. A fold's seed `ran(nil)` drops that source, so only this rule gives it (§e). -/
-def settleNil (p : Pos) (x : Pre) : M Unit := x.nilSrcs.forM fun a => do
-  if let .mv _ := zonk (← get) a then unify p "nil's source" a (.base "1")
+    `nil : 1 ⟶ [A]`, `one` the object `1` in scope (`Env.one`). A fold's seed `ran(nil)` drops that source, so only
+    this rule gives it (§e). -/
+def settleNil (one : OTy) (p : Pos) (x : Pre) : M Unit := x.nilSrcs.forM fun a => do
+  if let .mv _ := zonk (← get) a then unify p "nil's source" a one
 
 /-! ### Fixed points: where the variable occurs -/
 
@@ -452,11 +453,31 @@ structure Env where
   objs : Objs := []
   defs : List (String × Def) := []
   params : List (String × Arg) := []
+  /-- The resolver (module design §2.3), and the other programs' definitions and objects by constant: where a name
+      the program does not define goes. -/
+  res : String → Found := fun _ => .none
+  ext : List (Lean.Name × Def) := []
+  extObjs : List (Lean.Name × ObjInfo) := []
+
+/-- The definition `n`: the program's, else the one the resolver gives. -/
+def Env.def? (env : Env) (n : String) : Option Def :=
+  (env.defs.lookup n).orElse fun _ => match env.res n with | .ext e => if e.obj || e.thm then none else env.ext.lookup e.const | _ => none
+
+/-- The infix operator `n`: the program's `_n_`, else the registered infix the resolver gives. -/
+def Env.infix? (env : Env) (n : String) : Option Def :=
+  (env.defs.lookup s!"_{n}_").orElse fun _ => match env.res n with | .ext e => if e.isInfix then env.ext.lookup e.const else none | _ => none
+
+/-- The object `n`: the program's, else the registered object the resolver gives. -/
+def Env.obj? (env : Env) (n : String) : Option ObjInfo :=
+  (env.objs.lookup n).orElse fun _ => match env.res n with | .ext e => if e.obj then env.extObjs.lookup e.const else none | _ => none
+
+/-- The object `1` in scope, the source a `nil` no context fixes starts at (`settleNil`). -/
+def Env.one (env : Env) : OTy := ((env.obj? "1").map (·.ty)).getD (.base "1")
 
 /-- `o` as the program wrote it, resolved: an alias stands for its definition, a variable for its object in `vs`,
     one use's instantiation (§e). -/
 def oty (env : Env) (vs : List (String × OTy) := []) : OExp → M OTy
-  | .name p n => match env.objs.lookup n with
+  | .name p n => match env.obj? n with
     | some i => pure i.ty
     | none => throw ⟨p, s!"unknown object '{n}'"⟩
   | .var p n => match vs.lookup n with
@@ -660,11 +681,12 @@ def constant (env : Env) (p : Pos) (o : Op) (objs : List OExp) : M Arg := do
   | _ => throw ⟨p, s!"{o.sym} takes at most two objects, found {objs.length}"⟩
   pure (.rel q s t)
 
-/-- The declared objects holding all the words `ws` (named elements, or numbers in their range). -/
-def holders (objs : Objs) (ws : List String) : List String :=
+/-- The declared objects holding all the words `ws` (named elements, or numbers in their range), each once: an
+    imported object is in scope under its name and its constant, one object (`Expand.walk`). -/
+def holders (objs : Objs) (ws : List String) : List OTy :=
   let holds (i : ObjInfo) (w : String) : Bool := i.elems.contains w ||
     match i.range, w.toInt? with | some (lo, hi), some k => lo ≤ k && k ≤ hi | _, _ => false
-  (objs.filter fun (_, i) => ws.all (holds i)).map (·.1)
+  ((objs.filter fun (_, i) => ws.all (holds i)).map (·.2.ty)).eraseDups
 
 /-- Why the rows `ts` of a literal's position do not determine its object: they are none (an empty array's
     elements), or several declared objects hold their words. -/
@@ -686,7 +708,7 @@ partial def litTy (objs : Objs) (p : Pos) (ts : List Tup) : M OTy := do
   | _, .leaf _ =>
     let ws := ts.filterMap fun | .leaf w => some w | _ => none
     match holders objs ws with
-    | [n] => pure (.base n)
+    | [o] => pure o
     | [] => throw ⟨p, s!"no declared object has the elements {ws}"⟩
     | _ => fresh
   | _, .pair .. =>
@@ -782,7 +804,7 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
     -- a fixed point's variable at the place it is used, which its errors name
     | some (.rel (.var _ k a b) s t) => pure (.rel (.var p k a b) s t)
     | some a => pure a
-    | none => match env.defs.lookup n with
+    | none => match env.def? n with
       | some d =>
         if d.arity == 0 then (do settle m p [] (← d.apply p []))
         else throw ⟨p, s!"'{n}' takes {d.arity} arguments, found none"⟩
@@ -795,7 +817,7 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
       | none => applied p o (as.map Arg.plain)
   | .app p n args => do
     let as ← elabArgs env m args
-    match env.defs.lookup n with
+    match env.def? n with
     | some d =>
       if d.arity != as.length then throw ⟨p, s!"'{n}' takes {d.arity} arguments, found {as.length}"⟩
       settle m p as (← d.apply p as)
@@ -803,7 +825,7 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
   -- `R n S`: the definition declared `_n_`, given `R` and `S` (§c)
   | .inf p n a b => do
     let x ← elabE env m a; let y ← elabE env m b
-    match env.defs.lookup s!"_{n}_" with
+    match env.infix? n with
     | some d => settle m p [x, y] (← d.apply p [x, y])
     | none => throw ⟨p, s!"unknown infix operator '{n}'"⟩
   | .comp a b => do
