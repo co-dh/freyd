@@ -228,9 +228,11 @@ def run? {A B : Obj} (p : TP A B) : Option (Rel A B) := do
 unsafe def checkOnU : Nat := match unsafeBaseIO (IO.getEnv "LEETQ_CHECK") with | none => 0 | some "paths" => 1 | some _ => 2
 @[implemented_by checkOnU] opaque checkOn : Nat
 
-/-- Stops the process naming the difference; the `Nat` result is `0` only so a branch can depend on it. -/
-unsafe def dieU (msg : String) : Nat := dbgTrace msg fun _ => (unsafeBaseIO (EIO.catchExceptions (IO.Process.exit 1) fun _ => pure 0))
-@[implemented_by dieU] opaque die (msg : String) : Nat
+/-- Stops the process naming the difference. Logically it is `x`, so a proof about `run` reads the bit path's
+    answer on every branch (`GenSpec.rep_runC`); compiled, it never returns. -/
+unsafe def dieU {α : Type} (msg : String) (x : α) : α :=
+  dbgTrace msg fun _ => unsafeBaseIO (EIO.catchExceptions (IO.Process.exit 1) fun _ => pure x)
+@[implemented_by dieU] def die {α : Type} (_msg : String) (x : α) : α := x
 
 /-- The plan's relation: `run?`, or its tables where it does not run as bits. In check mode both paths run, the
     path taken is traced (`LEETQ bits` / `LEETQ table`), and `R ⊑ T ∧ T ⊑ R` failing stops the process. -/
@@ -240,7 +242,7 @@ def run {A B : Obj} (p : TP A B) : Rel A B :=
   | _ => match run? p with
     | some R => if checkOn == 0 then R else dbgTrace "LEETQ bits" fun _ => if checkOn == 1 then R else
       let T := p.table
-      if R ⊑ T && T ⊑ R then R else if die "LEETQ DIFF: bit path and table path differ" == 0 then R else T
+      if R ⊑ T && T ⊑ R then R else die "LEETQ DIFF: bit path and table path differ" R
     | none => if checkOn == 0 then p.table else dbgTrace "LEETQ table" fun _ => p.table
 
 /-- `run` with its bit: set where `run?`'s guards (`codeAll`, `fits`, `capsOK`) passed, else the table's
