@@ -117,6 +117,8 @@ def builtins : List (Op × Except String (Option Name)) :=
    (.bagify, none' "AOP's `bagify` is on snoc lists of jobs only (`Tardy.bagify`)"),
    (.tic, none' "AOP declares no non-empty prefixes of `a::xs`"),
    (.loop, none' "AOP declares no iteration to a fixed point from the left"),
+   (.refold, none' "AOP's unfold-then-fold is `(relCata c°)° ≫ relCata S` over an initial algebra of G, \
+    which rel(…) never writes"),
    (.index 0, none' "AOP declares no element at a position")]
 
 /-- The prelude's names with a fixed AOP counterpart, each its prelude body in the fragment: `rel(…)` has no
