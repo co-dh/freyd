@@ -196,7 +196,7 @@ def elabOnce (env : Env) (p : Pos) (n : String) (qs : List Param) (e : Expr) (ty
     let (s, u) := match r with | .rel _ s u => (s, u) | .fam _ _ a b => (a, b)
     declared env' p n rigid ty s u
     settleNil env'.one p r.plain.1
-    pure (r, os) : M (Arg × List (Obj × Obj × Bool))).run { fixes := nv + qs.length, specs }
+    pure (r, os) : M (Arg × List (Obj × Obj × Bool))).run { fixes := nv + qs.length, specs, objs }
   pure (os, r, st)
 
 /-- `n(qs) ≜ e : ty` built once (`elabOnce`); a body that needs keys stays a plan on them, and one that builds no
@@ -268,9 +268,10 @@ def callDef (env : Env) (dp : Pos) (n : String) (qs : List Param) (e : Expr) (ty
         -- tested on pairs; else closed, whose build reports why
         let st ← get
         let f : Option Bool :=
-          if (build env.objs st p (Pre.close p x a why)).toOption.isSome then none
-          else if (build env.objs st p x).toOption.isSome then some false
-          else if (test env.objs st p x).toOption.isSome then some true else none
+          if (build st.objs st p (Pre.close p x a why)).toOption.isSome then none
+          else if (build st.objs st p x).toOption.isSome then some false
+          else if (test st.objs st p x).toOption.isSome then some true else none
+        if f.isNone then if let .error e := build st.objs st p (Pre.close p x a why) then if let .error e2 := test st.objs st p x then throw ⟨p, s!"DBG {e.msg} /// {e2.msg} /// {st.objs.map (·.1)}"⟩
         fs := fs ++ [(f, k?)]; xs := xs ++ [(if f.isNone then Pre.close p x a why else x, f == some true)]
       let some us := vs.mapM (m.lookup ·) | throw ⟨p, s!"internal: `{c}` has an object variable no type names"⟩
       let key := formKey c fs
@@ -311,7 +312,7 @@ def checkOf (env : Env) (p : Pos) (e f : Expr) (eq : Bool) (specs : List Once) :
     try unify p "" s' s; unify p "" t' t
     catch _ => throw ⟨p, s!"check: the sides have types {zonk st s} ⟶ {zonk st t} and {zonk st s'} ⟶ {zonk st t'}"⟩
     settleNil env.one p r.plain.1; settleNil env.one p r'.plain.1
-    pure (r, r') : M (Arg × Arg)).run { specs }
+    pure (r, r') : M (Arg × Arg)).run { specs, objs := env.objs }
   let (⟨A, B, R⟩, s, t) ← top env st p e r
   let (⟨A', B', S⟩, s', t') ← top env st p f r'
   if h : A' = A ∧ B' = B then pure ((p, e.show, f.show, eq, s, t, ⟨A, B, R, h.1 ▸ h.2 ▸ S⟩), st.specs)
@@ -354,7 +355,7 @@ def walk (prog : Program) (env : Env) (wrap : String → Def → Def) (own : Lea
           let r ← elabE env none e
           if let some ty := ty then let (_, s, t) := r.plain; declared env p n rigid ty s t
           settleNil env.one p r.plain.1
-          pure r).run { specs }
+          pure r).run { specs, objs := env.objs }
         specs := st.specs
         let (q, s, t) := r.plain
         let s := zonk st s; let t := zonk st t
@@ -382,7 +383,7 @@ def walk (prog : Program) (env : Env) (wrap : String → Def → Def) (own : Lea
         | _, _ => pure ()
         env :={ env with defs := (n, wrap n d) :: env.defs }
     | .print p e =>
-      let (r, st) ← (do let r ← elabE env none e; settleNil env.one p r.plain.1; pure r).run { specs }
+      let (r, st) ← (do let r ← elabE env none e; settleNil env.one p r.plain.1; pure r).run { specs, objs := env.objs }
       specs := st.specs
       pr := pr ++ [(e.show, ← top env st p e r)]
     | .check p e f eq => let (c, sp) ← checkOf env p e f eq specs; specs := sp; cs := cs ++ [c]
@@ -397,7 +398,7 @@ def walk (prog : Program) (env : Env) (wrap : String → Def → Def) (own : Lea
           try unify q "" s' s; unify q "" t' t
           catch _ => throw ⟨q, s!"theorem `{n}`: {what} {x.show} is {zonk st s'} ⟶ {zonk st t'}, " ++
             s!"the statement's {e.show} is {zonk st s} ⟶ {zonk st t}"⟩
-        : M Unit).run { specs }
+        : M Unit).run { specs, objs := env.objs }
       specs := st.specs
       -- `on A`: each link of the chain (the statement itself when there is none) evaluated as a `check`
       if let some a := on then

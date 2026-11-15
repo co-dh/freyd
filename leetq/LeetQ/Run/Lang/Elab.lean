@@ -347,6 +347,9 @@ structure St where
   fixes : Nat := 0
   /-- The constants built so far at the forms the program's calls take, in the order `emit` adds them. -/
   specs : List Once := []
+  /-- The objects of the program elaborating, where a call tries its arguments' forms (`callDef`): a definition's
+      own scope does not hold the caller's objects nor the universes of its object variables. -/
+  objs : Objs := []
 
 abbrev M := StateT St (Except Err)
 
