@@ -221,13 +221,27 @@ def run? {A B : Obj} (p : TP A B) : Option (Rel A B) := do
   guard (p.fits sz && capsOK (p.cols #[]) sps (sp A) (sp B))
   pure ((Id.run ((p.bits ids sz).run' 0)).table (sp A) (sp B))
 
-/-- The plan's relation: `run?`, or its tables where it does not run as bits. -/
+/-- Differential-test mode, read once from the environment (`LEETQ_CHECK=1 lake env lean <test file>`: unset is off,
+    `LEETQ_CHECK=paths` only traces which path ran, any other value also compares both paths); off in
+    production, where `run` costs one `Bool` test more. An environment variable because `run` is pure and is called
+    from `ev`, so no flag can be threaded to it. -/
+unsafe def checkOnU : Nat := match unsafeBaseIO (IO.getEnv "LEETQ_CHECK") with | none => 0 | some "paths" => 1 | some _ => 2
+@[implemented_by checkOnU] opaque checkOn : Nat
+
+/-- Stops the process naming the difference; the `Nat` result is `0` only so a branch can depend on it. -/
+unsafe def dieU (msg : String) : Nat := dbgTrace msg fun _ => (unsafeBaseIO (EIO.catchExceptions (IO.Process.exit 1) fun _ => pure 0))
+@[implemented_by dieU] opaque die (msg : String) : Nat
+
+/-- The plan's relation: `run?`, or its tables where it does not run as bits. In check mode both paths run, the
+    path taken is traced (`LEETQ bits` / `LEETQ table`), and `R ⊑ T ∧ T ⊑ R` failing stops the process. -/
 def run {A B : Obj} (p : TP A B) : Rel A B :=
   match p with
   | .leaf R => R
   | _ => match run? p with
-    | some R => R
-    | none => p.table
+    | some R => if checkOn == 0 then R else dbgTrace "LEETQ bits" fun _ => if checkOn == 1 then R else
+      let T := p.table
+      if R ⊑ T && T ⊑ R then R else if die "LEETQ DIFF: bit path and table path differ" == 0 then R else T
+    | none => if checkOn == 0 then p.table else dbgTrace "LEETQ table" fun _ => p.table
 
 /-- The plan `p`, or the table `t` as a leaf where there is none. -/
 def orLeaf {m : Type → Type} [Monad m] {A B : Obj} (p : m (Option (TP A B))) (t : m (Rel A B)) : m (TP A B) := do
