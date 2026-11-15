@@ -99,7 +99,7 @@ rel_program printPlan after Programs.blocks where
 #guard moves table.expanded == some [(1, 2), (0, 1)]
 #guard moves cycle.expanded == some []
 
-/-! The rest of the original file (front-end errors, round trips, lists, arith, fixed points, AC traces) is
-    converted in `/data/tmp/rel-139/Test.next.lean` and lands in the next step (see the handoff). -/
+-- WIP rel-139: the rest of the original file (from "The elaborated definitions, as sets") is not converted yet;
+-- the original is `git show 1ab50df:leetq/LeetQ/Rel/Lang/Test.lean`, lines 77 on.
 
 end LeetQ.Rel.Lang.Test
