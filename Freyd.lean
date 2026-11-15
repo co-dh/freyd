@@ -203,6 +203,7 @@ import Freyd.S2_158e_InstanceBound
 import Freyd.S2_158f_SPWallProof
 import Freyd.S2_33
 import Freyd.S1_631_CapitalProjective
+import Freyd.S1_38
 import Freyd.Exacts
 
 /-! ## Axiom hygiene
