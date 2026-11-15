@@ -9,8 +9,6 @@ namespace LeetQ.Rel.Lang.TestKnapsack
 
 open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Lang.Test LeetQ.Rel.Alg QLean
 
-def given : Except Err Out := runProgram Programs.knapsack
-
 /-- The instances of `X`, `K = {a,b,c,d}` coded `0 … 3`, each its items `(value, weight)`. -/
 def items : List (Int64 × List (Int64 × Int64)) :=
   [(0, [(6,5),(5,4),(4,6),(3,3)]), (1, [(7,4),(2,2),(9,8)]), (2, [(1,9)]), (3, [(5,5),(5,6),(5,4)])]
@@ -28,13 +26,13 @@ def sublists {α : Type} : List α → List (List α)
 def best (xs : List (Int64 × Int64)) : Int64 :=
   (((sublists xs).filter (weight · ≤ cap)).map value).foldl max 0
 
-/-- The packings `n` gives each instance. -/
-def packs (o : Out) (n : String) : Option (List (Int64 × List (Int64 × Int64))) :=
-  (get o n .long (.arr XX)).map (·.toList)
+/-- The packings the definition `n` of the program gives each instance. -/
+def packs (n : String) : Option (List (Int64 × List (Int64 × Int64))) :=
+  (get Programs.knapsack.expanded n .long (.arr XX)).map (·.toList)
 
 /-- Every instance has a packing, and every packing is a selection of its items, within the capacity, of the best
     value; the number of packings of each instance is the number of best sublists up to order. -/
-def agrees (o : Out) (n : String) : Bool := match packs o n with
+def agrees (n : String) : Bool := match packs n with
   | none => false
   | some ps => items.all fun (k, xs) =>
     let mine := (ps.filter (·.1 == k)).map (·.2)
@@ -43,22 +41,32 @@ def agrees (o : Out) (n : String) : Bool := match packs o n with
     !mine.isEmpty && mine.all (fun ys => weight ys ≤ cap && value ys == best xs && ys.all xs.contains) &&
       mine.length == bestL.eraseDups.length
 
-#guard given.isOk
+#guard Programs.knapsack.ok
 #guard items.map (best ·.2) == [11, 11, 1, 10]
-#guard agrees (ok given) "s"
-#guard agrees (ok given) "p"
+#guard agrees "s"
+#guard agrees "p"
 -- instance d has two best packings: the specification is a relation
-#guard (((packs (ok given) "s").getD []).filter (·.1 == 3)).length == 2
+#guard (((packs "s").getD []).filter (·.1 == 3)).length == 2
 -- the derived program: one best packing of each instance, among the specification's
-#guard ((packs (ok given) "knap").getD []).map (·.1) == [0, 1, 2, 3]
-#guard ((packs (ok given) "knap").getD []).all ((packs (ok given) "s").getD []).contains
+#guard ((packs "knap").getD []).map (·.1) == [0, 1, 2, 3]
+#guard ((packs "knap").getD []).all ((packs "s").getD []).contains
+
+rel_program shown after Programs.knapsack where
+    print s
+    print p
+    print knap
+
 -- the program's three `check`s hold and print nothing; printed here, `s`, `p`, `knap` are the literals below
-#guard (ok given).prints == []
-#guard (ok (runExt Programs.knapsack "print s\nprint p\nprint knap\n")).prints == [
+#guard Programs.knapsack.prints == []
+#guard shown.prints == [
   "s = {(a, (5, 4) (6, 5)), (b, (2, 2) (9, 8)), (c, [(1, 9)]), (d, (5, 4) (5, 5)), (d, (5, 4) (5, 6))}",
   "p = {(a, (5, 4) (6, 5)), (b, (2, 2) (9, 8)), (c, [(1, 9)]), (d, (5, 4) (5, 5)), (d, (5, 4) (5, 6))}",
   "knap = {(a, (5, 4) (6, 5)), (b, (2, 2) (9, 8)), (c, [(1, 9)]), (d, (5, 4) (5, 5))}"]
--- a `check` that fails is an error: the guards above would not see a silently skipped one
-#guard !(runExt Programs.knapsack "check p = X subseq\n").isOk
+
+rel_program wrong after Programs.knapsack where
+    check p = X subseq
+
+-- a `check` that fails is a failure: the guards above would not see a silently skipped one
+#guard !wrong.ok
 
 end LeetQ.Rel.Lang.TestKnapsack
