@@ -189,7 +189,7 @@ def TP.bits (ids : Array ByteArray) (sz : Obj → Nat) : {A B : Obj} → TP A B 
   | _, _, .diff R S => return (← R.bits ids sz).diff (← S.bits ids sz)
   | A, _, .ldiv R S _ _ => do
     let (y, a) ← R.pairs ids sz true; let s ← S.bits ids sz; let ub ← take ids; let uc ← take ids
-    pure (Bits.ldiv (sz A) y a s ub.1 uc.1)
+    pure (Bits.ldiv (sz A) y a s ub.2 uc.2)
 
 /-- The plan's pairs of codes, the key ascending, of the converse under `flip`: a table's from its codes, sorted,
     with no matrix (so a large table on the left of `≫` or `\` builds none); any other node's from its matrix. -/
