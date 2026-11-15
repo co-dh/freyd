@@ -21,7 +21,7 @@ rel_program blocks where
     ⇝ : [X×X]×(X×X) ⟶ X×X ≜ S'(π₁∋,π₂)            -- the pairs it leads to
     t : [X×X] ⟶ [X×X] ≜ cΛ(⇝)                     -- one move
     s₀ : [X×X] ⟶ [X×X] ≜ ran(Λ(⊤(X,X)⟨𝟙,S₀⟩))     -- the start state
-    r : [X×X] ⟶ [N] ≜ Λ(s₀⊤)                      -- the array 0…27, one fold round each
+    r : [X×X] ⟶ [N] ≜ dom(s₀)Λ(⊤)                 -- the array 0…27, one fold round each
     L(D : α ⟶ β, B : β ⟶ β) : β×N ⟶ β×N ≜ ran(r⦇ran⟨D,D⊤{(0,0)}⟩, π₂ ∪ (π₂⟨π₁B,π₂ succ⟩)⦈)   -- (s,k): s is k steps of B from D
     Q : [X×X] ⟶ [X×X] ≜ ran(L(s₀,t)π₁)            -- the reachable states
     H : [X×X] ⟶ [X×X] ≜ Qh(∋)                     -- the reachable states holding G
