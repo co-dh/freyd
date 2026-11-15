@@ -121,34 +121,38 @@ def arcs (k : Nat) : {V D : Obj} → {d : Bool} → Tm V D d →
     Option (List (Tm V V false × Tm D D false × Tm V V false × Tm D D false))
   | _, _, _, .share _ R => arcs k R
   | _, _, _, .meet R S => return (← arcs k R) ++ (← arcs k S)
-  | V, D, d, t@(.ldiv (A := V') R S UB UC) =>
-    if closed t then some [] else do
+  | V, D, _, .ldiv (A := V') R S UB UC =>
+    if closed R && closed S && closed UB && closed UC then some [] else do
     let ⟨D', C⟩ ← varComp k S
     unless closed R && closed UB && closed UC do none
     if h : V' = V ∧ D' = D then some [(h.1 ▸ R, h.2 ▸ C, UB, UC)] else none
   | _, _, _, t => if closed t then some [] else none
 
-abbrev RM := StateT (Std.HashMap Expr Name) MetaM
+abbrev RM := StateT (Std.HashMap Lean.Expr Name) MetaM
 
-def oE (A : Obj) : Expr := toExpr A
-def uE (n : USize) : Expr := mkApp (mkConst ``USize.ofNat) (toExpr n.toNat)
-def bE (b : Bool) : Expr := toExpr b
-def g (n : Name) (as : Array Expr) : Expr := mkAppN (mkConst n) as
+/-- The constant `c : ty := v`, compiled. -/
+def addConst (c : Name) (ty v : Lean.Expr) : MetaM Unit :=
+  addAndCompile (.defnDecl { name := c, levelParams := [], type := ty, value := v, hints := .opaque, safety := .safe })
+
+def oE (A : Obj) : Lean.Expr := toExpr A
+def uE (n : USize) : Lean.Expr := mkApp (mkConst ``USize.ofNat) (toExpr n.toNat)
+def bE (b : Bool) : Lean.Expr := toExpr b
+def g (n : Name) (as : Array Lean.Expr) : Lean.Expr := mkAppN (mkConst n) as
 
 def longs {n : USize} (x : Arr .long n) : List Int := x.toList.map (·.toInt)
 
 /-- A column rebuilt from its elements: longs, products, arrays; a sum or another atom only empty, as `build`
     makes them (a literal's sum side has no rows). -/
-def valsE : (A : Obj) → (n : USize) → Vals A n → Except String Expr
+def valsE : (A : Obj) → (n : USize) → Vals A n → Except String Lean.Expr
   | .atom .long, n, x => pure (g ``Gen.arrL #[uE n, toExpr (longs x)])
   | .prod a b, n, x => do
     pure (mkApp4 (mkConst ``Prod.mk [0, 0]) (mkApp2 (mkConst ``Vals) (oE a) (uE n))
       (mkApp2 (mkConst ``Vals) (oE b) (uE n)) (← valsE a n x.1) (← valsE b n x.2))
   | .arr b, n, ⟨m, lo, hi, p⟩ => do pure (g ``Gen.arrV #[oE b, uE n, uE m, toExpr (longs lo), toExpr (longs hi), ← valsE b m p])
   | A, n, _ => if n == 0 then pure (g ``Gen.emptyV #[oE A])
-    else throw s!"a column of {n} rows at {repr A} cannot be rebuilt: only longs, products and arrays are"
+    else throw s!"a column of {n} rows of a sum or a non-long atom cannot be rebuilt: only longs, products and arrays are"
 
-def relE {A B : Obj} (R : Rel A B) : Except String Expr := do
+def relE {A B : Obj} (R : Rel A B) : Except String Lean.Expr := do
   pure (g ``Rel.mk #[oE A, oE B, uE R.n, ← valsE A R.n R.key, ← valsE B R.n R.val])
 
 def liftE {α : Type} (x : Except String α) : RM α := match x with
@@ -158,25 +162,26 @@ def liftE {α : Type} (x : Except String α) : RM α := match x with
 mutual
 
 /-- `t`'s code, `Gen.Fn d A B`: a closed `t` is its constant (`share`), any other its node. -/
-partial def code (pre : Name) (ρ : List (Nat × Expr)) {A B : Obj} {d : Bool} (t : Tm A B d) : RM Expr := do
+partial def code (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bool} (t : Tm A B d) : RM Lean.Expr := do
   if closed t then
     let c ← share pre A B (mkApp (← node pre ρ t) (mkConst ``Unit.unit))
     pure (g ``Gen.const #[oE A, oE B, mkConst c])
   else node pre ρ t
 
 /-- The constant of the closed value `v : CRel A B`: one per structurally equal value. -/
-partial def share (pre : Name) (A B : Obj) (v : Expr) : RM Name := do
+partial def share (pre : Name) (A B : Obj) (v : Lean.Expr) : RM Name := do
   if let some c := (← get)[v]? then return c
-  let c := pre ++ `c ++ Name.mkSimple s!"c{(← get).size}"
-  addAndCompile <| .defnDecl { name := c, levelParams := [], type := mkApp2 (mkConst ``CRel) (oE A) (oE B),
-    value := v, hints := .opaque, safety := .safe }
+  let i := (← get).size
+  let c := pre ++ `c ++ Name.mkSimple s!"c{i}"
+  addConst c (mkApp2 (mkConst ``CRel) (oE A) (oE B)) v
   modify (·.insert v c); pure c
 
 /-- The plan of `t` (`Gen.Pl d A B`) where its node has a bit rule, as `Eval.evB` keeps it. -/
-partial def plan? (pre : Name) (ρ : List (Nat × Expr)) {A B : Obj} {d : Bool} (t : Tm A B d) : RM (Option Expr) := do
+partial def plan? (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bool} (t : Tm A B d) : RM (Option Lean.Expr) := do
   if closed t then return some (g ``Gen.pleaf #[oE A, oE B, bE d, ← code pre ρ t])
   match A, B, d, t with
-  | A, B, d, .val _ | A, B, d, .uni _ | A, B, d, .var _ => return some (g ``Gen.pleaf #[oE A, oE B, bE d, ← node pre ρ t])
+  | A, B, _, .val _ | A, B, _, .var _ => return some (g ``Gen.pleaf #[oE A, oE B, bE false, ← node pre ρ t])
+  | A, _, _, .uni _ => return some (g ``Gen.pleaf #[oE A, oE A, bE false, ← node pre ρ t])
   | _, _, _, .share _ R | _, _, _, .own R => plan? pre ρ R
   | A, C, _, .comp (B := B) (d := d) (e := e) R S =>
     return some (g ``Gen.pcomp #[oE A, oE B, oE C, bE d, bE e, ← planOr pre ρ R, ← planOr pre ρ S])
@@ -192,18 +197,18 @@ partial def plan? (pre : Name) (ρ : List (Nat × Expr)) {A B : Obj} {d : Bool} 
   | _, _, _, _ => return none
 
 /-- The plan of `t`, or its table as a leaf (`Bits.orLeaf`). -/
-partial def planOr (pre : Name) (ρ : List (Nat × Expr)) {A B : Obj} {d : Bool} (t : Tm A B d) : RM Expr := do
+partial def planOr (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bool} (t : Tm A B d) : RM Lean.Expr := do
   match ← plan? pre ρ t with
   | some p => pure p
   | none => pure (g ``Gen.pleaf #[oE A, oE B, bE d, ← code pre ρ t])
 
 /-- `φ`'s body as `fun X : CRel A B => …`, the variable `k` read as `X`. -/
-partial def body (pre : Name) (ρ : List (Nat × Expr)) (A B : Obj) (k : Nat) (b : Tm A B false) : RM Expr :=
+partial def body (pre : Name) (ρ : List (Nat × Lean.Expr)) (A B : Obj) (k : Nat) (b : Tm A B false) : RM Lean.Expr :=
   withLocalDeclD `X (mkApp2 (mkConst ``CRel) (oE A) (oE B)) fun x => do
     mkLambdaFVars #[x] (← code pre ((k, x) :: ρ) b)
 
 /-- `t`'s own node, its parts by `code` (or `planOr` where `Eval.ev` runs them as bit matrices). -/
-partial def node (pre : Name) (ρ : List (Nat × Expr)) {A B : Obj} {d : Bool} (t : Tm A B d) : RM Expr := do
+partial def node (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bool} (t : Tm A B d) : RM Lean.Expr := do
   let c {X Y : Obj} {e : Bool} (u : Tm X Y e) := code pre ρ u
   let p {X Y : Obj} {e : Bool} (u : Tm X Y e) := planOr pre ρ u
   match A, B, d, t with
@@ -272,7 +277,7 @@ partial def node (pre : Name) (ρ : List (Nat × Expr)) {A B : Obj} {d : Bool} (
     | none => throwError "rel_program expansion: internal: the fixed-point variable {k} is not bound here"
   | A, B, _, .nu k S b => match arcs k b with
     | some (a :: as) =>
-      let arc (x : Tm A A false × Tm B B false × Tm A A false × Tm B B false) : RM Expr := do
+      let arc (x : Tm A A false × Tm B B false × Tm A A false × Tm B B false) : RM Lean.Expr := do
         let (r, s, u, v) := x
         let ty (X Y : Obj) := mkApp3 (mkConst ``Gen.Fn) (bE false) (oE X) (oE Y)
         pure (mkApp4 (mkConst ``Prod.mk [0, 0]) (ty A A)
@@ -294,13 +299,10 @@ def emit (n : Name) (ds : List (String × Res)) : MetaM Unit := do
     let ty := mkApp2 (mkConst ``CRel) (oE A) (oE B)
     let k := n ++ `rel ++ Name.mkSimple x
     unless !d do throwError "rel_program expansion: internal: `{x}` needs keys"
-    let val := mkApp v (mkConst ``Unit.unit)
-    addAndCompile <| .defnDecl { name := k, levelParams := [], type := ty, value := val, hints := .opaque,
-      safety := .safe }
-    pure (g ``Gen.entry #[toExpr x, oE A, oE B, mkConst k]) : RM (List Expr)).run' {}
+    addConst k ty (mkApp v (mkConst ``Unit.unit))
+    pure (g ``Gen.entry #[toExpr x, oE A, oE B, mkConst k]) : RM (List Lean.Expr)).run' {}
   let ety := mkApp2 (mkConst ``Prod [0, 0]) (mkConst ``String) (mkConst ``Gen.Gv)
-  addAndCompile <| .defnDecl { name := n ++ `expanded, levelParams := [], type := mkApp (mkConst ``List [0]) ety,
-    value := ← mkListLit ety entries, hints := .opaque, safety := .safe }
+  addConst (n ++ `expanded) (mkApp (mkConst ``List [0]) ety) (← mkListLit ety entries)
 
 end Expand
 
