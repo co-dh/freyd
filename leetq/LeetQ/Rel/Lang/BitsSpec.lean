@@ -5,6 +5,7 @@
 -/
 import LeetQ.Rel.Lang.Bits
 import LeetQ.Rel.CRelFold
+import LeetQ.Rel.CRelFoldDef
 import LeetQ.Rel.KernelWF.BitRows
 import LeetQ.Rel.KernelWF.MemberSpec
 import LeetQ.Rel.RepArith

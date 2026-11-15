@@ -4,7 +4,9 @@ import LeetQ.Rel.RepDiv
 import LeetQ.Rel.RepMem
 import LeetQ.Rel.RepFold
 import LeetQ.Rel.CRelRel
+import LeetQ.Rel.CRelRelDef
 import LeetQ.Rel.CRelLoop
+import LeetQ.Rel.CRelLoopDef
 import LeetQ.Rel.AC3Def
 
 /-! # AC-3 (arc consistency, Mackworth's algorithm 3): the delta-round kernel (`AC3Def.lean`) and its agreement with the naive rounds -/
