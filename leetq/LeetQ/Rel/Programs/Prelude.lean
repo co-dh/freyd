@@ -19,10 +19,12 @@ rel_program prelude where
 
     -- The list functions of B&dM written as their definitions (diagram order); `ran(nil)` is the fold's seed [].
 
-    head : [α] ⟶ α ≜ cons° π₁                                     -- B&dM p.267 head = outl cons°
-    tail : [α] ⟶ [α] ≜ cons° π₂                                   -- B&dM p.149 tail = outr cons°
-    init : [α] ⟶ [α] ≜ snoc° π₁                                   -- B&dM p.249 init = outl snoc°
-    last : [α] ⟶ α ≜ snoc° π₂                                     -- B&dM p.267 last = outr snoc°
+    -- `at(0)τ ∩ 𝟙` holds the one-element arrays; it stands for τ°, whose converse does not run on demand.
+
+    head : [α] ⟶ α ≜ at(0)                                        -- B&dM p.267 head = outl cons°
+    tail : [α] ⟶ [α] ≜ cat° dom(π₁(at(0)τ ∩ 𝟙))π₂                 -- B&dM p.149 tail = outr cons°
+    init : [α] ⟶ [α] ≜ cat° dom(π₂(at(0)τ ∩ 𝟙))π₁                 -- B&dM p.249 init = outl snoc°
+    last : [α] ⟶ α ≜ cat° π₂(at(0)τ ∩ 𝟙)at(0)                     -- B&dM p.267 last = outr snoc°
     prefix : [α] ⟶ [α] ≜ ⦇ran(nil), nil ∪ cons⦈                -- B&dM p.126 prefix = ⦇[nil, nil ∪ cons]⦈
     suffix : [α] ⟶ [α] ≜ cat° π₂                                  -- B&dM p.127 suffix, dual to prefix: x ⧺ y ↦ y
     concat : [[α]] ⟶ [α] ≜ ⦇ran(nil), cat⦈                    -- B&dM p.129 concat = ⦇[nil, cat]⦈
@@ -35,7 +37,7 @@ rel_program prelude where
     -- language keeps for this one name (`Tm.own`), because `perm° = perm` cannot be derived from the fold.
 
     perm : [α] ⟶ [α] ≜ ⦇ran(nil), add⦈ where add ≜ (𝟙×cat°)⟨π₂π₁,⟨π₁,π₂π₂⟩cons⟩cat
-    ordered(Q : α ⟶ α) : [α] ⟶ [α] ≜ 𝟙 − dom(tails ∋ cons°(π₁∼Q ∩ (π₂∋)))   -- every element is Q-related to each later one
+    ordered(Q : α ⟶ α) : [α] ⟶ [α] ≜ 𝟙 − dom(tails ∋ ⟨at(0),tail⟩(π₁∼Q ∩ (π₂∋)))   -- every element is Q-related to each later one
     sort(Q : α ⟶ α) : [α] ⟶ [α] ≜ perm ordered(Q)
 
 end LeetQ.Rel.Programs
