@@ -472,7 +472,7 @@ theorem rep_cons {K B : Obj} (P : Rel K (.prod B (.arr B)))
         rw [List.getElem_cons_zero, hpk _ hFf' ⟨_, hb⟩ ⟨len xi + r, by rw [hcN, hmN]; omega⟩ (by
             dsimp only
             rw [← ids_getElem (b := g) (j := pre(r) + r + 0) (by rw [hgl]; omega)]; exact hgh r hr),
-          raze_row_full B tl (Rel.val P).1 hRf hN, dif_neg (show ¬ len xi + r < m.toNat by omega)]
+          raze_row B tl (Rel.val P).1 hRf hN, dif_neg (show ¬ len xi + r < m.toNat by omega)]
         exact congrArg _ (Fin.ext (show len xi + r - m.toNat = r by omega))
       | succ t =>
         have ht : t < cnt(r) := by simp only [List.length_cons] at h2; omega
@@ -481,7 +481,7 @@ theorem rep_cons {K B : Obj} (P : Rel K (.prod B (.arr B)))
             rw [show pre(r) + r + (t + 1) = pre(r) + r + 1 + t by omega,
               ← ids_getElem (b := g) (j := pre(r) + r + 1 + t) (by rw [hgl]; omega)]
             exact hgt r t hr ht),
-          raze_row_full B tl (Rel.val P).1 hRf hN, dif_pos (show pre(r) + t < m.toNat by omega)]
+          raze_row B tl (Rel.val P).1 hRf hN, dif_pos (show pre(r) + t < m.toNat by omega)]
         have hdl' : pre(r) + t < len xi := by rw [hxl]; omega
         obtain ⟨r', hr', -, -, hx, hjd, -⟩ := hD (pre(r) + t) hdl'
         rw [hxi_in r t hr ht] at hx; rw [← hx] at hjd
@@ -971,7 +971,7 @@ theorem cat_row {K B : Obj} (P : Rel K (.prod (.arr B) (.arr B)))
             have hJ : pa(r) + pb(r) + u < (ids g).length := by rw [← len_eq_ids, hglen]; omega
             rw [← ids_getElem (b := g) (j := pa(r) + pb(r) + u) hJ]
             exact Option.some.inj ((List.getElem?_eq_getElem hJ).symm.trans (hA r u hr hu).2)),
-          raze_row_full B ta tb hRf hN, dif_pos (show pa(r) + u < ma.toNat by omega)]
+          raze_row B ta tb hRf hN, dif_pos (show pa(r) + u < ma.toNat by omega)]
         exact hta_row r u hr (by omega) _ _ rfl
       · rw [List.getElem_append_right (by omega), hpk _ hFf' ⟨_, hb⟩
             ⟨len xa + (pb(r) + (u - ca(r))), by rw [hcN, hmaN, hmbN]; omega⟩ (by
@@ -980,7 +980,7 @@ theorem cat_row {K B : Obj} (P : Rel K (.prod (.arr B) (.arr B)))
             rw [show pa(r) + pb(r) + u = pa(r) + pb(r) + ca(r) + (u - ca(r)) by omega,
               ← ids_getElem (b := g) (j := pa(r) + pb(r) + ca(r) + (u - ca(r))) hJ]
             exact Option.some.inj ((List.getElem?_eq_getElem hJ).symm.trans (hB r (u - ca(r)) hr (by omega)).2)),
-          raze_row_full B ta tb hRf hN, dif_neg (show ¬ len xa + (pb(r) + (u - ca(r))) < ma.toNat by omega)]
+          raze_row B ta tb hRf hN, dif_neg (show ¬ len xa + (pb(r) + (u - ca(r))) < ma.toNat by omega)]
         have hl1 : (Vals.row (Rel.val P).1 ⟨r, hr⟩).length = ca(r) := hlna
         have ht2 : u - (Vals.row (Rel.val P).1 ⟨r, hr⟩).length < (Vals.row (Rel.val P).2 ⟨r, hr⟩).length := by
           omega

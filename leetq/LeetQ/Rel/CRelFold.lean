@@ -2,7 +2,7 @@
   The runtime ok-bit on the fold: `foldRound` answers a round's new state and a bit, the `&&` of its step's and of
   its `nubC`/`antiJoinC`/`unionC`'s; `foldRowsC` carries the `&&` of the rounds run; `foldByC` `&&`s it with `numC`'s,
   `topC`'s and `compC`'s. Under that one bit every capacity premise of `rep_foldBy_keep` is decided; what stays is
-  the step's own spec (`hS`, at the rounds whose step bit is set) and `unionC`'s `hat`, not a size bound.
+  the step's own spec (`hS`, at the rounds whose step bit is set), not a size bound.
 -/
 import LeetQ.Rel.CRelRel
 import LeetQ.Rel.RepFold
@@ -53,14 +53,9 @@ theorem round_bits {E V : Obj} (ids : Rel .long (.arr E)) (stepC : Rel .long E �
     `hn`, `hv`; `topC`'s `hN`, `h63`, `hB`; each round `iter` runs has its bit set (`round_bits`, the run before
     the stop), whose `nubC`/`antiJoinC`/`unionC` bits read the round back (`rep_nubC`, `rep_antiJoinC`,
     `rep_unionC`, `round_out`); `compC`'s gives `hC`. What stays: `step`'s spec `hS` at the rounds whose step bit
-    is set, and `unionC`'s `hat`. `T`, `pend₀`, `step`, `elK`, `f` are bound by their equations. -/
+    is set. `T`, `pend₀`, `step`, `elK`, `f` are bound by their equations. -/
 theorem rep_foldByC {E V : Obj} {m n : USize} (e : Vals V m) (X : Vals (.arr E) n)
     (stepC : Rel .long E → Rel .long V → Rel .long V × Bool)
-    -- not a size bound: `razeTo`'s read-back of two atom parts (`rep_unionC`)
-    (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
-      (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
-        USize.size), Vals.RazeFits (.atom t) x y →
-      (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
     (hb : (foldByC X e stepC).2 = true)
     (T : Rel .long (.arr E)) (hT : T = num (idU X) 0)
     (pend₀ : Rel .long V) (hpend : pend₀ = top (A := .long) (Rel.key T) e)
@@ -123,7 +118,7 @@ theorem rep_foldByC {E V : Obj} {m n : USize} (e : Vals V m) (X : Vals (.arr E) 
     obtain ⟨-, hNb, hJb, hUb⟩ := hbit i hi hne
     refine ⟨by rw [hstep, ← nubC_fst]; exact rep_nubC _ hNb, fun r v => ?_⟩
     show rep (unionC _ (antiJoinC _ _).1°).1 r v ↔ _
-    rw [rep_unionC hat _ _ hUb]
+    rw [rep_unionC _ _ hUb]
     show _ ∨ _ ↔ _
     exact or_congr Iff.rfl (round_out (elK i) _ (rep_antiJoinC _ _ hJb) r v)
   have hfb : (foldByC X e stepC).1 = foldBy X e step := by rw [foldByC_fst, hstep']
@@ -138,15 +133,10 @@ theorem rep_foldByC {E V : Obj} {m n : USize} (e : Vals V m) (X : Vals (.arr E) 
 /-- **`foldOn` under `foldOnC`'s bit**: `rep_foldByC` at the step `demandStepC SC`, whose round `i` reads back,
     where its bit is set, by `step_rep_of` at `rep_pairC`, `rep_compC` (the step bit's) as `(SC (D i)).1` on the
     pairs (element, value) — `Sr i` there (`hSr`, at the rounds whose step bit is set, which holds `ranC`'s and
-    `SC`'s bits at `D i`). What stays: `hat`, and `hSr`, the family's own spec. `T`, `pend₀`, `step`, `elK`, `f`,
+    `SC`'s bits at `D i`). What stays: `hSr`, the family's own spec. `T`, `pend₀`, `step`, `elK`, `f`,
     `D` are bound by their equations. -/
 theorem rep_foldOnC {E V : Obj} {m n : USize} (e : Vals V m)
     (SC : Rel (.prod E V) (.prod E V) → Rel (.prod E V) V × Bool) (X : Vals (.arr E) n)
-    -- not a size bound: `razeTo`'s read-back of two atom parts (`rep_unionC`)
-    (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
-      (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
-        USize.size), Vals.RazeFits (.atom t) x y →
-      (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
     (hb : (foldOnC e SC X).2 = true)
     (T : Rel .long (.arr E)) (hT : T = num (idU X) 0)
     (pend₀ : Rel .long V) (hpend : pend₀ = top (A := .long) (Rel.key T) e)
@@ -165,7 +155,7 @@ theorem rep_foldOnC {E V : Obj} {m n : USize} (e : Vals V m)
           (xs[t]'ht, ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm))
           (ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm))) ∧
         w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) :=
-  rep_foldByC e X (demandStepC SC) hat hb T hT pend₀ hpend step hstep Sr elK hE f hf False
+  rep_foldByC e X (demandStepC SC) hb T hT pend₀ hpend step hstep Sr elK hE f hf False
     (fun i hi hne hbi r v => by
       have hbi' := hbi
       simp only [demandStepC, Bool.and_eq_true] at hbi'
@@ -192,10 +182,6 @@ theorem rep_foldOnC {E V : Obj} {m n : USize} (e : Vals V m)
 
 /-- **`fold` under `foldC`'s bit**: `rep_foldOnC` at the constant family `S`, read back as `rep S` outright. -/
 theorem rep_foldC {E V : Obj} {m n : USize} (e : Vals V m) (S : Rel (.prod E V) V) (X : Vals (.arr E) n)
-    (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
-      (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
-        USize.size), Vals.RazeFits (.atom t) x y →
-      (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
     (hb : (foldC e S X).2 = true) :
     ∀ (xs : List E.El) w, rep (foldC e S X).1 xs w ↔ (∃ i, X.row i = xs) ∧
       ∃ ys : List V.El, ∃ hy : ys.length = xs.length + 1,
@@ -203,23 +189,19 @@ theorem rep_foldC {E V : Obj} {m n : USize} (e : Vals V m) (S : Rel (.prod E V) 
         (∀ t (ht : t < xs.length), rep S (xs[t]'ht, ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm))
           (ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm))) ∧
         w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) :=
-  rep_foldOnC e (fun _ => (S, true)) X hat hb _ rfl _ rfl _ (fun _ _ => rfl) _ (fun _ => rfl) _ (fun _ => rfl) _
+  rep_foldOnC e (fun _ => (S, true)) X hb _ rfl _ rfl _ (fun _ _ => rfl) _ (fun _ => rfl) _ (fun _ => rfl) _
     (fun _ => rfl) (fun _ => rep S) (fun _ _ _ _ _ _ _ _ => Iff.rfl)
 
 /-- **`sum` under `sumC`'s bit**: `rep_foldOnC` at `plus` on the round's pairs, which reads back on a pair of `D k`
-    with no premise (`rep_plus`), then `sum_chain`. What stays: `hat`. -/
+    with no premise (`rep_plus`), then `sum_chain`. -/
 theorem Arr.rep_sumC {n : USize} (X : Vals (.arr .long) n)
-    (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
-      (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
-        USize.size), Vals.RazeFits (.atom t) x y →
-      (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
     (hb : (Alg.Arr.sumC X).2 = true) :
     ∀ (xs : List Int64) (w : Int64), rep (Alg.Arr.sumC X).1 xs w ↔ (∃ i, X.row i = xs) ∧
       (∀ t, t ≤ xs.length → -2 ^ 63 < List.sum (List.map Int64.toInt (List.drop t xs)) ∧
         List.sum (List.map Int64.toInt (List.drop t xs)) < 2 ^ 63) ∧ (∀ x ∈ xs, x ≠ nul) ∧
       w = xs.foldr (· + ·) 0 := by
   intro xs w; unfold Alg.Arr.sumC at hb ⊢
-  exact (rep_foldOnC (E := .long) (V := .long) (m := ([0] : List Int64).length.toUSize) (col [0]) (fun D => (plus D.val, true)) X hat hb _ rfl _ rfl _ (fun _ _ => rfl) _ (fun _ => rfl) _ (fun _ => rfl) _
+  exact (rep_foldOnC (E := .long) (V := .long) (m := ([0] : List Int64).length.toUSize) (col [0]) (fun D => (plus D.val, true)) X hb _ rfl _ rfl _ (fun _ _ => rfl) _ (fun _ => rfl) _ (fun _ => rfl) _
     (fun _ => rfl) (fun _ (p : Int64 × Int64) (w : Int64) =>
       w = Ew.intStep Ew.add nul p.1 p.2 ∧ w ≠ nul ∧ (0 ≤ p.2 ↔ p.1 ≤ w))
     (fun _ _ _ _ p w hp _ => by
@@ -231,12 +213,8 @@ theorem Arr.rep_sumC {n : USize} (X : Vals (.arr .long) n)
 
 /-- **`length` under `lengthC`'s bit**: `needSize`'s count fits (else the bit is `false`); `succC`'s bit reads `sc`
     back (`rep_succC`), the decided `2^63` keeps `m + 1` off the null; `rep_foldOnC` at `outr D ≫ sc`, each round's
-    `compC` bit in its step's, `D k` coreflexive, then `length_chain`. What stays: `hat`. -/
+    `compC` bit in its step's, `D k` coreflexive, then `length_chain`. -/
 theorem rep_lengthC {E : Obj} {n : USize} (X : Vals (.arr E) n)
-    (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
-      (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
-        USize.size), Vals.RazeFits (.atom t) x y →
-      (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
     (hb : (lengthC X).2 = true) :
     ∀ (xs : List E.El) (w : Int64), rep (lengthC X).1 xs w ↔ (∃ i, X.row i = xs) ∧ w = Int64.ofNat xs.length := by
   intro xs w
@@ -257,7 +235,7 @@ theorem rep_lengthC {E : Obj} {n : USize} (X : Vals (.arr E) n)
     rintro ⟨⟨i, hi⟩, rfl⟩
     obtain ⟨h1, h2, -⟩ := slicesOf_row X (by omega) hi
     omega
-  refine (rep_foldOnC (E := E) (V := .long) (m := ([0] : List Int64).length.toUSize) (col [0]) (fun D => compC (outr D) (succC (tilCol (X.1.toNat + 1).toUSize)).1) X hat hfb _ rfl _ rfl _ (fun _ _ => rfl) _ (fun _ => rfl) _ (fun _ => rfl) _
+  refine (rep_foldOnC (E := E) (V := .long) (m := ([0] : List Int64).length.toUSize) (col [0]) (fun D => compC (outr D) (succC (tilCol (X.1.toNat + 1).toUSize)).1) X hfb _ rfl _ rfl _ (fun _ _ => rfl) _ (fun _ => rfl) _ (fun _ => rfl) _
     (fun _ => rfl) (fun _ (p : E.El × Int64) w => rep (succC (tilCol (X.1.toNat + 1).toUSize)).1 p.2 w)
     (fun _ _ _ hbk p w hp hcor => ?_) xs w).trans
     (and_congr_right fun hx => length_chain _ X.1.toNat hsc' xs (hL hx) w)
@@ -274,17 +252,13 @@ theorem rep_lengthC {E : Obj} {n : USize} (X : Vals (.arr E) n)
     exact ⟨a.2, ⟨a, ha, rfl⟩, hy⟩
 
 /-- **`map` under `mapC`'s bit**: `rep_foldByC` at the step `consC (pairC (compC el R) pend)`, each round's three
-    bits read it back (`rep_consC`, `rep_pairC`, `rep_compC`), then `map_chain`. What stays: `hat`. -/
+    bits read it back (`rep_consC`, `rep_pairC`, `rep_compC`), then `map_chain`. -/
 theorem rep_mapC {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n)
-    (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
-      (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
-        USize.size), Vals.RazeFits (.atom t) x y →
-      (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
     (hb : (mapC R X).2 = true) :
     ∀ (xs : List A.El) ys, rep (mapC R X).1 xs ys ↔ (∃ i, X.row i = xs) ∧ ys.length = xs.length ∧
       ∀ t (ht : t < xs.length) (ht' : t < ys.length), rep R (xs[t]'ht) (ys[t]'ht') := by
   intro xs ys; unfold mapC at hb ⊢
-  refine (rep_foldByC (nilVal B) X _ hat hb _ rfl _ rfl _ (fun _ _ => rfl)
+  refine (rep_foldByC (nilVal B) X _ hb _ rfl _ rfl _ (fun _ _ => rfl)
     (fun _ eu v => ∃ b, rep R eu.1 b ∧ v = b :: eu.2) _ (fun _ => rfl) _ (fun _ => rfl) False
     (fun i _ _ hbi r v => ?_) xs ys).trans ?_
   · simp only [Bool.and_eq_true] at hbi
@@ -301,16 +275,12 @@ theorem rep_mapC {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n)
 
 /-- **`perm` under `permC`'s bit**: `rep_foldByC` at `permC`'s step, each round's ten bits reading its pieces back
     (`rep_ranC`, `rep_uncatC`, `rep_compC`, `rep_pairC`, `rep_consC`, `rep_catC`) into `perm_step_set`, then
-    `perm_chain`. What stays: `hat`. -/
+    `perm_chain`. -/
 theorem rep_permC {B : Obj} {n : USize} (X : Vals (.arr B) n)
-    (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
-      (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
-        USize.size), Vals.RazeFits (.atom t) x y →
-      (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
     (hb : (permC X).2 = true) :
     ∀ (xs : List B.El) ys, rep (permC X).1 xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Perm xs := by
   intro xs ys; unfold permC at hb ⊢
-  refine (rep_foldByC (nilVal B) X _ hat hb _ rfl _ rfl _ (fun _ _ => rfl)
+  refine (rep_foldByC (nilVal B) X _ hb _ rfl _ rfl _ (fun _ _ => rfl)
     (fun _ eu v => ∃ ys zs, eu.2 = ys ++ zs ∧ v = ys ++ eu.1 :: zs) _ (fun _ => rfl) _ (fun _ => rfl) False
     (fun i _ _ hbi r v => ?_) xs ys).trans ?_
   · simp only [Bool.and_eq_true] at hbi
@@ -334,23 +304,19 @@ theorem rep_permC {B : Obj} {n : USize} (X : Vals (.arr B) n)
     ⟨fun ⟨_, h⟩ => h.symm, fun h => ⟨⟨0, by simp⟩, h.symm⟩⟩ Iff.rfl).trans (perm_chain xs ys))
 
 /-- **`subseq` under `subseqC`'s bit**: `rep_foldByC` at `keep := True`, each round's step read back by
-    `rep_unionC`, `rep_consC`, `rep_pairC` and split by `subseq_keep`, then `subseq_chain`. What stays: `hat`. -/
+    `rep_unionC`, `rep_consC`, `rep_pairC` and split by `subseq_keep`, then `subseq_chain`. -/
 theorem rep_subseqC {B : Obj} {n : USize} (X : Vals (.arr B) n)
-    (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
-      (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
-        USize.size), Vals.RazeFits (.atom t) x y →
-      (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
     (hb : (subseqC X).2 = true) :
     ∀ (xs : List B.El) ys, rep (subseqC X).1 xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Sublist xs := by
   intro xs ys; unfold subseqC at hb ⊢
-  refine (rep_foldByC (nilVal B) X _ hat hb _ rfl _ rfl _ (fun _ _ => rfl)
+  refine (rep_foldByC (nilVal B) X _ hb _ rfl _ rfl _ (fun _ _ => rfl)
     (fun _ eu v => v = eu.1 :: eu.2 ∨ v = eu.2) _ (fun _ => rfl) _ (fun _ => rfl) True
     (fun i _ _ hbi r v => ?_) xs ys).trans ?_
   · simp only [Bool.and_eq_true] at hbi
     obtain ⟨⟨hp, hc⟩, hu⟩ := hbi
     refine subseq_keep _ _ v _ ?_
     show rep (unionC _ _).1 r v ↔ _
-    rw [rep_unionC hat _ _ hu]
+    rw [rep_unionC _ _ hu]
     show _ ∨ _ ↔ _
     rw [rep_consC _ hc, rep_pairC _ _ hp]
     exact or_congr ⟨fun ⟨b, bs, ⟨he, hu⟩, e⟩ => ⟨b, bs, he, hu, e⟩, fun ⟨b, bs, he, hu, e⟩ => ⟨b, bs, ⟨he, hu⟩, e⟩⟩
@@ -375,10 +341,6 @@ theorem rep_diffC {A B : Obj} (R S : Rel A B) (hb : (diffC R S).2 = true) (a : A
     back by its twin's lemma, `swapInC`'s pieces by theirs. `hq` is the test's own spec: where `q`'s bit is set, `q` on any coreflexive keeps the
     pairs `le` holds of. -/
 theorem thinBodyC_rep {B : Obj}
-    (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
-      (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
-        USize.size), Vals.RazeFits (.atom t) x y →
-      (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
     (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B) × Bool) (le : B.El → B.El → Bool)
     (hq : ∀ D, (q D).2 = true → ∀ a b, rep D (a, b) (a, b) → ((∃ c, rep (q D).1 (a, b) c) ↔ le a b = true))
     (D : Rel (.prod B (.arr B)) (.prod B (.arr B))) (hD : ∀ s s', rep D s s' → s = s')
@@ -399,19 +361,15 @@ theorem thinBodyC_rep {B : Obj}
     _ ((rep_domC _ hup).trans (dom_corefl _)) _ (rep_pairC _ _ hss) _ ((rep_ranC _ hrs).trans (dom_corefl _))
     _ (fun a b => hq _ hG2 b a) _ (rep_compC _ _ hq2) _ ((rep_domC _ hsw).trans (dom_corefl _))
     _ (rep_compC _ _ hq3) _ ((rep_domC _ hdown).trans (dom_corefl _)) _ ((rep_domC _ hdu).trans (dom_corefl _))
-    _ (rep_diffC _ _ hl1) _ (rep_diffC _ _ hl2) _ (rep_diffC _ _ hl3) _ (rep_unionC hat _ _ hlone)
+    _ (rep_diffC _ _ hl1) _ (rep_diffC _ _ hl2) _ (rep_diffC _ _ hl3) _ (rep_unionC _ _ hlone)
     _ (rep_consC _ hc1) _ (rep_compC _ _ hua) _ (rep_compC _ _ huu) _ ((rep_ranC _ hru).trans (dom_corefl _))
     _ (rep_compC _ _ hut) _ (rep_pairC _ _ hpu) _ (rep_consC _ hc2) _ (rep_compC _ _ hdy)
-    _ (rep_unionC hat _ _ hb1) _ (rep_unionC hat _ _ hbody)
+    _ (rep_unionC _ _ hb1) _ (rep_unionC _ _ hbody)
 
 /-- **`thinLOn` under `thinLOnC`'s bit**: `rep_foldOnC` at `thinBodyC q`, each round's body read back on its pairs
-    by `thinBodyC_rep`. What stays: `hat`, and `hq`, the test's own spec. -/
+    by `thinBodyC_rep`. What stays: `hq`, the test's own spec. -/
 theorem rep_thinLOnC {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B) × Bool)
     (le : B.El → B.El → Bool) (X : Vals (.arr B) n)
-    (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
-      (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
-        USize.size), Vals.RazeFits (.atom t) x y →
-      (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
     (hq : ∀ D, (q D).2 = true → ∀ a b, rep D (a, b) (a, b) → ((∃ c, rep (q D).1 (a, b) c) ↔ le a b = true))
     (hb : (thinLOnC q X).2 = true) :
     ∀ (xs : List B.El) w, rep (thinLOnC q X).1 xs w ↔ (∃ i, X.row i = xs) ∧
@@ -428,7 +386,7 @@ theorem rep_thinLOnC {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) → 
                 ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm) =
                   xs[t]'ht :: ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm)))) ∧
         w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) :=
-  rep_foldOnC (E := B) (V := .arr B) (m := 1) (nilVal B) (thinBodyC q) X hat hb _ rfl _ rfl _ (fun _ _ => rfl)
+  rep_foldOnC (E := B) (V := .arr B) (m := 1) (nilVal B) (thinBodyC q) X hb _ rfl _ rfl _ (fun _ _ => rfl)
     _ (fun _ => rfl) _ (fun _ => rfl) _ (fun _ => rfl)
     (fun _ (p : B.El × List B.El) v => (p.2 = [] ∧ v = [p.1]) ∨ ∃ b bs, p.2 = b :: bs ∧
       ((le p.1 b = true ∧ v = p.1 :: bs) ∨ (le b p.1 = true ∧ v = p.2) ∨
@@ -436,7 +394,7 @@ theorem rep_thinLOnC {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) → 
     (fun _ _ _ hbi p w hp hcor => by
       obtain ⟨a, y⟩ := p
       simp only [demandStepC, Bool.and_eq_true] at hbi
-      refine (thinBodyC_rep hat q le hq _ hcor hbi.1.2 a y w).trans (and_iff_right ?_)
+      refine (thinBodyC_rep q le hq _ hcor hbi.1.2 a y w).trans (and_iff_right ?_)
       obtain ⟨s, hs⟩ := hp
       obtain rfl := hcor _ _ hs
       exact hs)
@@ -468,10 +426,6 @@ def foldBy {E V : Obj} {n m : USize} (X : Vals (.arr E) n) (e : Vals V m)
 /-- **`CRel.foldBy` read back under its bit**: `rep_foldByC`. -/
 theorem rep_foldBy {E V : Obj} {m n : USize} (e : Vals V m) (X : Vals (.arr E) n)
     (stepK : CRel .long E → CRel .long V → CRel .long V)
-    (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
-      (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
-        USize.size), Vals.RazeFits (.atom t) x y →
-      (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
     (hb : (foldBy X e stepK).ok = true)
     (T : Rel .long (.arr E)) (hT : T = Alg.num (idU X) 0)
     (pend₀ : Rel .long V) (hpend : pend₀ = Alg.top (A := .long) (Rel.key T) e)
@@ -492,7 +446,7 @@ theorem rep_foldBy {E V : Obj} {m n : USize} (e : Vals V m) (X : Vals (.arr E) n
           (xs[t]'ht, ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm))
           (ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm))) ∧
         w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) :=
-  rep_foldByC e X _ hat hb T hT pend₀ hpend step hstep Sr elK hE f hf keep hS
+  rep_foldByC e X _ hb T hT pend₀ hpend step hstep Sr elK hE f hf keep hS
 
 /-- `foldOn` on a family over `CRel`s, ok where every round's family member was and `foldOnC` ran within
     capacity. The family sees the round's pairs as ok: their bits are already in the fold's. -/
@@ -504,10 +458,6 @@ def foldOn {E V : Obj} {m n : USize} (e : Vals V m) (S : CRel (.prod E V) (.prod
 /-- **`CRel.foldOn` read back under its bit**: `rep_foldOnC`. -/
 theorem rep_foldOn {E V : Obj} {m n : USize} (e : Vals V m) (S : CRel (.prod E V) (.prod E V) → CRel (.prod E V) V)
     (X : Vals (.arr E) n)
-    (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
-      (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
-        USize.size), Vals.RazeFits (.atom t) x y →
-      (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
     (hb : (foldOn e S X).ok = true)
     (T : Rel .long (.arr E)) (hT : T = Alg.num (idU X) 0)
     (pend₀ : Rel .long V) (hpend : pend₀ = Alg.top (A := .long) (Rel.key T) e)
@@ -529,7 +479,7 @@ theorem rep_foldOn {E V : Obj} {m n : USize} (e : Vals V m) (S : CRel (.prod E V
           (xs[t]'ht, ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm))
           (ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm))) ∧
         w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) :=
-  rep_foldOnC e _ X hat hb T hT pend₀ hpend step hstep elK hE f hf D hD Sr hSr
+  rep_foldOnC e _ X hb T hT pend₀ hpend step hstep elK hE f hf D hD Sr hSr
 
 /-- `fold` of one `CRel` step, ok where `S` is and `foldC` ran within capacity. -/
 def fold {E V : Obj} {m n : USize} (e : Vals V m) (S : CRel (.prod E V) V) (X : Vals (.arr E) n) : CRel (.arr E) V :=
@@ -537,10 +487,6 @@ def fold {E V : Obj} {m n : USize} (e : Vals V m) (S : CRel (.prod E V) V) (X : 
 
 /-- **`CRel.fold` read back under its bit**: `rep_foldC`. -/
 theorem rep_fold {E V : Obj} {m n : USize} (e : Vals V m) (S : CRel (.prod E V) V) (X : Vals (.arr E) n)
-    (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
-      (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
-        USize.size), Vals.RazeFits (.atom t) x y →
-      (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
     (hb : (fold e S X).ok = true) :
     ∀ (xs : List E.El) w, rep (fold e S X).rel xs w ↔ (∃ i, X.row i = xs) ∧
       ∃ ys : List V.El, ∃ hy : ys.length = xs.length + 1,
@@ -548,7 +494,7 @@ theorem rep_fold {E V : Obj} {m n : USize} (e : Vals V m) (S : CRel (.prod E V) 
         (∀ t (ht : t < xs.length), rep S.rel (xs[t]'ht, ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm))
           (ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm))) ∧
         w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) := by
-  have e' : fold e S X = _ := guard_eq ok hb; rw [e'] at hb ⊢; exact rep_foldC e S.rel X hat hb
+  have e' : fold e S X = _ := guard_eq ok hb; rw [e'] at hb ⊢; exact rep_foldC e S.rel X hb
 
 /-- `sum` as a `CRel`, ok where `sumC` ran within capacity. -/
 def Arr.sum {n : USize} (X : Vals (.arr .long) n) : CRel (.arr .long) .long :=
@@ -557,16 +503,12 @@ def Arr.sum {n : USize} (X : Vals (.arr .long) n) : CRel (.arr .long) .long :=
 
 /-- **`CRel.Arr.sum` read back under its bit**: `Rep.Arr.rep_sumC`. -/
 theorem Arr.rep_sum {n : USize} (X : Vals (.arr .long) n)
-    (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
-      (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
-        USize.size), Vals.RazeFits (.atom t) x y →
-      (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
     (hb : (Arr.sum X).ok = true) :
     ∀ (xs : List Int64) (w : Int64), rep (Arr.sum X).rel xs w ↔ (∃ i, X.row i = xs) ∧
       (∀ t, t ≤ xs.length → -2 ^ 63 < List.sum (List.map Int64.toInt (List.drop t xs)) ∧
         List.sum (List.map Int64.toInt (List.drop t xs)) < 2 ^ 63) ∧ (∀ x ∈ xs, x ≠ nul) ∧
       w = xs.foldr (· + ·) 0 :=
-  Rep.Arr.rep_sumC X hat hb
+  Rep.Arr.rep_sumC X hb
 
 /-- `length` as a `CRel`, ok where `lengthC` ran within capacity. -/
 def length {E : Obj} {n : USize} (X : Vals (.arr E) n) : CRel (.arr E) .long :=
@@ -575,13 +517,9 @@ def length {E : Obj} {n : USize} (X : Vals (.arr E) n) : CRel (.arr E) .long :=
 
 /-- **`CRel.length` read back under its bit**: `rep_lengthC`. -/
 theorem rep_length {E : Obj} {n : USize} (X : Vals (.arr E) n)
-    (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
-      (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
-        USize.size), Vals.RazeFits (.atom t) x y →
-      (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
     (hb : (length X).ok = true) :
     ∀ (xs : List E.El) (w : Int64), rep (length X).rel xs w ↔ (∃ i, X.row i = xs) ∧ w = Int64.ofNat xs.length :=
-  rep_lengthC X hat hb
+  rep_lengthC X hb
 
 /-- `map` as a `CRel`, ok where `R` is and `mapC` ran within capacity. -/
 def map {A B : Obj} {n : USize} (R : CRel A B) (X : Vals (.arr A) n) : CRel (.arr A) (.arr B) :=
@@ -589,14 +527,10 @@ def map {A B : Obj} {n : USize} (R : CRel A B) (X : Vals (.arr A) n) : CRel (.ar
 
 /-- **`CRel.map` read back under its bit**: `rep_mapC`. -/
 theorem rep_map {A B : Obj} {n : USize} (R : CRel A B) (X : Vals (.arr A) n)
-    (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
-      (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
-        USize.size), Vals.RazeFits (.atom t) x y →
-      (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
     (hb : (map R X).ok = true) :
     ∀ (xs : List A.El) ys, rep (map R X).rel xs ys ↔ (∃ i, X.row i = xs) ∧ ys.length = xs.length ∧
       ∀ t (ht : t < xs.length) (ht' : t < ys.length), rep R.rel (xs[t]'ht) (ys[t]'ht') :=
-  by have e : map R X = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_mapC R.rel X hat hb
+  by have e : map R X = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_mapC R.rel X hb
 
 /-- `perm` as a `CRel`, ok where `permC` ran within capacity. -/
 def perm {B : Obj} {n : USize} (X : Vals (.arr B) n) : CRel (.arr B) (.arr B) :=
@@ -605,13 +539,9 @@ def perm {B : Obj} {n : USize} (X : Vals (.arr B) n) : CRel (.arr B) (.arr B) :=
 
 /-- **`CRel.perm` read back under its bit**: `rep_permC`. -/
 theorem rep_perm {B : Obj} {n : USize} (X : Vals (.arr B) n)
-    (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
-      (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
-        USize.size), Vals.RazeFits (.atom t) x y →
-      (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
     (hb : (perm X).ok = true) :
     ∀ (xs : List B.El) ys, rep (perm X).rel xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Perm xs :=
-  rep_permC X hat hb
+  rep_permC X hb
 
 /-- `subseq` as a `CRel`, ok where `subseqC` ran within capacity. -/
 def subseq {B : Obj} {n : USize} (X : Vals (.arr B) n) : CRel (.arr B) (.arr B) :=
@@ -620,13 +550,9 @@ def subseq {B : Obj} {n : USize} (X : Vals (.arr B) n) : CRel (.arr B) (.arr B) 
 
 /-- **`CRel.subseq` read back under its bit**: `rep_subseqC`. -/
 theorem rep_subseq {B : Obj} {n : USize} (X : Vals (.arr B) n)
-    (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
-      (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
-        USize.size), Vals.RazeFits (.atom t) x y →
-      (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
     (hb : (subseq X).ok = true) :
     ∀ (xs : List B.El) ys, rep (subseq X).rel xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Sublist xs :=
-  rep_subseqC X hat hb
+  rep_subseqC X hb
 
 /-- `thinLOn` on a test over `CRel`s, ok where every call of the test was and `thinLOnC` ran within capacity. The
     test sees the round's pairs as ok: their bits are already in the fold's. -/
@@ -638,10 +564,6 @@ def thinLOn {B : Obj} {n : USize} (q : CRel (.prod B B) (.prod B B) → CRel (.p
 /-- **`CRel.thinLOn` read back under its bit**: `rep_thinLOnC`. -/
 theorem rep_thinLOn {B : Obj} {n : USize} (q : CRel (.prod B B) (.prod B B) → CRel (.prod B B) (.prod B B))
     (le : B.El → B.El → Bool) (X : Vals (.arr B) n)
-    (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
-      (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
-        USize.size), Vals.RazeFits (.atom t) x y →
-      (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
     (hq : ∀ D, (q ⟨D, true⟩).ok = true → ∀ a b, rep D (a, b) (a, b) →
       ((∃ c, rep (q ⟨D, true⟩).rel (a, b) c) ↔ le a b = true))
     (hb : (thinLOn q X).ok = true) :
@@ -659,7 +581,7 @@ theorem rep_thinLOn {B : Obj} {n : USize} (q : CRel (.prod B B) (.prod B B) → 
                 ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm) =
                   xs[t]'ht :: ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm)))) ∧
         w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) :=
-  rep_thinLOnC _ le X hat hq hb
+  rep_thinLOnC _ le X hq hb
 
 #print axioms Arr.rep_sum
 #print axioms rep_length

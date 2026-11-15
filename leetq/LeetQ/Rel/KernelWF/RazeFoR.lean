@@ -229,15 +229,24 @@ theorem hat_all : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m
       (fun _ ht => by simpa using hF.2 ht)
     simpa using this
 
-/-- **Row read-back of `raze` at every side**, no hypothesis on the encoding. -/
-theorem raze_row_full (A : Obj) {n m : USize} (x : Vals A n) (y : Vals A m) (hF : Vals.RazeFits A x y)
-    (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part A)).toList.map fun c : Part A => c.1.toNat).sum < USize.size)
-    (k : Nat) (hk : k < ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part A)).toList.map
-      fun c : Part A => c.1.toNat).sum.toUSize.toNat) :
+/-- **Row read-back of `raze` at every side**: row `k` of two razed parts is the first part's row below its count,
+    the second's past it — the four constructor lemmas composed along `A`, under `Vals.RazeFits`, the atom
+    read-back `hat_all`. -/
+theorem raze_row : (A : Obj) → {n m : USize} → (x : Vals A n) → (y : Vals A m) → Vals.RazeFits A x y →
+    ∀ (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part A)).toList.map fun c : Part A => c.1.toNat).sum < USize.size)
+      (k : Nat) (hk : k < ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part A)).toList.map
+        fun c : Part A => c.1.toNat).sum.toUSize.toNat),
     Vals.row (A.raze #[⟨n, x⟩, ⟨m, y⟩] hN) ⟨k, hk⟩ =
       if h : k < n.toNat then Vals.row x ⟨k, h⟩
-      else Vals.row y ⟨k - n.toNat, by have := raze2_cnt x y hN; omega⟩ :=
-  raze_row hat_all A x y hF hN k hk
+      else Vals.row y ⟨k - n.toNat, by have := raze2_cnt x y hN; omega⟩
+  | .atom t, _, _, x, y, hF => fun hN k hk => raze_row_atom x y hN (hat_all t x y hN hF) k hk
+  | .prod a b, _, _, x, y, hF => fun hN k hk =>
+      raze_row_prod x y hN (raze_row a x.1 y.1 hF.1) (raze_row b x.2 y.2 hF.2) k hk
+  | .arr b, _, _, x, y, hF => fun hN k hk =>
+      raze_row_arr x y hN hF.1 hF.2.1 (raze_row b x.2.2.2 y.2.2.2 hF.2.2) k hk
+  | .sum a b, _, _, x, y, hF => fun hN k hk =>
+      raze_row_sum x y hN hF.1 hF.2.1 hF.2.2.1 hF.2.2.2.1 hF.2.2.2.2.1 hF.2.2.2.2.2.1
+        (raze_row a _ _ hF.2.2.2.2.2.2.1) (raze_row b _ _ hF.2.2.2.2.2.2.2) k hk
 
 /-- **A held side reads at most `1 + 3 ^ sizeOf` times the sum at all its rows**: held as it is, the side at all
     its rows is a summand of `Vals.reads`; compacted, it is the side picked at the positions all rows read
@@ -493,13 +502,13 @@ theorem rep_union_full (R S : Rel A B) (hN : R.n.toNat + S.n.toNat < USize.size)
     (hk : Vals.PickFits A (Rel.key (Uc(R, S, hN))) (List.range (Rel.n (Uc(R, S, hN))).toNat))
     (hv : Vals.PickFits B (Rel.val (Uc(R, S, hN))) (List.range (Rel.n (Uc(R, S, hN))).toNat)) :
     rep (R ∪ S) = rep R ∪ rep S :=
-  rep_union R S hN (raze_row_full A R.key S.key hFk _) (raze_row_full B R.val S.val hFv _) hK hV hk hv
+  rep_union R S hN (raze_row A R.key S.key hFk _) (raze_row B R.val S.val hFv _) hK hV hk hv
 
 /-- **`rep (junc R S)`**, no hypothesis on the encoding. -/
 theorem rep_junc_full (R : Rel A C) (S : Rel B C) (hN : R.n.toNat + S.n.toNat < USize.size)
     (h63 : R.n.toNat + S.n.toNat ≤ 2 ^ 63) (hF : Vals.RazeFits C R.val S.val) :
     rep (LeetQ.Rel.Alg.junc R S) = Freyd.Alg.junc (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩) (rep R) (rep S) :=
-  rep_junc R S hN h63 (raze_row_full C R.val S.val hF)
+  rep_junc R S hN h63 (raze_row C R.val S.val hF)
 
 end LeetQ.Rel.Rep
 
@@ -508,6 +517,6 @@ end LeetQ.Rel.Rep
 #print axioms LeetQ.Rel.KernelWF.razeTo_join_foR
 #print axioms LeetQ.Rel.KernelWF.razeTo_toList_all
 #print axioms LeetQ.Rel.KernelWF.hat_all
-#print axioms LeetQ.Rel.KernelWF.raze_row_full
+#print axioms LeetQ.Rel.KernelWF.raze_row
 #print axioms LeetQ.Rel.Rep.rep_union_full
 #print axioms LeetQ.Rel.Rep.rep_junc_full
