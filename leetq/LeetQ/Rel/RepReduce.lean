@@ -71,8 +71,8 @@ theorem rep_lengthC {E : Obj} {n : USize} (X : Vals (.arr E) n)
     unfold longsN
     rw [longCol_cast_get hlt, hf]
     have hc : (Column.bitsAt (slicesOf X).2 (i.1 * 8) 8).toNat < 2 ^ 63 := by
-      obtain ⟨h1, -, -⟩ := slicesOf_row X hp i.2; omega
-    exact int64_eq_ofNat (by omega) ((toInt64_toInt hc).trans (by rw [hl]))
+      exact Nat.lt_of_le_of_lt (Nat.le_trans (Nat.le_add_left _ _) (slicesOf_row X hp i.2).1) hp
+    exact int64_eq_ofNat (by rw [hl]; exact hc) ((toInt64_toInt hc).trans (by rw [hl]))
   intro xs w
   rw [rep_apply]
   constructor

@@ -337,16 +337,7 @@ theorem col_get (xs : List Int64) (h : xs.length < USize.size) (i : Fin xs.lengt
   rw [dif_pos h, Arr.get_long_bytes _ rfl]
   exact (congrArg UInt64.toInt64 e').trans (Int64.toInt64_toUInt64 _)
 
-/-- **`length X` where its `needSize` fits**: the fold of `col [0]` and `outr D ≫ succ (tilCol c)`, `c` the payload's
-    count plus one — `needSize`'s continuation at that count; past it `length` stops (its model `default`). -/
-theorem length_eq {E : Obj} {n : USize} (X : Vals (.arr E) n) (hX : X.1.toNat + 1 < USize.size) :
-    length X = foldOn (col [0]) (fun D => outr D ≫ succ (tilCol (X.1.toNat + 1).toUSize)) X := by
-  unfold length lengthC needSize need foldOn
-  rw [dif_pos hX]
-  simp only [foldOnC, foldByC_fst]; rfl
-
 #print axioms col_get
-#print axioms length_eq
 #print axioms rep_succ
 #print axioms holds_where
 #print axioms rep_arith

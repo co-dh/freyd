@@ -766,18 +766,18 @@ def mapFoldC {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) : Rel (
 
 /-- `F(R)` for a simple `R` on the arrays of `X`, no round: each payload cell to `R`'s value at the first key equal
     to it (`find` on the joint codes of `R`'s keys and the payload, `R.n` at a miss), each array keeping `X`'s `lo`,
-    `hi`; the arrays with a cell outside `dom R` are dropped, `(𝟙 − dom(∋ ≫ ¬dom R)) ≫ ⟨X, Y⟩`. The bit: the codes',
-    the pick's and the twins'. -/
+    `hi`. The bit: the codes', the pick's, and every cell's `find` landing on a key. -
+
 def mapSimpleC {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) : Rel (.arr A) (.arr B) × Bool :=
   let c := A.codesC #v[⟨_, R.key⟩, ⟨_, X.2.2.2⟩]
   let f := c.1[0].find c.1[1]
   need (X.1.toNat ≤ len f) (fun _ => s!"map: find answered {len f} of {X.1} cells") (fun _ => (default, false))
     fun hf =>
   let y := Vals.pickC B R.val (fit X.1.toNat f) X.1 (fit_len hf)
-  let e := memC X; let d := domC R; let o := antiJoinC e.1 d.1; let b := domC o.1
-  let g := diffC (idU X) b.1
-  let r := compC g.1 (⟨n, X, ⟨X.1, X.2.1, X.2.2.1, y.1⟩⟩ : Rel (.arr A) (.arr B))
-  (r.1, c.2 && y.2 && e.2 && d.2 && o.2 && b.2 && g.2 && r.2)
+  -- every payload cell found a key: else `mapC` runs the fold, which drops the rows with a cell outside `dom R`
+  let hit := (List.finRange X.1.toNat).all fun p =>
+    decide ((Column.bitsAt (fit X.1.toNat f) (p.1 * 8) 8).toNat < R.n.toNat)
+  (⟨n, X, ⟨X.1, X.2.1, X.2.2.1, y.1⟩⟩, c.2 && y.2 && hit)
 
 /-! ## Order on numbers, the power side, and the note's list functions -/
 
@@ -1479,9 +1479,10 @@ def simpleC {A B : Obj} (R : Rel A B) : Bool × Bool :=
 def simple {A B : Obj} (R : Rel A B) : Bool := (simpleC R).1
 
 /-- `F(R)` on the arrays of `X`: `mapSimpleC`, one payload join, where `simpleC` answers that `R` is simple within
-    capacity; the fold `mapFoldC` otherwise. -/
+    capacity and every cell of `X` lies in `dom R`; the fold `mapFoldC` otherwise. -/
 def mapC {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) : Rel (.arr A) (.arr B) × Bool :=
-  if (simpleC R).1 && (simpleC R).2 then mapSimpleC R X else mapFoldC R X
+  let s := mapSimpleC R X
+  if (simpleC R).1 && (simpleC R).2 && s.2 then s else mapFoldC R X
 
 /-- `F(R)`: `mapC`'s relation. -/
 def map {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) : Rel (.arr A) (.arr B) := (mapC R X).1
