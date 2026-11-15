@@ -1016,16 +1016,21 @@ def declared (env : Env) (p : Pos) (n : String) (vs : List (String × OTy)) (ty 
     let s := zonk st s; let t := zonk st t
     throw ⟨p, s!"`{n}` is declared {OExp.arrow ty}, but its body is {gen [s, t] s} ⟶ {gen [s, t] t}"⟩
 
-/-- The type of `n`, as `typesOf` prints it: each parameter's (declared, its variables kept as written, or
-    inferred) and the body's, open objects named as variables; what a definition missing one should write. -/
-def inferSig (env : Env) (n : String) (ps : List Param) (b : Body) : M String := do
+/-- The parameters `ps` with their objects, each declared one's object variables rigid and an undeclared type
+    fresh, and `env` with them in scope: a signature read with no use (`inferSig`, a theorem's statement). -/
+def bindSig (env : Env) (ps : List Param) : M (List (String × OTy × OTy) × Env) := do
   let bs ← ps.mapM fun P => do
     match P.ty with
     | some (x, y) =>
       let vs := (x.vars ++ y.vars).map fun v => (v, OTy.base v)
       pure (P.name, ← oty env vs x, ← oty env vs y)
     | none => pure (P.name, ← fresh, ← fresh)
-  let env' := { env with params := bs.map fun (q, s, t) => (q, .rel (.zero s t) s t) }
+  pure (bs, { env with params := bs.map fun (q, s, t) => (q, .rel (.zero s t) s t) })
+
+/-- The type of `n`, as `typesOf` prints it: each parameter's (declared, its variables kept as written, or
+    inferred) and the body's, open objects named as variables; what a definition missing one should write. -/
+def inferSig (env : Env) (n : String) (ps : List Param) (b : Body) : M String := do
+  let (bs, env') ← bindSig env ps
   let r ← match b with
     | .rel e => do let (_, s, t) := (← elabE env' none e).plain; pure (some (s, t))
     | .test e f => do let _ ← elabE env' none e; let _ ← elabE env' none f; pure none
