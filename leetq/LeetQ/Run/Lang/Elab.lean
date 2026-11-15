@@ -45,6 +45,9 @@ inductive Tm : Obj → Obj → Bool → Type where
   | lam {A B : Obj} {d : Bool} (R : Tm A B d) : Tm A (.arr B) d
   | E {A B : Obj} {d : Bool} (R : Tm A B d) : Tm (.arr A) (.arr B) true
   | map {A B : Obj} {d : Bool} (R : Tm A B d) : Tm (.arr A) (.arr B) true
+  /-- The prelude's folds `filter(p)`, `takewhile(p)`, run as their mask forms (`Expand.preludeDef`). -/
+  | filter {B : Obj} {d : Bool} (R : Tm B B d) : Tm (.arr B) (.arr B) true
+  | takewhile {B : Obj} {d : Bool} (R : Tm B B d) : Tm (.arr B) (.arr B) true
   /-- An operator that takes an order `Q : B ⟶ B` (or a coreflexive `p`) holds it as its pair test
       `τ(Q) : B×B ⟶ B×B` (§a), run on demand on the pairs the operator compares. -/
   | est {B : Obj} (Q : Tm (.prod B B) (.prod B B) true) : Tm (.arr B) B true
@@ -188,6 +191,8 @@ inductive Pre
   | lam (p : Pre)
   | E (p : Pre)
   | map (p : Pre)
+  | filter (p : Pre)
+  | takewhile (p : Pre)
   | est (p : Pre)
   | thin (p : Pre)
   | union (a : OTy)
@@ -250,6 +255,8 @@ def Pre.at (p : Pos) : Pre → Pre
   | .lam x => .lam (x.at p)
   | .E x => .E (x.at p)
   | .map x => .map (x.at p)
+  | .filter x => .filter (x.at p)
+  | .takewhile x => .takewhile (x.at p)
   | .est x => .est (x.at p)
   | .thin x => .thin (x.at p)
   | .own x => .own (x.at p)
@@ -339,7 +346,7 @@ def Pre.nilSrcs : Pre → List OTy
   | .top _ _ _ t => (t.attach.map fun ⟨x, _⟩ => x.nilSrcs).getD []
   | .comp x y | .meet x y | .join x y | .diff x y | .ldiv _ x y _ _ | .rdiv _ x y _ _ | .pair x y | .prod x y
   | .junc x y | .fold x y | .foldI x y => x.nilSrcs ++ y.nilSrcs
-  | .conv x | .dom x | .ran x | .lam x | .E x | .map x | .est x | .thin x | .own x | .thinL x | .merge x
+  | .conv x | .dom x | .ran x | .lam x | .E x | .map x | .filter x | .takewhile x | .est x | .thin x | .own x | .thinL x | .merge x
   | .loop x | .flat x | .close _ x _ _ | .fix _ _ _ _ x _ _ | .call _ _ _ _ x _ _ => x.nilSrcs
   | .var .. | .tm _| .zero .. | .id _ | .mem _ | .outl .. | .outr .. | .inl .. | .inr .. | .union _ | .tau _ | .cons _
   | .uncons _ | .length .. | .total _ | .inits _ | .tails _ | .cat _ | .uncat _ | .zip .. | .snoc _ | .unsnoc _ | .setify _
@@ -368,7 +375,7 @@ def Pre.parts : Pre → List (Pre × Pol)
   | .diff x y => [(x, .mono), (y, .anti "the right operand of −")]
   | .comp x y | .meet x y | .join x y | .pair x y | .prod x y | .junc x y | .fold x y | .foldI x y =>
     [(x, .mono), (y, .mono)]
-  | .conv x | .dom x | .ran x | .map x | .est x | .own x | .loop x | .flat x | .close _ x _ _
+  | .conv x | .dom x | .ran x | .map x | .filter x | .takewhile x | .est x | .own x | .loop x | .flat x | .close _ x _ _
   | .fix _ _ _ _ x _ _ | .call _ _ _ _ x _ _ => [(x, .mono)]
   | .lam x => [(x, .not "Λ")]
   | .E x => [(x, .not "E")]
@@ -1159,6 +1166,8 @@ def convTm {A B : Obj} {d : Bool} (t : Tm A B d) : Except String ((e : Bool) × 
   | .lam _ => throw "Λ( )"
   | .E _ => throw "E( )"
   | .map _ => throw "F( )"
+  | .filter _ => throw "filter( )"
+  | .takewhile _ => throw "takewhile( )"
   | .est _ => throw "est( )"
   | .thin _ => throw "thin( )"
   | .union => throw "union"
@@ -1374,6 +1383,12 @@ def build : Pre → Except Err Res
   | .lam p => do let ⟨_, _, _, t⟩ ← build p; pure ⟨_, _, _, .lam t⟩
   | .E p => do let ⟨_, _, _, t⟩ ← build p; pure ⟨_, _, _, .E t⟩
   | .map p => do let ⟨_, _, _, t⟩ ← build p; pure ⟨_, _, _, .map t⟩
+  | .filter p => do
+    let ⟨A, B, d, t⟩ ← build p
+    if h : B = A then pure ⟨_, _, _, .filter (h ▸ t)⟩ else internal dp "filter's predicate is not on one object"
+  | .takewhile p => do
+    let ⟨A, B, d, t⟩ ← build p
+    if h : B = A then pure ⟨_, _, _, .takewhile (h ▸ t)⟩ else internal dp "takewhile's predicate is not on one object"
   | .est p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .est c⟩
   | .thin p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .thin c⟩
   | .union a => return ⟨_, _, true, .union (A := ← toObj st dp a)⟩

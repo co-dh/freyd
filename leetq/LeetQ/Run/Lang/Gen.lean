@@ -146,6 +146,10 @@ def junc (A B C : Obj) (R : Fn false A C) (S : Fn false B C) : Fn false (.sum A 
 def lam (A B : Obj) (d : Bool) (R : Fn d A B) : Fn d A (.arr B) := fun D => CRel.transpose (R D)
 def E (A B : Obj) (d : Bool) (R : Fn d A B) : Fn true (.arr A) (.arr B) := fun D =>
   let k := CRel.ran (CRel.mem D.val); also k.ok (CRel.E (R (Dem.of d k.rel)) D.val)
+def filter (B : Obj) (d : Bool) (R : Fn d B B) : Fn true (.arr B) (.arr B) := fun D =>
+  let k := CRel.ran (CRel.mem D.val); also k.ok (CRel.filter (R (Dem.of d k.rel)) D.val)
+def takewhile (B : Obj) (d : Bool) (R : Fn d B B) : Fn true (.arr B) (.arr B) := fun D =>
+  let k := CRel.ran (CRel.mem D.val); also k.ok (CRel.takewhile (R (Dem.of d k.rel)) D.val)
 def map (A B : Obj) (d : Bool) (R : Fn d A B) : Fn true (.arr A) (.arr B) := fun D =>
   let k := CRel.ran (CRel.mem D.val); also k.ok (CRel.map (R (Dem.of d k.rel)) D.val)
 
