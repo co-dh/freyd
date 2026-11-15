@@ -247,8 +247,11 @@ def Plan.exec (abi : String → Option Kernel) (p : Plan) : IO (Array Val) := do
     functions and globals. -/
 abbrev Bld := StateT (Array Instr × Nat × Array Fun × Array Fun) (Except String)
 
+/-- A one-register instruction's register. -/
+def emit1 (i : Instr) : Bld Nat := modifyGet fun (is, n, fg) => (n, (is.push i, n + 1, fg))
+
 /-- `r = lit v`: the new register. -/
-def lit (v : Val) : Bld Nat := modifyGet fun (is, n, fg) => (n, (is.push (.lit v), n + 1, fg))
+def lit (v : Val) : Bld Nat := emit1 (.lit v)
 
 /-- An instruction defining `nres` registers: the new registers. -/
 def emit (i : Instr) (nres : Nat) : Bld (Array Nat) :=
@@ -324,9 +327,6 @@ def ofTm : {A B : Obj} → {d : Bool} → Tm A B d → Bld (Side × Side)
   | _, _, _, _ => throw "a node other than a literal, a converse or a shared term: stage 1a builds only those"
 
 /-! ### Builders of `Alg`'s defs (stage 1b) -/
-
-/-- A one-register instruction's register. -/
-def emit1 (i : Instr) : Bld Nat := modifyGet fun (is, n, fg) => (n, (is.push i, n + 1, fg))
 
 /-- A code's four registers `w`, `n`, `card`, `b`; `card` as `card.toUSize`, what `idGroups` reads. -/
 def codeVals (c : Alg.Code) : Array Val := #[.size c.w.toUSize, .size c.n, .size c.card.toUSize, .bytes c.b]
