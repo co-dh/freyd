@@ -424,21 +424,6 @@ theorem rep_loopOn {K X Y : Obj} (F : Rel (.prod X Y) (.prod X Y) → Rel (.prod
       (exists_congr fun c => exists_congr fun y => and_congr Iff.rfl (hFr _ _).symm), hr.2⟩
   exact loopOn_rounds F P f hf Fr (fun i hi _ => (one i hi).1) (fun i hi _ => (one i hi).2)
 
-/-- **`loop`, read back**: `rep_loopOn` at the family `fun _ => F`, every step `F` itself. -/
-theorem rep_loop {K X Y : Obj} (F : Rel (.prod X Y) X) (P : Rel K (.prod X (.arr Y)))
-    (f : Rel K X × Rel K (.prod X (.arr Y)) → Rel K X × Rel K (.prod X (.arr Y)))
-    (hf : ∀ out St D u p, D = ran St → u = outr D ≫ uncons (ran (outr D)).val → p = pair (outl D) (outl u) →
-      f (out, St) = (out ∪ St ≫ outl (antiJoin D (dom u)), Rel.nub (St ≫ pair (p ≫ F) (outr u))))
-    -- kept: each round's state is an intermediate whose CodesFit/RazeFits grow with the rounds
-    (hR : ∀ i, i ≤ (Rel.val P).2.1.toNat → ∀ out St, out = (f^[i] (Alg.zero, P)).1 →
-      St = (f^[i] (Alg.zero, P)).2 → roundVals(F, loopOK)) :
-    ∀ k c, rep (loop F P) k c ↔ ∃ c₀ xs, rep P k (c₀, xs) ∧ ∃ g : Nat → X.El, g 0 = c₀ ∧
-      (∀ t (ht : t < xs.length), rep F (g t, xs[t]'ht) (g (t + 1))) ∧ c = g xs.length :=
-  rep_loopOn (fun _ => F) P f hf (fun _ => rep F) fun i hi out St ho hS D hD W hW u hu p hp G hG =>
-    have e : G = F := hG
-    (fun Q hQ R hR' T hT du hdu A hA O hO => ⟨fun _ _ => by rw [e], hR i hi out St ho hS D hD W hW u hu p hp G e
-      Q hQ R hR' T hT du hdu A hA O hO⟩)
-
 open Freyd Freyd.Alg Freyd.Alg.RelSet
 
 set_option hygiene false in
@@ -610,7 +595,6 @@ theorem rep_fixOn {A B : Obj} (n : Nat) (φ : Rel A B → Rel A B) (X₀ : Rel A
       have := hk (n - 1) (by omega); have := hUk 0 (by omega); omega
 
 #print axioms rep_loopOn
-#print axioms rep_loop
 #print axioms nodup_below
 #print axioms rows_le_of_inj
 #print axioms rep_fixOn

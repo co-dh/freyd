@@ -637,55 +637,6 @@ theorem sum_chain (xs : List Int64) (w : Int64) :
     exact (plus_step _ _ _ ((ne_nul_iff _).2 (by rw [hq1]; have := (hb (t + 1) ht).1; omega))).2
       ⟨hnn _ (List.getElem_mem ht), hb0.1, hb0.2, eF⟩
 
-/-- **`sum`, read back**: an array `xs` of `X` goes to its `Int64` sum `xs.foldr (· + ·) 0` exactly where no element
-    is q's null and every suffix sum `Σ_{s ≥ t} xs[s]`, taken in `Int`, lies strictly between the null `-2^63` and
-    `2^63` — `plus` drops a row whose sum wraps or is the null, and the fold adds from the end (`sum_chain`). Bound
-    values and hypotheses as `foldOn_on`'s at `Sf = fun D => plus D.val`, `e = col [0]` (`hR`, `hS`, `hran` per-round
-    bundles; `E`, `V` are `.long` there, bound by `let`). -/
-theorem Arr.rep_sum {n : USize} (X : Vals (.arr .long) n)
-    (T : Rel .long (.arr .long)) (hT : T = num (idU X) 0) (hn : n.toNat < 2 ^ 63)
-    (hv : Vals.PickFits (.arr .long) X (List.range n.toNat))
-    (pend₀ : Rel .long .long) (hpend : pend₀ = top (A := .long) (Rel.key T) (col [0]))
-    (hN : (Rel.n T).toNat * (([0] : List Int64).length.toUSize).toNat < USize.size)
-    (h63 : (Rel.n T).toNat * (([0] : List Int64).length.toUSize).toNat < 2 ^ 63)
-    (Sf : Rel (.prod .long .long) (.prod .long .long) → Rel (.prod .long .long) .long)
-    (hSf : Sf = fun D => plus D.val)
-    (step : Rel .long .long → Rel .long .long → Rel .long .long) (hstep : step = demandStep Sf)
-    (elK : Nat → Rel .long .long) (hE : ∀ k, elK k = elR(T, k))
-    (f : Rel .long .long × Rel .long .long × Nat → Rel .long .long × Rel .long .long × Nat)
-    (hf : ∀ st, f st = rnd(st))
-    (D : Nat → Rel (.prod .long .long) (.prod .long .long))
-    (hD : ∀ k, D k = ran (pair (elK k) (f^[k] (pend₀, Alg.zero, 0)).1))
-    -- kept: CodesFit/RazeFits of each round's step output and `P ∪ Q`, intermediates no input bounds
-    (hR : let V := Obj.long; ∀ i (el : Rel .long .long) (pend P S : Rel .long .long), el = elK i →
-      pend = (f^[i] (pend₀, Alg.zero, 0)).1 → P = (f^[i] (pend₀, Alg.zero, 0)).2.1 → S = step el pend → roundOK)
-    (hS : let E := Obj.long; let V := Obj.long; ∀ i (el : Rel .long .long) (pend : Rel .long .long), el = elK i →
-      pend = (f^[i] (pend₀, Alg.zero, 0)).1 → stepOn)
-    (F : Rel .long .long) (hF : F = foldRows T pend₀ step)
-    -- kept (hjO..hjA): `F` is the fold output, its count and fits grow with the rounds; no input bounds them
-    (jc : Vector Code 2) (hjc : jc = Obj.codes .long ck2(T°, F)) (hjO : codesOK(jc, ck2(T°, F)))
-    (hjn : (Rel.n F).toNat < 2 ^ 63) (hjM : (Rel.n (T°)).toNat * (Rel.n F).toNat < min (2 ^ 63) USize.size)
-    (hjA : Vals.PickFits (.arr .long) (Rel.key (T°)) ((mpairs(jc, T°, F)).map Prod.fst))
-    -- kept: `rep_ran`'s fits at each round's pairs, built from the round's state, an intermediate
-    (hran :let E := Obj.long; let V := Obj.long; ∀ k, k < (Rel.val T).1.toNat → ∀ P : Rel .long (.prod .long .long),
-      P = pair (elK k) (f^[k] (pend₀, Alg.zero, 0)).1 → ranOK(P)) :
-    ∀ (xs : List Int64) (w : Int64), rep (Alg.Arr.sum X) xs w ↔ (∃ i, X.row i = xs) ∧
-      (∀ t, t ≤ xs.length → -2 ^ 63 < Sd(xs, t) ∧ Sd(xs, t) < 2 ^ 63) ∧ (∀ x ∈ xs, x ≠ nul) ∧
-      w = xs.foldr (· + ·) 0 := by
-  intro xs w
-  have hSf' : ∀ k, k < (Rel.val T).1.toNat → ∀ (p : Int64 × Int64) (w : Int64), rep (Sf (D k)) p w ↔
-      (∃ a, rep (D k) a p) ∧ (w = Ew.intStep Ew.add nul p.1 p.2 ∧ w ≠ nul ∧ (0 ≤ p.2 ↔ p.1 ≤ w)) := by
-    intro k _ p w
-    subst hSf
-    obtain ⟨a, b⟩ := p
-    show rep (plus (D k).val) (a, b) w ↔ _
-    rw [rep_plus]
-    exact and_congr ⟨fun ⟨i, h⟩ => ⟨_, i, rfl, h⟩, fun ⟨_, i, _, h⟩ => ⟨i, h⟩⟩ Iff.rfl
-  rw [show Alg.Arr.sum X = foldOn (col [0]) Sf X by subst hSf; rfl,
-    foldOn_on (col [0]) Sf X T hT hn hv pend₀ hpend hN h63 (pickFits_atom_mod _ _) step hstep elK hE f hf D hD hR hS F hF jc
-      hjc hjO hjn hjM hjA (pickFits_atom_snd _) hran _ hSf' xs w]
-  exact and_congr Iff.rfl (sum_chain xs w)
-
 /-! ## `length` -/
 
 /-- `+ 1` on `Int64.ofNat m` below `2^63 - 1` is `Int64.ofNat (m + 1)`, off the null. -/
@@ -745,88 +696,8 @@ theorem length_chain (sc : Rel .long .long) (N : Nat)
       rw [hsc' _ _ (by omega)]; congr 1; omega
     · simp only [List.getElem_map, List.getElem_range, Nat.sub_zero]
 
-/-- **`length`, read back**: an array `xs` of `X` goes to its length. `length X` is the fold of `col [0]` and
-    `outr D ≫ succ (tilCol c)`, `c` the payload's count plus one (`length_eq`); `succ (tilCol c)` never meets its
-    top, since an array of `X` is no longer than the payload (`slicesOf_row`). Bound values (`c`, `sc`, `Sf`, and
-    `foldOn_on`'s) by their equations. Hypotheses: the payload's count plus one fits a `USize` and is below
-    `2^63` (`hX`, `h63X`), `rep_succ`'s at `tilCol c` (`hsucc`), and `foldOn_on`'s, with `rep_comp`'s at
-    `outr (D k)`, `sc` in each round (`hcomp`) — `hR`, `hS`, `hran`, `hcomp` per-round bundles (`V` is `.long`
-    there, bound by `let`). -/
-theorem rep_length {E : Obj} {n : USize} (X : Vals (.arr E) n)
-    (hX : X.1.toNat + 1 < USize.size) (h63X : X.1.toNat + 1 < 2 ^ 63)
-    (c : USize) (hc : c = (X.1.toNat + 1).toUSize) (sc : Rel .long .long) (hsc : sc = succ (tilCol c))
-    (hsucc : ∀ s : Arr .long c, s = valCol Ew.add Ew.va (longsOf (tilCol c)) (one 1) →
-      ∀ cs : Vector Code 2, cs = codes .long #v[⟨c, s⟩, ⟨c, tilCol c⟩] →
-        codesL(cs, (#v[⟨c, s⟩, ⟨c, tilCol c⟩] : Vector ((m : USize) × Arr .long m) 2)))
-    (T : Rel .long (.arr E)) (hT : T = num (idU X) 0) (hn : n.toNat < 2 ^ 63)
-    (hv : Vals.PickFits (.arr E) X (List.range n.toNat))
-    (pend₀ : Rel .long .long) (hpend : pend₀ = top (A := .long) (Rel.key T) (col [0]))
-    (hN : (Rel.n T).toNat * (([0] : List Int64).length.toUSize).toNat < USize.size)
-    (h63 : (Rel.n T).toNat * (([0] : List Int64).length.toUSize).toNat < 2 ^ 63)
-    (Sf : Rel (.prod E .long) (.prod E .long) → Rel (.prod E .long) .long)
-    (hSf : Sf = fun D => outr D ≫ sc)
-    (step : Rel .long E → Rel .long .long → Rel .long .long) (hstep : step = demandStep Sf)
-    (elK : Nat → Rel .long E) (hE : ∀ k, elK k = elR(T, k))
-    (f : Rel .long .long × Rel .long .long × Nat → Rel .long .long × Rel .long .long × Nat)
-    (hf : ∀ st, f st = rnd(st))
-    (D : Nat → Rel (.prod E .long) (.prod E .long))
-    (hD : ∀ k, D k = ran (pair (elK k) (f^[k] (pend₀, Alg.zero, 0)).1))
-    -- kept: CodesFit/RazeFits of each round's step output and `P ∪ Q`, intermediates no input bounds
-    (hR : let V := Obj.long; ∀ i (el : Rel .long E) (pend P S : Rel .long .long), el = elK i →
-      pend = (f^[i] (pend₀, Alg.zero, 0)).1 → P = (f^[i] (pend₀, Alg.zero, 0)).2.1 → S = step el pend → roundOK)
-    (hS : let V := Obj.long; ∀ i (el : Rel .long E) (pend : Rel .long .long), el = elK i →
-      pend = (f^[i] (pend₀, Alg.zero, 0)).1 → stepOn)
-    (F : Rel .long .long) (hF : F = foldRows T pend₀ step)
-    -- kept (hjO..hjA): `F` is the fold output, its count and fits grow with the rounds; no input bounds them
-    (jc : Vector Code 2) (hjc : jc = Obj.codes .long ck2(T°, F)) (hjO : codesOK(jc, ck2(T°, F)))
-    (hjn : (Rel.n F).toNat < 2 ^ 63) (hjM : (Rel.n (T°)).toNat * (Rel.n F).toNat < min (2 ^ 63) USize.size)
-    (hjA : Vals.PickFits (.arr E) (Rel.key (T°)) ((mpairs(jc, T°, F)).map Prod.fst))
-    -- kept: `rep_ran`'s fits at each round's pairs, built from the round's state, an intermediate
-    (hran :let V := Obj.long; ∀ k, k < (Rel.val T).1.toNat → ∀ P : Rel .long (.prod E .long),
-      P = pair (elK k) (f^[k] (pend₀, Alg.zero, 0)).1 → ranOK(P))
-    -- kept: `rep_comp`'s counts and fits at `outr (D rd)`, the pairs round `rd` meets, an intermediate
-    (hcomp :∀ rd, rd < (Rel.val T).1.toNat → ∀ kc : Vector Code 2, kc = Obj.codes .long ck2(outr (D rd), sc) →
-      (Rel.n (outr (D rd))).toNat + (Rel.n sc).toNat < USize.size ∧ (Rel.n sc).toNat < 2 ^ 63 ∧
-      (Rel.n (outr (D rd))).toNat * (Rel.n sc).toNat < min (2 ^ 63) USize.size ∧
-      Vals.PickFits (.prod E .long) (Rel.key (outr (D rd))) ((mpairs(kc, outr (D rd), sc)).map Prod.fst)) :
-    ∀ (xs : List E.El) (w : Int64), rep (length X) xs w ↔ (∃ i, X.row i = xs) ∧ w = Int64.ofNat xs.length := by
-  intro xs w
-  have hcN : c.toNat = X.1.toNat + 1 := by rw [hc]; exact USize.toNat_ofNat_of_lt' hX
-  -- `sc` on `m` below the payload's count is `m + 1`
-  have hsc' : ∀ m w, m < X.1.toNat → (rep sc (Int64.ofNat m) w ↔ w = Int64.ofNat (m + 1)) := by
-    intro m w hm
-    subst hsc
-    rw [rep_succ (tilCol c) _ rfl _ rfl (hsucc _ rfl _ rfl), intStep_ofNat_succ m (by omega)]
-    simp only [Vals.row_atom, tilCol_get]
-    constructor
-    · rintro ⟨-, h, -⟩; exact h
-    · rintro rfl; exact ⟨⟨⟨m, by omega⟩, rfl⟩, rfl, ⟨m + 1, by omega⟩, rfl⟩
-  have hSf' : ∀ k, k < (Rel.val T).1.toNat → ∀ (p : E.El × Int64) (w : Int64), rep (Sf (D k)) p w ↔
-      (∃ a, rep (D k) a p) ∧ rep sc p.2 w := by
-    intro k hk p w
-    obtain ⟨hK1, hK2, hpk⟩ := hran k hk _ rfl _ rfl
-    obtain ⟨hcO, hcn, hcM, hcA⟩ := hcomp k hk _ rfl
-    subst hSf
-    show rep (outr (D k) ≫ sc) p w ↔ _
-    rw [rep_comp _ _ (codesOK_long2 _ _ hcO) hcn hcM hcA (pickFits_atom_snd _), rep_outr, hD k,
-      rep_ran_corefl _ ⟨hK1, hK2⟩ hpk]
-    constructor
-    · rintro ⟨y, ⟨z, ⟨rfl, hz⟩, rfl⟩, hy⟩; exact ⟨⟨p, rfl, hz⟩, hy⟩
-    · rintro ⟨⟨a, rfl, hz⟩, hy⟩; exact ⟨a.2, ⟨a, ⟨rfl, hz⟩, rfl⟩, hy⟩
-  rw [length_eq X hX, show foldOn (col [0]) (fun D => outr D ≫ succ (tilCol (X.1.toNat + 1).toUSize)) X =
-      foldOn (col [0]) Sf X by subst hSf hsc hc; rfl,
-    foldOn_on (col [0]) Sf X T hT hn hv pend₀ hpend hN h63 (pickFits_atom_mod _ _) step hstep elK hE f hf D hD hR hS F hF jc
-      hjc hjO hjn hjM hjA (pickFits_atom_snd _) hran _ hSf' xs w]
-  have hL : (∃ i, X.row i = xs) → xs.length ≤ X.1.toNat := by
-    rintro ⟨⟨i, hi⟩, rfl⟩
-    obtain ⟨h1, h2, -⟩ := slicesOf_row X (by omega) hi
-    omega
-  exact and_congr_right fun hx => length_chain sc _ hsc' xs (hL hx) w
-
 #print axioms foldOn_on
 #print axioms plus_step
-#print axioms Arr.rep_sum
-#print axioms rep_length
 
 end FoldOn
 
