@@ -373,7 +373,30 @@ theorem symLe_antisymm {x y : ByteArray} (h1 : (Column.symCmp x y != .gt) = true
   rw [symCmp_ne_gt] at h1 h2
   have e := List.le_antisymm (List.not_lt.1 h2) (List.not_lt.1 h1)
   have e' := List.append_cancel_right e
-  exact List.map_injective_iff.2 (fun a b h => UInt8.toNat_inj.1 (by simpa using h)) e'
+  exact ((List.map_inj_right fun a b h => UInt8.toNat_inj.1 (by simpa using h)).1 e').symm
+
+/-- The entry at a member's first index is that member. -/
+private theorem getElem_idxOf : ∀ (L : List Nat) (a : Nat) (h : L.idxOf a < L.length), L[L.idxOf a] = a
+  | [], _, h => by simp at h
+  | x :: L, a, h => by
+    by_cases e : x = a
+    · subst e; simp
+    · have hb : (x == a) = false := by simpa using e
+      have hi : (x :: L).idxOf a = L.idxOf a + 1 := by simp [List.idxOf_cons, hb]
+      have h' : L.idxOf a < L.length := by rw [hi] at h; simpa using h
+      simpa [hi] using getElem_idxOf L a h'
+
+/-- A map with no repeat on a list is one-to-one on its members. -/
+private theorem inj_of_nodup_map {β : Type} {f : Nat → β} : ∀ {l : List Nat}, (l.map f).Nodup →
+    ∀ {a b}, a ∈ l → b ∈ l → f a = f b → a = b
+  | [], _, _, _, ha, _, _ => by simp at ha
+  | x :: l, h, a, b, ha, hb, e => by
+    rw [List.map_cons, List.nodup_cons] at h
+    rcases List.mem_cons.1 ha with rfl | ha' <;> rcases List.mem_cons.1 hb with rfl | hb'
+    · rfl
+    · exact absurd (by rw [e]; exact List.mem_map_of_mem hb') h.1
+    · exact absurd (by rw [← e]; exact List.mem_map_of_mem ha') h.1
+    · exact inj_of_nodup_map h.2 ha' hb' e
 
 /-- **The rank `gradeIds` grades by is the symbols' order**: in `ord`, a stable sort of the `d` dictionary entries
     by their bytes, no two entries holding one string, entry `a` is placed no later than `b` exactly when its bytes
@@ -394,8 +417,8 @@ theorem idxOf_le_iff {dict : ByteArray} {dof : Array Nat}
   have hmb : b ∈ L := hp.mem_iff.2 (List.mem_range.2 hb)
   have hla := List.idxOf_lt_length_of_mem hma
   have hlb := List.idxOf_lt_length_of_mem hmb
-  have hga : L[L.idxOf a] = a := List.getElem_idxOf hla
-  have hgb : L[L.idxOf b] = b := List.getElem_idxOf hlb
+  have hga : L[L.idxOf a] = a := getElem_idxOf L a hla
+  have hgb : L[L.idxOf b] = b := getElem_idxOf L b hlb
   have hpw := List.pairwise_iff_getElem.1 hsrt
   constructor
   · intro h
@@ -410,7 +433,7 @@ theorem idxOf_le_iff {dict : ByteArray} {dof : Array Nat}
     have h2 := (hpw _ _ hlb hla hlt).1
     rw [hga, hgb] at h2
     have e := symLe_antisymm h h2
-    have hab : a = b := List.inj_on_of_nodup_map hnd (List.mem_range.2 ha) (List.mem_range.2 hb) e
+    have hab : a = b := inj_of_nodup_map (f := fun i => (Column.symKey dict dof i).data.toList) hnd (List.mem_range.2 ha) (List.mem_range.2 hb) e
     subst hab
     exact Nat.lt_irrefl _ hlt
 
@@ -445,7 +468,7 @@ theorem sortsAsc_symbol : SortsAsc (.atom .symbol) := sortsAsc_atom .symbol fun 
   cases he : x.enc
   case syms blob offs => exact he ▸ grade_syms x he
   case enum dict dof ids' => exact he ▸ grade_ids x he
-  all_goals have hwf := x.wf; rw [he] at hwf; simp [Enc.WF] at hwf
+  all_goals have hwf := x.wf; rw [he] at hwf; simp [Enc.WF, QAtomicType.width] at hwf
 
 /-! ## Every side whose atoms qlean orders
 
@@ -462,8 +485,11 @@ def _root_.LeetQ.Rel.Obj.Ordered : Obj → Prop
 /-- **Every atom but `.general` sorts stably by `Obj.lt`.** -/
 theorem sortsAsc_ordered_atom {t : QAtomicType} (h : t ≠ .general) : SortsAsc (.atom t) := by
   cases t
-  all_goals first | exact absurd rfl h | exact sortsAsc_boolean | exact sortsAsc_symbol | exact sortsAsc_guid
-    | exact sortsAsc_num rfl (by decide)
+  case boolean => exact sortsAsc_boolean
+  case symbol => exact sortsAsc_symbol
+  case guid => exact sortsAsc_guid
+  case general => exact absurd rfl h
+  all_goals exact sortsAsc_num rfl (by decide)
 
 /-- **Every ordered side sorts stably by `Obj.lt`**, given that an array and a sum of sides that do, do: the two
     constructors `Obj.sortByC` still grades by `codes`, which are the open obligations `harr`, `hsum`. -/
