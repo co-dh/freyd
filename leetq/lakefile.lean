@@ -33,3 +33,9 @@ lean_lib LeetQRun where
 @[default_target]
 lean_lib LeetQ where
   globs := #[.submodules `LeetQ.Rel]
+
+-- The only lib that imports AOP: the Rel→AOP bridge. `LeetQ` and `LeetQRun` stay AOP-free,
+-- and `LeetQ.Rel` no longer claims these modules, so AOP is built only when this lib is.
+@[default_target]
+lean_lib LeetQAop where
+  globs := #[.submodules `LeetQ.Aop]
