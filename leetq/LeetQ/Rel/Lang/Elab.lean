@@ -81,8 +81,8 @@ inductive Tm : Obj → Obj → Bool → Type where
   | lt {m : USize} (U : Arr .long m) : Tm .long .long false
   /-- `⦇e,S⦈` on the arrays in demand, `S` run on the pairs each round meets. -/
   | fold {E V : Obj} {d : Bool} (e : Tm V V false) (S : Tm (.prod E V) V d) : Tm (.arr E) V true
-  /-- `R`, whose identity among the program's sub-terms is `k`: equal sub-terms have one identity, computed
-      once (`Expand.share`). -/
+  /-- `R`, closed, numbered `k` among the expansion's sub-terms (`Expand.number`): its code is built once
+      (`Expand.code`). -/
   | share {A B : Obj} {d : Bool} (k : Nat) (R : Tm A B d) : Tm A B d
   /-- `⦇e,S⦈` given a family (§e), on the pairs (key, array) in demand: one fold with carrier `I×V`, seeded at
       each key by the fibre of `e` there, its step `S` given `(x,(i,v))` and carrying the key `i`. -/
