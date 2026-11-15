@@ -250,9 +250,10 @@ inductive Pre
   /-- `μX : body` (`least`) or `νX : body`, `X` the variable `k`; `S` the meet of `body`'s conjuncts that do not
       mention `X`, a `ν`'s start. -/
   | fix (pos : Pos) (least : Bool) (k : Nat) (S : Option Pre) (body : Pre) (a b : OTy)
-  /-- The constant `c` at `pos`, at the objects `us` of its object variables and the arguments `args`; `alt` the
-      definition's body expanded at the use, which every analysis reads and `build` does not. -/
-  | call (pos : Pos) (c : Lean.Name) (us : List OTy) (args : List Pre) (alt : Pre) (a b : OTy)
+  /-- The constant `c` at `pos`, at the objects `us` of its object variables and the arguments `args`, its plan on
+      keys in demand when `d`; `alt` the definition's body expanded at the use, which every analysis reads and
+      `build` does not. -/
+  | call (pos : Pos) (c : Lean.Name) (us : List OTy) (args : List Pre) (alt : Pre) (a b : OTy) (d : Bool)
 
 instance : Inhabited Pre := ⟨.id (.base "")⟩
 
@@ -293,7 +294,7 @@ def Pre.at (p : Pos) : Pre → Pre
   | .close _ x a why => .close p (x.at p) a why
   | .var _ k a b => .var p k a b
   | .fix _ l k S x a b => .fix p l k (S.attach.map fun ⟨y, _⟩ => y.at p) (x.at p) a b
-  | .call _ c us xs alt a b => .call p c us (xs.attach.map fun ⟨y, _⟩ => y.at p) (alt.at p) a b
+  | .call _ c us xs alt a b d => .call p c us (xs.attach.map fun ⟨y, _⟩ => y.at p) (alt.at p) a b d
   -- no position and no part
   | x@(.tm _) | x@(.zero ..) | x@(.id _) | x@(.mem _) | x@(.outl ..) | x@(.outr ..) | x@(.inl ..) | x@(.inr ..)
   | x@(.union _) | x@(.tau _) | x@(.nil ..) | x@(.cons _) | x@(.uncons _) | x@(.length ..) | x@(.total _)
@@ -309,9 +310,6 @@ structure St where
   ms : Array (Option OTy) := #[]
   /-- The fixed points so far: the next one's variable. -/
   fixes : Nat := 0
-  /-- The uses of a definition's constant that expand its body instead (decision M, until step 5): the constant
-      and where and why. -/
-  expanded : List (String × String) := []
 
 abbrev M := StateT St (Except Err)
 
@@ -366,7 +364,7 @@ def Pre.nilSrcs : Pre → List OTy
   | .comp x y | .meet x y | .join x y | .diff x y | .ldiv _ x y _ _ | .rdiv _ x y _ _ | .pair x y | .prod x y
   | .junc x y | .fold x y | .foldI x y => x.nilSrcs ++ y.nilSrcs
   | .conv x | .dom x | .ran x | .lam x | .E x | .map x | .filter x | .takewhile x | .est x | .thin x | .own x | .thinL x | .merge x
-  | .loop x | .flat x | .close _ x _ _ | .fix _ _ _ _ x _ _ | .call _ _ _ _ x _ _ => x.nilSrcs
+  | .loop x | .flat x | .close _ x _ _ | .fix _ _ _ _ x _ _ | .call _ _ _ _ x _ _ _ => x.nilSrcs
   | .var .. | .tm _| .zero .. | .id _ | .mem _ | .outl .. | .outr .. | .inl .. | .inr .. | .union _ | .tau _ | .cons _
   | .uncons _ | .length .. | .total _ | .inits _ | .tails _ | .«prefix» _ | .suffix _ | .cat _ | .uncat _ | .zip .. | .snoc _ | .unsnoc _ | .setify _
   | .bagify _ | .tic _ | .atPos .. | .succ .. | .arith .. | .leq .. | .lt .. | .lit .. => []
@@ -396,7 +394,7 @@ def Pre.parts : Pre → List (Pre × Pol)
   | .comp x y | .meet x y | .join x y | .pair x y | .prod x y | .junc x y | .fold x y | .foldI x y =>
     [(x, .mono), (y, .mono)]
   | .conv x | .dom x | .ran x | .map x | .filter x | .takewhile x | .est x | .own x | .loop x | .flat x | .close _ x _ _
-  | .fix _ _ _ _ x _ _ | .call _ _ _ _ x _ _ => [(x, .mono)]
+  | .fix _ _ _ _ x _ _ | .call _ _ _ _ x _ _ _ => [(x, .mono)]
   | .lam x => [(x, .not "Λ")]
   | .E x => [(x, .not "E")]
   | .thin x => [(x, .not "thin")]
@@ -1506,21 +1504,22 @@ def build : Pre → Except Err Res
     pure ⟨A, B, false, .val ⟨n, k, v⟩⟩
   | .close p q a why => do closeRes objs st dp p a why (← build q)
   | .var _ k a b => return ⟨← toObj st dp a, ← toObj st dp b, false, .var k⟩
-  -- the constant takes, per object variable, a declared object's universe, and closed relations (M); any other
-  -- use is refused, since the constant was built with each variable a `.long` object of its own
-  | .call pos c us xs _ a b => do
+  -- the constant takes, per object variable, the universe of a base object (a declared one's, or the caller's own
+  -- variable's), and closed relations (M); any other use is refused, since the constant was built with each
+  -- variable a `.long` object of its own
+  | .call pos c us xs _ a b d => do
     let A ← toObj st dp a; let B ← toObj st dp b
     let f ← us.foldlM (fun f u => do
       let u := zonk st u
-      unless (match u with | .base _ => (uniOf objs u).isSome | _ => false) do
+      unless (match u with | .base _ => true | _ => false) do
         throw ⟨pos, s!"`{c}`: an object variable is {u} here; its constant takes only a declared object with a universe"⟩
-      return .arg f (← uniTm objs st dp pos u .long "a call")) (Tm.call (A := A) (B := B) c)
-    let f ← xs.attach.foldlM (init := f) fun (f : Tm A B false) ⟨x, h⟩ => do
+      return .arg f (← uniTm objs st dp pos u .long s!"`{c}`")) (Tm.call (A := A) (B := B) d c)
+    let f ← xs.attach.foldlM (init := f) fun (f : Tm A B d) ⟨x, h⟩ => do
       have : sizeOf x < sizeOf xs := List.sizeOf_lt_of_mem h
       match ← build x with
       | ⟨_, _, false, t⟩ => pure (.arg f t)
       | _ => throw ⟨pos, s!"`{c}`: an argument needs keys; its constant takes only closed relations (decision M)"⟩
-    pure ⟨A, B, false, f⟩
+    pure ⟨A, B, d, f⟩
   -- the body read whole each round, on its source's universe when it needs keys
   | .fix p least k S q a b => do
     let A ← toObj st dp a; let B ← toObj st dp b
