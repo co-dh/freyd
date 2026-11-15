@@ -919,6 +919,16 @@ def longest (n : USize) (cnt : ByteArray) (t₀ : Nat) : (fuel : Nat) → Nat
   | fuel + 1 => if len (whereBits n (Ew.cmp Ew.gt Ew.i64 Ew.va cnt (one t₀.toUInt64) n)) = 0 then t₀
     else longest n cnt (t₀ + 1) fuel
 
+/-- An array sort's pass at element position `t`, `s` the slices of `c`: the rows of `q` with no element there
+    first, kept in order, then the others by that element (`sortSide`, `srt` sorting the payload). -/
+def arrPass {b : Obj} {n : USize} (c : Vals (.arr b) n) (s : ByteArray × ByteArray)
+    (srt : {k : USize} → Vals b k → ByteArray → ByteArray) (t : Nat) (q : ByteArray) : ByteArray :=
+  if len q < USize.size then
+    let m := (len q).toUSize
+    let gt := Ew.cmp Ew.gt Ew.i64 Ew.va (gather 8 s.2 q) (one t.toUInt64) m
+    concatBytes #[gather 8 q (whereBits m (Ew.notBits m gt)), sortSide c.2.2.2 srt (addc n s.1 t) (gather 8 q (whereBits m gt))]
+  else q
+
 /-- The permutation `p` refined stably by the values of `A` at its rows, ascending by `Obj.lt`:
     - an atom: `gradeColumn` (a symbol by its string, so the order is the value's, the same in every call);
     - a product: the last component first, so it sorts lexicographically;
@@ -937,15 +947,8 @@ def _root_.LeetQ.Rel.Obj.sortByC : (A : Obj) → {n : USize} → Vals A n → By
   | .prod a b, _, c, p => let r := Obj.sortByC b c.2 p; let l := Obj.sortByC a c.1 r.1; (l.1, l.2 && r.2)
   | .arr b, n, c, p =>
     let s := slicesOf c
-    -- the pass at element position `t`: rows with no element there first, kept in order, then the others by it
-    let pass (t : Nat) (q : ByteArray) : ByteArray :=
-      if len q < USize.size then
-        let m := (len q).toUSize
-        let gt := Ew.cmp Ew.gt Ew.i64 Ew.va (gather 8 s.2 q) (one t.toUInt64) m
-        concatBytes #[gather 8 q (whereBits m (Ew.notBits m gt)),
-          sortSide c.2.2.2 (fun v r => (Obj.sortByC b v r).1) (addc n s.1 t) (gather 8 q (whereBits m gt))]
-      else q
-    ((List.range (longest n s.2 0 c.1.toNat)).foldr pass p, (Obj.codesC (.arr b) #v[⟨_, c⟩]).2)
+    ((List.range (longest n s.2 0 c.1.toNat)).foldr (arrPass c s fun v r => (Obj.sortByC b v r).1) p,
+      (Obj.codesC (.arr b) #v[⟨_, c⟩]).2)
   | .sum a b, _, c, p =>
     let ps := longsOf (place c ((c.1.toNat : Int) - 1) ((c.2.1.toNat : Int) - c.1.toNat) 0 0)
     (if h : len p < USize.size then

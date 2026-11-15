@@ -239,6 +239,7 @@ theorem sortBy_permutes (A : Obj) {n : USize} (c : Vals A n) (p : ByteArray) (hl
     | cons t ts iht =>
       simp only [List.foldr_cons]
       generalize List.foldr _ p ts = q at iht ⊢
+      unfold arrPass
       split
       next hq =>
         rw [ids_concat2 (gather_size8 _ _)]
