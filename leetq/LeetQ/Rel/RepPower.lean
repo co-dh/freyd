@@ -29,11 +29,9 @@ scoped notation "pT(" R ")" => gather 8 (Obj.sortBy _ (Rel.nub R).val (tilLongs 
 set_option hygiene false in
 scoped notation "loT(" R ")" => ByteArray.extract (Code.runStarts (Code.gather (kcT(R)) (pT(R)))) 0
   (ByteArray.size (Code.runStarts (Code.gather (kcT(R)) (pT(R)))) - 8)
--- the codes of a side `X`, and the rows `nub` keeps of `idU X`, whose key and value are both `X`
+-- the codes of a side `X`
 set_option hygiene false in
 scoped notation "kcX(" X ")" => (Obj.codes _ (#v[⟨_, X⟩] : Vector (Part _) 1))[0]'Nat.zero_lt_one
-set_option hygiene false in
-scoped notation "nubX(" X ")" => (tuples.tupleIds (kcX(X)) #[kcX(X)]).2
 end Pow
 open Pow OpsN UnionN
 
@@ -189,7 +187,6 @@ scoped notation "jpairs(" R ", " S ")" => ((List.range (Rel.n R).toNat).flatMap 
 end Pow
 open Pow
 
-
 /-- **`rep (τ X)`, as lists**: `τ X` takes each element `a` of `X` to the array `[a]` and nothing else —
     `rep_transpose_list` at `idU X`: the array holds `a` only, each value once. Hypotheses: `rep_tau`'s. -/
 theorem rep_tau_list {n : USize} (X : Vals A n)
@@ -227,6 +224,5 @@ theorem rep_tau_list {n : USize} (X : Vals A n)
   exact h
 
 #print axioms rep_tau_list
-
 
 end LeetQ.Rel.Rep

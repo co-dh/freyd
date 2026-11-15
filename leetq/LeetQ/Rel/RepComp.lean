@@ -199,7 +199,6 @@ theorem rep_comp (R : Rel A B) (S : Rel B C)
     · rw [hA' _ ⟨q, hq2⟩ hi', ← hia]; exact congrArg R.key.row (Fin.ext h1)
     · rw [pick_row C S.val _ m hmJ hfC ⟨q, hq2⟩, dif_pos hj', ← hjc]; exact congrArg S.val.row (Fin.ext h2)
 
-
 end Comp
 
 #print axioms pick_row_atom

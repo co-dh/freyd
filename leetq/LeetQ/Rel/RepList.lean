@@ -205,14 +205,6 @@ local notation "pre(" r ")" => ((List.range r).map fun u => (Column.bitsAt (slic
 set_option hygiene false in
 local notation "nN" => (Rel.n P).toNat
 
-/-- **An atom side fits at the rows `tilLongs n` reads**: they are `0, …, n-1`, so no row misses. -/
-theorem pickFits_tilLongs {t : QAtomicType} {n : USize} (x : Vals (.atom t) n) :
-    Vals.PickFits (.atom t) x ((List.range n.toNat).map fun q => (Column.bitsAt (tilLongs n) (q * 8) 8).toNat) :=
-  pickFits_atom x fun k hk => by
-    obtain ⟨q, hq, rfl⟩ := List.mem_map.1 hk
-    rw [tilLongs_get (List.mem_range.1 hq)]
-    exact List.mem_range.1 hq
-
 /-- **`tilLongs n` reads the rows `0, …, n-1`**. -/
 theorem tilLongs_range (n : USize) :
     ((List.range n.toNat).map fun q => (Column.bitsAt (tilLongs n) (q * 8) 8).toNat) = List.range n.toNat :=

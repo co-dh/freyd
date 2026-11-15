@@ -87,28 +87,6 @@ scoped notation "mpairs(" cs ", " R ", " S ")" => ((List.range (Rel.n R).toNat).
   ((List.range (Rel.n S).toNat).filter fun j => Column.idAt (cs[1]'Nat.one_lt_two).b (cs[1]'Nat.one_lt_two).w j ==
     Column.idAt (cs[0]'Nat.zero_lt_two).b (cs[0]'Nat.zero_lt_two).w i).map (i, ·))
 
--- `step_rep`'s hypotheses at `el`, `pend`, its bound values `kc`, `P` quantified with their equations; `J` the
--- rest (`stepJ`), at the step relation `S`: one relation (`stepOK`), or `Sf` at the round's pairs (`stepOn`).
--- `el.n + pend.n` stays a hypothesis: `pend` is the step's output, which no input count bounds
--- (`codesOK_long2` derives the codes from it)
-set_option hygiene false in
-scoped notation "stepK(" J ")" =>
-  ∀ kc : Vector Code 2, kc = Obj.codes .long kp2(el, pend) →
-    (Rel.n el).toNat + (Rel.n pend).toNat < USize.size ∧ (Rel.n pend).toNat < 2 ^ 63 ∧
-    (Rel.n el).toNat * (Rel.n pend).toNat < min (2 ^ 63) USize.size ∧
-    Vals.PickFits E (Rel.val el) ((mpairs(kc, el, pend)).map Prod.fst) ∧
-    Vals.PickFits V (Rel.val pend) ((mpairs(kc, el, pend)).map Prod.snd) ∧
-    ∀ P : Rel .long (.prod E V), P = pair el pend → J
-set_option hygiene false in
-scoped notation "stepJ(" S ")" =>
-  ∀ jc : Vector Code 2, jc = Obj.codes (.prod E V) vk2(P, S) →
-    codesOK(jc, vk2(P, S)) ∧ (Rel.n S).toNat < 2 ^ 63 ∧ (Rel.n P).toNat * (Rel.n S).toNat < min (2 ^ 63) USize.size ∧
-    Vals.PickFits V (Rel.val S) ((mpairs(jc, P, S)).map Prod.snd)
-set_option hygiene false in
-scoped notation "stepOK" => stepK(stepJ(S))
-set_option hygiene false in
-scoped notation "stepOn" => stepK(∀ S : Rel (.prod E V) V, S = Sf (ran P) → stepJ(S))
-
 end FoldN
 
 open FoldN
@@ -717,7 +695,6 @@ theorem reads_mod_le {A : Obj} {m : USize} (e : Vals A m) : ∀ N : Nat,
     rw [Nat.add_one_mul N m.toNat, List.range_add, List.map_append, hm, Nat.add_one_mul (N + 1)]
     exact Nat.le_trans (reads_append e _ _) (Nat.add_le_add_right (reads_mod_le e N) _)
 
-
 open Freyd Freyd.Alg.RelSet in
 /-- **`foldBy`, read back**: an array `xs` of `X` goes to `w` when a chain `ys` of steps runs along `xs` from
     a value of `e` (`ys[|xs|]`) to `w` (`ys[0]`), `ys[t+1]` to `ys[t]` on the element `xs[t]` by `Sr k`,
@@ -892,49 +869,6 @@ theorem foldByC_fst {E V : Obj} {n m : USize} (X : Vals (.arr E) n) (e : Vals V 
     (foldByC X e stepC).1 = foldBy X e (fun el p => (stepC el p).1) := by
   simp only [foldBy, foldByC, foldRowsC_fst]
 
-/-- **`foldOn`, read back**: `rep_foldBy` at `demandStep Sf`, whose round `k` is read back by `step_rep` as
-    `Sf (D k)`, `D k` the coreflexive on the (element, value) pairs round `k` meets over ALL arrays of `X`.
-    `D` is bound by its equation; `hS` is `step_rep`'s hypotheses at every round, the rest as `rep_foldBy`'s. -/
-theorem rep_foldOn {E V : Obj} {m n : USize} (e : Vals V m) (Sf : Rel (.prod E V) (.prod E V) → Rel (.prod E V) V)
-    (X : Vals (.arr E) n)
-    (T : Rel .long (.arr E)) (hT : T = num (idU X) 0) (hn : n.toNat < 2 ^ 63)
-    (hv : Vals.PickFits (.arr E) X (List.range n.toNat))
-    (pend₀ : Rel .long V) (hpend : pend₀ = top (A := .long) (Rel.key T) e)
-    (hN : (Rel.n T).toNat * m.toNat < USize.size) (h63 : (Rel.n T).toNat * m.toNat < 2 ^ 63)
-    -- generic seed: an input fit; `nilVal`, atoms fit outright
-    (hB : Vals.PickFits V e ((List.range ((Rel.n T).toNat * m.toNat)).map (· % m.toNat)))
-    (step : Rel .long E → Rel .long V → Rel .long V) (hstep : step = demandStep Sf)
-    (elK : Nat → Rel .long E) (hE : ∀ k, elK k = elR(T, k))
-    (f : Rel .long V × Rel .long V × Nat → Rel .long V × Rel .long V × Nat) (hf : ∀ st, f st = rnd(st))
-    (D : Nat → Rel (.prod E V) (.prod E V)) (hD : ∀ k, D k = ran (pair (elK k) (f^[k] (pend₀, Alg.zero, 0)).1))
-    -- kept: CodesFit/RazeFits of each round's step output and `P ∪ Q`, intermediates no input bounds
-    (hR : ∀ i (el : Rel .long E) (pend P S : Rel .long V), el = elK i → pend = (f^[i] (pend₀, Alg.zero, 0)).1 →
-      P = (f^[i] (pend₀, Alg.zero, 0)).2.1 → S = step el pend → roundOK)
-    (hS : ∀ i (el : Rel .long E) (pend : Rel .long V), el = elK i → pend = (f^[i] (pend₀, Alg.zero, 0)).1 →
-      stepOn)
-    (F : Rel .long V) (hF : F = foldRows T pend₀ step)
-    -- kept (hjO..hjC): `F` is the fold output, its count and fits grow with the rounds; no input bounds them
-    (jc : Vector Code 2) (hjc : jc = Obj.codes .long ck2(T°, F)) (hjO : codesOK(jc, ck2(T°, F)))
-    (hjn : (Rel.n F).toNat < 2 ^ 63) (hjM : (Rel.n (T°)).toNat * (Rel.n F).toNat < min (2 ^ 63) USize.size)
-    (hjA : Vals.PickFits (.arr E) (Rel.key (T°)) ((mpairs(jc, T°, F)).map Prod.fst))
-    (hjC : Vals.PickFits V (Rel.val F) ((mpairs(jc, T°, F)).map Prod.snd)) :
-    ∀ (xs : List E.El) w, rep (foldOn e Sf X) xs w ↔ (∃ i, X.row i = xs) ∧
-      ∃ ys : List V.El, ∃ hy : ys.length = xs.length + 1,
-        (∃ p, e.row p = ys[xs.length]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_self _) hy.symm)) ∧
-        (∀ t (ht : t < xs.length), rep (Sf (D (xs.length - 1 - t)))
-          (xs[t]'ht, ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm))
-          (ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm))) ∧
-        w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) := by
-  subst hstep
-  rw [show foldOn e Sf X = foldBy X e (demandStep Sf) from foldByC_fst X e _]
-  exact rep_foldBy e X T hT hn hv pend₀ hpend hN h63 hB _ (fun k p w => rep (Sf (D k)) p w) elK hE f hf
-    hR (fun i _ r v => by
-      obtain ⟨hkO, hkn, hkM, hkB, hkC, hJ⟩ := hS i _ _ rfl rfl _ rfl
-      obtain ⟨hjO, hjn, hjM, hjC⟩ := hJ _ rfl _ (congrArg Sf (hD i)) _ rfl
-      exact step_rep (elK i) _ Sf _ rfl hkO hkn hkM hkB hkC _ rfl _ (congrArg Sf (hD i)) _ rfl
-        hjO hjn hjM hjC r v)
-    F hF jc hjc hjO hjn hjM hjA hjC
-
 end LeetQ.Rel.Rep
 
 #print axioms LeetQ.Rel.Rep.round_rep
@@ -947,4 +881,3 @@ end LeetQ.Rel.Rep
 #print axioms LeetQ.Rel.Rep.foldRows_rep_keep
 #print axioms LeetQ.Rel.Rep.rep_foldBy_keep
 #print axioms LeetQ.Rel.Rep.rep_foldBy
-#print axioms LeetQ.Rel.Rep.rep_foldOn

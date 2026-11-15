@@ -72,7 +72,6 @@ theorem rep_antiJoin (R : Rel A B) (T : Rel B B) (hc : codesOK(avc(B, R, T), avp
       obtain ⟨j, hj⟩ := (vals_member R T hc i.2).1 hbit
       exact ⟨T.key.row j, j, rfl, hj.trans hiy⟩
 
-
 end AntiJoin
 
 /-! ## `entire`, `surjective`: `idU U ⊑ dom R` -/
@@ -208,7 +207,6 @@ theorem rep_injective (R : Rel A B) (hK : oneOK(B, R.n, R.val)) (hV : oneOK(A, R
   · exact (convArr_holds R.key R.val a' b).2 h2
   · exact (convArr_holds R.key R.val a b).1 h1
   · exact (convArr_holds R.key R.val a' b).1 h2
-
 
 end Entire
 

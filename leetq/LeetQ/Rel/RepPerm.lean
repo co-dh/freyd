@@ -270,26 +270,11 @@ theorem perm_chain {β : Type _} (xs w : List β) :
 
 /-! ## `suffix` -/
 
--- every primitive's hypotheses at one round of `suffix`, at its union so far `S` and last arrays `F`: `rep_ran`'s
--- at `F`, `rep_tail`'s at `Dr = ran F`, `rep_comp`'s at `F ≫ tail`, `rep_union_full`'s at `P = S`, `Q = F ≫ tail`
-namespace ListN
-set_option hygiene false in
-scoped notation "sufOK" =>
-  (∀ Dr : Rel (.arr B) (.arr B), Dr = ran F →
-    oneFit(.arr B, Rel.n F, Rel.val F) ∧ uncOK(B, Dr) ∧ cmpOK(.arr B, F, tail (Rel.val Dr)) ∧
-    ∀ P : Rel (.arr B) (.arr B), P = S → ∀ Q : Rel (.arr B) (.arr B), Q = F ≫ tail (Rel.val Dr) →
-    ∃ hU : P.n.toNat + Q.n.toNat < USize.size,
-      Vals.RazeFits (.arr B) P.key Q.key ∧ Vals.RazeFits (.arr B) P.val Q.val ∧
-      Obj.CodesFit (.arr B) (#v[⟨(PQ(.arr B, .arr B)).n, (PQ(.arr B, .arr B)).key⟩] : Vector (Part (.arr B)) 1) ∧
-      Obj.CodesFit (.arr B) (#v[⟨(PQ(.arr B, .arr B)).n, (PQ(.arr B, .arr B)).val⟩] : Vector (Part (.arr B)) 1) ∧
-      Vals.PickFits (.arr B) (PQ(.arr B, .arr B)).key (List.range (PQ(.arr B, .arr B)).n.toNat) ∧
-      Vals.PickFits (.arr B) (PQ(.arr B, .arr B)).val (List.range (PQ(.arr B, .arr B)).n.toNat))
-end ListN
 open ListN
 
 open Freyd Freyd.Alg Freyd.Alg.RelSet in
 /-- **One round of `suffix`, read back**: `F ≫ tail` takes an array to the tail of each array `F` gives it, and the
-    union adds those to `S`. Hypotheses: `sufOK`. -/
+    union adds those to `S`. -/
 theorem suffix_round_of {B : Obj} (S F : Rel (.arr B) (.arr B))
     (eT : ∀ xs bs, rep (tail (ran F).val) xs bs ↔ (∃ j, (ran F).val.row j = xs) ∧ ∃ b, xs = b :: bs)
     (eC : rep (F ≫ tail (ran F).val) = rep F ≫ rep (tail (ran F).val))
@@ -313,22 +298,11 @@ theorem suffix_round_of {B : Obj} (S F : Rel (.arr B) (.arr B))
   show rep S xs ys ∨ rep _ xs ys ↔ _
   exact or_congr Iff.rfl (e1 xs ys)
 
-/-- `suffix_round_of` at `sufOK`, each read-back by its lemma. -/
-theorem suffix_round {B : Obj} (S F : Rel (.arr B) (.arr B)) (h : sufOK) :
-    (∀ xs ys, rep (F ≫ tail (ran F).val) xs ys ↔ ∃ c, rep F xs (c :: ys)) ∧
-    ∀ xs ys, rep (S ∪ F ≫ tail (ran F).val) xs ys ↔ rep S xs ys ∨ ∃ c, rep F xs (c :: ys) := by
-  obtain ⟨⟨hDf, hDp⟩, ht, ⟨hcf, hc⟩, hU⟩ := h _ rfl
-  obtain ⟨c1, c2, c3, c4⟩ := hc _ rfl
-  obtain ⟨hN, hFk, hFv, hUK, hUV, hUk, hUv⟩ := hU _ rfl _ rfl
-  exact suffix_round_of S F (rep_tail (Rel.val (ran F)) _ rfl _ rfl _ rfl (ht _ rfl _ rfl _ rfl))
-    (rep_comp _ _ (codes_faithful_wf _ _ hcf).1 c1 c2 c3 c4) (rep_ran_corefl F (one_ok _ hDf) (hDp))
-    (rep_union_full S _ hN hFk hFv (one_ok _ hUK) (one_ok _ hUV) hUk hUv)
-
 /-- **`suffix`, read back**: an array `xs` of `X` goes to exactly its suffixes. Round `i` holds in `F` the arrays
     `drop i xs` (for `i ≤ |xs|`) and in `S` every `drop t xs`, `t ≤ i`; the fuel `X.1 + 1` passes every array's
     length (`arr_row_length`), and a stop at an empty `F` means every array is shorter. The round `g` is bound by
     its defining equation (`hg`); `hR` reads back each round `iter` runs (`done` failing up to it), as
-    `suffix_round` concludes. -/
+    `suffix_round_of` concludes. -/
 theorem suffix_rounds {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (g : Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B) → Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B))
     (hg : ∀ S F, g (S, F) = (S ∪ F ≫ tail (ran F).val, F ≫ tail (ran F).val))
@@ -412,7 +386,6 @@ theorem suffix_rounds {B : Obj} {n : USize} (X : Vals (.arr B) n)
   · omega
   · have : xs.length < j := Nat.lt_of_not_le fun hc => h' xs _ ((hFj xs _).2 ⟨⟨r, hr⟩, hc, rfl⟩)
     omega
-
 
 /-! ## `snoc` -/
 
@@ -522,4 +495,3 @@ end LeetQ.Rel.Rep
 #print axioms LeetQ.Rel.Rep.rep_alpha
 #print axioms LeetQ.Rel.Rep.perm_step_set
 #print axioms LeetQ.Rel.Rep.perm_chain
-#print axioms LeetQ.Rel.Rep.suffix_round

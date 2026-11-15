@@ -289,12 +289,6 @@ scoped notation "pairOK(" A ", " R ", " S ")" =>
 set_option hygiene false in
 scoped notation "oneFit(" B ", " n ", " x ")" =>
   (Obj.CodesFit B (#v[⟨n, x⟩] : Vector (Part B) 1) ∧ Vals.PickFits B x (List.range (n).toNat))
--- `rep_nub`'s hypotheses at `T`
-set_option hygiene false in
-scoped notation "nubOK(" K ", " V ", " T ")" =>
-  (Obj.CodesFit K (#v[⟨Rel.n T, Rel.key T⟩] : Vector (Part K) 1) ∧
-    Obj.CodesFit V (#v[⟨Rel.n T, Rel.val T⟩] : Vector (Part V) 1) ∧
-    Vals.PickFits K (Rel.key T) (List.range (Rel.n T).toNat) ∧ Vals.PickFits V (Rel.val T) (List.range (Rel.n T).toNat))
 -- `rep_antiJoin`'s hypotheses at `antiJoin R C`
 set_option hygiene false in
 scoped notation "ajOK(" B ", " R ", " C ")" =>
@@ -317,112 +311,9 @@ scoped notation "diffOK(" A ", " B ", " R ", " S ")" =>
       Vector (Part (.prod A B)) 2)) ∧
     (Vals.PickFits A (Rel.key R) (List.range (Rel.n R).toNat) ∧ Vals.PickFits B (Rel.val R) (List.range (Rel.n R).toNat)))
 
--- `rep_union_full`'s razed union of `R ∪ S`, `K`, `X` the key and value objects, `hUN` its row-count bound
-set_option hygiene false in
-scoped notation "UO(" K ", " X ", " R ", " S ")" =>
-  (⟨_, Obj.raze K #[⟨Rel.n R, Rel.key R⟩, ⟨Rel.n S, Rel.key S⟩] (raze2_lt hUN),
-    Obj.raze X #[⟨Rel.n R, Rel.val R⟩, ⟨Rel.n S, Rel.val S⟩] (raze2_lt hUN)⟩ : Rel K X)
--- `rep_union_full`'s hypotheses at `R ∪ S`, `K`, `X` the key and value objects
-set_option hygiene false in
-scoped notation "uniOK(" K ", " X ", " R ", " S ")" =>
-  (∃ hUN : (Rel.n R).toNat + (Rel.n S).toNat < USize.size,
-      Vals.RazeFits K (Rel.key R) (Rel.key S) ∧ Vals.RazeFits X (Rel.val R) (Rel.val S) ∧
-      Obj.CodesFit K (#v[⟨(UO(K, X, R, S)).n, (UO(K, X, R, S)).key⟩] : Vector (Part K) 1) ∧
-      Obj.CodesFit X (#v[⟨(UO(K, X, R, S)).n, (UO(K, X, R, S)).val⟩] : Vector (Part X) 1) ∧
-      Vals.PickFits K (UO(K, X, R, S)).key (List.range (UO(K, X, R, S)).n.toNat) ∧
-      Vals.PickFits X (UO(K, X, R, S)).val (List.range (UO(K, X, R, S)).n.toNat))
-
 end Prim
 
 open Prim
--- every primitive's hypotheses at one round's values
-set_option hygiene false in
-local notation "loopOK" =>
-  (oneFit(.prod X (.arr Y), Rel.n St, Rel.val St) ∧ oneFit(.arr Y, Rel.n (outr D), Rel.val (outr D)) ∧
-    uncOK(Y, W) ∧ cmpOK(.arr Y, outr D, uncons (Rel.val W)) ∧ pairOK(.prod X (.arr Y), outl D, outl u) ∧
-    cmpOK(.prod X Y, p, G) ∧ pairOK(.prod X (.arr Y), Q, outr u) ∧ cmpOK(.prod X (.arr Y), St, R) ∧
-    nubOK(K, .prod X (.arr Y), T) ∧ oneFit(.prod X (.arr Y), Rel.n u, Rel.key u) ∧
-    ajOK(.prod X (.arr Y), D, du) ∧ cmpOK(.prod X (.arr Y), St, outl A) ∧ uniOK(K, X, out, O))
-
-/-- **One round of `loopOn`, read back**: `loop_round_set` with each primitive's read-back discharged by its
-    lemma. The round's values are bound by their equations, the step `G` any relation (`loopOn`'s is
-    `F(ran p)`); `h` is every primitive's hypotheses at them. -/
-theorem loop_round_rep {K X Y : Obj} (out : Rel K X)
-    (St : Rel K (.prod X (.arr Y))) (D : Rel (.prod X (.arr Y)) (.prod X (.arr Y))) (hD : D = ran St)
-    (W : Rel (.arr Y) (.arr Y)) (hW : W = ran (outr D))
-    (u : Rel (.prod X (.arr Y)) (.prod Y (.arr Y))) (hu : u = outr D ≫ uncons (Rel.val W))
-    (p : Rel (.prod X (.arr Y)) (.prod X Y)) (hp : p = pair (outl D) (outl u))
-    (G : Rel (.prod X Y) X) (Q : Rel (.prod X (.arr Y)) X) (hQ : Q = p ≫ G)
-    (R : Rel (.prod X (.arr Y)) (.prod X (.arr Y))) (hR : R = pair Q (outr u))
-    (T : Rel K (.prod X (.arr Y))) (hT : T = St ≫ R)
-    (du : Rel (.prod X (.arr Y)) (.prod X (.arr Y))) (hdu : du = dom u)
-    (A : Rel (.prod X (.arr Y)) (.prod X (.arr Y))) (hA : A = antiJoin D du) (O : Rel K X) (hO : O = St ≫ outl A)
-    (h : loopOK) :
-    (∀ k (c' : X.El) (ys : List Y.El), rep (Rel.nub T) k (c', ys) ↔
-      ∃ c y, rep St k (c, y :: ys) ∧ rep G (c, y) c') ∧
-    ∀ k (c : X.El), rep (out ∪ O) k c ↔ rep out k c ∨ rep St k (c, []) := by
-  obtain ⟨⟨hDf, hDp⟩, ⟨hWf, hWp⟩, hUn, ⟨huf, hu'⟩, ⟨hpf, hp'⟩, ⟨hQf, hQ'⟩, ⟨hRf, hR'⟩, ⟨hTf, hT'⟩,
-    ⟨hNK, hNV, hNk', hNv'⟩, ⟨hdf, hdp⟩, ⟨hAf, hA'⟩, ⟨hOf, hO'⟩, hUN, hFk, hFv, hUK, hUV, hUk, hUv⟩ := h
-  subst hW hdu
-  have hKf := hUn _ rfl _ rfl _ rfl
-  obtain ⟨u1, u2, u3, u4⟩ := hu' _ rfl
-  obtain ⟨p1, p2, p3, p4, p5⟩ := hp' _ rfl
-  obtain ⟨q1, q2, q3, q4⟩ := hQ' _ rfl
-  obtain ⟨r1, r2, r3, r4, r5⟩ := hR' _ rfl
-  obtain ⟨t1, t2, t3, t4⟩ := hT' _ rfl
-  obtain ⟨o1, o2, o3, o4⟩ := hO' _ rfl
-  obtain ⟨a1, a2⟩ := hA'
-  refine loop_round_set out St D u p G Q R T A O (by rw [hD]; exact rep_ran_corefl St (one_ok _ hDf) (hDp))
-    (rep_ran_corefl (outr D) (one_ok _ hWf) (hWp))
-    (rep_uncons (Rel.val (ran (outr D))) _ rfl _ rfl _ rfl hKf)
-    (by rw [hu]; exact rep_comp _ _ (codes_faithful_wf _ _ huf).1 u1 u2 u3 u4)
-    (by rw [hp]; exact rep_pair _ _ (codes_faithful_wf _ _ hpf).1 p1 p2 p3 p4 p5)
-    (by rw [hQ]; exact rep_comp _ _ (codes_faithful_wf _ _ hQf).1 q1 q2 q3 q4)
-    (by rw [hR]; exact rep_pair _ _ (codes_faithful_wf _ _ hRf).1 r1 r2 r3 r4 r5)
-    (by rw [hT]; exact rep_comp _ _ (codes_faithful_wf _ _ hTf).1 t1 t2 t3 t4)
-    (rep_nub T (one_ok _ hNK) (one_ok _ hNV) hNk' hNv')
-    (rep_dom_corefl u (one_ok _ hdf) (hdp))
-    (by rw [hA]; exact rep_antiJoin D (dom u) (codes_faithful_wf _ _ hAf).1 a1 a2)
-    (by rw [hO]; exact rep_comp _ _ (codes_faithful_wf _ _ hOf).1 o1 o2 o3 o4)
-    (rep_union_full out O hUN hFk hFv (one_ok _ hUK) (one_ok _ hUV) hUk hUv)
-
--- a round's values from its state `St`, each bound by its equation, `G` the step relation `Fp`, then `J`
-set_option hygiene false in
-local notation "roundVals(" Fp ", " J ")" =>
-  ∀ D, D = ran St → ∀ W, W = ran (outr D) → ∀ u, u = outr D ≫ uncons (Rel.val W) →
-    ∀ p, p = pair (outl D) (outl u) → ∀ G, G = Fp → ∀ Q, Q = p ≫ G → ∀ R, R = pair Q (outr u) →
-    ∀ T, T = St ≫ R → ∀ du, du = dom u → ∀ A, A = antiJoin D du → ∀ O, O = St ≫ outl A → J
-
-/-- **`loopOn`, read back**: key `k` goes to `c` when one of its seeds `(c₀, xs)` in `P` folds to `c` along `xs`:
-    a chain `g` from `g 0 = c₀` to `g |xs| = c`, step `t` taking `(g t, xs[t])` to `g (t+1)` by `Fr t`, the
-    relation `F(ran p)` of round `t` (`p` its pairs `(c, y)`). The fuel always suffices, so the stop is not in
-    the conclusion. The round `f` is bound by its defining equation (`hf`); `hR` is, at every round up to the
-    fuel, `Fr`'s defining equation and every primitive's hypotheses (`loopOK`) at the round's values. -/
-theorem rep_loopOn {K X Y : Obj} (F : Rel (.prod X Y) (.prod X Y) → Rel (.prod X Y) X)
-    (P : Rel K (.prod X (.arr Y)))
-    (f : Rel K X × Rel K (.prod X (.arr Y)) → Rel K X × Rel K (.prod X (.arr Y)))
-    (hf : ∀ out St D u p, D = ran St → u = outr D ≫ uncons (ran (outr D)).val → p = pair (outl D) (outl u) →
-      f (out, St) = (out ∪ St ≫ outl (antiJoin D (dom u)), Rel.nub (St ≫ pair (p ≫ F (ran p)) (outr u))))
-    (Fr : Nat → X.El × Y.El → X.El → Prop)
-    -- kept: each round's state is an intermediate whose CodesFit/RazeFits grow with the rounds
-    (hR : ∀ i, i ≤ (Rel.val P).2.1.toNat → ∀ out St, out = (f^[i] (Alg.zero, P)).1 →
-      St = (f^[i] (Alg.zero, P)).2 → roundVals(F (ran p), (∀ cy c', Fr i cy c' ↔ rep G cy c') ∧ loopOK)) :
-    ∀ k c, rep (loopOn F P) k c ↔ ∃ c₀ xs, rep P k (c₀, xs) ∧ ∃ g : Nat → X.El, g 0 = c₀ ∧
-      (∀ t (ht : t < xs.length), Fr t (g t, xs[t]'ht) (g (t + 1))) ∧ c = g xs.length := by
-  have one : ∀ i, i ≤ (Rel.val P).2.1.toNat →
-      (∀ k (c' : X.El) (ys : List Y.El), rep (f^[i + 1] (Alg.zero, P)).2 k (c', ys) ↔
-        ∃ c y, rep (f^[i] (Alg.zero, P)).2 k (c, y :: ys) ∧ Fr i (c, y) c') ∧
-      ∀ k (c : X.El), rep (f^[i + 1] (Alg.zero, P)).1 k c ↔
-        rep (f^[i] (Alg.zero, P)).1 k c ∨ rep (f^[i] (Alg.zero, P)).2 k (c, []) := by
-    intro i hi
-    obtain ⟨hFr, hok⟩ := hR i hi _ _ rfl rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
-    have hr := loop_round_rep _ _ _ rfl _ rfl _ rfl _ rfl _ _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl hok
-    have e : f^[i + 1] (Alg.zero, P) = _ :=
-      hf (f^[i] (Alg.zero, P)).1 (f^[i] (Alg.zero, P)).2 _ _ _ rfl rfl rfl
-    rw [e]
-    exact ⟨fun k c' ys => (hr.1 k c' ys).trans
-      (exists_congr fun c => exists_congr fun y => and_congr Iff.rfl (hFr _ _).symm), hr.2⟩
-  exact loopOn_rounds F P f hf Fr (fun i hi _ => (one i hi).1) (fun i hi _ => (one i hi).2)
 
 open Freyd Freyd.Alg Freyd.Alg.RelSet
 
@@ -594,7 +485,6 @@ theorem rep_fixOn {A B : Obj} (n : Nat) (φ : Rel A B → Rel A B) (X₀ : Rel A
           have := hne k (by omega); have := ih (by omega); omega
       have := hk (n - 1) (by omega); have := hUk 0 (by omega); omega
 
-#print axioms rep_loopOn
 #print axioms nodup_below
 #print axioms rows_le_of_inj
 #print axioms rep_fixOn

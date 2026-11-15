@@ -108,22 +108,6 @@ theorem rows_pickFits {k v : Obj} (R : Rel k v) (i : ByteArray) (hsub : (ids i).
 
 #print axioms rows_pickFits
 
-/-- **A pick at a sublist of the rows reads at most `1 + 3 ^ sizeOf A` readings of all rows**: `reads_pick` at all
-    the picked rows, which read the source at a sublist of its rows (`reads_sublist`). -/
-theorem reads_pick_sublist (A : Obj) {n : USize} (x : Vals A n) (i : ByteArray) (m : USize) (h : len i = m.toNat)
-    (hsub : (ids i).Sublist (List.range n.toNat)) (h63 : Vals.reads A x (List.range n.toNat) < 2 ^ 63)
-    (hU : Vals.reads A x (List.range n.toNat) < USize.size) :
-    Vals.reads A (Vals.pick A x i m h) (List.range m.toNat) ≤ (1 + 3 ^ sizeOf A) * Vals.reads A x (List.range n.toNat) := by
-  have hs : Vals.reads A x ((List.range m.toNat).map fun q => (Column.bitsAt i (q * 8) 8).toNat) ≤
-      Vals.reads A x (List.range n.toNat) := by
-    rw [show ((List.range m.toNat).map fun q => (Column.bitsAt i (q * 8) 8).toNat) = ids i by rw [← h]; rfl]
-    exact reads_sublist x hsub
-  have hp := reads_pick A x i m h (List.range m.toNat) (fun q hq => List.mem_range.1 hq) (by omega) (by omega)
-  have hm := Nat.mul_le_mul_left (3 ^ sizeOf A) hs
-  rw [Nat.add_mul, Nat.one_mul]
-  omega
-
-
 /-! ## `Rel.nub` -/
 
 -- the key's and the value's codes, one part each, and the first rows `nub` picks, named as `nub` names them

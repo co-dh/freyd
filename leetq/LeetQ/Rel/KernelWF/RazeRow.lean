@@ -142,8 +142,6 @@ set_option hygiene false in
 scoped notation "kcU" => (Obj.codes A (#v[⟨(Uc).n, (Uc).key⟩] : Vector (Part A) 1))[0]'Nat.zero_lt_one
 set_option hygiene false in
 scoped notation "vcU" => (Obj.codes B (#v[⟨(Uc).n, (Uc).val⟩] : Vector (Part B) 1))[0]'Nat.zero_lt_one
-set_option hygiene false in
-scoped notation "nubU" => (tuples.tupleIds kcU #[vcU]).2
 end RazeN
 open RazeN
 

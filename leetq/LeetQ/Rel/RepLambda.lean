@@ -32,7 +32,6 @@ theorem longCol_cast_get {b : ByteArray} {M : USize} (hb : len b < USize.size) (
     rw [bitsAt_extract _ (by omega), Nat.zero_add]
   · contradiction
 
-
 /-- An array row is, as a list, the payload's values at the positions between the row's `lo` and `hi`, in order. -/
 theorem arr_row_eq {b : Obj} {n K : USize} (lo hi : Arr .long n) (f : Vals b K) (q : Fin n.toNat) :
     Vals.row (A := .arr b) ⟨K, lo, hi, f⟩ q = ((List.finRange K.toNat).filter fun s =>

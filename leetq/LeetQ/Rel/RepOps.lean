@@ -224,7 +224,6 @@ theorem rep_ran_corefl (R : Rel A B) (hK : oneOK(B, R.n, R.val))
     rep (ran R) = corefl (A := (⟨B.El⟩ : RelSet.{0})) fun b => ∃ a, rep R a b :=
   (rep_ran R hK hp).trans (dom_corefl _)
 
-
 end Distinct
 
 /-! ## `⊤` on two universes -/
@@ -592,7 +591,6 @@ theorem diff_pickFits (R S : Rel A B) (hc : pairsOK(R, S)) (hk : Vals.PickFits A
 
 #print axioms diff_pickFits
 
-
 /-- **`(R ⊑ S) = true ↔ rep R ⊑ rep S`**: `⊑` counts the rows of `R` whose pair `S` holds (`pairs_member`), all
     `R.n` of them exactly when every pair of `R` is one of `S`. Hypothesis: the joint pair codes (`hc`); nothing is
     picked. -/
@@ -874,7 +872,6 @@ theorem rep_junc (R : Rel A C) (S : Rel B C) (hN : R.n.toNat + S.n.toNat < USize
       refine ⟨⟨R.n.toNat + j.1, hk2 _ (by omega)⟩, ?_, ?_⟩
       · rw [sumVals_row _ _ hN h63, dif_neg hj]; simp only [Nat.add_sub_cancel_left]
       · rw [hval, dif_neg hj]; simp only [Nat.add_sub_cancel_left]
-
 
 end UnionJunc
 
