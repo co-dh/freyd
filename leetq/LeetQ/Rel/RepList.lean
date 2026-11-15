@@ -205,14 +205,6 @@ local notation "pre(" r ")" => ((List.range r).map fun u => (Column.bitsAt (slic
 set_option hygiene false in
 local notation "nN" => (Rel.n P).toNat
 
-/-- **An atom side fits at the rows `tilLongs n` reads**: they are `0, …, n-1`, so no row misses. -/
-theorem pickFits_tilLongs {t : QAtomicType} {n : USize} (x : Vals (.atom t) n) :
-    Vals.PickFits (.atom t) x ((List.range n.toNat).map fun q => (Column.bitsAt (tilLongs n) (q * 8) 8).toNat) :=
-  pickFits_atom x fun k hk => by
-    obtain ⟨q, hq, rfl⟩ := List.mem_map.1 hk
-    rw [tilLongs_get (List.mem_range.1 hq)]
-    exact List.mem_range.1 hq
-
 /-- **`tilLongs n` reads the rows `0, …, n-1`**. -/
 theorem tilLongs_range (n : USize) :
     ((List.range n.toNat).map fun q => (Column.bitsAt (tilLongs n) (q * 8) 8).toNat) = List.range n.toNat :=
@@ -1070,143 +1062,9 @@ theorem rep_cat {K B : Obj} (P : Rel K (.prod (.arr B) (.arr B)))
 
 open FoldN OpsN
 
-/-- **`map`'s step, read back**: `cons (pair (el ≫ R) pend)` takes row `r`'s element `e` and list `u` to
-    `b :: u` for each `b` with `e R b`. `Q = el ≫ R`, `P = pair Q pend` and the codes `jc`, `kc` are bound by
-    their equations. Hypotheses: `rep_comp`'s at `el`, `R` (`hj…`), `rep_pair`'s at `Q`, `pend` (`hk…`),
-    `rep_cons`'s at `P`. -/
-theorem map_step_rep {E B : Obj} (el : Rel .long E) (R : Rel E B) (pend : Rel .long (.arr B))
-    (jc : Vector Code 2)
-    (hjc : jc = Obj.codes E (#v[⟨Rel.n el, Rel.val el⟩, ⟨Rel.n R, Rel.key R⟩] : Vector (Part E) 2))
-    (hjO : codesOK(jc, (#v[⟨Rel.n el, Rel.val el⟩, ⟨Rel.n R, Rel.key R⟩] : Vector (Part E) 2)))
-    (hjn : (Rel.n R).toNat < 2 ^ 63) (hjM : (Rel.n el).toNat * (Rel.n R).toNat < min (2 ^ 63) USize.size)
-    (hjC : Vals.PickFits B (Rel.val R) ((mpairs(jc, el, R)).map Prod.snd))
-    (Q : Rel .long B) (hQ : Q = el ≫ R)
-    (kc : Vector Code 2) (hkc : kc = Obj.codes .long kp2(Q, pend))
-    (hkO : (Rel.n Q).toNat + (Rel.n pend).toNat < USize.size)
-    (hkn : (Rel.n pend).toNat < 2 ^ 63) (hkM : (Rel.n Q).toNat * (Rel.n pend).toNat < min (2 ^ 63) USize.size)
-    (hkB : Vals.PickFits B (Rel.val Q) ((mpairs(kc, Q, pend)).map Prod.fst))
-    (hkC : Vals.PickFits (.arr B) (Rel.val pend) ((mpairs(kc, Q, pend)).map Prod.snd))
-    (P : Rel .long (.prod B (.arr B))) (hP : P = pair Q pend)
-    (s : ByteArray × ByteArray) (hs : s = slicesOf (Rel.val P).2)
-    (hS : ((List.range (Rel.n P).toNat).map fun r => (Column.bitsAt s.2 (r * 8) 8).toNat).sum + (Rel.n P).toNat < 2 ^ 63)
-    (hU : ((List.range (Rel.n P).toNat).map fun r => (Column.bitsAt s.2 (r * 8) 8).toNat).sum + (Rel.n P).toNat < USize.size)
-    (xi : ByteArray) (hxi : xi = expandBytes 8 0 (tilLongs (Rel.n P)) s.2)
-    (m : USize) (hm : m = (len xi).toUSize)
-    (xr : ByteArray) (hxr : xr = sub m (tilLongs m) (gather 8 (sub (Rel.n P) (sums (Rel.n P) s.2) s.2) xi))
-    (j : ByteArray) (hj : j = add m (gather 8 s.1 xi) xr)
-    (tl : Vals B m) (htl : tl = Vals.pick B (Rel.val P).2.2.2.2 (add m (gather 8 s.1 xi) xr) m
-      (len_val Ew.add Ew.vv (gather 8 s.1 xi) xr m))
-    (c1 : ByteArray) (hc1 : c1 = addc (Rel.n P) s.2 1) (hi : ByteArray) (hhi : hi = sums (Rel.n P) c1)
-    (lo : ByteArray) (hlo : lo = sub (Rel.n P) hi c1)
-    (dst : ByteArray) (hdst : dst = addc m (add m (gather 8 lo xi) xr) 1)
-    (g : ByteArray) (hg : g = (Code.ofLongs (concatBytes #[dst, lo])).grade)
-    (hRf : Vals.RazeFits B tl (Rel.val P).1)
-    (hFf : ∀ hN, Vals.PickFits B (Obj.raze B #[⟨m, tl⟩, ⟨Rel.n P, (Rel.val P).1⟩] hN)
-      ((List.range (len g)).map fun q => (Column.bitsAt g (q * 8) 8).toNat)) :
-    ∀ r v, rep (cons (pair (el ≫ R) pend)) r v ↔
-      ∃ e u, rep el r e ∧ rep pend r u ∧ ∃ b, rep R e b ∧ v = b :: u := by
-  subst hjc hkc
-  have h2 := rep_comp el R hjO hjn hjM (pickFits_atom_fst _) hjC
-  subst hQ
-  have h1 := rep_pair (el ≫ R) pend (codesOK_long2 _ _ hkO) hkn hkM (pickFits_atom_fst _) hkB hkC
-  have hV := (pair_pickFits (el ≫ R) pend (codesOK_long2 _ _ hkO) hkn hkM (pickFits_atom_fst _) hkB hkC).2.2
-  subst hP
-  intro r v
-  rw [rep_cons (pair (el ≫ R) pend) hV s hs hS hU xi hxi m hm xr hxr j hj tl htl c1 hc1 hi hhi lo hlo
-    dst hdst g hg (pickFits_tilLongs _) hRf hFf, h1]
-  constructor
-  · rintro ⟨b, bs, hb, rfl⟩
-    obtain ⟨hq, hu⟩ := hb
-    rw [h2] at hq
-    obtain ⟨e, he, hR⟩ := hq
-    exact ⟨e, bs, he, hu, b, hR, rfl⟩
-  · rintro ⟨e, u, he, hu, b, hR, rfl⟩
-    refine ⟨b, u, ⟨?_, hu⟩, rfl⟩
-    rw [h2]
-    exact ⟨e, he, hR⟩
-
 section MapFold
 
 open QLean.Dep
-
-/-- **`map`, read back**: `F(R)` takes an array `xs` of `X` to every `ys` of its length with `xs[t] R ys[t]` at each
-    `t`. `rep_foldBy` at the step `cons (pair (el ≫ R) pend)` and the seed `nilVal B`, its chain closed by
-    `map_chain`. Bound values and hypotheses as `rep_foldBy`'s (`step` bound by `hstep`), and `map_step_rep`'s at
-    every round (`hC`, a per-round bundle, each bound value with its equation). -/
-theorem rep_map {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n)
-    (T : Rel .long (.arr A)) (hT : T = num (idU X) 0) (hn : n.toNat < 2 ^ 63)
-    (hv : Vals.PickFits (.arr A) X (List.range n.toNat))
-    (pend₀ : Rel .long (.arr B)) (hpend : pend₀ = top (A := .long) (Rel.key T) (nilVal B))
-    (hN : (Rel.n T).toNat * (1 : USize).toNat < USize.size)
-    (h63 : (Rel.n T).toNat * (1 : USize).toNat < 2 ^ 63)
-    (step : Rel .long A → Rel .long (.arr B) → Rel .long (.arr B))
-    (hstep : step = fun el pend => cons (pair (el ≫ R) pend))
-    (elK : Nat → Rel .long A) (hE : ∀ k, elK k = elR(T, k))
-    (f : Rel .long (.arr B) × Rel .long (.arr B) × Nat → Rel .long (.arr B) × Rel .long (.arr B) × Nat)
-    (hf : ∀ st, f st = rnd(st))
-    -- kept (hR, hC): each round's state, step output and `P ∪ Q` are intermediates; CodesFit/RazeFits no input bounds
-    (hR : ∀ i (el : Rel .long A) (pend P S : Rel .long (.arr B)), el = elK i →
-      pend = (f^[i] (pend₀, Alg.zero, 0)).1 → P = (f^[i] (pend₀, Alg.zero, 0)).2.1 → S = step el pend →
-      roundAt((.arr B)))
-    (hC : ∀ i, i ≤ (Rel.val T).1.toNat → ∀ (el : Rel .long A) (pend : Rel .long (.arr B)), el = elK i →
-      pend = (f^[i] (pend₀, Alg.zero, 0)).1 →
-      ∀ jc : Vector Code 2, jc = Obj.codes A (#v[⟨Rel.n el, Rel.val el⟩, ⟨Rel.n R, Rel.key R⟩] : Vector (Part A) 2) →
-      codesOK(jc, (#v[⟨Rel.n el, Rel.val el⟩, ⟨Rel.n R, Rel.key R⟩] : Vector (Part A) 2)) ∧
-      (Rel.n R).toNat < 2 ^ 63 ∧ (Rel.n el).toNat * (Rel.n R).toNat < min (2 ^ 63) USize.size ∧
-      Vals.PickFits B (Rel.val R) ((mpairs(jc, el, R)).map Prod.snd) ∧
-      ∀ Q : Rel .long B, Q = el ≫ R →
-      ∀ kc : Vector Code 2, kc = Obj.codes .long kp2(Q, pend) →
-      (Rel.n Q).toNat + (Rel.n pend).toNat < USize.size ∧ (Rel.n pend).toNat < 2 ^ 63 ∧
-      (Rel.n Q).toNat * (Rel.n pend).toNat < min (2 ^ 63) USize.size ∧
-      Vals.PickFits B (Rel.val Q) ((mpairs(kc, Q, pend)).map Prod.fst) ∧
-      Vals.PickFits (.arr B) (Rel.val pend) ((mpairs(kc, Q, pend)).map Prod.snd) ∧
-      ∀ P : Rel .long (.prod B (.arr B)), P = pair Q pend →
-      ∀ s : ByteArray × ByteArray, s = slicesOf (Rel.val P).2 →
-      ((List.range (Rel.n P).toNat).map fun r => (Column.bitsAt s.2 (r * 8) 8).toNat).sum + (Rel.n P).toNat <
-        2 ^ 63 ∧
-      ((List.range (Rel.n P).toNat).map fun r => (Column.bitsAt s.2 (r * 8) 8).toNat).sum + (Rel.n P).toNat <
-        USize.size ∧
-      ∀ xi : ByteArray, xi = expandBytes 8 0 (tilLongs (Rel.n P)) s.2 →
-      ∀ m : USize, m = (len xi).toUSize →
-      ∀ xr : ByteArray, xr = sub m (tilLongs m) (gather 8 (sub (Rel.n P) (sums (Rel.n P) s.2) s.2) xi) →
-      ∀ j : ByteArray, j = add m (gather 8 s.1 xi) xr →
-      ∀ tl : Vals B m, tl = Vals.pick B (Rel.val P).2.2.2.2 (add m (gather 8 s.1 xi) xr) m
-        (len_val Ew.add Ew.vv (gather 8 s.1 xi) xr m) →
-      ∀ c1 : ByteArray, c1 = addc (Rel.n P) s.2 1 → ∀ hi : ByteArray, hi = sums (Rel.n P) c1 →
-      ∀ lo : ByteArray, lo = sub (Rel.n P) hi c1 →
-      ∀ dst : ByteArray, dst = addc m (add m (gather 8 lo xi) xr) 1 →
-      ∀ g : ByteArray, g = (Code.ofLongs (concatBytes #[dst, lo])).grade →
-      Vals.RazeFits B tl (Rel.val P).1 ∧
-      ∀ hN, Vals.PickFits B (Obj.raze B #[⟨m, tl⟩, ⟨Rel.n P, (Rel.val P).1⟩] hN)
-        ((List.range (len g)).map fun q => (Column.bitsAt g (q * 8) 8).toNat))
-    (F : Rel .long (.arr B)) (hF : F = foldRows T pend₀ step)
-    -- kept (hjO..hjC): `F` is the fold output, its count and fits grow with the rounds; no input bounds them
-    (jc : Vector Code 2) (hjc : jc = Obj.codes .long ck2(T°, F)) (hjO : codesOK(jc, ck2(T°, F)))
-    (hjn : (Rel.n F).toNat < 2 ^ 63) (hjM : (Rel.n (T°)).toNat * (Rel.n F).toNat < min (2 ^ 63) USize.size)
-    (hjA : Vals.PickFits (.arr A) (Rel.key (T°)) ((mpairs(jc, T°, F)).map Prod.fst))
-    (hjC : Vals.PickFits (.arr B) (Rel.val F) ((mpairs(jc, T°, F)).map Prod.snd)) :
-    ∀ (xs : List A.El) ys, rep (Alg.map R X) xs ys ↔ (∃ i, X.row i = xs) ∧ ys.length = xs.length ∧
-      ∀ t (ht : t < xs.length) (ht' : t < ys.length), rep R (xs[t]'ht) (ys[t]'ht') := by
-  subst hstep
-  intro xs ys
-  rw [show Alg.map R X = foldBy X (nilVal B) (fun el pend => cons (pair (el ≫ R) pend)) from foldByC_fst X _ _]
-  -- round `i`'s step read back: `map_step_rep` at the round's element and state
-  have hS : ∀ i, i ≤ (Rel.val T).1.toNat → ∀ r v,
-      rep (cons (pair (elK i ≫ R) (f^[i] (pend₀, Alg.zero, 0)).1)) r v ↔
-      ∃ e u, rep (elK i) r e ∧ rep (f^[i] (pend₀, Alg.zero, 0)).1 r u ∧ ∃ b, rep R e b ∧ v = b :: u := by
-    intro i hi r v
-    obtain ⟨hjO, hjn, hjM, hjC, hQ⟩ := hC i hi _ _ rfl rfl _ rfl
-    obtain ⟨hkO, hkn, hkM, hkB, hkC, hP⟩ := hQ _ rfl _ rfl
-    obtain ⟨hS, hU, hx⟩ := hP _ rfl _ rfl
-    obtain ⟨hRf, hFf⟩ := hx _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
-    exact map_step_rep _ R _ _ rfl hjO hjn hjM hjC _ rfl _ rfl hkO hkn hkM hkB hkC _ rfl _ rfl
-      hS hU _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl hRf hFf r v
-  refine (rep_foldBy (nilVal B) X T hT hn hv pend₀ hpend hN h63 (pickFits_nilVal B _)
-    (fun el pend => cons (pair (el ≫ R) pend)) (fun _ eu v => ∃ b, rep R eu.1 b ∧ v = b :: eu.2) elK hE f hf hR hS
-    F hF jc hjc hjO hjn hjM hjA hjC xs ys).trans ?_
-  -- `nilVal B`'s one row is `[]`
-  exact and_congr Iff.rfl ((exists_congr fun zs => exists_congr fun _ => and_congr
-    ⟨fun ⟨_, h⟩ => h.symm, fun h => ⟨⟨0, by simp⟩, h.symm⟩⟩ Iff.rfl).trans (map_chain (rep R) xs ys))
 
 end MapFold
 
@@ -1219,5 +1077,3 @@ end LeetQ.Rel.Rep
 #print axioms LeetQ.Rel.Rep.cat_places
 #print axioms LeetQ.Rel.Rep.cat_row
 #print axioms LeetQ.Rel.Rep.rep_cat
-#print axioms LeetQ.Rel.Rep.map_step_rep
-#print axioms LeetQ.Rel.Rep.rep_map

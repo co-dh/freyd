@@ -13,16 +13,6 @@ namespace LeetQ.Rel.KernelWF
 open QLean QLean.Kernel QLean.Dep LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.Rep
 open Freyd Freyd.Alg Freyd.Alg.RelSet
 
-/-- Two parts' `razeTo` list where `razeColumn` answers dense (`razeTo_toList_dense`). -/
-theorem razeTo2_dense {t : QAtomicType} {w : Nat} (hw : t.width = some w) (hb : t ≠ .boolean) {n m : USize}
-    (x : Arr t n) (y : Arr t m)
-    (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
-      USize.size)
-    (hD : ∀ r, encodedParts t #[x.part, y.part] = some r → denseCheaper (if r.1 then 8 else 5) r.2.1
-      (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat))) = true) :
-    (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList :=
-  razeTo2_toList x y hN (razeTo_toList_dense hw hb _ rfl hN (by simpa using hD))
-
 -- dup of Raze.need_some (private there)
 private theorem need_some {α : Type} {p : Prop} [Decidable p] {msg : Unit → String} {k : p → Option α} {v : α}
     (h : need p msg (fun _ => none) k = some v) : ∃ hp : p, k hp = some v := by

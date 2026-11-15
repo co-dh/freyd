@@ -199,64 +199,6 @@ theorem rep_comp (R : Rel A B) (S : Rel B C)
     · rw [hA' _ ⟨q, hq2⟩ hi', ← hia]; exact congrArg R.key.row (Fin.ext h1)
     · rw [pick_row C S.val _ m hmJ hfC ⟨q, hq2⟩, dif_pos hj', ← hjc]; exact congrArg S.val.row (Fin.ext h2)
 
-/-- **`R ≫ S` fits at all its rows, and counts at most `R`'s rows times `S`'s**, under `rep_comp`'s hypotheses: each
-    side is an input column picked at the join's pairs (`pickFits_pick`), as many as the pairs (`join_rows`,
-    `range_filter_sum_le`). `hA`, `hC` follow from the inputs' readings (`pickFits_join_fst`, `pickFits_join_snd`). -/
-theorem comp_fits (R : Rel A B) (S : Rel B C)
-    (hc : (∀ {k l : Nat} (hk : k < 2) (hl : l < 2) {i j : Nat} (hi : i < (jcs[k]'hk).1.toNat)
-        (hj : j < (jcs[l]'hl).1.toNat),
-        Column.idAt (jc[k]'hk).b (jc[k]'hk).w i = Column.idAt (jc[l]'hl).b (jc[l]'hl).w j ↔
-          Vals.row (jcs[k]'hk).2 ⟨i, hi⟩ = Vals.row (jcs[l]'hl).2 ⟨j, hj⟩) ∧
-      ∀ {k : Nat} (hk : k < 2),
-        laneOK((jc[k]'hk).w) ∧
-        (jc[k]'hk).n = (jcs[k]'hk).1 ∧ (jc[k]'hk).b.size = ((jc[k]'hk).n.toNat * (jc[k]'hk).w + 7) / 8 ∧
-        ((jc[k]'hk).w < 8 → (jc[k]'hk).card < USize.size ∧
-          ∀ i < (jc[k]'hk).n.toNat, Column.idAt (jc[k]'hk).b (jc[k]'hk).w i < (jc[k]'hk).card))
-    (hrn : S.n.toNat < 2 ^ 63)
-    (hM : R.n.toNat * S.n.toNat < min (2 ^ 63) USize.size)
-    (hA : Vals.PickFits A R.key ((jpairs).map Prod.fst)) (hC : Vals.PickFits C S.val ((jpairs).map Prod.snd)) :
-    Vals.PickFits A (R ≫ S).key (List.range (R ≫ S).n.toNat) ∧ Vals.PickFits C (R ≫ S).val (List.range (R ≫ S).n.toNat) ∧
-      (R ≫ S).n.toNat ≤ R.n.toNat * S.n.toNat := by
-  obtain ⟨-, hW⟩ := hc
-  obtain ⟨hlw, hln, hls, -⟩ := hW (k := 0) (by decide)
-  obtain ⟨hrw, hrn', hrs, hrc⟩ := hW (k := 1) (by decide)
-  replace hln : (jc[0]'Nat.zero_lt_two).n = R.n := hln
-  replace hrn' : (jc[1]'Nat.one_lt_two).n = S.n := hrn'
-  obtain ⟨hlt, hZ⟩ := join_rows _ _ hlw hls hrw hrs hrc (by rw [hrn']; exact hrn) (by rw [hln, hrn']; exact hM)
-  have hlen : (jpairs).length ≤ R.n.toNat * S.n.toNat := by
-    rw [List.length_flatMap]; simp only [List.length_map]; exact range_filter_sum_le _ _ _
-  have H : ∀ (m : USize) (hmJ : len (join (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)).2 = m.toNat),
-      Vals.PickFits A (Vals.pickN A R.key (join (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)).1 m
-        (hmJ ▸ join_len (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two))) (List.range m.toNat) ∧
-      Vals.PickFits C (Vals.pick C S.val (join (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)).2 m hmJ)
-        (List.range m.toNat) ∧ m.toNat ≤ R.n.toNat * S.n.toNat := by
-    intro m hmJ
-    have e := hZ m hmJ
-    rw [hln, hrn'] at e
-    have hl : ((List.range m.toNat).map fun q =>
-        (Column.bitsAt (fit m.toNat (join (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)).1) (q * 8) 8).toNat) =
-          (jpairs).map Prod.fst := by rw [e, List.map_map]; rfl
-    have hr : ((List.range m.toNat).map fun q =>
-        (Column.bitsAt (join (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)).2 (q * 8) 8).toNat) =
-          (jpairs).map Prod.snd := by rw [e, List.map_map]; rfl
-    have hq : ∀ q ∈ List.range m.toNat, q < m.toNat := fun q hq => List.mem_range.1 hq
-    have hm := congrArg List.length e
-    simp only [List.length_map, List.length_range] at hm
-    unfold Vals.pickN
-    exact ⟨pickFits_pick A R.key _ m _ _ hq (hl ▸ hA) (hl ▸ hA), pickFits_pick C S.val _ m hmJ _ hq (hr ▸ hC) (hr ▸ hC),
-      by omega⟩
-  rw [show R ≫ S = longCount "≫" (join (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)).2 (fun m h =>
-      (⟨m, Vals.pickN A R.key (join (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)).1 m (h ▸ join_len (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)),
-        Vals.pick C S.val (join (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)).2 m h⟩ : Rel A C)) by
-    show (joinC "≫" (keyPart R) (valPart S) ((B.codesC jcs).1[0]) ((B.codesC jcs).1[1])).1 = _
-    rw [Obj.codesC_fst]; unfold joinC longCount; rw [need_fst]; simp only [pickC_fst, keyPart, valPart]; rfl]
-  unfold longCount need
-  rw [dif_pos hlt]
-  dsimp only
-  exact H _ _
-
-#print axioms comp_fits
-
 end Comp
 
 #print axioms pick_row_atom

@@ -72,39 +72,6 @@ theorem rep_antiJoin (R : Rel A B) (T : Rel B B) (hc : codesOK(avc(B, R, T), avp
       obtain ⟨j, hj⟩ := (vals_member R T hc i.2).1 hbit
       exact ⟨T.key.row j, j, rfl, hj.trans hiy⟩
 
-/-- **`antiJoin R T` keeps a sublist of `R`'s rows** (`anti_sublist`, the joint code's count `R`'s by `hc`), so
-    `rows_fits`: it fits where `R` does, counts at most `R`'s rows, and reads at most `1 + 3 ^ sizeOf` readings of
-    `R`'s. Hypotheses: `rep_antiJoin`'s. -/
-theorem antiJoin_fits (R : Rel A B) (T : Rel B B) (hc : codesOK(avc(B, R, T), avp(B, R, T)))
-    (hk : Vals.PickFits A R.key (List.range R.n.toNat)) (hv : Vals.PickFits B R.val (List.range R.n.toNat)) :
-    Vals.PickFits A (antiJoin R T).key (List.range (antiJoin R T).n.toNat) ∧
-      Vals.PickFits B (antiJoin R T).val (List.range (antiJoin R T).n.toNat) ∧ (antiJoin R T).n.toNat ≤ R.n.toNat ∧
-      (Vals.reads A R.key (List.range R.n.toNat) < 2 ^ 63 → Vals.reads A R.key (List.range R.n.toNat) < USize.size →
-        Vals.reads A (antiJoin R T).key (List.range (antiJoin R T).n.toNat) ≤
-          (1 + 3 ^ sizeOf A) * Vals.reads A R.key (List.range R.n.toNat)) ∧
-      (Vals.reads B R.val (List.range R.n.toNat) < 2 ^ 63 → Vals.reads B R.val (List.range R.n.toNat) < USize.size →
-        Vals.reads B (antiJoin R T).val (List.range (antiJoin R T).n.toNat) ≤
-          (1 + 3 ^ sizeOf B) * Vals.reads B R.val (List.range R.n.toNat)) := by
-  obtain ⟨-, hn0, -⟩ := hc.2 (k := 0) (by decide)
-  replace hn0 : ((avc(B, R, T))[0]'Nat.zero_lt_two).n = R.n := hn0
-  have hs := anti_sublist ((avc(B, R, T))[0]'Nat.zero_lt_two) ((avc(B, R, T))[1]'Nat.one_lt_two)
-  rw [hn0] at hs
-  rw [show antiJoin R T = R.rows (amiss(B, R, T)) by unfold antiJoin antiJoinC; simp only [Obj.codesC_fst]]
-  exact rows_fits R _ hs hk hv
-
-/-- **`outl T` is `T` with the value's left half**: it fits where `T` does, counts `T`'s rows, and its value reads at
-    most `T`'s (`Vals.reads` of a product is the sum of its halves'). -/
-theorem outl_fits {k v w : Obj} (T : Rel k (.prod v w)) (hk : Vals.PickFits k T.key (List.range T.n.toNat))
-    (hv : Vals.PickFits (.prod v w) T.val (List.range T.n.toNat)) :
-    Vals.PickFits k (outl T).key (List.range (outl T).n.toNat) ∧
-      Vals.PickFits v (outl T).val (List.range (outl T).n.toNat) ∧ (outl T).n = T.n ∧
-      Vals.reads v (outl T).val (List.range (outl T).n.toNat) ≤ Vals.reads (.prod v w) T.val (List.range T.n.toNat) := by
-  unfold Vals.PickFits at hv
-  exact ⟨hk, hv.1, rfl, Nat.le_add_right _ _⟩
-
-#print axioms antiJoin_fits
-#print axioms outl_fits
-
 end AntiJoin
 
 /-! ## `entire`, `surjective`: `idU U ⊑ dom R` -/
@@ -241,19 +208,6 @@ theorem rep_injective (R : Rel A B) (hK : oneOK(B, R.n, R.val)) (hV : oneOK(A, R
   · exact (convArr_holds R.key R.val a b).1 h1
   · exact (convArr_holds R.key R.val a' b).1 h2
 
-/-- **`isMap R U = true`**: `rep R` entire on `U` and simple — `rep_entire` and `rep_simple`, their hypotheses. -/
-theorem rep_isMap (R : Rel A B) {m : USize} (U : Vals A m)
-    -- two parts coded jointly: a generic `A`'s ALP sum and dictionaries at `U`, `dom R` no `R` fact bounds
-    (hc : codesOK(pairs #v[idU U, dom R], pcs(idU U, dom R))) (hK : oneOK(A, R.n, R.key))
-    (hV : oneOK(B, R.n, R.val))
-    (hk : Vals.PickFits A R.key (List.range R.n.toNat)) (hv : Vals.PickFits B R.val (List.range R.n.toNat))
-    -- generic `A`: the nub copies `R`'s keys, whose dictionaries, general cells, nested payloads no `R` fact bounds
-    (hS : A.CodesFit (#v[⟨R.nub.n, R.nub.key⟩] : Vector (Part A) 1)) :
-    isMap R U = true ↔
-      (∀ a, (∃ i, U.row i = a) → ∃ b, rep R a b) ∧ ∀ a b b', rep R a b → rep R a b' → b = b' := by
-  show (entire R U && simple R) = true ↔ _
-  rw [Bool.and_eq_true, rep_entire R U hc hK hk, rep_simple R hK hV hk hv hS]
-
 end Entire
 
 #print axioms rep_antiJoin
@@ -261,6 +215,5 @@ end Entire
 #print axioms rep_surjective
 #print axioms rep_simple
 #print axioms rep_injective
-#print axioms rep_isMap
 
 end LeetQ.Rel.Rep

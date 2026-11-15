@@ -16,9 +16,6 @@ open Freyd Freyd.Alg Freyd.Alg.RelSet
 theorem ndrec_heq {α : Sort u} {φ : α → Sort v} {a b : α} (h : a = b) (x : φ a) :
     HEq (@Eq.ndrec α a φ x b h) x := by subst h; rfl
 
-/-- A value moved back along a type equation is the value. -/
-theorem mpr_heq {α β : Sort u} (h : α = β) (x : β) : HEq (Eq.mpr h x) x := by subst h; rfl
-
 /-- `Obj.raze` of equal part arrays: one side. -/
 theorem raze_heq {A : Obj} {cs cs' : Array (Part A)} (e : cs = cs')
     (h : (cs.toList.map fun c : Part A => c.1.toNat).sum < USize.size)
@@ -145,8 +142,6 @@ set_option hygiene false in
 scoped notation "kcU" => (Obj.codes A (#v[⟨(Uc).n, (Uc).key⟩] : Vector (Part A) 1))[0]'Nat.zero_lt_one
 set_option hygiene false in
 scoped notation "vcU" => (Obj.codes B (#v[⟨(Uc).n, (Uc).val⟩] : Vector (Part B) 1))[0]'Nat.zero_lt_one
-set_option hygiene false in
-scoped notation "nubU" => (tuples.tupleIds kcU #[vcU]).2
 end RazeN
 open RazeN
 
@@ -189,33 +184,5 @@ theorem rep_union (R S : Rel A B) (hN : R.n.toNat + S.n.toNat < USize.size)
   exact holds_two (Uc).key (Uc).val R S hn (fun k hk => hA k hk) (fun k hk => hB k hk) a b
 
 #print axioms rep_union
-
-/-- **`R ∪ S` fits at all its rows, and counts at most `R`'s rows plus `S`'s**: it is the `nub` of the razed relation
-    (`union_eq_nub`), which keeps a sublist of the raze's rows (`nub_pickFits`, `nub_row`, `nub_ids`). Hypotheses:
-    `rep_union`'s on the raze. -/
-theorem union_fits (R S : Rel A B) (hN : R.n.toNat + S.n.toNat < USize.size)
-    (hK : (∀ {i j : Nat} (hi : i < (Uc).n.toNat) (hj : j < (Uc).n.toNat),
-        Column.idAt (kcU).b (kcU).w i = Column.idAt (kcU).b (kcU).w j ↔
-          Vals.row (Uc).key ⟨i, hi⟩ = Vals.row (Uc).key ⟨j, hj⟩) ∧
-      laneOK((kcU).w) ∧
-        (kcU).n = (Uc).n ∧ (kcU).b.size = ((kcU).n.toNat * (kcU).w + 7) / 8 ∧
-        ((kcU).w < 8 → (kcU).card < USize.size ∧ ∀ i < (kcU).n.toNat, Column.idAt (kcU).b (kcU).w i < (kcU).card))
-    (hV : (∀ {i j : Nat} (hi : i < (Uc).n.toNat) (hj : j < (Uc).n.toNat),
-        Column.idAt (vcU).b (vcU).w i = Column.idAt (vcU).b (vcU).w j ↔
-          Vals.row (Uc).val ⟨i, hi⟩ = Vals.row (Uc).val ⟨j, hj⟩) ∧
-      laneOK((vcU).w) ∧
-        (vcU).n = (Uc).n ∧ (vcU).b.size = ((vcU).n.toNat * (vcU).w + 7) / 8 ∧
-        ((vcU).w < 8 → (vcU).card < USize.size ∧ ∀ i < (vcU).n.toNat, Column.idAt (vcU).b (vcU).w i < (vcU).card))
-    -- output size: the raze's columns at all its rows; no theorem yet reads a raze's measure back from its parts'
-    (hk : Vals.PickFits A (Uc).key (List.range (Uc).n.toNat)) (hv : Vals.PickFits B (Uc).val (List.range (Uc).n.toNat)) :
-    Vals.PickFits A (R ∪ S).key (List.range (R ∪ S).n.toNat) ∧
-      Vals.PickFits B (R ∪ S).val (List.range (R ∪ S).n.toNat) ∧ (R ∪ S).n.toNat ≤ R.n.toNat + S.n.toNat := by
-  rw [union_eq_nub R S hN]
-  obtain ⟨h1, h2⟩ := nub_pickFits (Uc) hK hV hk hv
-  refine ⟨h1, h2, ?_⟩
-  rw [(nub_row (Uc) hK hV hk hv).1, nub_ids (Uc) hK hV, ← raze2_cnt R.key S.key (raze2_lt hN)]
-  simpa [firstsOf] using List.length_filter_le _ (List.range _)
-
-#print axioms union_fits
 
 end LeetQ.Rel.Rep

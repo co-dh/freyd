@@ -224,27 +224,6 @@ theorem rep_ran_corefl (R : Rel A B) (hK : oneOK(B, R.n, R.val))
     rep (ran R) = corefl (A := (⟨B.El⟩ : RelSet.{0})) fun b => ∃ a, rep R a b :=
   (rep_ran R hK hp).trans (dom_corefl _)
 
-/-- **`ran R` is `𝟙` on `R.val` at a sublist of its rows** (`groupIds_sublist`), so `rows_fits`: it fits where `R.val`
-    does, counts at most `R`'s rows, and reads at most `1 + 3 ^ sizeOf` readings of `R.val`. Hypotheses:
-    `rep_ran_corefl`'s. -/
-theorem ran_fits (R : Rel A B) (hK : oneOK(B, R.n, R.val)) (hp : Vals.PickFits B R.val (List.range R.n.toNat)) :
-    Vals.PickFits B (ran R).key (List.range (ran R).n.toNat) ∧
-      Vals.PickFits B (ran R).val (List.range (ran R).n.toNat) ∧ (ran R).n.toNat ≤ R.n.toNat ∧
-      (Vals.reads B R.val (List.range R.n.toNat) < 2 ^ 63 → Vals.reads B R.val (List.range R.n.toNat) < USize.size →
-        Vals.reads B (ran R).key (List.range (ran R).n.toNat) ≤
-          (1 + 3 ^ sizeOf B) * Vals.reads B R.val (List.range R.n.toNat)) := by
-  obtain ⟨-, hw, hn, hs, hcard⟩ := hK
-  have hsub := groupIds_sublist _ hw hs hcard
-  rw [hn] at hsub
-  have hl : len (c1(B, R.n, R.val)).groupIds.2 < USize.size := by
-    rw [len_eq_ids]; exact Nat.lt_of_le_of_lt (by simpa using hsub.length_le) R.n.toNat_lt_size
-  have e : Alg.ran R = (idU R.val).rows (c1(B, R.n, R.val)).groupIds.2 := by
-    unfold Alg.ran distinctCorefl distinctCoreflC; simp only [Obj.codesC_fst]
-  obtain ⟨fk, fv, hc, rk, -⟩ := rows_fits (idU R.val) _ hsub hp hp
-  rw [e]; exact ⟨fk, fv, hc, rk⟩
-
-#print axioms ran_fits
-
 end Distinct
 
 /-! ## `⊤` on two universes -/
@@ -612,22 +591,6 @@ theorem diff_pickFits (R S : Rel A B) (hc : pairsOK(R, S)) (hk : Vals.PickFits A
 
 #print axioms diff_pickFits
 
-/-- **`R ∩ S` keeps a sublist of `R`'s rows** (`whereBits_sublist`), so `rows_fits`: it fits where `R` does, counts
-    at most `R`'s rows, and each side reads at most `1 + 3 ^ sizeOf` readings of `R`'s. No hypothesis on `S`. -/
-theorem inter_fits (R S : Rel A B) (hk : Vals.PickFits A R.key (List.range R.n.toNat))
-    (hv : Vals.PickFits B R.val (List.range R.n.toNat)) :
-    Vals.PickFits A (R ∩ S).key (List.range (R ∩ S).n.toNat) ∧
-      Vals.PickFits B (R ∩ S).val (List.range (R ∩ S).n.toNat) ∧ (R ∩ S).n.toNat ≤ R.n.toNat ∧
-      (Vals.reads A R.key (List.range R.n.toNat) < 2 ^ 63 → Vals.reads A R.key (List.range R.n.toNat) < USize.size →
-        Vals.reads A (R ∩ S).key (List.range (R ∩ S).n.toNat) ≤
-          (1 + 3 ^ sizeOf A) * Vals.reads A R.key (List.range R.n.toNat)) ∧
-      (Vals.reads B R.val (List.range R.n.toNat) < 2 ^ 63 → Vals.reads B R.val (List.range R.n.toNat) < USize.size →
-        Vals.reads B (R ∩ S).val (List.range (R ∩ S).n.toNat) ≤
-          (1 + 3 ^ sizeOf B) * Vals.reads B R.val (List.range R.n.toNat)) :=
-  rows_fits R _ (whereBits_sublist _ _) hk hv
-
-#print axioms inter_fits
-
 /-- **`(R ⊑ S) = true ↔ rep R ⊑ rep S`**: `⊑` counts the rows of `R` whose pair `S` holds (`pairs_member`), all
     `R.n` of them exactly when every pair of `R` is one of `S`. Hypothesis: the joint pair codes (`hc`); nothing is
     picked. -/
@@ -909,7 +872,6 @@ theorem rep_junc (R : Rel A C) (S : Rel B C) (hN : R.n.toNat + S.n.toNat < USize
       refine ⟨⟨R.n.toNat + j.1, hk2 _ (by omega)⟩, ?_, ?_⟩
       · rw [sumVals_row _ _ hN h63, dif_neg hj]; simp only [Nat.add_sub_cancel_left]
       · rw [hval, dif_neg hj]; simp only [Nat.add_sub_cancel_left]
-
 
 end UnionJunc
 

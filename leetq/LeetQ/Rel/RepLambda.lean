@@ -32,20 +32,6 @@ theorem longCol_cast_get {b : ByteArray} {M : USize} (hb : len b < USize.size) (
     rw [bitsAt_extract _ (by omega), Nat.zero_add]
   · contradiction
 
-/-- An array row holds `x` exactly when some position of the payload between the row's `lo` and `hi` holds it. -/
-theorem mem_arr_row {b : Obj} {n K : USize} (lo hi : Arr .long n) (f : Vals b K) (q : Fin n.toNat) (x : b.El) :
-    x ∈ Vals.row (A := .arr b) ⟨K, lo, hi, f⟩ q ↔
-      ∃ s : Fin K.toNat, (lo.get q).toInt ≤ (s.1 : Int) ∧ (s.1 : Int) < (hi.get q).toInt ∧ Vals.row f s = x := by
-  show x ∈ List.filterMap _ _ ↔ _
-  rw [List.mem_filterMap]
-  constructor
-  · rintro ⟨s, -, hs⟩
-    split at hs
-    · next h => exact ⟨s, h.1, h.2, Option.some.inj hs⟩
-    · cases hs
-  · rintro ⟨s, h1, h2, hs⟩
-    exact ⟨s, List.mem_finRange s, by rw [if_pos ⟨h1, h2⟩, hs]⟩
-
 /-- An array row is, as a list, the payload's values at the positions between the row's `lo` and `hi`, in order. -/
 theorem arr_row_eq {b : Obj} {n K : USize} (lo hi : Arr .long n) (f : Vals b K) (q : Fin n.toNat) :
     Vals.row (A := .arr b) ⟨K, lo, hi, f⟩ q = ((List.finRange K.toNat).filter fun s =>
