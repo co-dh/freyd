@@ -341,7 +341,7 @@ rel_program kwNames where
 example : True := trivial
 #guard kwNames.ok
 
-#eval trips ["inits", "tails", "cat", "cat°", "zip", "snoc", "snoc°", "init", "concat", "perm", "setify", "asc",
+#eval trips ["inits", "tails", "cat", "cat°", "zip", "snoc", "snoc°", "init", "concat", "perm", "setify", "asc", "distinct",
   "subseq", "tic", "ordered(R)", "sort(R)", "thinL(R)", "merge(R)", "loop(R)", "R inits concat", "⟨R, S⟩ merge(p)"]
 
 /-! The list builtins of §b on arrays built by `Λ` and `cons`, each value as `Algebra.lean`'s guard of the op
@@ -365,6 +365,8 @@ rel_program lists where
     print y perm
     print z setify
     print z asc
+    print z distinct
+    print z distinct asc
     print ⟨{(a,b)}, Λ({(a,a),(a,b)})⟩cons asc
     print x ordered(≤)
     print x sort(≤)
@@ -389,6 +391,8 @@ rel_program lists where
   "y perm = {(a, [7]), (b, 8 9), (b, 9 8)}",
   "z setify = {(a, 1 2 3)}",
   "z asc = {(a, 1 2 3 3)}",
+  "z distinct = {(a, 3 1 2)}",
+  "z distinct asc = {(a, 1 2 3)}",
   "⟨{(a, b)}, Λ({(a, a), (a, b)})⟩ cons asc = {(a, a b b)}",
   "x ordered(≤) = {(b, 1 5)}",
   "x sort(≤) = {(a, 1 2 3), (b, 1 5)}",
@@ -1054,7 +1058,7 @@ rel_program muGrow where
     g : B ⟶ [B] ≜ μX : r ∪ (⟨X, r⟩ cat)
 #guard !muGrow.ok
 #guard muGrow.failures.map (·.msg) == ["an op ran out of capacity (its twin's ok bit is false); in g, or the μ at " ++
-  "line 1055, col 19 ran its cap of 1024 rounds without reaching a fixed point"]
+  "line 1058, col 19 ran its cap of 1024 rounds without reaching a fixed point"]
 -- `X` under an operator not monotonic in its argument, or in an antitone place; `ν` with no bound
 #eval errAt "obj B = 0…1\nf : B ⟶ B ≜ νX : ⊤(B,B) ∩ (Λ(X)∋)\n" 2
   "νX: X occurs under Λ at 2:30; Λ is not monotonic in its argument, so the fixed point need not exist"

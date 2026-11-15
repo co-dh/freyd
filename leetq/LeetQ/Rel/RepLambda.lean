@@ -96,13 +96,27 @@ theorem sublist_range {l : List Nat} {n : Nat} (h : l.Pairwise (· < ·)) (hl : 
 set_option hygiene false in
 local notation "kcT" => (Obj.codes A (#v[⟨(Rel.nub R).n, (Rel.nub R).key⟩] : Vector (Part A) 1))[0]'Nat.zero_lt_one
 set_option hygiene false in
-local notation "vpT" => Obj.sortBy B (Rel.nub R).val (tilLongs (Rel.nub R).n)
+local notation "vpT" => vp
 set_option hygiene false in
 local notation "pT" => gather 8 vpT (Code.gather kcT vpT).grade
 set_option hygiene false in
 local notation "oT" => Code.runStarts (Code.gather kcT pT)
 set_option hygiene false in
 local notation "loT" => ByteArray.extract (oT) 0 (ByteArray.size (oT) - 8)
+
+/-- **`sortBy` lists the nub's rows once each**: `vp` at `transpose`'s order, `sortBy_perm` at `til n`, given the
+    fit of the nub's values (`hW`). -/
+theorem sortBy_nub_perm (R : Rel A B) (hW : B.CodesFit (#v[⟨(Rel.nub R).n, (Rel.nub R).val⟩] : Vector (Part B) 1)) :
+    (ids (Obj.sortBy B (Rel.nub R).val (tilLongs (Rel.nub R).n))).Perm (List.range (Rel.nub R).n.toNat) := by
+  have hU : (Rel.nub R).n.toNat < USize.size := (Rel.nub R).n.toNat_lt_size
+  have htil : (ids (tilLongs (Rel.nub R).n)).Perm (List.range (Rel.nub R).n.toNat) := by
+    refine List.Perm.of_eq (List.ext_getElem (by rw [← len_eq_ids, len_tilLongs, List.length_range]) ?_)
+    intro j h1 h2
+    have hj : j < (Rel.nub R).n.toNat := by simpa using h2
+    rw [ids_getElem h1, tilLongs_bitsAt _ hj, List.getElem_range, UInt64.toNat_ofNat',
+      Nat.mod_eq_of_lt (by have := USize.size_le; omega)]
+  exact (sortBy_perm B _ hW _ (by rw [len_tilLongs]; exact hU)
+    fun t ht => List.mem_range.1 (htil.mem_iff.1 ht)).trans htil
 
 -- `transpose`'s two casts differ only in `lo` vs `hi`, both extracts of the run starts; telling them apart (dsimp's
 -- `Eq.rec` reduction, `rw`'s instance matching) otherwise evaluates `runStarts` and `gather` on the open codes
@@ -112,7 +126,7 @@ attribute [local irreducible] Code.runStarts Code.gather ByteArray.extract
     its array IS `d`'s values at a list `L` of rows of `d`, each row once, `L` holding exactly the rows of `d`
     keyed like `i`, in the order `sortBy` lists `d`'s rows (`L` a sublist of `vp`): the run of that key in the
     stable grade of the key codes over the values sorted; every key of `d` keys some row. Hypotheses: the key codes faithful and well formed
-    (`rep_nub`'s `hK` at `d`), `sortBy_perm`'s fit of `d`'s values (`hW`), `d`'s count below `2⁶³`, and the picks fitting
+    (`rep_nub`'s `hK` at `d`), the values' order `vp` a permutation of `d`'s rows and `T` built on it, `d`'s count below `2⁶³`, and the picks fitting
     (`Vals.PickFits`) at the row order and at the run starts. -/
 theorem transpose_row_list (R : Rel A B)
     (hF : ∀ {i j : Nat} (hi : i < (Rel.nub R).n.toNat) (hj : j < (Rel.nub R).n.toNat),
@@ -120,28 +134,22 @@ theorem transpose_row_list (R : Rel A B)
         Vals.row (Rel.nub R).key ⟨i, hi⟩ = Vals.row (Rel.nub R).key ⟨j, hj⟩)
     (hw : laneOK((kcT).w))
     (hn : (kcT).n = (Rel.nub R).n) (hs : (kcT).b.size = ((kcT).n.toNat * (kcT).w + 7) / 8)
-    (hW : B.CodesFit (#v[⟨(Rel.nub R).n, (Rel.nub R).val⟩] : Vector (Part B) 1))
+    -- the values' order `vp`, any permutation of the nub's rows, and `T` what `transposeRuns` builds on it
+    (vp : ByteArray) (hvp : (ids vp).Perm (List.range (Rel.nub R).n.toNat))
+    (T : Rel A (.arr B)) (hT : T = transposeRuns (Rel.nub R) kcT vp)
     (h63 : (Rel.nub R).n.toNat < 2 ^ 63)
     (hpk : Vals.PickFits A (Rel.nub R).key (List.range (Rel.nub R).n.toNat))
     (hpv : Vals.PickFits B (Rel.nub R).val (List.range (Rel.nub R).n.toNat)) :
-    (∀ q : Fin (Alg.transpose R).n.toNat, ∃ i : Fin (Rel.nub R).n.toNat,
-      Vals.row (Alg.transpose R).key q = Vals.row (Rel.nub R).key i ∧ ∃ L : List (Fin (Rel.nub R).n.toNat),
+    (∀ q : Fin (T).n.toNat, ∃ i : Fin (Rel.nub R).n.toNat,
+      Vals.row (T).key q = Vals.row (Rel.nub R).key i ∧ ∃ L : List (Fin (Rel.nub R).n.toNat),
         L.Nodup ∧ (∀ i', i' ∈ L ↔ Vals.row (Rel.nub R).key i' = Vals.row (Rel.nub R).key i) ∧
-          (L.map Fin.val).Sublist (ids vpT) ∧ Vals.row (Alg.transpose R).val q = L.map (Vals.row (Rel.nub R).val)) ∧
-    ∀ i : Fin (Rel.nub R).n.toNat, ∃ q : Fin (Alg.transpose R).n.toNat,
-      Vals.row (Alg.transpose R).key q = Vals.row (Rel.nub R).key i := by
+          (L.map Fin.val).Sublist (ids vpT) ∧ Vals.row (T).val q = L.map (Vals.row (Rel.nub R).val)) ∧
+    ∀ i : Fin (Rel.nub R).n.toNat, ∃ q : Fin (T).n.toNat,
+      Vals.row (T).key q = Vals.row (Rel.nub R).key i := by
   have hN : (kcT).n.toNat = (Rel.nub R).n.toNat := by rw [hn]
   have hU : (Rel.nub R).n.toNat < USize.size := (Rel.nub R).n.toNat_lt_size
   -- `til n` read back, `vp` a permutation of the rows
-  have htil : (ids (tilLongs (Rel.nub R).n)).Perm (List.range (Rel.nub R).n.toNat) := by
-    refine List.Perm.of_eq (List.ext_getElem (by rw [← len_eq_ids, len_tilLongs, List.length_range]) ?_)
-    intro j h1 h2
-    have hj : j < (Rel.nub R).n.toNat := by simpa using h2
-    rw [ids_getElem h1, tilLongs_bitsAt _ hj, List.getElem_range, UInt64.toNat_ofNat',
-      Nat.mod_eq_of_lt (by have := USize.size_le; omega)]
-  have hvp : (ids vpT).Perm (List.range (kcT).n.toNat) := by
-    rw [hN]; exact (sortBy_perm B _ hW _ (by rw [len_tilLongs]; exact hU)
-      fun t ht => List.mem_range.1 (htil.mem_iff.1 ht)).trans htil
+  have hvp : (ids vpT).Perm (List.range (kcT).n.toNat) := by rw [hN]; exact hvp
   obtain ⟨hpp, hgrp, hgp, hstab⟩ := grade_gather_group (kcT) hw hs vpT hvp
   -- `p` reorders `d`'s rows, so `d` fits at `p` as at its rows
   have hpr : (ids pT).Perm (List.range (Rel.nub R).n.toNat) := by rw [← hN]; exact hpp
@@ -254,7 +262,7 @@ theorem transpose_row_list (R : Rel A B)
       (congrArg _ (Fin.ext (by dsimp only; rw [hlo_at j hj])))
   -- `transpose R` itself: its `longCount` run at the run starts
   subst hO
-  rw [transpose_eq]; unfold transposeRuns; dsimp only
+  subst hT; unfold transposeRuns; dsimp only
   rw [longCount_eq _ _ _ hloU]
   dsimp only
   refine ⟨fun q => ?_, fun i => ?_⟩
@@ -354,17 +362,19 @@ theorem transpose_rows (R : Rel A B)
         Vals.row (Rel.nub R).key ⟨i, hi⟩ = Vals.row (Rel.nub R).key ⟨j, hj⟩)
     (hw : laneOK((kcT).w))
     (hn : (kcT).n = (Rel.nub R).n) (hs : (kcT).b.size = ((kcT).n.toNat * (kcT).w + 7) / 8)
-    (hW : B.CodesFit (#v[⟨(Rel.nub R).n, (Rel.nub R).val⟩] : Vector (Part B) 1))
+    -- the values' order `vp`, any permutation of the nub's rows, and `T` what `transposeRuns` builds on it
+    (vp : ByteArray) (hvp : (ids vp).Perm (List.range (Rel.nub R).n.toNat))
+    (T : Rel A (.arr B)) (hT : T = transposeRuns (Rel.nub R) kcT vp)
     (h63 : (Rel.nub R).n.toNat < 2 ^ 63)
     (hpk : Vals.PickFits A (Rel.nub R).key (List.range (Rel.nub R).n.toNat))
     (hpv : Vals.PickFits B (Rel.nub R).val (List.range (Rel.nub R).n.toNat)) :
-    (∀ q : Fin (Alg.transpose R).n.toNat, ∃ i : Fin (Rel.nub R).n.toNat,
-      Vals.row (Alg.transpose R).key q = Vals.row (Rel.nub R).key i ∧ ∀ x, x ∈ Vals.row (Alg.transpose R).val q ↔
+    (∀ q : Fin (T).n.toNat, ∃ i : Fin (Rel.nub R).n.toNat,
+      Vals.row (T).key q = Vals.row (Rel.nub R).key i ∧ ∀ x, x ∈ Vals.row (T).val q ↔
         ∃ i' : Fin (Rel.nub R).n.toNat, Vals.row (Rel.nub R).key i' = Vals.row (Rel.nub R).key i ∧
           Vals.row (Rel.nub R).val i' = x) ∧
-    ∀ i : Fin (Rel.nub R).n.toNat, ∃ q : Fin (Alg.transpose R).n.toNat,
-      Vals.row (Alg.transpose R).key q = Vals.row (Rel.nub R).key i := by
-  obtain ⟨h1, h2⟩ := transpose_row_list R hF hw hn hs hW h63 hpk hpv
+    ∀ i : Fin (Rel.nub R).n.toNat, ∃ q : Fin (T).n.toNat,
+      Vals.row (T).key q = Vals.row (Rel.nub R).key i := by
+  obtain ⟨h1, h2⟩ := transpose_row_list R hF hw hn hs vp hvp T hT h63 hpk hpv
   refine ⟨fun q => ?_, h2⟩
   obtain ⟨i, hk, L, -, hL, -, hv⟩ := h1 q
   refine ⟨i, hk, fun x => ?_⟩
@@ -431,24 +441,26 @@ theorem rep_transpose (R : Rel A B)
     (hk : Vals.PickFits A (Rel.key R) (List.range R.n.toNat)) (hv : Vals.PickFits B (Rel.val R) (List.range R.n.toNat))
     -- generic sides: the nub copies `R`'s cells, whose dictionaries, general cells, nested payloads no `R` fact bounds
     (hWk : A.CodesFit (#v[⟨(Rel.nub R).n, (Rel.nub R).key⟩] : Vector (Part A) 1))
-    (hW : B.CodesFit (#v[⟨(Rel.nub R).n, (Rel.nub R).val⟩] : Vector (Part B) 1))
+    -- the values' order `vp`, any permutation of the nub's rows, and `T` what `transposeRuns` builds on it
+    (vp : ByteArray) (hvp : (ids vp).Perm (List.range (Rel.nub R).n.toNat))
+    (T : Rel A (.arr B)) (hT : T = transposeRuns (Rel.nub R) kcT vp)
     (h63 : (Rel.n R).toNat < 2 ^ 63) :
-    (∀ a X, rep (Alg.transpose R) a X → ∀ x, x ∈ X ↔ rep R a x) ∧
-      (∀ a, (∃ X, rep (Alg.transpose R) a X) ↔ ∃ b, rep R a b) := by
+    (∀ a X, rep (T) a X → ∀ x, x ∈ X ↔ rep R a x) ∧
+      (∀ a, (∃ X, rep (T) a X) ↔ ∃ b, rep R a b) := by
   have hd := rep_nub R hK hV hk hv
   obtain ⟨hpk, hpv⟩ := nub_pickFits R hK hV hk hv
   have hdh : ∀ a b, (Rel.nub R).Holds a b ↔ R.Holds a b := fun a b => by
     show rep (Rel.nub R) a b ↔ rep R a b
     rw [hd]
   obtain ⟨hF, hw, hn, hs, h63⟩ := nub_key_codes R hK hV hk hv hWk h63
-  obtain ⟨hrow, hcov⟩ := transpose_rows R hF hw hn hs hW h63 hpk hpv
+  obtain ⟨hrow, hcov⟩ := transpose_rows R hF hw hn hs vp hvp T hT h63 hpk hpv
   refine ⟨fun a X h x => ?_, fun a => ⟨fun ⟨X, h⟩ => ?_, fun ⟨b, hb⟩ => ?_⟩⟩
-  · obtain ⟨q, hqa, hqX⟩ : (Alg.transpose R).Holds a X := h
+  · obtain ⟨q, hqa, hqX⟩ : (T).Holds a X := h
     obtain ⟨i, hki, hmem⟩ := hrow q
     subst hqa hqX
     rw [hmem x, hki]
     exact hdh _ _
-  · obtain ⟨q, hqa, -⟩ : (Alg.transpose R).Holds a X := h
+  · obtain ⟨q, hqa, -⟩ : (T).Holds a X := h
     obtain ⟨i, hki, -⟩ := hrow q
     exact ⟨_, (hdh _ _).1 ⟨i, hki.symm.trans hqa, rfl⟩⟩
   · obtain ⟨i, hia, -⟩ := (hdh a b).2 hb
@@ -510,19 +522,21 @@ theorem rep_transpose_list (R : Rel A B)
     (hk : Vals.PickFits A (Rel.key R) (List.range R.n.toNat)) (hv : Vals.PickFits B (Rel.val R) (List.range R.n.toNat))
     -- generic sides: the nub copies `R`'s cells, whose dictionaries, general cells, nested payloads no `R` fact bounds
     (hWk : A.CodesFit (#v[⟨(Rel.nub R).n, (Rel.nub R).key⟩] : Vector (Part A) 1))
-    (hW : B.CodesFit (#v[⟨(Rel.nub R).n, (Rel.nub R).val⟩] : Vector (Part B) 1))
+    -- the values' order `vp`, any permutation of the nub's rows, and `T` what `transposeRuns` builds on it
+    (vp : ByteArray) (hvp : (ids vp).Perm (List.range (Rel.nub R).n.toNat))
+    (T : Rel A (.arr B)) (hT : T = transposeRuns (Rel.nub R) kcT vp)
     (h63 : (Rel.n R).toNat < 2 ^ 63) :
-    (∀ a X, rep (Alg.transpose R) a X → X.Nodup ∧ (∀ x, x ∈ X ↔ rep R a x) ∧
+    (∀ a X, rep (T) a X → X.Nodup ∧ (∀ x, x ∈ X ↔ rep R a x) ∧
       ∃ L : List (Fin (Rel.nub R).n.toNat), (L.map Fin.val).Sublist (ids vpT) ∧
         (∀ i, i ∈ L ↔ Vals.row (Rel.nub R).key i = a) ∧ X = L.map (Vals.row (Rel.nub R).val)) ∧
-      (∀ a, (∃ X, rep (Alg.transpose R) a X) ↔ ∃ b, rep R a b) := by
-  obtain ⟨h1, h2⟩ := rep_transpose R hK hV hk hv hWk hW h63
+      (∀ a, (∃ X, rep (T) a X) ↔ ∃ b, rep R a b) := by
+  obtain ⟨h1, h2⟩ := rep_transpose R hK hV hk hv hWk vp hvp T hT h63
   obtain ⟨hF, hw, hn, hs, h63⟩ := nub_key_codes R hK hV hk hv hWk h63
   obtain ⟨hpk, hpv⟩ := nub_pickFits R hK hV hk hv
   refine ⟨fun a X h => ?_, h2⟩
   have hm := h1 a X h
-  obtain ⟨q, hqa, hqX⟩ : (Alg.transpose R).Holds a X := h
-  obtain ⟨i, hki, L, hnd, hL, hsub, hv'⟩ := (transpose_row_list R hF hw hn hs hW h63 hpk hpv).1 q
+  obtain ⟨q, hqa, hqX⟩ : (T).Holds a X := h
+  obtain ⟨i, hki, L, hnd, hL, hsub, hv'⟩ := (transpose_row_list R hF hw hn hs vp hvp T hT h63 hpk hpv).1 q
   refine ⟨?_, hm, L, hsub, fun i' => by rw [hL i', ← hki, hqa], hqX.symm.trans hv'⟩
   subst hqX
   rw [hv']
