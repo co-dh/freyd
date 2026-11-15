@@ -578,7 +578,7 @@ def define (stx id : Syntax) (prog : Program) (used : List Name) (more : List Na
     match reg.progs.find? (·.1 == h) with
     | some (_, ns, os) => (resolverAt env opts reg ns os).1
     | none => fun _ => .none
-  match Expand.read (reg.calls.lookup ·) progs prog n resOf with
+  match ← liftTermElabM (Expand.read (reg.calls.lookup ·) progs prog n resOf).run with
   | .error e => throwErrorAt stx "{e}"
   | .ok r =>
     liftTermElabM (Expand.emit n r)

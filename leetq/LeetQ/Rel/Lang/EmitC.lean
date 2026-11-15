@@ -29,10 +29,13 @@ def output (dir : String) (rs : Side × Side) : Bld Unit := do
       discard <| call "qlean_own_write" (#[path] ++ r) 0
 
 /-- The plan of `output x to dir` in the program `prog`, read after the programs `chain` (`Expand.read`). -/
-def planOf (chain : List (Lean.Name × Program)) (prog : Program) (x : String) (dir : String) : Except String Plan := do
-  let (ds, _) ← (Expand.read (fun _ => none) chain prog).mapError (s!"{repr ·}")
-  let some ⟨_, _, _, t⟩ := ds.lookup x | throw s!"`{x}` is no closed definition of the program"
-  Bld.plan (do output dir (← ofTm t))
+def planOf (chain : List (Lean.Name × Program)) (prog : Program) (x : String) (dir : String) :
+    Lean.Meta.MetaM (Except String Plan) := do
+  let r ← (Expand.read (fun _ => none) chain prog).run
+  return do
+    let (ds, _) ← r.mapError (s!"{repr ·}")
+    let some ⟨_, _, _, t⟩ := ds.lookup x | throw s!"`{x}` is no closed definition of the program"
+    Bld.plan (do output dir (← ofTm t))
 
 /-- The Lean side of the same output: `R`'s columns written by `Db.ownWrite` under the names `output` gives them,
     from the value Lean computed, not from a plan. -/

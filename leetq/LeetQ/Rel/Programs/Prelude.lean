@@ -46,7 +46,7 @@ namespace LeetQ.Rel.Lang
 
 /-- The declaration of each definition of the program `src` read after the prelude (`Expand.read`: every
     declaration elaborated, nothing evaluated), in order; with no program, the prelude's. -/
-def typesOf (src : Option Program) : Except Err (List String) := do
+def typesOf (src : Option Program) : EM (List String) := do
   let prog := src.getD Programs.prelude
   let _ ← Expand.read (fun _ => none) (if src.isSome then [(`prelude, Programs.prelude)] else []) prog
   pure (prog.filterMap fun | .defn _ n ps _ ty => some (sigOf n ps ty) | _ => none)
