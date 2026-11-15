@@ -160,3 +160,9 @@ turn it is deleted from the list.
 | 159 | Calc div (user B via aima): `Calc.builtins` maps arithmetic `div` to `.error` (Rel div is Int, ListRel.div is Nat; Int reading added when a proof first needs it); CalcTest expects the error via `#guard_msgs`; 483be43, LeetQ+LeetQAop gate 838 green |
 | 160 | mss-proof S4: `rel_program` reads `theorem n (ps)? (on A)? : e (⊑|=) f (:= calc steps)?`, steps `_ = e := law` / `:= ≜ def`; new `Decl.theorem` (approved) + `Why`; four checks in `Expand.walk` (type of every term, chain ends at the right side, names resolve in the after-chain scope, `on A` evaluates each link); `from base` variants drop the base theorems; EmbedTest 8 error cases; a18a19c, master gate 838 green |
 | 161 | aima nocons-native (4726638): Prelude head `at(0)`, tail/init/last by `cat°` slices; 468844a (cons renamed to `(τ×𝟙)cat`) not merged, its lines wait for cons stages 3–5; Selsort needs `at(0)°` on demand |
+| 162 | mss-proof S5: `rel_aop <prog> [model …] [proof …]` (LeetQAop) generates `.aop` defs and calc theorems, owed theorems listed as an error; `MSS.Salg` typed `(F Unit Int).obj ⟨Int⟩ ⟶ ⟨Int⟩`; 7a65b40, gate 841 green |
+| 163 | Party program (aima, f905d2a) + doc/rel-party-design.md (fb73bfa); still ν+B until μ on arrays lands |
+| 164 | cons stage 3 tails: prelude `tails` → Tm.tails → tailsC slice kernel; b18ce22 |
+| 165 | cons stages 1+2: `lengthC` = hi−lo with `rep_lengthC`; `mapC` takes `mapSimpleC` (one find + one pick) when R is simple; f8dffb1 → 9baac09, master gate 842 green |
+| 166 | c2rust trial: doc/c2rust.md (85a32ce) + handover steps (42d7af4); recommendation A+C |
+| 167 | ch07 cite markers re-keyed after S5 (24 markers, 0b43ab5 → 5273e49); cite-check 161 markers verified |
