@@ -196,6 +196,61 @@ theorem grade_boolean {n : USize} (x : Arr .boolean n) : ∃ g, gradeColumn .boo
 
 theorem sortsAsc_boolean : SortsAsc (.atom .boolean) := sortsAsc_atom .boolean grade_boolean
 
+/-! ## Bytes compared by `symCmp`: the lexicographic order of their symbol keys -/
+
+/-- `compare` on bytes answers `.gt` exactly when the second is below the first as a number. -/
+theorem compare_gt_u8 (u v : UInt8) : compare u v = .gt ↔ v.toNat < u.toNat := by
+  show compareOfLessAndEq u v = .gt ↔ _
+  unfold compareOfLessAndEq
+  split
+  · rename_i h1; rw [UInt8.lt_iff_toNat_lt] at h1; simp only [reduceCtorEq, false_iff]; omega
+  · split
+    · rename_i h2; subst h2; simp
+    · rename_i h1 h2
+      have : u.toNat ≠ v.toNat := fun e => h2 (UInt8.toNat_inj.1 e)
+      rw [UInt8.lt_iff_toNat_lt] at h1; simp only [true_iff]; omega
+
+/-- `symCmp`'s body over two byte lists answers `.gt` exactly when the second's symbol key (each byte `+1`, then
+    `0`, as `Obj.key` keys a symbol) is below the first's. -/
+theorem symCmp_gt_list (a b : List UInt8) :
+    (match (List.range (min a.length b.length)).find? (fun i => a[i]?.getD 0 != b[i]?.getD 0) with
+      | some i => compare (a[i]?.getD 0) (b[i]?.getD 0)
+      | none => compare a.length b.length) = .gt ↔
+      b.map (·.toNat + 1) ++ [0] < a.map (·.toNat + 1) ++ [0] := by
+  induction a generalizing b with
+  | nil => cases b <;> simp [compare, compareOfLessAndEq, List.cons_lt_cons_iff]
+  | cons u a ih => cases b with
+    | nil => simp [compare, compareOfLessAndEq, List.cons_lt_cons_iff]
+    | cons v b =>
+      simp only [List.length_cons]
+      rw [show min (a.length + 1) (b.length + 1) = min a.length b.length + 1 by omega, List.range_succ_eq_map,
+        List.find?_cons]
+      by_cases huv : u = v
+      · subst huv
+        simp only [List.length_cons, List.getElem?_cons_zero, Option.getD_some, bne_self_eq_false,
+          List.find?_map, List.map_cons, List.cons_append, List.cons_lt_cons_iff, Nat.lt_irrefl, false_or,
+          true_and]
+        simp only [Function.comp_def, List.getElem?_cons_succ]
+        rw [← ih b]
+        rcases (List.range (min a.length b.length)).find? (fun i => a[i]?.getD 0 != b[i]?.getD 0) with _ | j
+        · simp only [Option.map_none, Nat.compare_eq_gt]; omega
+        · simp only [Option.map_some, Nat.succ_eq_add_one, List.getElem?_cons_succ]
+      · have hn : u.toNat ≠ v.toNat := fun h => huv (UInt8.toNat_inj.1 h)
+        simp only [List.getElem?_cons_zero, Option.getD_some, bne_iff_ne, ne_eq, huv, not_false_eq_true,
+          decide_true, List.map_cons, List.cons_append, List.cons_lt_cons_iff, compare_gt_u8]
+        simp only [show (u != v) = true from bne_iff_ne.2 huv, List.getElem?_cons_zero, Option.getD_some, compare_gt_u8]
+        constructor
+        · intro h; exact .inl (by omega)
+        · rintro (h | ⟨h, -⟩) <;> omega
+
+/-- **`symCmp` is the symbol key's order**: `x` is not after `y` exactly when `y`'s key is not below `x`'s. -/
+theorem symCmp_ne_gt (x y : ByteArray) : (Column.symCmp x y != .gt) = true ↔
+    ¬ y.data.toList.map (·.toNat + 1) ++ [0] < x.data.toList.map (·.toNat + 1) ++ [0] := by
+  rw [← symCmp_gt_list, bne_iff_ne, ne_eq]
+  unfold Column.symCmp
+  simp only [← bget, ByteArray.size, Array.length_toList]
+  exact Iff.rfl
+
 #print axioms sortBy_asc
 #print axioms sortsAsc_prod
 #print axioms sortsAsc_num
