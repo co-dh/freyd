@@ -12,7 +12,27 @@ after AC: cell 4 ∈ {1,2,3}, cells 8 and 12 ∈ {2,3}:
 ```
 
 so `(4,2) {K} (8,3)` goes, `(4,2)` then has no partner at cell 8, and cell 4 loses 2; likewise 3, so cell 4 = 1.
-AC keeps 2 there: cells 8 and 12 each support it on their own. -/
+AC keeps 2 there: cells 8 and 12 each support it on their own.
+
+## Montanari's form: one relation per pair of cells
+
+`Rᵢⱼ : D ⟶ D` relates the digits cells `i` and `j` can take together: `x {Rᵢⱼ} y` is `(i,x) {K} (j,y)`, so `K`
+packs every `Rᵢⱼ` into one relation. It starts as `cor(Dᵢ) ≠ cor(Dⱼ)` for peers, `Dᵢ × Dⱼ` for other cells, and
+`𝟙` on `Dᵢ` for `i = j`; PC shrinks it, after which it is no longer `≠`. One step is
+`Rᵢⱼ := Rᵢⱼ ∩ Rᵢₘ Rₘⱼ`, for every `m`. Cells a, b, c of one row, `a, b ∈ {1,2}`, `c ∈ {1,2,3}`:
+
+```
+R_ca = {(1,2),(2,1),(3,1),(3,2)}       R_cb = {(1,2),(2,1),(3,1),(3,2)}       R_ba = {(1,2),(2,1)}
+
+1 {R_cb} 2 {R_ba} 1  → (1,1)           2 {R_cb} 1 {R_ba} 2  → (2,2)
+3 {R_cb} 1 {R_ba} 2  → (3,2)           3 {R_cb} 2 {R_ba} 1  → (3,1)
+
+R_ca ∩ R_cb R_ba = {(3,1),(3,2)}                    -- m = b: (1,2), (2,1) have no path through b
+R_cc ∩ R_ca R_ac = {(1,1),(2,2),(3,3)} ∩ {(3,3)}    -- m = a, R_ac = R_ca° = {(1,3),(2,3)}: c's domain is {3}
+```
+
+Montanari loops over `m` outside the formula; `pc` puts `m` in the key, `(u,m) {sup(X) X} v`, and `π₁\` meets
+over every `m` at once. -/
 
 namespace LeetQ.Rel.Programs
 
