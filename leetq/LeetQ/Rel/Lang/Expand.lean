@@ -237,9 +237,11 @@ def arcs (k : Nat) : {V D : Obj} → {d : Bool} → Tm V D d →
 abbrev RM := StateT (Std.HashMap Lean.Expr Name) MetaM
 
 /-- The constant `c : ty := v`, compiled, with the heartbeats a `def` command of its own would have: one
-    `rel_program` command adds them all, and a program's count of constants is no measure of any one's cost. -/
-def addConst (c : Name) (ty v : Lean.Expr) : MetaM Unit := withCurrHeartbeats <|
-  addAndCompile (.defnDecl { name := c, levelParams := [], type := ty, value := v, hints := .opaque, safety := .safe })
+    `rel_program` command adds them all, and a program's count of constants is no measure of any one's cost.
+    Regular hints, as `def` gives: an opaque `c` makes the kernel unfold the other side of `c =?= v` first. -/
+def addConst (c : Name) (ty v : Lean.Expr) : MetaM Unit := withCurrHeartbeats do
+  let hints := .regular (getMaxHeight (← getEnv) v + 1)
+  addAndCompile (.defnDecl { name := c, levelParams := [], type := ty, value := v, hints, safety := .safe })
 
 def oE (A : Obj) : Lean.Expr := toExpr A
 def uE (n : USize) : Lean.Expr := mkApp (mkConst ``USize.ofNat) (toExpr n.toNat)
@@ -432,11 +434,13 @@ partial def prf (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Boo
   let c := cd.appArg!.constName!
   if let some h := (← get).1[c]? then return some (mkConst h)
   let h := c ++ `rep
-  -- the cache is rolled back when a definition's proof runs out of heartbeats, the environment is not
-  if (← getEnv).contains h then return some (mkConst h)
   let some p ← prfNode pre ρ t | return none
-  let ty ← mkAppM ``Gen.Sound #[cd, (← inferType p).appArg!]
-  addDecl (.thmDecl { name := h, levelParams := [], type := ty, value := p })
+  -- `const_sound` at `c` itself, so the kernel meets `c =?= node(t) ()` and unfolds `c`, never the data
+  let T := (← inferType p).appArg!
+  let some (.defnInfo ci) := (← getEnv).find? c | throwError "rel_program expansion: internal: no definition `{c}`"
+  let hb := g ``Gen.Sound.eq #[oE A, oE B, ci.value.appFn!, T, p]
+  let ty := g ``Gen.Sound #[bE false, oE A, oE B, cd, T]
+  addDecl (.thmDecl { name := h, levelParams := [], type := ty, value := g ``Gen.const_sound #[oE A, oE B, mkConst c, T, hb] })
   modify fun (m, g) => (m.insert c h, g)
   pure (some (mkConst h))
 
@@ -535,15 +539,8 @@ def emit (n : Name) (r : Read) : MetaM Unit := do
           addDecl (.thmDecl { name := n ++ Name.mkSimple s!"rep_{x}", levelParams := [], type := ty, value := pv })
           pure none
         | none => pure (((← get).2.map toString).getD "?")
-      -- a fresh heartbeat count per theorem, since the expansion has spent the command's; a proof that still runs
-      -- past it is a gap named by its message, while every other error propagates
-      let s ← get; let r ← getThe (Std.HashMap Lean.Expr Name)
-      match ← (tryCatchRuntimeEx (Except.ok <$> withCurrHeartbeats ((body.run s).run r))
-          fun e => if e.isRuntime then pure (.error e) else throw e : MetaM _) with
-      | .ok ((gp, s'), r') =>
-        set s'; modifyThe (Std.HashMap Lean.Expr Name) fun _ => r'
-        if let some c := gp then gaps := gaps ++ [(x, c)]
-      | .error e => gaps := gaps ++ [(x, s!"runtime: {(← e.toMessageData.toString).takeWhile (· != '\n')}")]
+      -- a fresh heartbeat count per theorem, since the expansion has spent the command's
+      if let some c ← withCurrHeartbeats body then gaps := gaps ++ [(x, c)]
       es := es ++ [g ``Gen.entry #[toExpr x, oE A, oE B, mkConst k]]
     let ps ← ps.mapM fun (x, ⟨A, B, t⟩, s, u) => do
       pure (g ``printText #[oE A, oE B, os, toExpr x, toExpr s, toExpr u, app (← code n [] t)])
