@@ -517,4 +517,31 @@ theorem codeAll_inv (cs : Array Col) {out : Array ByteArray} {sps : Array Col} (
 
 #print axioms codeAll_inv
 
+/-- **A leaf's codes as bits**: where `codeAll` coded the columns `j`, `j'` holding `R`'s key and value, the scattered
+    code pairs at the counts `na`, `nb` of the two objects' picks hold `R` under `uOf`. -/
+theorem codeAll_leaf (cs : Array Col) {out : Array ByteArray} {sps : Array Col} (h : codeAll cs = some (out, sps))
+    {A B : Obj} (R : Rel A B) {j j' : Nat} (hj : j < cs.size) (hj' : j' < cs.size)
+    (ek : cs[j] = ⟨A, ⟨R.n, R.key⟩⟩) (ev : cs[j'] = ⟨B, ⟨R.n, R.val⟩⟩) :
+    ∃ qa qb, sps.find? (·.1 == A) = some ⟨A, qa⟩ ∧ sps.find? (·.1 == B) = some ⟨B, qb⟩ ∧
+      (qa.1.toNat * qb.1.toNat ≤ 2 ^ 27 → (Bits.ofCodes qa.1.toNat qb.1.toNat (out.getD j .empty)
+        (out.getD j' .empty)).Enc (uOf cs A) (uOf cs B) (TP.leaf R).den) := by
+  obtain ⟨-, hany, hcol⟩ := codeAll_inv cs h
+  have hin : ∀ i (hi : i < cs.size), (sps.any (·.1 == cs[i].1)) = true := fun i hi => by
+    have := hany _ (List.getElem_mem (l := cs.toList) (by simpa using hi)); simpa using this
+  obtain ⟨qa, hfa, hka, hca⟩ := hcol j hj A _ ek (by have := hin j hj; rwa [ek] at this)
+  obtain ⟨qb, hfb, hkb, hcb⟩ := hcol j' hj' B _ ev (by have := hin j' hj'; rwa [ev] at this)
+  refine ⟨qa, qb, hfa, hfb, fun hfit => rep_leafB (by rw [len_eq_ids, len_eq_ids, hka, hkb])
+    (fun x hx => ?_) (fun x hx => ?_) hfit (by rw [len_eq_ids, hka]; exact USize.toNat_lt_size R.n) fun a ha b hb => ?_⟩
+  · obtain ⟨r, hr, rfl⟩ := List.getElem_of_mem hx; exact (hca r (hka ▸ hr) hr).1
+  · obtain ⟨r, hr, rfl⟩ := List.getElem_of_mem hx; exact (hcb r (hkb ▸ hr) hr).1
+  rw [rep_apply]
+  constructor
+  · rintro ⟨i, h1, h2⟩
+    exact ⟨i.1, by rw [hka]; exact i.2, by rw [hkb]; exact i.2, ((hca i.1 i.2 _).2 a ha).2 h1,
+      ((hcb i.1 i.2 _).2 b hb).2 h2⟩
+  · rintro ⟨r, h1, h2, e1, e2⟩
+    exact ⟨⟨r, hka ▸ h1⟩, ((hca r _ h1).2 a ha).1 e1, ((hcb r _ h2).2 b hb).1 e2⟩
+
+#print axioms codeAll_leaf
+
 end LeetQ.Rel.Lang.Bits
