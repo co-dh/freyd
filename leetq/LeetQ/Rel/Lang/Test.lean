@@ -188,6 +188,38 @@ rel_program objVars where
   "s₀ tf(Y(∋), Of) = {((A, A) (B, B) (C, A), (A, [B])), ((A, A) (B, B) (C, A), (B, [A])), " ++
     "((A, A) (B, B) (C, A), (C, [B]))}"]
 
+open LeetQ.Rel.Programs.prelude in
+/-- The order of `est thin thinL` given as a converse `Q°` against the converse written by hand: a builtin
+    (`≤°`, `≥`), a parametrised definition applied then conversed (`R(rating)°`), and a monomorphic one (`R₀°`). -/
+rel_program estConv where
+    obj E = {a,b,c}
+    obj N = 0…20
+    rating : E ⟶ N ≜ {(a,3),(b,7),(c,2)}
+    H : E ⟶ [E] ≜ {(a,a b),(a,b c),(a,a c),(b,b c),(b,a b)}
+    Hn : N ⟶ N ≜ {(1,3),(1,5),(2,4),(2,9)}
+    cost(r : α ⟶ β) : [α] ⟶ β ≜ F(r)sum
+    R(r : α ⟶ β) : [α] ⟶ [α] ≜ cost(r) ≤ cost(r)°
+    Rc(r : α ⟶ β) : [α] ⟶ [α] ≜ cost(r) ≥ cost(r)°
+    c₀ : [E] ⟶ N ≜ F(rating)sum
+    R₀ : [E] ⟶ [E] ≜ c₀ ≤ c₀°
+    R₀c : [E] ⟶ [E] ≜ c₀ ≥ c₀°
+    check Λ(Hn)est(≤°) = Λ(Hn)est(≥)
+    check Λ(Hn)thin(≤°) = Λ(Hn)thin(≥)
+    check Λ(H)est(R(rating)°) = Λ(H)est(Rc(rating))
+    check Λ(H)thin(R(rating)°) = Λ(H)thin(Rc(rating))
+    check Λ(H)est(R₀°) = Λ(H)est(R₀c)
+    check Λ(H)thin(R₀°) = Λ(H)thin(R₀c)
+    check Λ(H)thinL(R₀°) = Λ(H)thinL(R₀c)
+    check Λ(H)est(R₀) = Λ(H)est(R(rating))
+    print Λ(Hn)est(≤°)
+    print Λ(H)est(R(rating)°)
+    print Λ(H)est(R(rating))
+
+-- `R°` picks the greatest cost (`a b`, 10), `R` the least (`a c`, 5)
+#guard estConv.ok && estConv.prints == [
+  "Λ(Hn) est(≤°) = {(1, 5), (2, 9)}", "Λ(H) est(R(rating)°) = {(a, a b), (b, a b)}",
+  "Λ(H) est(R(rating)) = {(a, a c), (b, b c)}"]
+
 open LeetQ.Rel.Programs.prelude Programs.blocks in
 rel_program printPlan where
     print plan
@@ -1006,7 +1038,7 @@ rel_program muGrow where
     g : B ⟶ [B] ≜ μX : r ∪ (⟨X, r⟩ cat)
 #guard !muGrow.ok
 #guard muGrow.failures.map (·.msg) == ["an op ran out of capacity (its twin's ok bit is false); in g, or the μ at " ++
-  "line 1006, col 19 ran its cap of 1024 rounds without reaching a fixed point"]
+  "line 1038, col 19 ran its cap of 1024 rounds without reaching a fixed point"]
 -- `X` under an operator not monotonic in its argument, or in an antitone place; `ν` with no bound
 #eval errAt "obj B = 0…1\nf : B ⟶ B ≜ νX : ⊤(B,B) ∩ (Λ(X)∋)\n" 2
   "νX: X occurs under Λ at 2:30; Λ is not monotonic in its argument, so the fixed point need not exist"
