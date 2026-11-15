@@ -159,7 +159,7 @@ partial def blockC (abi : String → Option Kernel) (fres gtys : Array (Array Ty
   let mut c := ""
   let release (rs : Array CReg) (live : List Nat) (keep : List Nat) : List Nat × String :=
     live.foldl (fun (l, s) a => if keep.contains a then (l ++ [a], s) else
-      (l, s ++ match rs[a]? with | some (x, _, _) => s!"{ind}lean_dec({x});\n" | none => "")) ([], "")
+      (l, s ++ match rs[a]? with | some (x, t, _) => if isObj t then s!"{ind}lean_dec({x});\n" else "" | none => "")) ([], "")
   let (l0, s0) := release rs live (later 0); live := l0; c := c ++ s0
   for (i, j) in ia.toList.zipIdx do
     let after := later (j + 1)
@@ -183,8 +183,10 @@ partial def blockC (abi : String → Option Kernel) (fres gtys : Array (Array Ty
       let call := if k.io then s!"qlean_rt_io({call}, {cStr sym})" else call
       match k.res.toList with
       | [] => c := c ++ s!"{ind}{if k.io then s!"lean_dec({call})" else call};\n"
-      | [t] => let x ← fresh; c := c ++ s!"{ind}{cTy t} {x} = {if k.io then cUnbox t call else call};\n"
-                rs := rs.push (x, t, true)
+      | [t] =>
+        let x ← fresh
+        c := c ++ s!"{ind}{cTy t} {x} = {if k.io then cUnbox t call else call};\n"
+        rs := rs.push (x, t, true)
       | [t, u] =>
         let p ← fresh; let x ← fresh; let y ← fresh
         c := c ++ s!"{ind}lean_object *{p} = {call};\n{ind}lean_object *{x} = lean_ctor_get({p}, 0), *{y} = " ++

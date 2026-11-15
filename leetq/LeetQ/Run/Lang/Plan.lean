@@ -9,7 +9,7 @@ table `kernel%` builds from their declarations, and `relc` (`Rel/Lang/EmitC`) pr
 
 namespace LeetQ.Rel.Lang.Plan
 
-open Lean Elab Term Meta QLean
+open Lean Elab Term Meta QLean QLean.Kernel
 
 /-- A register's type: the argument and result types of the kernels' `@[extern]` declarations. -/
 inductive Ty
