@@ -1,4 +1,3 @@
-import LeetQ.Rel.Lang.Embed
 import LeetQ.Rel.Programs.Prelude
 
 /-! # A full adder

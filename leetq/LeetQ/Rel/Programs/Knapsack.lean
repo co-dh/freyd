@@ -1,4 +1,3 @@
-import LeetQ.Rel.Lang.Embed
 import LeetQ.Rel.Programs.Prelude
 
 /-! # The 0/1 knapsack

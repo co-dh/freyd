@@ -114,15 +114,15 @@ inductive OTy
   | mv (k : Nat)
   deriving Repr, BEq, Inhabited
 
-def OTy.render (inner : Bool) : OTy → String
-  | .base n => n
-  | .prod a b => let s := s!"{a.render true}×{b.render true}"; if inner then s!"({s})" else s
-  | .sum a b => let s := s!"{a.render true}+{b.render true}"; if inner then s!"({s})" else s
+def OTy.exp : OTy → OExp
+  | .base n => .name {} n
+  | .prod a b => .prod a.exp b.exp
+  | .sum a b => .sum a.exp b.exp
   -- `𝒫A` and `[A]` are one object, an array; printed as the array the interpreter holds
-  | .arr a => s!"[{a.render false}]"
-  | .mv k => s!"?{k}"
+  | .arr a => .list a.exp
+  | .mv k => .var {} s!"?{k}"
 
-instance : ToString OTy := ⟨OTy.render false⟩
+instance : ToString OTy := ⟨(·.exp.show)⟩
 
 /-- A declared object: what it stands for, and, for a base object, its elements and universe. -/
 structure ObjInfo where

@@ -43,7 +43,7 @@ def preludeDef (n : String) (d : Def) : Def :=
 /-- An array of the printed elements `xs`, as a literal's side reads it (§c): two or more juxtaposed, else
     bracketed; `item`: it stands next to others (in an array, after `inl`), so it is always bracketed. -/
 def arrText (item : Bool) (xs : List String) : String :=
-  let s := " ".intercalate xs; if item || xs.length < 2 then s!"[{s}]" else s
+  Tup.render item (.arr (xs.map .leaf))
 
 /-- An element printed with the program's names, as a literal's side reads it (§c): a named element by its name,
     a number as itself, an array by `arrText`, its elements as items. -/

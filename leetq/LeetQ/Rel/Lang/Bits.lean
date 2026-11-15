@@ -38,8 +38,8 @@ inductive TP : Obj → Obj → Type where
 def opC {α β γ : Type} (op : α → β → γ × Bool) (r : α × Bool) (s : β × Bool) : γ × Bool :=
   let c := op r.1 s.1; (c.1, r.2 && s.2 && c.2)
 
-/-- The plan as a table and whether every node's op ran within capacity: `Alg`'s C twin at each node, what `ev`
-    computes for the term. -/
+/-- The plan as a table and whether every node's op ran within capacity: `Alg`'s C twin at each node, what the expander
+    runs for the term. -/
 def TP.tableC : {A B : Obj} → TP A B → Rel A B × Bool
   | _, _, .leaf R => (R, true)
   | _, _, .comp R S => let r := R.tableC; if r.1.n == 0 then (zero, r.2) else opC compC r S.tableC
@@ -223,42 +223,28 @@ def run? {A B : Obj} (p : TP A B) : Option (Rel A B) := do
 
 /-- Differential-test mode, read once from the environment (`LEETQ_CHECK=1 lake env lean <test file>`: unset is off,
     `LEETQ_CHECK=paths` only traces which path ran, any other value also compares both paths); off in
-    production, where `run` costs one `Bool` test more. An environment variable because `run` is pure and is called
-    from `ev`, so no flag can be threaded to it. -/
+    production, where `runC` costs one `Bool` test more. An environment variable because `runC` is pure and is called
+    from the expander, so no flag can be threaded to it. -/
 unsafe def checkOnU : Nat := match unsafeBaseIO (IO.getEnv "LEETQ_CHECK") with | none => 0 | some "paths" => 1 | some _ => 2
 @[implemented_by checkOnU] opaque checkOn : Nat
 
-/-- Stops the process naming the difference. Logically it is `x`, so a proof about `run` reads the bit path's
+/-- Stops the process naming the difference. Logically it is `x`, so a proof about `runC` reads the bit path's
     answer on every branch (`GenSpec.rep_runC`); compiled, it never returns. `never_extract` and an action over
     `msg`: a closed effect is hoisted into the module initializer by native code. -/
 @[never_extract] unsafe def dieU {α : Type} (msg : String) (x : α) : α :=
   unsafeBaseIO (EIO.catchExceptions (do IO.eprintln msg; IO.Process.exit 1) fun _ => pure x)
 @[never_extract, implemented_by dieU] def die {α : Type} (_msg : String) (x : α) : α := x
 
-/-- The plan's relation: `run?`, or its tables where it does not run as bits. In check mode both paths run, the
-    path taken is traced (`LEETQ bits` / `LEETQ table`), and `R ⊑ T ∧ T ⊑ R` failing stops the process. -/
-def run {A B : Obj} (p : TP A B) : Rel A B :=
-  match p with
-  | .leaf R => R
-  | _ => match run? p with
-    | some R => if checkOn == 0 then R else dbgTrace "LEETQ bits" fun _ => if checkOn == 1 then R else
-      let T := p.table
-      if R ⊑ T && T ⊑ R then R else die "LEETQ DIFF: bit path and table path differ" R
-    | none => if checkOn == 0 then p.table else dbgTrace "LEETQ table" fun _ => p.table
-
-/-- `run` with its bit: set where `run?`'s guards (`codeAll`, `fits`, `capsOK`) passed, else the table's
-    (`tableC.2`). In check mode `run` decides the relation and traces, and the bit is the path's. -/
+/-- The plan's relation with its bit: `run?`'s answer, bit set, or the table with `tableC.2` where it does not run as
+    bits (`codeAll`, `fits`, `capsOK` failed). In check mode both paths run, the path taken is traced
+    (`LEETQ bits` / `LEETQ table`), and `R ⊑ T ∧ T ⊑ R` failing stops the process. -/
 def runC {A B : Obj} (p : TP A B) : Rel A B × Bool :=
   match p with
   | .leaf R => (R, true)
-  | _ => if checkOn != 0 then (run p, (run? p).isSome || p.tableC.2) else match run? p with
-    | some R => (R, true)
-    | none => p.tableC
-
-/-- The plan `p`, or the table `t` as a leaf where there is none. -/
-def orLeaf {m : Type → Type} [Monad m] {A B : Obj} (p : m (Option (TP A B))) (t : m (Rel A B)) : m (TP A B) := do
-  match ← p with
-  | some q => pure q
-  | none => return .leaf (← t)
+  | _ => match run? p with
+    | some R => (if checkOn == 0 then R else dbgTrace "LEETQ bits" fun _ => if checkOn == 1 then R else
+        let T := p.table
+        if R ⊑ T && T ⊑ R then R else die "LEETQ DIFF: bit path and table path differ" R, true)
+    | none => if checkOn == 0 then p.tableC else (dbgTrace "LEETQ table" fun _ => p.table, p.tableC.2)
 
 end LeetQ.Rel.Lang.Bits

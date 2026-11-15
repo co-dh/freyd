@@ -1,4 +1,3 @@
-import LeetQ.Rel.Lang.Embed
 import LeetQ.Rel.Programs.Prelude
 
 /-! # Sudoku path consistency (AIMA §6.2.3), 9×9

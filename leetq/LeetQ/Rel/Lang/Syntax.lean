@@ -2,7 +2,7 @@ import QLean.Kernel.Elementwise
 
 /-! The Rel language's surface syntax (`doc/rel-lang-design.md` §c, §h): objects, terms, declarations, each node
     with its source line and column. The builtin operators are one table, `Op.table`, read by the parser (symbol,
-    arity), the elaborator (typing, lifted row) and the evaluator (the `Alg` op), each by the `Op` constructor. -/
+    arity), the elaborator (typing, lifted row) and the expander (the `Gen` op), each by the `Op` constructor. -/
 
 namespace LeetQ.Rel.Lang
 

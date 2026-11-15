@@ -224,29 +224,17 @@ theorem rdiv_sound {A B C : Obj} {R : Fn false A C} {S : Fn false B C} {UA : Fn 
 
 /-- **`runC`'s answer is the plan's relation** under its bit, on either path, in check mode too (`die` is its
     argument). -/
-theorem rep_run {A B : Obj} (p : Bits.TP A B) (hb : ((Bits.run? p).isSome || p.tableC.2) = true) (a : A.El)
-    (b : B.El) : rep (Bits.run p) a b ↔ p.den a b := by
-  match p with
-  | .leaf _ => exact Iff.rfl
-  | .comp .. | .conv .. | .meet .. | .join .. | .diff .. | .ldiv .. =>
-    simp only [Bits.run] at hb ⊢
-    split
-    · rename_i R h; simp only [dbgTrace, Bits.die, ite_self]; exact Bits.bits_table h a b
-    · rename_i h; rw [h] at hb; simp only [dbgTrace, ite_self]
-      exact Bits.rep_table _ (by simpa using hb) a b
-
 theorem rep_runC {A B : Obj} (p : Bits.TP A B) (hb : (Bits.runC p).2 = true) (a : A.El) (b : B.El) :
     rep (Bits.runC p).1 a b ↔ p.den a b := by
   match p with
   | .leaf _ => exact Iff.rfl
   | .comp .. | .conv .. | .meet .. | .join .. | .diff .. | .ldiv .. =>
     simp only [Bits.runC] at hb ⊢
-    by_cases hc : (Bits.checkOn != 0) = true
-    · rw [if_pos hc] at hb ⊢; exact rep_run _ hb a b
-    · rw [if_neg hc] at hb ⊢
-      revert hb; split
-      · rename_i R h; exact fun _ => Bits.bits_table h a b
-      · exact fun hb => Bits.rep_tableC _ hb a b
+    revert hb; split
+    · rename_i R h; simp only [dbgTrace, Bits.die, ite_self]; exact fun _ => Bits.bits_table h a b
+    · by_cases hc : (Bits.checkOn == 0) = true
+      · rw [if_pos hc]; exact fun hb => Bits.rep_tableC _ hb a b
+      · rw [if_neg hc]; simp only [dbgTrace]; exact fun hb => Bits.rep_table _ hb a b
 
 /-- The demand `demP` hands `S` in `R S`: a coreflexive holding every value of `R`'s plan. -/
 theorem demP_spec {A B : Obj} (e : Bool) (r : Bits.TP A B) (hb : (demP e r).2 = true) :
