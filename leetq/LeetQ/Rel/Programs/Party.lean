@@ -17,7 +17,7 @@ rel_program partyPlan after prelude where
     boss : E ⟶ E ≜ {(b,a),(c,a),(d,b),(e,b),(f,c),(h,g),(i,h),(l,k)}
     rating : E ⟶ N ≜ {(a,3),(b,7),(c,2),(d,5),(e,1),(f,8),(g,4),(h,5),(i,4),(k,2),(l,2),(m,0)}
 
-    under : E ⟶ E ≜ μX : 𝟙 ∪ (boss° X)           -- e and everyone below e
+    under : E ⟶ E ≜ boss°*                        -- e and everyone below e
     leaf : E ⟶ E ≜ 𝟙 − ran(boss)
     kids : E ⟶ [E] ≜ Λ(boss°) ∪ (leaf nil)        -- Λ has no row at a leaf, so [] is added there
     cost(r : α ⟶ β) : [α] ⟶ β ≜ F(r)sum
