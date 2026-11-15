@@ -376,25 +376,25 @@ open Freyd.Alg.RelSet
 
 set_option linter.unusedVariables false in
 example (Q : (⟨Int⟩ : RelSet.{0}) ⟶ ⟨Int⟩) : True := by
-  guard_expr (rel(plus) : type_of% ListRel.plus (A := Int)) =ₛ ListRel.plus (A := Int)
+  guard_expr (rel(plus) : type_of% (ListRel.plus (A := Int))) =ₛ ListRel.plus (A := Int)
   guard_expr (rel(div) : type_of% ListRel.div) =ₛ ListRel.div
-  guard_expr (rel(sum) : type_of% ListRel.sum (A := Int)) =ₛ ListRel.sum (A := Int)
+  guard_expr (rel(sum) : type_of% (ListRel.sum (A := Int))) =ₛ ListRel.sum (A := Int)
   guard_expr (rel(≤) : type_of% ListRel.leq) =ₛ ListRel.leq
   guard_expr (rel(succ) : type_of% ListRel.succ) =ₛ ListRel.succ
-  guard_expr (rel(nil) : type_of% ListRel.nilAtUnit (A := Int)) =ₛ ListRel.nilAtUnit (A := Int)
-  guard_expr (rel(cons) : type_of% ListRel.cons (A := Int)) =ₛ ListRel.cons (A := Int)
-  guard_expr (rel(length) : type_of% ListRel.length (A := Int)) =ₛ ListRel.length (A := Int)
-  guard_expr (rel(inits) : type_of% ListRel.initsR (A := Int)) =ₛ ListRel.initsR (A := Int)
-  guard_expr (rel(cat) : type_of% ListRel.cat (A := Int)) =ₛ ListRel.cat (A := Int)
-  guard_expr (rel(zip) : type_of% Pointfree.zip (A := Int) (B := Int)) =ₛ Pointfree.zip (A := Int) (B := Int)
-  guard_expr (rel(setify) : type_of% ListRel.setify (A := Int)) =ₛ ListRel.setify (A := Int)
+  guard_expr (rel(nil) : type_of% (ListRel.nilAtUnit (A := Int))) =ₛ ListRel.nilAtUnit (A := Int)
+  guard_expr (rel(cons) : type_of% (ListRel.cons (A := Int))) =ₛ ListRel.cons (A := Int)
+  guard_expr (rel(length) : type_of% (ListRel.length (A := Int))) =ₛ ListRel.length (A := Int)
+  guard_expr (rel(inits) : type_of% (ListRel.initsR (A := Int))) =ₛ ListRel.initsR (A := Int)
+  guard_expr (rel(cat) : type_of% (ListRel.cat (A := Int))) =ₛ ListRel.cat (A := Int)
+  guard_expr (rel(zip) : type_of% (Pointfree.zip (A := Int) (B := Int))) =ₛ Pointfree.zip (A := Int) (B := Int)
+  guard_expr (rel(setify) : type_of% (ListRel.setify (A := Int))) =ₛ ListRel.setify (A := Int)
   guard_expr rel(thinL(Q)) =ₛ ListRel.thinL Q
   guard_expr rel(merge(Q)) =ₛ ListRel.merge Q
   trivial
 
 end RelSet
 
-/-- error: line 347, col 7: one-argument fold is for rel(…) proofs: a program folds a list with `⦇e,S⦈` -/
+/-- error: line 400, col 7: one-argument fold is for rel(…) proofs: a program folds a list with `⦇e,S⦈` -/
 #guard_msgs (whitespace := lax) in
 rel_program oneFold where
   r ≜ ⦇𝟙⦈

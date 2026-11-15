@@ -139,9 +139,10 @@ def power (p : Lang.Pos) (what : String) (f : Name) (args : List Term) : TermEla
   let c? ← allegory
   let (_, xs) ← (ms.zip bis).foldlM (init := (args, #[])) fun (as, xs) (m, bi) => do
     -- an instance binder over the allegory has an argument of the allegory's type; `[Add A]` is a plain instance
-    let over ← match c? with
-      | some c => do let t ← inferType m; pure (t.isApp && (← isDefEq (← inferType t.appArg!) (← inferType c)))
-      | none => pure false
+    let t ← inferType m
+    let over ← match c?, bi.isInstImplicit && t.isApp with
+      | some c, true => isDefEq (← inferType t.appArg!) (← inferType c)
+      | _, _ => pure false
     match bi.isExplicit, bi.isInstImplicit && over, as, c? with
     | true, _, a :: as, _ => pure (as, xs.push a)
     | _, true, _, some c => do
