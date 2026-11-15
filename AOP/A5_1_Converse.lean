@@ -16,6 +16,7 @@
 module
 
 public import AOP.A6_1_RelSet
+public import Freyd.RelSet
 
 universe u u₂ v₂
 

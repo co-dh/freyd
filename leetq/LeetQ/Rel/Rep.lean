@@ -3,7 +3,7 @@
   `Rel(Set)` arrow, and each theorem says `rep` of an `Alg` op is the `Rel(Set)` op on the `rep`s.
 -/
 import LeetQ.Rel.Alg
-import AOP.A6_1_RelSet
+import Freyd.RelSet
 
 namespace LeetQ.Rel.Rep
 

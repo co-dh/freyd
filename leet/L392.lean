@@ -36,6 +36,7 @@
   `List.Sublist` reasoning — no `Classical.choice` anywhere).
 -/
 import AOP.A6_1_RelSet
+import Freyd.RelSet
 
 set_option linter.unusedVariables false
 

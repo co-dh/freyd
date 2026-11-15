@@ -42,6 +42,7 @@
   as in `L56`); no `Classical.choice`.
 -/
 import AOP.A6_1_RelSet
+import Freyd.RelSet
 
 namespace Freyd.Alg.RelSet.LC238
 

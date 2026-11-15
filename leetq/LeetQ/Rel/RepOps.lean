@@ -4,6 +4,7 @@
   it picks.
 -/
 import LeetQ.Rel.RepComp
+import Freyd.Junc
 import LeetQ.Rel.KernelWF.NubSpec
 import LeetQ.Rel.KernelWF.CrossSpec
 import LeetQ.Rel.KernelWF.MemberSpec

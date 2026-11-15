@@ -38,6 +38,7 @@
   `⊆ {propext, Quot.sound}` — a straight `graph`/`Map` packaging, fully constructive.
 -/
 import AOP.A6_1_RelSet
+import Freyd.RelSet
 import leet.L303
 
 namespace Freyd.Alg.RelSet.LC724

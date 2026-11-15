@@ -12,6 +12,7 @@
 module
 
 public import AOP.A6_1_RelSet
+public import Freyd.RelSet
 public import AOP.A6_BinSearch
 public import AOP.A8_1
 public import AOP.A6_ConsList

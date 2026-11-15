@@ -33,6 +33,7 @@
   Mathlib-free; fully constructive (no `Classical.choice` expected).
 -/
 import AOP.A6_1_RelSet
+import Freyd.RelSet
 
 set_option linter.unusedVariables false
 

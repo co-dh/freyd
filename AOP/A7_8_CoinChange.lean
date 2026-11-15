@@ -38,6 +38,7 @@
 module
 
 import AOP.A6_1_RelSet
+import Freyd.RelSet
 import AOP.A6_FinRel
 
 set_option linter.unusedVariables false
