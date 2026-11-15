@@ -195,16 +195,19 @@ theorem valStep_fill (x y : UInt64) :
     simp (config := {decide := true}) [Ew.valStep, Ew.intStep, Ew.signed, hy] <;> rfl
 
 /-- **`Vals.pick` read back at an array side**, from its payload's: the picked rows' clamped slices are
-    gathered one after another, so row `q`'s new slice is its old one, copied. -/
+    gathered one after another, so row `q`'s new slice is its old one, copied. The slices are laid end to end
+    (`S`): row `q` is `[S q, S (q + 1))` of a payload of exactly `S m` values, `concatC`'s one slice per row. -/
 theorem pick_row_arr {b : Obj} {n : USize} (x : Vals (.arr b) n)
     (ih : ∀ (i : ByteArray) (m : USize) (h : len i = m.toNat),
       Vals.PickFits b x.2.2.2 ((List.range m.toNat).map fun q => (Column.bitsAt i (q * 8) 8).toNat) →
       ∀ q : Fin m.toNat, (Vals.pick b x.2.2.2 i m h).row q =
         if hin : (Column.bitsAt i (q.1 * 8) 8).toNat < x.1.toNat then Vals.row x.2.2.2 ⟨_, hin⟩ else b.dflt)
     (i : ByteArray) (m : USize) (h : len i = m.toNat)
-    (hf : Vals.PickFits (.arr b) x ((List.range m.toNat).map fun q => (Column.bitsAt i (q * 8) 8).toNat))
-    (q : Fin m.toNat) :
-    (Vals.pick (.arr b) x i m h).row q =
+    (hf : Vals.PickFits (.arr b) x ((List.range m.toNat).map fun q => (Column.bitsAt i (q * 8) 8).toNat)) :
+    (∃ S : Nat → Nat, S 0 = 0 ∧ S m.toNat = (Vals.pick (.arr b) x i m h).1.toNat ∧ S m.toNat < 2 ^ 63 ∧
+      ∀ q : Fin m.toNat, S q ≤ S (q + 1) ∧ ((Vals.pick (.arr b) x i m h).2.1.get q).toInt = S q ∧
+        ((Vals.pick (.arr b) x i m h).2.2.1.get q).toInt = S (q + 1)) ∧
+    ∀ q : Fin m.toNat, (Vals.pick (.arr b) x i m h).row q =
       if hin : (Column.bitsAt i (q.1 * 8) 8).toNat < n.toNat then x.row ⟨_, hin⟩ else (Obj.arr b).dflt := by
   obtain ⟨p, lo, hi, f⟩ := x
   simp only [Vals.PickFits] at hf
@@ -349,7 +352,10 @@ theorem pick_row_arr {b : Obj} {n : USize} (x : Vals (.arr b) n)
     rw [(Option.some.inj hc'), Nat.one_mul]
   subst hsd
   simp only [Vals.pick, expand, need]
-  rw [dif_pos hEU, arr_row]
+  rw [dif_pos hEU]
+  refine ⟨⟨S, rfl, (hK.trans hGl).symm, show ((List.range m.toNat).map fun t => H t - L t).sum < 2 ^ 63 from hGl ▸ hl63, fun q => ⟨by rw [hSs q q.2]; exact Nat.le_add_right _ _,
+    hlo' q, by rw [hhi' _ q, hSs q q.2]⟩⟩, fun q => ?_⟩
+  rw [arr_row]
   simp only [hlo', hhi', eS, eH, Nat.add_sub_cancel_left]
   by_cases hin : (Column.bitsAt i (q.1 * 8) 8).toNat < n.toNat
   · have eL : L q = min (max (lo.get ⟨_, hin⟩).toInt 0).toNat p.toNat := by
@@ -733,7 +739,7 @@ theorem pick_row : (A : Obj) → {n : USize} → (x : Vals A n) → (i : ByteArr
         i m h q
   | .prod a b, _, x, i, m, h, hf, q =>
     pick_row_prod_dflt x i m h q (pick_row a x.1 i m h hf.1 q) (pick_row b x.2 i m h hf.2 q)
-  | .arr b, _, x, i, m, h, hf, q => pick_row_arr x (fun i m h hf q => pick_row b x.2.2.2 i m h hf q) i m h hf q
+  | .arr b, _, x, i, m, h, hf, q => (pick_row_arr x (fun i m h hf q => pick_row b x.2.2.2 i m h hf q) i m h hf).2 q
   | .sum a b, _, x, i, m, h, hf, q =>
     pick_row_sum x (fun i m h hf q => pick_row a _ i m h hf q) (fun i m h hf q => pick_row b _ i m h hf q) i m h hf q
 

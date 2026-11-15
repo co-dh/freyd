@@ -24,6 +24,9 @@ def inits (X : Vals (.arr B) n) : CRel (.arr B) (.arr (.arr B)) := let r := init
 /-- `tails` on the arrays `X`, ok where `tailsC` ran within capacity. -/
 def tails (X : Vals (.arr B) n) : CRel (.arr B) (.arr (.arr B)) := let r := tailsC X; ⟨r.1, r.2⟩
 
+/-- `concat` on the arrays of arrays `X`, ok where `concatC` ran within capacity. -/
+def concat (X : Vals (.arr (.arr B)) n) : CRel (.arr (.arr B)) (.arr B) := let r := concatC X; ⟨r.1, r.2⟩
+
 /-- `cat°` on the arrays `X`, ok where `uncatC` ran within capacity. -/
 def uncat (X : Vals (.arr B) n) : CRel (.arr B) (.prod (.arr B) (.arr B)) := let r := uncatC X; ⟨r.1, r.2⟩
 
