@@ -784,8 +784,22 @@ rel_program chsConv where
 #guard printed chsConv.prints ==
   ["{(∗, a b), (∗, b a)}", "{(∗, (a, [b])), (∗, (b, [a]))}", "{(∗, a b), (∗, b a)}",
    "{(∗, (a, [b]))}", "{}"]
--- refused at a leaf whose converse does not run on demand: `π₁` in `⟨π₁,π₂⟩°`, `∋` in `∈`
-#eval errAt "print x (cons° ⟨π₁,π₂⟩ cons)°\n" 1 "the converse of π₁ does not run on demand" (prog := chs)
+-- `⟨R,S⟩°` with each side read through one projection: `(P×Q)° = P°×Q°`, so the book's `join°` runs as
+-- `cat°(snoc°×𝟙)`; `⟨π₁,π₂⟩° = 𝟙`; a product of converses `(cons×perm)° = uncons×perm`. Expected values by hand.
+open LeetQ.Rel.Programs.prelude chs in
+rel_program chsJoin where
+    join : ([α]×α)×[α] ⟶ [α] ≜ (snoc×𝟙)cat
+    print y join°
+    print y cat°(snoc°×𝟙)
+    print x (cons° ⟨π₁,π₂⟩ cons)°
+    print ⟨y,x⟩(cons×perm)°
+#guard printed chsJoin.prints ==
+  ["{(∗, (([], a), a b)), (∗, (([a], a), [b])), (∗, ((a a, b), []))}",
+   "{(∗, (([], a), a b)), (∗, (([a], a), [b])), (∗, ((a a, b), []))}",
+   "{(∗, a b)}", "{(∗, ((a, a b), a b)), (∗, ((a, a b), b a))}"]
+-- refused at a leaf whose converse does not run on demand: `π₁` in `⟨π₁,π₁⟩°` (both sides through `π₁`, the
+-- second component unbounded), `∋` in `∈`
+#eval errAt "print ⟨{(∗,a)},{(∗,a)}⟩(cons° ⟨π₁,π₁⟩)°\n" 1 "the converse of π₁ does not run on demand" (prog := chs)
 #eval errAt "print {(∗,a)} ∈\n" 1 "the converse of ∋ does not run on demand" (prog := chs)
 -- a division tested on the pairs: `R/S`, `R\S`, `frac`, `∼`, `−`, each beside a term run on demand
 open LeetQ.Rel.Programs.prelude chs in
@@ -1038,7 +1052,7 @@ rel_program muGrow where
     g : B ⟶ [B] ≜ μX : r ∪ (⟨X, r⟩ cat)
 #guard !muGrow.ok
 #guard muGrow.failures.map (·.msg) == ["an op ran out of capacity (its twin's ok bit is false); in g, or the μ at " ++
-  "line 1038, col 19 ran its cap of 1024 rounds without reaching a fixed point"]
+  "line 1052, col 19 ran its cap of 1024 rounds without reaching a fixed point"]
 -- `X` under an operator not monotonic in its argument, or in an antitone place; `ν` with no bound
 #eval errAt "obj B = 0…1\nf : B ⟶ B ≜ νX : ⊤(B,B) ∩ (Λ(X)∋)\n" 2
   "νX: X occurs under Λ at 2:30; Λ is not monotonic in its argument, so the fixed point need not exist"

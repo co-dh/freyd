@@ -191,6 +191,21 @@ theorem pair_sound {A B C : Obj} {d e : Bool} {R : Fn d A B} {S : Fn e A C} {TR 
   obtain ⟨cl, kl⟩ := demL d e D x hD hx; obtain ⟨cr, kr⟩ := demR d e D x hD hx
   exact and_congr (hR _ cl hc.1 x p.1 kl) (hS _ cr hc.2 x p.2 kr)
 
+/-- `⟨X,Y⟩ = Xπ₁° ∩ Yπ₂°`: the converse `convTm` gives two sides each read through one projection
+    (`Proj.meet`), which is how `(P×Q)° = P°×Q°` runs on demand. -/
+theorem rpair_eq_meet_proj {A B C : Obj} (X : Den C A) (Y : Den C B) :
+    (X ≫ (graph Prod.fst : Den (.prod A B) A)° ∩ Y ≫ (graph Prod.snd : Den (.prod A B) B)°) = rpair X Y :=
+  funext fun _ => funext fun _ => propext
+    ⟨fun ⟨⟨_, ha, ea⟩, ⟨_, hb, eb⟩⟩ => ⟨ea ▸ ha, eb ▸ hb⟩, fun ⟨ha, hb⟩ => ⟨⟨_, ha, rfl⟩, ⟨_, hb, rfl⟩⟩⟩
+
+/-- `Xf° ∩ Yf° = (X∩Y)f°` for a map `f`: two sides read through one projection stay so (`Proj.meet`). -/
+theorem meet_comp_conv_graph {A B C : Obj} (f : A.El → B.El) (X Y : Den C B) :
+    (X ≫ (graph f : Den A B)° ∩ Y ≫ (graph f : Den A B)°) = (X ∩ Y) ≫ (graph f : Den A B)° :=
+  funext fun _ => funext fun a => propext
+    ⟨fun ⟨⟨w, hx, ex⟩, ⟨w', hy, ey⟩⟩ =>
+      ⟨w, ⟨hx, ((show w' = f a from ey).trans (show w = f a from ex).symm) ▸ hy⟩, ex⟩,
+      fun ⟨_, ⟨hx, hy⟩, e⟩ => ⟨⟨_, hx, e⟩, ⟨_, hy, e⟩⟩⟩
+
 theorem prod_sound {A B C D : Obj} {R : Fn false A B} {S : Fn false C D} {TR : Den A B} {TS : Den C D}
     (hR : Sound R TR) (hS : Sound S TS) : Sound (prod A B C D R S) (rprodMap TR TS) := fun ⟨⟩ _ hb x y _ => by
   have hc := ok_and hb; rw [Bool.and_eq_true] at hc
