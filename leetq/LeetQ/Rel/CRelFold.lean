@@ -15,6 +15,10 @@ import LeetQ.Run.CRelListDef
 import LeetQ.Rel.RepSubseq
 import LeetQ.Rel.RepThin
 import LeetQ.Run.CRelFoldDef
+import LeetQ.Rel.CRelOps
+import LeetQ.Rel.RepReduce
+import LeetQ.Rel.KernelWF.JoinSpec
+import LeetQ.Rel.KernelWF.PickRow
 
 namespace LeetQ.Rel
 
@@ -215,53 +219,116 @@ theorem Arr.rep_sumC {n : USize} (X : Vals (.arr .long) n)
       obtain ⟨_, i, -, h⟩ := hp
       exact and_iff_right ⟨i, h⟩) xs w).trans (and_congr Iff.rfl (sum_chain xs w))
 
-/-- **`length` under `lengthC`'s bit**: `needSize`'s count fits (else the bit is `false`); `succC`'s bit reads `sc`
-    back (`rep_succC`), the decided `2^63` keeps `m + 1` off the null; `rep_foldOnC` at `outr D ≫ sc`, each round's
-    `compC` bit in its step's, `D k` coreflexive, then `length_chain`. -/
-theorem rep_lengthC {E : Obj} {n : USize} (X : Vals (.arr E) n)
-    (hb : (lengthC X).2 = true) :
-    ∀ (xs : List E.El) (w : Int64), rep (lengthC X).1 xs w ↔ (∃ i, X.row i = xs) ∧ w = Int64.ofNat xs.length := by
-  intro xs w
-  by_cases hX : X.1.toNat + 1 < USize.size
-  case neg => simp only [lengthC, needSize, need, dif_neg hX] at hb; exact absurd hb Bool.false_ne_true
-  simp only [lengthC, needSize, need, dif_pos hX, Bool.and_eq_true, decide_eq_true_eq] at hb ⊢
-  obtain ⟨⟨hsb, hfb⟩, h63X⟩ := hb
-  have hcN : ((X.1.toNat + 1).toUSize).toNat = X.1.toNat + 1 := USize.toNat_ofNat_of_lt' hX
-  have hsc' : ∀ m w, m < X.1.toNat →
-      (rep (succC (tilCol (X.1.toNat + 1).toUSize)).1 (Int64.ofNat m) w ↔ w = Int64.ofNat (m + 1)) := by
-    intro m w hm
-    rw [rep_succC _ hsb, intStep_ofNat_succ m (by omega)]
-    simp only [Vals.row_atom, tilCol_get]
-    constructor
-    · rintro ⟨-, h, -⟩; exact h
-    · rintro rfl; exact ⟨⟨⟨m, by omega⟩, rfl⟩, rfl, ⟨m + 1, by omega⟩, rfl⟩
-  have hL : (∃ i, X.row i = xs) → xs.length ≤ X.1.toNat := by
-    rintro ⟨⟨i, hi⟩, rfl⟩
-    obtain ⟨h1, h2, -⟩ := slicesOf_row X (by omega) hi
-    omega
-  refine (rep_foldOnC (E := E) (V := .long) (m := ([0] : List Int64).length.toUSize) (col [0]) (fun D => compC (outr D) (succC (tilCol (X.1.toNat + 1).toUSize)).1) X hfb _ rfl _ rfl _ (fun _ _ => rfl) _ (fun _ => rfl) _ (fun _ => rfl) _
-    (fun _ => rfl) (fun _ (p : E.El × Int64) w => rep (succC (tilCol (X.1.toNat + 1).toUSize)).1 p.2 w)
-    (fun _ _ _ hbk p w hp hcor => ?_) xs w).trans
-    (and_congr_right fun hx => length_chain _ X.1.toNat hsc' xs (hL hx) w)
-  show rep (compC (outr _) _).1 p w ↔ _
-  rw [rep_compC, rep_outr]
-  rotate_left; · simp only [demandStepC, Bool.and_eq_true] at hbk; exact hbk.1.2
-  obtain ⟨a, ha⟩ := hp
-  constructor
-  · rintro ⟨y, ⟨z, hz, rfl⟩, hy⟩
-    obtain rfl := hcor _ _ hz
-    exact hy
-  · intro hy
-    obtain rfl := hcor _ _ ha
-    exact ⟨a.2, ⟨a, ha, rfl⟩, hy⟩
+open CompN in
+/-- **`rep (R \ S)` under `diffC`'s bit**: `rep_diff` at the joint pair codes' bit (as `rep_interC`) and the
+    `fitsN` bits. -/
+theorem rep_diffC {A B : Obj} (R S : Rel A B) (hb : (diffC R S).2 = true) (a : A.El) (b : B.El) :
+    rep (diffC R S).1 a b ↔ rep R a b ∧ ¬ rep S a b := by
+  simp only [diffC, Bool.and_eq_true] at hb
+  obtain ⟨⟨hcb, hk⟩, hv⟩ := hb
+  have hc := (codes_faithful_wf (.prod A B) _ (Obj.codesC_fits (.prod A B) _ hcb)).1
+  have e : ∀ {α β : Type} (f : α → β) (a b : α), #v[a, b].map f = #v[f a, f b] := fun _ _ _ => by simp
+  have hp : pairsOK(R, S) := by rw [pairs_eq_codes, e]; exact hc
+  exact rep_diff R S hp (pickFits_of_fitsN A R.key _ hk _ (by simp)) (pickFits_of_fitsN B R.val _ hv _ (by simp)) a b
 
-/-- **`map` under `mapC`'s bit**: `rep_foldByC` at the step `consC (pairC (compC el R) pend)`, each round's three
-    bits read it back (`rep_consC`, `rep_pairC`, `rep_compC`), then `map_chain`. -/
-theorem rep_mapC {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n)
-    (hb : (mapC R X).2 = true) :
-    ∀ (xs : List A.El) ys, rep (mapC R X).1 xs ys ↔ (∃ i, X.row i = xs) ∧ ys.length = xs.length ∧
+/-- `filterMap` of a guarded `some` is `map` after `filter`: how `Vals.row` reads an array's cells. -/
+theorem filterMap_ite {α β : Type _} (p : α → Prop) [DecidablePred p] (g : α → β) :
+    ∀ l : List α, l.filterMap (fun j => if p j then some (g j) else none) = (l.filter fun j => decide (p j)).map g
+  | [] => rfl
+  | a :: l => by by_cases h : p a <;> simp [List.filterMap_cons, List.filter_cons, h, filterMap_ite p g l]
+
+/-- An array side whose payload `y` stands in for `X`'s, `lo`, `hi` kept: each row reads the same payload positions
+    `js`, in `X`'s payload and in `y`. -/
+theorem row_repay {A B : Obj} {n : USize} (X : Vals (.arr A) n) (y : Vals B X.1) (i : Fin n.toNat) :
+    ∃ js : List (Fin X.1.toNat), X.row i = js.map X.2.2.2.row ∧
+      Vals.row (A := .arr B) (⟨X.1, X.2.1, X.2.2.1, y⟩ : Vals (.arr B) n) i = js.map y.row := by
+  obtain ⟨m, lo, hi, f⟩ := X
+  exact ⟨_, filterMap_ite (fun j : Fin m.toNat => (lo.get i).toInt ≤ (j.1 : Int) ∧ (j.1 : Int) < (hi.get i).toInt) _ _,
+    filterMap_ite (fun j : Fin m.toNat => (lo.get i).toInt ≤ (j.1 : Int) ∧ (j.1 : Int) < (hi.get i).toInt) _ _⟩
+
+/-- A code of `n` ids at the lane `w`, packed in `(n w + 7) / 8` bytes, has the sizes `find_spec` asks. -/
+theorem lane_sizes {w n s : Nat} (hl : laneOK(w)) (hs : s = (n * w + 7) / 8) :
+    w * n ≤ 8 * s ∧ (8 ≤ w → 8 * s = w * n) := by
+  subst hs; rcases hl with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> omega
+
+/-- **A cell whose `find` lands on a key picks an `R`-image of itself**: `find` on the joint codes lands on the first
+    key whose code is the cell's (`find_spec`), equal codes are equal values (`codes_faithful_wf`), and the pick of
+    `R.val` there (`pick_row`) is that key's value. -/
+theorem find_pick_found {A B : Obj} (R : Rel A B) {m : USize} (P : Vals A m)
+    (hc : (A.codesC #v[⟨_, R.key⟩, ⟨_, P⟩]).2 = true)
+    (hf : m.toNat ≤ len ((A.codesC #v[⟨_, R.key⟩, ⟨_, P⟩]).1[0].find (A.codesC #v[⟨_, R.key⟩, ⟨_, P⟩]).1[1]))
+    (hy : (Vals.pickC B R.val (fit m.toNat ((A.codesC #v[⟨_, R.key⟩, ⟨_, P⟩]).1[0].find
+      (A.codesC #v[⟨_, R.key⟩, ⟨_, P⟩]).1[1])) m (fit_len hf)).2 = true)
+    (j : Fin m.toNat)
+    (hfd : (Column.bitsAt (fit m.toNat ((A.codesC #v[⟨_, R.key⟩, ⟨_, P⟩]).1[0].find
+      (A.codesC #v[⟨_, R.key⟩, ⟨_, P⟩]).1[1])) (j.1 * 8) 8).toNat < R.n.toNat) :
+    rep R (P.row j) ((Vals.pickC B R.val (fit m.toNat ((A.codesC #v[⟨_, R.key⟩, ⟨_, P⟩]).1[0].find
+      (A.codesC #v[⟨_, R.key⟩, ⟨_, P⟩]).1[1])) m (fit_len hf)).1.row j) := by
+  obtain ⟨⟨hfa, hwf⟩, -⟩ := codes_faithful_wf A _ (Obj.codesC_fits A _ hc)
+  rw [← Obj.codesC_fst A] at hfa hwf
+  obtain ⟨hl0, hn0, hs0, -⟩ := hwf (k := 0) (by decide)
+  obtain ⟨hl1, hn1, hs1, -⟩ := hwf (k := 1) (by decide)
+  obtain ⟨hlen, hget⟩ := find_spec _ _ hl0 hl1 (lane_sizes hl0 hs0).1 (lane_sizes hl1 hs1).1 (lane_sizes hl0 hs0).2
+    (lane_sizes hl1 hs1).2
+  unfold List.idxOf at hget
+  have hm : ((A.codesC #v[⟨_, R.key⟩, ⟨_, P⟩]).1[1]).n.toNat = m.toNat := by rw [hn1]; rfl
+  have hR : ((A.codesC #v[⟨_, R.key⟩, ⟨_, P⟩]).1[0]).n.toNat = R.n.toNat := by rw [hn0]; rfl
+  rw [pickC_fst, pick_row B R.val _ m _ (Vals.pickC_fits B R.val _ m _ hy) j]
+  unfold fit at hfd ⊢; rw [if_pos (hlen.trans hm)] at hfd ⊢
+  have hb := hget j.1 (by rw [hm]; exact j.2)
+  have hltR := hb ▸ hfd
+  -- not `rw [hR]`: it rewrites the `List.range` inside `findIdx`, and the defeq check then evaluates `codesC`
+  have hgetL := beq_iff_eq.1 (List.findIdx_getElem (w := Nat.lt_of_lt_of_eq hltR
+    (by rw [List.length_map, List.length_range]; exact hR.symm)))
+  simp only [List.getElem_map, List.getElem_range] at hgetL
+  have hk' := hfa (k := 0) (l := 1) (by decide) (by decide) (j := j.1) hltR j.2
+  rw [dif_pos hfd]
+  exact ⟨⟨_, hfd⟩, (congrArg R.key.row (Fin.ext hb)).trans (hk'.1 hgetL), rfl⟩
+
+/-- **`F(R)` for a simple `R` under `mapSimpleC`'s bit**: row `i` of `⟨X, Y⟩` reads one list of payload positions in
+    `X` and in `Y` (`row_repay`), and every cell, its `find` landing on a key by the bit, reads in `Y` an `R`-image
+    (`find_pick_found`), the only one as `R` is simple. -/
+theorem rep_mapSimpleC {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n)
+    (hs : ∀ a b b', rep R a b → rep R a b' → b = b') (hb : (mapSimpleC R X).2 = true) :
+    ∀ (xs : List A.El) ys, rep (mapSimpleC R X).1 xs ys ↔ (∃ i, X.row i = xs) ∧ ys.length = xs.length ∧
       ∀ t (ht : t < xs.length) (ht' : t < ys.length), rep R (xs[t]'ht) (ys[t]'ht') := by
-  intro xs ys; unfold mapC at hb ⊢
+  intro xs ys
+  unfold mapSimpleC at hb ⊢
+  by_cases hf : X.1.toNat ≤ len ((A.codesC #v[⟨_, R.key⟩, ⟨_, X.2.2.2⟩]).1[0].find
+    (A.codesC #v[⟨_, R.key⟩, ⟨_, X.2.2.2⟩]).1[1])
+  case neg => simp only [need, dif_neg hf] at hb; exact absurd hb Bool.false_ne_true
+  simp only [need, dif_pos hf, Bool.and_eq_true, List.all_eq_true, decide_eq_true_eq] at hb ⊢
+  obtain ⟨⟨hc, hy⟩, hit⟩ := hb
+  -- every cell's `find` landed on a key, so every cell picks an `R`-image
+  have hcell := fun j => find_pick_found R X.2.2.2 hc hf hy j (hit j (List.mem_finRange j))
+  constructor
+  · rintro ⟨i, hi1, hi2⟩
+    obtain ⟨js, hX, hY⟩ := row_repay X _ i
+    have hX' : xs = js.map X.2.2.2.row := hi1.symm.trans hX
+    have hY' : ys = js.map _ := hi2.symm.trans hY
+    subst hX' hY'
+    refine ⟨⟨i, hX⟩, by simp, fun t ht ht' => ?_⟩
+    simp only [List.getElem_map]
+    exact hcell _
+  · rintro ⟨⟨i, rfl⟩, hlen, hR⟩
+    obtain ⟨js, hX, hY⟩ := row_repay X _ i
+    refine ⟨i, rfl, hY.trans ?_⟩
+    have hl : js.length = ys.length := by rw [hlen, hX, List.length_map]
+    refine List.ext_getElem (by rw [List.length_map, hl]) fun t h1 h2 => ?_
+    have ht : t < (X.row i).length := by rw [hX, List.length_map]; rwa [List.length_map] at h1
+    have hxt : (X.row i)[t] = X.2.2.2.row (js[t]'(by rwa [List.length_map] at h1)) := by
+      simp only [hX, List.getElem_map]
+    rw [List.getElem_map]
+    refine hs _ _ _ (hxt ▸ hcell _) (hR t ht h2) |>.symm ▸ ?_
+    rfl
+
+/-- **`F(R)` as the fold under `mapFoldC`'s bit**: `rep_foldByC` at the step `consC (pairC (compC el R) pend)`, each
+    round's three bits read it back (`rep_consC`, `rep_pairC`, `rep_compC`), then `map_chain`. -/
+theorem rep_mapFoldC {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n)
+    (hb : (mapFoldC R X).2 = true) :
+    ∀ (xs : List A.El) ys, rep (mapFoldC R X).1 xs ys ↔ (∃ i, X.row i = xs) ∧ ys.length = xs.length ∧
+      ∀ t (ht : t < xs.length) (ht' : t < ys.length), rep R (xs[t]'ht) (ys[t]'ht') := by
+  intro xs ys; unfold mapFoldC at hb ⊢
   refine (rep_foldByC (nilVal B) X _ hb _ rfl _ rfl _ (fun _ _ => rfl)
     (fun _ eu v => ∃ b, rep R eu.1 b ∧ v = b :: eu.2) _ (fun _ => rfl) _ (fun _ => rfl) False
     (fun i _ _ hbi r v => ?_) xs ys).trans ?_
@@ -276,6 +343,21 @@ theorem rep_mapC {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n)
   -- `nilVal B`'s one row is `[]`
   exact and_congr Iff.rfl ((exists_congr fun zs => exists_congr fun _ => and_congr
     ⟨fun ⟨_, h⟩ => h.symm, fun h => ⟨⟨0, by simp⟩, h.symm⟩⟩ Iff.rfl).trans (map_chain (rep R) xs ys))
+
+/-- **`F(R)` under `mapC`'s bit**: a decided-simple `R` runs as `mapSimpleC` (`rep_mapSimpleC`, simplicity read back
+    by `rep_simpleC`), any other as the fold (`rep_mapFoldC`); both read back as `map_chain`'s right side. -/
+theorem rep_mapC {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n)
+    (hb : (mapC R X).2 = true) :
+    ∀ (xs : List A.El) ys, rep (mapC R X).1 xs ys ↔ (∃ i, X.row i = xs) ∧ ys.length = xs.length ∧
+      ∀ t (ht : t < xs.length) (ht' : t < ys.length), rep R (xs[t]'ht) (ys[t]'ht') := by
+  by_cases hs : ((simpleC R).1 && (simpleC R).2 && (mapSimpleC R X).2) = true
+  · have e : mapC R X = mapSimpleC R X := if_pos hs
+    rw [e] at hb ⊢
+    simp only [Bool.and_eq_true] at hs
+    exact rep_mapSimpleC R X ((rep_simpleC R hs.1.2).1 hs.1.1) hb
+  · have e : mapC R X = mapFoldC R X := if_neg hs
+    rw [e] at hb ⊢
+    exact rep_mapFoldC R X hb
 
 /-- **`perm` under `permC`'s bit**: `rep_foldByC` at `permC`'s step, each round's ten bits reading its pieces back
     (`rep_ranC`, `rep_uncatC`, `rep_compC`, `rep_pairC`, `rep_consC`, `rep_catC`) into `perm_step_set`, then
@@ -328,18 +410,6 @@ theorem rep_subseqC {B : Obj} {n : USize} (X : Vals (.arr B) n)
   -- `nilVal B`'s one row is `[]`
   exact and_congr Iff.rfl ((exists_congr fun zs => exists_congr fun _ => and_congr
     ⟨fun ⟨_, h⟩ => h.symm, fun h => ⟨⟨0, by simp⟩, h.symm⟩⟩ Iff.rfl).trans (subseq_chain xs ys))
-
-open CompN in
-/-- **`rep (R \ S)` under `diffC`'s bit**: `rep_diff` at the joint pair codes' bit (as `rep_interC`) and the
-    `fitsN` bits. -/
-theorem rep_diffC {A B : Obj} (R S : Rel A B) (hb : (diffC R S).2 = true) (a : A.El) (b : B.El) :
-    rep (diffC R S).1 a b ↔ rep R a b ∧ ¬ rep S a b := by
-  simp only [diffC, Bool.and_eq_true] at hb
-  obtain ⟨⟨hcb, hk⟩, hv⟩ := hb
-  have hc := (codes_faithful_wf (.prod A B) _ (Obj.codesC_fits (.prod A B) _ hcb)).1
-  have e : ∀ {α β : Type} (f : α → β) (a b : α), #v[a, b].map f = #v[f a, f b] := fun _ _ _ => by simp
-  have hp : pairsOK(R, S) := by rw [pairs_eq_codes, e]; exact hc
-  exact rep_diff R S hp (pickFits_of_fitsN A R.key _ hk _ (by simp)) (pickFits_of_fitsN B R.val _ hv _ (by simp)) a b
 
 /-- **`thinBodyC`'s body on a coreflexive `D`, read back under its bit**: `thin_body_set` with each piece read
     back by its twin's lemma, `swapInC`'s pieces by theirs. `hq` is the test's own spec: where `q`'s bit is set, `q` on any coreflexive keeps the
