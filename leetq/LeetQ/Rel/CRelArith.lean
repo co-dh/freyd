@@ -7,6 +7,7 @@ import LeetQ.Rel.CRel
 import LeetQ.Run.CRelDef
 import LeetQ.Rel.RepOrd
 import LeetQ.Run.CRelArithDef
+import LeetQ.Rel.KernelWF.AscSpec
 
 namespace LeetQ.Rel
 
@@ -107,19 +108,61 @@ theorem len_expand_slicesOf {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.
       ((List.range n.toNat).map fun r => (Column.bitsAt (slicesOf X).2 (r * 8) 8).toNat).sum :=
   len_expand_sum (len_slices _ _ _ _).2 fun t ht => by have := (slicesOf_row X hp ht).1; omega
 
-/-- **`rep (bagify X)` under `bagifyC`'s bit**: the decided bounds are `rep_bagify`'s `hp`, `hn`; inside `expand`
-    the copies' count decided its `hS`, `expand`'s guard its `hU`, both through `len_expand_slicesOf`. -/
-theorem rep_bagifyC {n : USize} (X : Vals (.arr (.atom .long)) n) (hb : (bagifyC X).2 = true) :
-    ∀ xs ys, rep (bagifyC X).1 xs ys ↔ (∃ j, X.row j = xs) ∧ ys.Perm xs ∧ ys.Pairwise (· ≤ ·) := by
+/-- **`rep (bagify X)` under `bagifyC`'s bit**, `S`-ordered as `rep_bagify` reads it: the decided bounds are
+    `rep_bagify`'s `hp`, `hn`, `hfX`; inside `expand` the copies' count decided its `hS`, `expand`'s guard its `hU`,
+    both through `len_expand_slicesOf`, and the payload's fit its `hf`. -/
+theorem rep_bagifyC_by {n : USize} (X : Vals (.arr B) n) (hb : (bagifyC X).2 = true)
+    (R : ∀ {m : USize}, Vals B m → Nat → Nat → Prop) (S : B.El → B.El → Prop)
+    (hsort : ∀ {m : USize} (c : Vals B m), Vals.PickFits B c (List.range m.toNat) →
+      (ids (Obj.sortBy B c (tilLongs m))).Perm (List.range m.toNat) ∧ (ids (Obj.sortBy B c (tilLongs m))).Pairwise (R c))
+    (hRS : ∀ {m : USize} (c : Vals B m) a b (ha : a < m.toNat) (hb : b < m.toNat), R c a b →
+      S (c.row ⟨a, ha⟩) (c.row ⟨b, hb⟩)) :
+    (∀ xs ys, rep (bagifyC X).1 xs ys → (∃ j, X.row j = xs) ∧ ys.Perm xs ∧ ys.Pairwise S) ∧
+      ∀ xs, (∃ j, X.row j = xs) → ∃ ys, rep (bagifyC X).1 xs ys := by
   simp only [bagifyC, expand, need, okbit] at hb
-  obtain ⟨⟨hp, hn⟩, hb⟩ := hb
+  obtain ⟨⟨⟨hp, hn⟩, hfX⟩, hb⟩ := hb
   split at hb
   · rename_i hx
-    simp only [okbit] at hb
-    rw [USize.toNat_ofNat_of_lt' hx, len_expand_slicesOf X hp] at hb
+    simp only [okbit, Bool.and_eq_true, decide_eq_true_eq] at hb
+    obtain ⟨hm, hf⟩ := hb
+    rw [USize.toNat_ofNat_of_lt' hx, len_expand_slicesOf X hp] at hm
     rw [len_expand_slicesOf X hp] at hx
-    exact rep_bagify X hp hn hb hx
+    exact rep_bagify X hp hn hm hx hfX hf R S hsort hRS
   · exact absurd hb Bool.false_ne_true
+
+/-- **`rep (bagify X)` at `long`**: an array of `X` goes to `ys` exactly when `ys` is a permutation of it,
+    ascending — the one sorted member of its `perm` class (`rep_bagifyC_by` at `sortBy_long`, unique by
+    `≤`'s antisymmetry). -/
+theorem rep_bagifyC {n : USize} (X : Vals (.arr (.atom .long)) n) (hb : (bagifyC X).2 = true) :
+    ∀ xs ys, rep (bagifyC X).1 xs ys ↔ (∃ j, X.row j = xs) ∧ ys.Perm xs ∧ ys.Pairwise (· ≤ ·) := by
+  obtain ⟨hf, hd⟩ := rep_bagifyC_by X hb
+    (fun c i j => ∀ (hc : i < _) (hc' : j < _), c.get ⟨i, hc⟩ < c.get ⟨j, hc'⟩ ∨
+      (c.get ⟨i, hc⟩ = c.get ⟨j, hc'⟩ ∧ i < j)) (· ≤ ·) (fun c _ => sortBy_long c)
+    (fun c a b ha hb h => by
+      rw [Vals.row_atom, Vals.row_atom]; show _ ≤ _; rw [Int64.le_iff_lt_or_eq]
+      rcases h ha hb with h | ⟨h, -⟩
+      · exact .inl h
+      · exact .inr h)
+  refine fun xs ys => ⟨hf xs ys, fun ⟨hx, hpe, hs⟩ => ?_⟩
+  obtain ⟨ys', h'⟩ := hd xs hx
+  obtain ⟨-, hpe', hs'⟩ := hf xs ys' h'
+  rwa [List.Perm.eq_of_pairwise (fun a b _ _ h1 h2 => Int64.le_antisymm h1 h2) hs hs' (hpe.trans hpe'.symm)]
+
+/-- **`rep (asc X)`**, `asc` being `bagifyC`, `B` ordered: an array of `X` goes to a permutation of it ascending
+    by `Obj.lt` (`sortsAsc_all`, `sortBy_asc`), and every array of `X` goes somewhere. -/
+theorem rep_ascC {n : USize} (X : Vals (.arr B) n) (hB : B.Ordered) (hb : (bagifyC X).2 = true) :
+    (∀ xs ys, rep (bagifyC X).1 xs ys → (∃ j, X.row j = xs) ∧ ys.Perm xs ∧ ys.Pairwise fun x y => ¬ B.lt y x) ∧
+      ∀ xs, (∃ j, X.row j = xs) → ∃ ys, rep (bagifyC X).1 xs ys :=
+  rep_bagifyC_by X hb (fun c i j => ∀ (hi : i < _) (hj : j < _), ¬ B.lt (c.row ⟨j, hj⟩) (c.row ⟨i, hi⟩))
+    (fun x y => ¬ B.lt y x) (fun {m} c hc => by
+      have hs := small_of_pickFits B c _ hc
+      have hl : len (tilLongs m) < USize.size := by rw [len_tilLongs]; exact m.toNat_lt_size
+      have hp : ∀ i ∈ ids (tilLongs m), i < m.toNat := fun i h => by rw [ids_tilLongs] at h; exact List.mem_range.1 h
+      refine ⟨?_, sortBy_asc (sortsAsc_all B hB) c hs _ hl hp⟩
+      rw [← ids_tilLongs]
+      exact (sortsAsc_all B hB c hs _ hl hp (fun _ _ => True)
+        (List.pairwise_iff_getElem.2 fun _ _ _ _ _ => trivial)).1)
+    (fun _ _ _ _ _ h => h _ _)
 
 #print axioms rep_juncC
 #print axioms rep_ltC
@@ -170,6 +213,13 @@ theorem rep_succ {n : USize} (U : Vals (.atom .long) n) (hb : (succ U).ok = true
 theorem rep_bagify {n : USize} (X : Vals (.arr (.atom .long)) n) (hb : (bagify X).ok = true) :
     ∀ xs ys, rep (bagify X).rel xs ys ↔ (∃ j, X.row j = xs) ∧ ys.Perm xs ∧ ys.Pairwise (· ≤ ·) :=
   rep_bagifyC X hb
+
+theorem rep_asc {n : USize} (X : Vals (.arr B) n) (hB : B.Ordered) (hb : (bagify X).ok = true) :
+    (∀ xs ys, rep (bagify X).rel xs ys → (∃ j, X.row j = xs) ∧ ys.Perm xs ∧ ys.Pairwise fun x y => ¬ B.lt y x) ∧
+      ∀ xs, (∃ j, X.row j = xs) → ∃ ys, rep (bagify X).rel xs ys :=
+  rep_ascC X hB hb
+
+#print axioms rep_asc
 
 end CRel
 

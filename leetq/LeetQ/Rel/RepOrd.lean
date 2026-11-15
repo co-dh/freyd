@@ -354,44 +354,38 @@ theorem bag_row {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 2 
     rw [dif_pos ham, dif_pos hbm]
     exact hRS cells a b ham hbm h
 
-/-- **`rep (bagify X)` at `long`**: an array of `X` goes to `ys` exactly when `ys` is a permutation of it,
-    ascending — the one sorted member of its `perm` class. Hypotheses: the payload count, the row count and the
-    summed counts below `2^63` (`xi`'s rows are graded as longs), the summed counts a `USize` (`expand`'s copies).
-    `Vals.compact`'s fit at `X` follows from the counts (`pickFits_arr_count`). -/
-theorem rep_bagify {n : USize} (X : Vals (.arr (.atom .long)) n) (hp : X.1.toNat < 2 ^ 63)
-    (hn : n.toNat < 2 ^ 63) (hS : pc(n.toNat) < 2 ^ 63) (hU : pc(n.toNat) < USize.size) :
-    ∀ xs ys, rep (bagify X) xs ys ↔ (∃ j, X.row j = xs) ∧ ys.Perm xs ∧ ys.Pairwise (· ≤ ·) := by
-  -- the payload is atoms inside `[0, X.1)`, so the windows' fit is outright
-  have hKf : Vals.PickFits (.arr (.atom .long)) X
-      ((List.range n.toNat).map fun q => (Column.bitsAt (tilLongs n) (q * 8) 8).toNat) := by
-    rw [(List.map_congr_left fun q hq => tilLongs_get (List.mem_range.1 hq)).trans (List.map_id _)]
-    refine pickFits_arr_count X hp hS hU (pickFits_atom _ fun k hk => ?_)
-    obtain ⟨r, hr, hk⟩ := List.mem_flatMap.1 hk
-    rw [dif_pos (List.mem_range.1 hr), List.mem_range'_1] at hk
-    have := Nat.min_le_right (max (Int64.toInt (Arr.get X.2.2.1 ⟨r, List.mem_range.1 hr⟩)) 0).toNat X.1.toNat
-    omega
+/-- **`rep (bagify X)`**: an array of `X` goes to a permutation of it, `S`-ordered under `bag_row`'s `hsort`,
+    `hRS`, and every array of `X` goes somewhere. Hypotheses: the payload count, the row count and the summed
+    counts below `2^63` (`xi`'s rows are graded as longs), the summed counts a `USize` (`expand`'s copies), the
+    fits `bagifyC` decides: `X` at its rows, its payload at the copies. -/
+theorem rep_bagify {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 2 ^ 63)
+    (hn : n.toNat < 2 ^ 63) (hS : pc(n.toNat) < 2 ^ 63) (hU : pc(n.toNat) < USize.size)
+    (hfX : Vals.fitsN (.arr B) X n.toNat = true)
+    (hf : Vals.fitsN B X.2.2.2 (len (expandBytes 8 0 (tilLongs n) (slicesOf X).2)).toUSize.toNat = true)
+    (R : ∀ {m : USize}, Vals B m → Nat → Nat → Prop) (S : B.El → B.El → Prop)
+    (hsort : ∀ {m : USize} (c : Vals B m), Vals.PickFits B c (List.range m.toNat) →
+      (ids (Obj.sortBy B c (tilLongs m))).Perm (List.range m.toNat) ∧ (ids (Obj.sortBy B c (tilLongs m))).Pairwise (R c))
+    (hRS : ∀ {m : USize} (c : Vals B m) a b (ha : a < m.toNat) (hb : b < m.toNat), R c a b →
+      S (c.row ⟨a, ha⟩) (c.row ⟨b, hb⟩)) :
+    (∀ xs ys, rep (bagify X) xs ys → (∃ j, X.row j = xs) ∧ ys.Perm xs ∧ ys.Pairwise S) ∧
+      ∀ xs, (∃ j, X.row j = xs) → ∃ ys, rep (bagify X) xs ys := by
+  have hKf : Vals.PickFits (.arr B) X
+      ((List.range n.toNat).map fun q => (Column.bitsAt (tilLongs n) (q * 8) 8).toNat) :=
+    pickFits_of_fitsN _ X n.toNat hfX _ (by simp)
   have hkey : ∀ q : Fin n.toNat, (Vals.compact _ X).row q = X.row q := fun q => by
     rw [show Vals.compact _ X = Vals.pick _ X (tilLongs _) _ (len_tilLongs _) from rfl,
       pick_row _ X (tilLongs n) n (len_tilLongs _) hKf,
       dif_pos (show (Column.bitsAt (tilLongs n) (q.1 * 8) 8).toNat < n.toNat by rw [tilLongs_get q.2]; exact q.2)]
     exact congrArg (Vals.row X) (Fin.ext (tilLongs_get q.2))
-  obtain ⟨hxU, hlp, hrow⟩ := bag_row X hp hn hS hU _ rfl _ rfl _ rfl _ rfl _ rfl
-  intro xs ys
+  obtain ⟨hxU, hlp, hrow⟩ := bag_row X hp hn hS hU _ rfl _ rfl hf R S hsort hRS _ rfl _ rfl _ rfl
   unfold bagify bagifyC expand need
   dsimp only
   rw [dif_pos hxU]
   try dsimp only
   rw [longCount_eq _ _ _ (by rw [hlp]; exact USize.toNat_lt_size _)]
-  show (∃ q, _ ∧ _) ↔ _
-  constructor
-  · rintro ⟨⟨r, hr⟩, hk, hv⟩
-    exact ⟨⟨⟨r, hr⟩, (hkey _).symm.trans hk⟩, hk ▸ (hkey _).symm ▸ hrow _ _ _ r hr ys hv.symm⟩
-  · rintro ⟨⟨⟨j, hj⟩, hx⟩, hpe, hs⟩
-    refine ⟨⟨j, hj⟩, (hkey _).trans hx, ?_⟩
-    obtain ⟨hpe', hs'⟩ := hrow _ _ (sums_le (len_slices ..).2) j hj _ rfl
-    rw [hx] at hpe'
-    exact (List.Perm.eq_of_pairwise (fun a b _ _ h1 h2 => Int64.le_antisymm h1 h2) hs' hs
-      (hpe'.trans hpe.symm))
+  refine ⟨fun xs ys h => ?_, fun xs ⟨⟨j, hj⟩, hx⟩ => ⟨_, ⟨j, hj⟩, (hkey _).trans hx, rfl⟩⟩
+  obtain ⟨⟨r, hr⟩, hk, hv⟩ := h
+  exact ⟨⟨⟨r, hr⟩, (hkey _).symm.trans hk⟩, hk ▸ (hkey _).symm ▸ hrow _ _ _ r hr ys hv.symm⟩
 
 #print axioms bag_row
 #print axioms rep_bagify
