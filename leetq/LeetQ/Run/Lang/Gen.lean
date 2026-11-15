@@ -231,10 +231,12 @@ def nuAC (V D : Obj) (S : Fn false V D) (a : Arc V D) (as : List (Arc V D)) : Fn
   let r := acFixC s.rel rv (a.2.2.1 ()).rel
   ⟨r.1.1, s.ok && ok && r.2⟩
 
-/-- `μX : φ`: rounds of `φ` from `𝟘` up to the least fixed point, at most `|UA|·|UB|+1`. -/
-def mu (A B : Obj) (UA : Fn false A A) (UB : Fn false B B) (φ : CRel A B → Fn false A B) : Fn false A B := fun _ =>
-  let u := UA (); let v := UB ()
-  also (u.ok && v.ok) (CRel.fixOn (u.rel.n.toNat * v.rel.n.toNat + 1) (fun X => φ X ()) ⟨Alg.zero, true⟩).1
+/-- `μX : φ`: rounds of `φ` from `𝟘` up to the least fixed point, at most `cap`. Fewer than `cap` rounds run means a
+    round left the row count, so the chain reached its fixed point; `cap` rounds run is not ok, never a truncated
+    chain passed off as the answer. -/
+def mu (A B : Obj) (cap : Nat) (φ : CRel A B → Fn false A B) : Fn false A B := fun _ =>
+  let r := CRel.fixOn cap (fun X => φ X ()) ⟨Alg.zero, true⟩
+  also (decide (r.2 < cap)) r.1
 
 /-! ### Plans: the bit-rule nodes kept, every other sub-term its table -/
 

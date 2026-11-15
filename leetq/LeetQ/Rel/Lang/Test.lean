@@ -922,15 +922,33 @@ rel_program square after Programs.prelude where
     z : V ⟶ D ≜ νZ : s ∩ (A\(Z sq)) ∩ (A°\(Z sq°))
     check z = {(x,0),(x,1),(x,2),(x,3),(y,0),(y,1),(y,4),(y,9)}
 #guard square.ok
--- `X` under an operator not monotonic in its argument, or in an antitone place; `ν` with no bound; `μ` on an array
+-- `μ` on an array target, its values duplicate-free lists: the unions of the singletons `s`, which stop growing
+-- once every set of three is reached; against the two levels of union written out
+rel_program muArr after Programs.prelude where
+    obj B = 0…2
+    s : B ⟶ [B] ≜ Λ({(0,0)}) ∪ Λ({(0,1)}) ∪ Λ({(0,2)})
+    f : B ⟶ [B] ≜ μX : s ∪ (⟨X, X⟩ cat setify)
+    d : B ⟶ [B] ≜ ⟨s, s⟩ cat setify
+    e : B ⟶ [B] ≜ ⟨d, s⟩ cat setify
+    check f = s ∪ d ∪ e
+    print f
+#guard muArr.ok
+#guard muArr.prints == ["f = {(0, [0]), (0, 0 1), (0, 0 1 2), (0, 0 2), (0, [1]), (0, 1 2), (0, [2])}"]
+-- a `μ` whose arrays grow every round: no fixed point, so its rounds reach `muCap` and the program reports it
+rel_program muGrow after Programs.prelude where
+    obj B = 0…1
+    r : B ⟶ [B] ≜ {(0,[1])}
+    g : B ⟶ [B] ≜ μX : r ∪ (⟨X, r⟩ cat)
+#guard !muGrow.ok
+#guard muGrow.failures.map (·.msg) == ["an op ran out of capacity (its twin's ok bit is false); in g, or the μ at " ++
+  "line 941, col 19 ran its cap of 1024 rounds without reaching a fixed point"]
+-- `X` under an operator not monotonic in its argument, or in an antitone place; `ν` with no bound
 #eval errAt "obj B = 0…1\nf : B ⟶ B ≜ νX : ⊤(B,B) ∩ (Λ(X)∋)\n" 2
   "νX: X occurs under Λ at 2:30; Λ is not monotonic in its argument, so the fixed point need not exist"
 #eval errAt "obj B = 0…1\nr : B ⟶ B ≜ {(0,1)}\nf : B ⟶ B ≜ μX : r ∪ X\\r\n" 3
   "μX: X occurs in the left operand of \\ at 3:22 (antitone); X must occur only in monotonic positions"
 #eval errAt "obj B = 0…1\nr : B ⟶ B ≜ {(0,1)}\nf : B ⟶ B ≜ νX : r X\n" 3
   "νX needs a bound: write S ∩ φ with S not mentioning X (⊤(A,B) for the whole object)"
-#eval errAt "obj B = 0…1\nr : B ⟶ [B] ≜ {(0,[1])}\nf : B ⟶ [B] ≜ μX : r ∪ X\n" 3
-  "μX: [B] has no universe; an array object can grow every round"
 #eval errAt "obj X = {A,B,C}\nobj St = 𝒫(X×X)\nL(S : X ⟶ X) : X ⟶ X ≜ νZ : S ∩ Z\nf : St ⟶ X×X ≜ L(∋)\n" 3
   "νZ given a family is not liftable"
 #eval errAt "obj B = 0…1\nνx : B ⟶ B ≜ 𝟙(B)\n" 2 "the name 'νx' reads as a fixed point"

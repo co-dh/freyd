@@ -103,8 +103,9 @@ inductive Tm : Obj → Obj → Bool → Type where
   /-- `νX : φ`, `X` the variable `k`: rounds of `body` from `S`, the conjuncts of `φ` without `X`, down to the
       greatest fixed point. -/
   | nu {A B : Obj} (k : Nat) (S body : Tm A B false) : Tm A B false
-  /-- `μX : φ`: rounds of `body` from `𝟘` up to the least fixed point, at most `|UA|·|UB|+1`. -/
-  | mu {A B : Obj} (k : Nat) (UA : Tm A A false) (UB : Tm B B false) (body : Tm A B false) : Tm A B false
+  /-- `μX : φ`: rounds of `body` from `𝟘` up to the least fixed point, at most `cap`; `what` names the `μ` in the
+      failure a run that reaches `cap` first reports. -/
+  | mu {A B : Obj} (k : Nat) (what : String) (cap : Nat) (body : Tm A B false) : Tm A B false
 
 /-- A built term with its objects. -/
 abbrev Res := (A : Obj) × (B : Obj) × (d : Bool) × Tm A B d
@@ -155,6 +156,17 @@ def uniOf (objs : Objs) : OTy → Option ((A : Obj) × (m : USize) × Vals A m)
     let ⟨_, n, Ua⟩ ← uniOf objs a; let ⟨_, m, Ub⟩ ← uniOf objs b
     need (n.toNat + m.toNat < USize.size) (fun _ => s!"the universe of {a} + {b}: {n} + {m} do not fit a USize")
       (fun _ => none) fun hN => pure ⟨_, _, sumVals Ua Ub hN⟩
+  | _ => none
+
+/-- The rounds a `μ` runs at most when an object of it has no universe: Kleene rounds from `𝟘` stop at the least
+    fixed point whatever the object, but an array object may grow every round; a run that reaches the cap fails. -/
+def muCap : Nat := 1024
+
+/-- The element count of `uniOf objs o`, read off the declared universes without building the product's. -/
+def uniSize (objs : Objs) : OTy → Option Nat
+  | .base n => do let ⟨m, _⟩ ← (← objs.lookup n).uni; pure m.toNat
+  | .prod a b => do pure ((← uniSize objs a) * (← uniSize objs b))
+  | .sum a b => do pure ((← uniSize objs a) + (← uniSize objs b))
   | _ => none
 
 /-! ### The typed surface term -/
@@ -864,7 +876,7 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
     let a ← litTy env.objs p (ps.map (·.1)); let b ← litTy env.objs p (ps.map (·.2))
     pure (.rel (.lit p a b ps) a b)
   -- `X : a ⟶ b` in scope in the body, which has that type and is monotonic in `X`; `ν` from the conjuncts
-  -- without `X`, `μ` from `𝟘` on objects with a universe, which bound the rounds
+  -- without `X`, `μ` from `𝟘` on any object, its rounds capped at run time (`muCap`)
   | .fix p least x b => do
     let fx := s!"{if least then "μ" else "ν"}{x}"
     if m.isSome then notLiftable p fx
@@ -874,11 +886,7 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
     unify p s!"the source of {fx}'s body" s a; unify p s!"the target of {fx}'s body" t c
     if let some e := q.polarity k fx x true "" then throw e
     let S := q.bound k
-    if least then
-      for o in [a, c] do
-        let o := zonk (← get) o
-        if (uniOf env.objs o).isNone then throw ⟨p, s!"{fx}: {o} has no universe; an array object can grow every round"⟩
-    else if S.isNone then
+    if !least && S.isNone then
       throw ⟨p, s!"{fx} needs a bound: write S ∩ φ with S not mentioning {x} (⊤(A,B) for the whole object)"⟩
     pure (.rel (.fix p least k S q a c) a c)
 
@@ -1114,7 +1122,7 @@ def convTm {A B : Obj} {d : Bool} (t : Tm A B d) : Except String ((e : Bool) × 
   | .val R => pure ⟨false, .conv (.val R)⟩
   | .var k => pure ⟨false, .conv (.var k)⟩
   | .nu k S b => pure ⟨false, .conv (.nu k S b)⟩
-  | .mu k U V b => pure ⟨false, .conv (.mu k U V b)⟩
+  | .mu k w n b => pure ⟨false, .conv (.mu k w n b)⟩
   | .uni U => pure ⟨false, .uni U⟩
   | .zero => pure ⟨false, .zero⟩
   | .conv R => pure ⟨false, R⟩
@@ -1459,7 +1467,12 @@ def build : Pre → Except Err Res
     let why := s!"{if least then "μ" else "ν"}'s body is read whole each round"
     let body ← closed? dp (A := A) (B := B) (← closeRes objs st dp p a why (← build q))
     if least then
-      pure ⟨A, B, false, .mu k (← uniTm objs st dp p a A "μ") (← uniTm objs st dp p b B "μ") body⟩
+      -- a chain from `𝟘` on universes of `n` and `m` elements stops within `n·m+1` rounds, so their `cap` never
+      -- fails a monotonic body; an array object has no such bound, and `muCap` only guards termination
+      let cap := match uniSize objs (zonk st a), uniSize objs (zonk st b) with
+        | some n, some m => max muCap (n * m + 2)
+        | _, _ => muCap
+      pure ⟨A, B, false, .mu k s!"the μ at {p}" cap body⟩
     else match S with
       | some s => do
         let s ← closed? dp (A := A) (B := B) (← closeRes objs st dp p a why (← build s))
