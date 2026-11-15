@@ -377,7 +377,6 @@ open Freyd.Alg.RelSet
 set_option linter.unusedVariables false in
 example (Q : (⟨Int⟩ : RelSet.{0}) ⟶ ⟨Int⟩) : True := by
   guard_expr (rel(plus) : type_of% (ListRel.plus (A := Int))) =ₛ ListRel.plus (A := Int)
-  guard_expr (rel(div) : type_of% ListRel.div) =ₛ ListRel.div
   guard_expr (rel(sum) : type_of% (ListRel.sum (A := Int))) =ₛ ListRel.sum (A := Int)
   guard_expr (rel(≤) : type_of% ListRel.leq) =ₛ ListRel.leq
   guard_expr (rel(succ) : type_of% ListRel.succ) =ₛ ListRel.succ
@@ -392,9 +391,13 @@ example (Q : (⟨Int⟩ : RelSet.{0}) ⟶ ⟨Int⟩) : True := by
   guard_expr rel(merge(Q)) =ₛ ListRel.merge Q
   trivial
 
+/-- error: `div` has no AOP reading: Rel's div is Int division and ListRel.div is Nat division; the Int reading is added when a proof first needs it -/
+#guard_msgs in
+#check rel(div)
+
 end RelSet
 
-/-- error: line 400, col 7: one-argument fold is for rel(…) proofs: a program folds a list with `⦇e,S⦈` -/
+/-- error: line 403, col 7: one-argument fold is for rel(…) proofs: a program folds a list with `⦇e,S⦈` -/
 #guard_msgs (whitespace := lax) in
 rel_program oneFold where
   r ≜ ⦇𝟙⦈

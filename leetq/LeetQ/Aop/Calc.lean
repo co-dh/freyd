@@ -102,7 +102,9 @@ def builtins : List (Op × Except String (Option Name)) :=
    (.mem, .ok ``PowerAllegory.eps), (.lam, .ok ``Freyd.Alg.Λ), (.E, .ok ``existsImage), (.P, .ok ``powerRel),
    (.est, .ok ``est), (.thin, .ok ``thinRel), (.union, .ok ``Freyd.Alg.union), (.tau, .ok ``singletonMap),
    (.leq, .ok ``ListRel.leq), (.succ, .ok ``ListRel.succ), (.arith add, .ok ``ListRel.plus),
-   (.arith idiv, .ok ``ListRel.div), (.nil, .ok ``ListRel.nilAtUnit), (.cons, .ok ``ListRel.cons),
+   (.arith idiv, .error "Rel's div is Int division and ListRel.div is Nat division; \
+    the Int reading is added when a proof first needs it"),
+   (.nil, .ok ``ListRel.nilAtUnit), (.cons, .ok ``ListRel.cons),
    (.length, .ok ``ListRel.length), (.total, .ok ``ListRel.sum), (.inits, .ok ``ListRel.initsR),
    (.cat, .ok ``ListRel.cat), (.zip, .ok ``Pointfree.zip), (.setify, .ok ``ListRel.setify),
    (.thinL, .ok ``ListRel.thinL), (.merge, .ok ``ListRel.merge),
