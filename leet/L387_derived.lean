@@ -168,7 +168,7 @@ theorem derivedFirstUniqFn_eq (s : List Int) : derivedFirstUniqFn s = firstUniqF
   exact foldCL2_ofList s s 0
 
 /-- The two-pass program as a morphism `Str ⟶ Ans` in `Rel(Set)`. -/
-def derivedSolve : Str ⟶ Ans := graph derivedFirstUniqFn
+def derivedSolve : LC387.Str ⟶ Ans := graph derivedFirstUniqFn
 
 /-- `derivedSolve` IS `LC387.solve` — reshaping changes nothing observable, only how the answer is
     PRODUCED (two `O(n)`-expected cons-folds instead of one `O(n²)` re-scanning pass). -/
