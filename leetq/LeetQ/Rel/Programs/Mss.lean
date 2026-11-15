@@ -47,6 +47,21 @@ rel_program mss where
     check A greedy = A mss
     check A scan = A mss
 
+    /- B&dM Ex 7.40: the spec is the linear `scan`, one theorem per step of the note's derivation. The four laws are
+       owed to Lean: `rel_aop mss` (LeetQ/Aop/Mss.lean) proves them over the book's model (`Int`, cons lists, the
+       power object), so `linear` is a theorem about that model, not about the executable `mss.rel.*`; the evidence
+       between those two is the `check`s above. -/
+
+    theorem toShape : mss = shape                 -- note `mss-shape`
+    theorem toFused : shape = fused               -- note `mss-prefix-sum`
+    theorem toGreedy : fused = greedy             -- note `mss-mono`, `mss-step`, the greedy row
+    theorem toScan : greedy = scan                -- note `mss-scan`
+    theorem linear : mss = scan := calc
+      _ = shape := toShape
+      _ = fused := toFused
+      _ = greedy := toGreedy
+      _ = scan := toScan
+
     /- Inputs: [3,1,4,1,5], [2,0,7], [], [3,-4,2,-1,2], [-2,-1,-3] keyed by a, b, c, d, e. -/
 
     obj K = {a,b,c,d,e}
