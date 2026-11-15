@@ -163,48 +163,7 @@ theorem gather_spec (c : Code) (i : ByteArray) (hl : len i < USize.size)
 /-- A long payload's count is its `ids`' length. -/
 theorem len_eq_ids (b : ByteArray) : len b = (ids b).length := by simp [len, ids]
 
-/-- **`Code.groupIds` is faithful**: read at the width of its class count `len g.2`, two rows' class ids
-    agree exactly when their codes do — the grouping pass at each layout and `idGroups` at `2`/`4` bits.
-    Hypotheses: `c` is at a lane a `Code` takes and its payload holds its `n` codes (exactly, at a byte
-    lane); every code is below `card`, which fits a `USize` at `2`/`4` bits. -/
-theorem groupIds_code_faithful (c : Code)
-    (hcw : laneOK(c.w))
-    (hcs : c.w * c.n.toNat ≤ 8 * c.b.size) (hcb : 8 ≤ c.w → 8 * c.b.size = c.w * c.n.toNat)
-    (hcard : ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) (hcu : c.w < 8 → c.card < USize.size)
-    {i j : Nat} (hi : i < c.n.toNat) (hj : j < c.n.toNat) :
-    Column.idAt c.groupIds.1 (Column.idWidthOf (len c.groupIds.2)) i =
-        Column.idAt c.groupIds.1 (Column.idWidthOf (len c.groupIds.2)) j ↔
-      Column.idAt c.b c.w i = Column.idAt c.b c.w j := by
-  unfold Code.groupIds Code.kind
-  split
-  next _ k hk =>
-    rw [len_eq_ids, (Verify.groupIds_spec k c.n c.b).2]
-    rcases laneKind_some hk with ⟨rfl, h1⟩ | ⟨hkb, hw8, hq, hk'⟩
-    · have hm : c.n.toNat ≤ Scan.Kind.avail .bit c.b := by simp only [Scan.Kind.avail]; rw [h1, Nat.one_mul] at hcs; omega
-      rw [groupIds_faithful .bit c.n c.b (by omega) (by omega), h1, idAt_one, idAt_one]
-      simp only [Order.keyAt, Order.rank, Scan.Kind.bitsAt]
-      cases Column.bitAt c.b i <;> cases Column.bitAt c.b j <;> simp
-    · have hav : Scan.Kind.avail k c.b = c.b.size / k.width := by
-        cases k <;> first | exact absurd rfl hkb | rfl
-      have hd : c.b.size / k.width = c.n.toNat := by
-        have := hcb (by omega); rw [hw8, Nat.mul_assoc] at this
-        rw [show c.b.size = k.width * c.n.toNat by omega, Nat.mul_div_cancel_left _ (by omega)]
-      rw [groupIds_faithful k c.n c.b (by omega) (by omega), Verify.keyAt_eq_iff hk', hw8,
-        idAt_lane _ (by omega), idAt_lane _ (by omega)]
-      exact ⟨fun h => by rw [h], UInt64.toNat_inj.1⟩
-  next _ hk =>
-    have hw : c.w = 2 ∨ c.w = 4 := by
-      rcases hcw with h | h | h | h | h | h | h <;> simp [h, laneKind] at hk ⊢
-    have h1 : c.w.toUSize.toNat = c.w := lane_toNat (by omega)
-    have hd : c.card.toUSize.toNat = c.card := USize.toNat_ofNat_of_lt' (hcu (by omega))
-    have hlen : len (Order.idGroups c.card.toUSize c.n c.w.toUSize c.b).2 =
-        (Order.idFirsts c.card.toUSize.toNat c.n.toNat c.w.toUSize.toNat c.b).length := by
-      simp only [Order.idGroups, len, KernelWF.indices_size]; omega
-    rw [hlen, Verify.idGroups_eq_iff _ _ _ _ hi hj, Order.idKey, Order.idKey, h1, hd,
-      Nat.min_eq_left (Nat.le_of_lt (hcard i hi)), Nat.min_eq_left (Nat.le_of_lt (hcard j hj))]
-
 #print axioms find_spec
 #print axioms gather_spec
-#print axioms groupIds_code_faithful
 
 end LeetQ.Rel.Alg

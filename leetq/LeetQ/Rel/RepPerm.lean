@@ -179,23 +179,6 @@ theorem tic_of {K B : Obj} (P : Rel K (.prod B (.arr B))) (C : Rel K (.arr B)) (
     obtain ⟨q, -, hq⟩ := id hy
     exact ⟨_, hy, (eT _ _).2 ⟨⟨q, hq⟩, [], hl b bs⟩⟩
 
-/-- **`tic`, read back at its pieces' premises**: `tic_of`, each read-back by its lemma. -/
-theorem rep_tic {K B : Obj} (P : Rel K (.prod B (.arr B))) (C : Rel K (.arr B)) (hC : C = cons P)
-    (I : Rel K (.arr (.arr B))) (hI : I = C ≫ inits (Rel.val C))
-    (hc : consOK(K, B, P)) (h1 : cmpOK(.arr B, C, inits (Rel.val C))) (hi : initsOK(B, Rel.n C, Rel.val C))
-    (h2 : cmpOK(.arr (.arr B), I, tail (Rel.val I))) (ht : uncOK(.arr B, I)) :
-    ∀ k zss, rep (tic P) k zss ↔ ∃ b bs, rep P k (b, bs) ∧
-      zss = (List.range (bs.length + 1)).map fun j => (b :: bs).take (j + 1) := by
-  obtain ⟨h1f, h1'⟩ := h1
-  obtain ⟨c1, c2, c3, c4⟩ := h1' _ rfl
-  obtain ⟨iS, iU, hx⟩ := hi _ rfl
-  obtain ⟨iK, iV⟩ := hx _ rfl _ rfl _ rfl
-  obtain ⟨h2f, h2'⟩ := h2
-  obtain ⟨d1, d2, d3, d4⟩ := h2' _ rfl
-  exact tic_of P C hC I hI (rep_cons_ok P hc) (rep_comp _ _ (codes_faithful_wf _ _ h1f).1 c1 c2 c3 c4)
-    (rep_inits (Rel.val C) _ rfl iS iU _ rfl _ rfl _ rfl iK iV) (rep_comp _ _ (codes_faithful_wf _ _ h2f).1 d1 d2 d3 d4)
-    (rep_tail (Rel.val I) _ rfl _ rfl _ rfl (ht _ rfl _ rfl _ rfl))
-
 /-! ## `perm` -/
 
 /-- `perm`'s step on relations: given what each piece relates, `q ≫ cat V` takes row `r`'s element `e` and list
@@ -445,16 +428,6 @@ theorem suffix_rounds {B : Obj} {n : USize} (X : Vals (.arr B) n)
   · have : xs.length < j := Nat.lt_of_not_le fun hc => h' xs _ ((hFj xs _).2 ⟨⟨r, hr⟩, hc, rfl⟩)
     omega
 
-/-- **`suffix`, read back at `sufOK`**: `suffix_rounds`, each round by `suffix_round`. -/
-theorem rep_suffix {B : Obj} {n : USize} (X : Vals (.arr B) n)
-    (g : Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B) → Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B))
-    (hg : ∀ S F, g (S, F) = (S ∪ F ≫ tail (ran F).val, F ≫ tail (ran F).val))
-    -- kept: each round's suffixes `F` and their union `S` are intermediates; RazeFits/CodesFit no input bounds
-    (hR : ∀ i, i ≤ X.1.toNat → ∀ S F, S = (g^[i] (idU X, idU X)).1 → F = (g^[i] (idU X, idU X)).2 → sufOK) :
-    ∀ xs ys, rep (suffix X) xs ys ↔ (∃ j, X.row j = xs) ∧ ys <:+ xs :=
-  suffix_rounds X g hg fun i hi _ => by
-    rw [show g^[i + 1] (idU X, idU X) = _ from hg (g^[i] (idU X, idU X)).1 (g^[i] (idU X, idU X)).2]
-    exact suffix_round _ _ (hR i hi _ _ rfl rfl)
 
 /-! ## `snoc` -/
 
@@ -562,8 +535,6 @@ end LeetQ.Rel.Rep
 #print axioms LeetQ.Rel.Rep.rep_cons_ok
 #print axioms LeetQ.Rel.Rep.rep_cat_ok
 #print axioms LeetQ.Rel.Rep.rep_alpha
-#print axioms LeetQ.Rel.Rep.rep_tic
 #print axioms LeetQ.Rel.Rep.perm_step_set
 #print axioms LeetQ.Rel.Rep.perm_chain
 #print axioms LeetQ.Rel.Rep.suffix_round
-#print axioms LeetQ.Rel.Rep.rep_suffix

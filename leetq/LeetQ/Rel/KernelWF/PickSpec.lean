@@ -653,29 +653,3 @@ theorem pickArr_get_miss {t : QAtomicType} (c : (n : USize) × Arr t n) (i : Byt
 #print axioms pickArr_get_miss
 
 end LeetQ.Rel.Alg
-
-namespace LeetQ.Rel
-
-open QLean LeetQ.Rel.Alg
-
-/-- **`Vals.pickShared` read back**: row `k` of a side picked at `i` is row `i[k]` of the side, where that
-    long is below its count — at every shape: an array's and a sum's payloads are shared whole and their
-    `lo`/`hi`, tags and positions picked. -/
-theorem Vals.pickShared_row (A : Obj) {n : USize} (x : Vals A n)
-    (i : ByteArray) (m : USize) (h : len i = m.toNat) (k : Fin m.toNat)
-    (hin : (Column.bitsAt i (k.1 * 8) 8).toNat < n.toNat) :
-    (Vals.pickShared A x i m h).row k = x.row ⟨_, hin⟩ := by
-  induction A generalizing n with
-  | atom t => exact pickArr_get ⟨_, x⟩ i m h k hin
-  | prod a b iha ihb =>
-    exact Prod.ext (iha x.1 hin) (ihb x.2 hin)
-  | arr _ _ =>
-    obtain ⟨p, lo, hi, f⟩ := x
-    show List.filterMap _ _ = List.filterMap _ _
-    rw [pickArr_get _ i m h k hin, pickArr_get _ i m h k hin]
-  | sum _ _ _ _ =>
-    obtain ⟨l, r, tag, ix, y, z⟩ := x
-    show (if _ then _ else _) = (if _ then _ else _)
-    rw [pickArr_get _ i m h k hin, pickArr_get _ i m h k hin]
-
-end LeetQ.Rel
