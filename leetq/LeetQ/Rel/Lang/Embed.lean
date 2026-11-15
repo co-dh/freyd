@@ -2,11 +2,11 @@ import LeetQ.Rel.Lang.Parse
 import LeetQ.Rel.Lang.Expand
 import Lean
 
-/-! The Rel language as a closed Lean syntax category: `rel_program n where` and the program's lines, unchanged,
-    define `n : Program`, the AST `Parse` reads from the same text; `Expand.emit` defines what it reads. The grammar has
-    relation constructs only, and no production embeds Lean's `term`: `fun`, `let`, `do`, `if`, a tuple or a numeral
-    expression is a parse error. Scope (which run of letters is which names, which name takes arguments) is the
-    text parser's: a Lean identifier is read back by `Parse.name`/`Parse.word`/`Parse.object` in its scope. -/
+/-! The Rel language as a closed Lean syntax category, its one grammar: `rel_program n where` and the program's
+    lines define `n : Program`; `Expand.emit` defines what it reads. The grammar has relation constructs only, and no
+    production embeds Lean's `term`: `fun`, `let`, `do`, `if`, a tuple or a numeral expression is a parse error.
+    Scope (which run of letters is which names, which name takes arguments) is `Parse`'s: a Lean identifier is read
+    back by `Parse.name`/`Parse.word`/`Parse.object` in its scope. -/
 
 namespace LeetQ.Rel.Lang.Embed
 
@@ -52,10 +52,12 @@ def relSym : Parser := { fn := relSymFn, info := { collectTokens := (symToks ++ 
 
 /-- `p` read with the tokens the program's text has whatever namespaces are open: a token of more than one
     character that starts with a character of a name (`Parse.isSym`, letter-like) is dropped, so an opened
-    notation's `Λ(` or `∋(` does not swallow the name `Λ` and its parenthesis. The grammar's own tokens are one
-    character each; one starting in ASCII is a Lean keyword, which ends the program (`end`, `def`). -/
+    notation's `Λ(`, `∋(` or `P(` does not swallow the name `Λ` and its parenthesis. The grammar's own tokens are
+    one character each; a word (`end`, `def`) or one starting in ASCII other than a letter is a Lean keyword, which
+    ends the program. -/
 def relTokenTable (tt : TokenTable) : TokenTable :=
-  let keep (t : Token) := t.length == 1 || t.front.toNat < 128 || !(Parse.isSym t.front || isLetterLike t.front)
+  let keep (t : Token) := t.length == 1 || t.all isIdRest || (t.front.toNat < 128 && !t.front.isAlpha) ||
+    !(Parse.isIdCont t.front || Parse.isSym t.front || isLetterLike t.front)
   tt.values.foldl (fun r t => if keep t then r.insert t t else r) {}
 
 def relTokensFn (p : ParserFn) : ParserFn := adaptUncacheableContextFn (fun c => { c with tokens := relTokenTable c.tokens }) p
@@ -153,7 +155,7 @@ syntax (name := relProgram) (docComment)? "rel_program " ident (&" after " ident
 syntax (name := relVariant) (docComment)? "rel_program " ident &" from " ident (&" upto " relWord)? " where" relStmts :
   command
 
-/-! ### From syntax to the AST, in the text parser's state -/
+/-! ### From syntax to the AST, in the state of `Parse` -/
 
 abbrev C := ReaderT FileMap P
 
@@ -253,7 +255,7 @@ partial def prim (s : Syntax) : C (List Lang.Expr) := do
   match s.getKind with
   | ``rId | ``rSym => do (← namesOf s[0]).flatMapM fun (p, n) => atomOf s p n none none none
   | ``rParen => pure [← expr s[1]]
-  -- `Parse.atom`'s fixed point: `X` in scope in the body only
+  -- a fixed point: `X` in scope in the body only
   | ``rFix => do
     let (c, x) := match (tokText s[0]).toList with | c :: cs => (c, String.ofList cs) | [] => (' ', "")
     unless Parse.isFix c do failAt s "expected a term"
@@ -290,7 +292,7 @@ partial def prim (s : Syntax) : C (List Lang.Expr) := do
       pure (init ++ (← atomOf s q n (find ``rApp) (find ``rObjs) (find ``rAppPair)))
     | [] => failAt s "expected a term"
 
-/-- The name `n` at `p`, as `Parse.atom` reads it: `app` its parenthesised terms, `objs` the same parentheses
+/-- The name `n` at `p`: `app` its parenthesised terms, `objs` the same parentheses
     read as objects, `pair` a pair right after it; each `none` when not written so. -/
 partial def atomOf (s : Syntax) (p : Lang.Pos) (n : String) (app objs pair : Option Syntax) : C (List Lang.Expr) := do
   -- what follows a name taking no arguments: a parenthesis or a pair is a term composed after it
@@ -308,14 +310,15 @@ partial def atomOf (s : Syntax) (p : Lang.Pos) (n : String) (app objs pair : Opt
     | none => failAt s "expected '('"
   | none, some (.index _, _) => match objs.map (·[2].getSepArgs) with
     | some #[o] => do
-      let w := if o.getKind == ``oWord then tokText o[0][0] else ""
+      -- a position is a number word read by `String.toInt?`, as every number word is, its sign included
+      let w ← if o.getKind == ``oWord then wordOf o[0] else pure ""
       match w.toInt? with
-      | some k => if k < 2^63 then pure [.op p (.index k.toNat) [] []]
+      | some k => if 0 ≤ k ∧ k < 2^63 then pure [.op p (.index k.toNat) [] []]
                   else failAt o s!"at( ) takes a position from 0 that fits a long, found {w}"
       | none => failAt o s!"at( ) takes a position, a number from 0, found '{w}'"
     | _ => failAt s "at( ) takes a position, a number from 0"
   | none, some (o, 0) => match objs with
-    -- `Parse.constObjs`: the objects when they read as objects, else the parenthesis is a term
+    -- the objects when they read as objects, else the parenthesis is a term
     | some os => do
       try pure [.op p o (← os[2].getSepArgs.toList.mapM obj) []]
       catch _ => pure (.op p o [] [] :: (← after))
@@ -331,7 +334,7 @@ partial def atomOf (s : Syntax) (p : Lang.Pos) (n : String) (app objs pair : Opt
 
 end
 
-/-- A definition, as `Parse.decl` reads one: `w` its name, `key` it or its infix key `_w_`. -/
+/-- A definition: `w` its name, `key` it or its infix key `_w_`. -/
 def defn (s : Syntax) (w key : String) (ps : Array Syntax) (ty body test wh : Syntax) : C Decl := do
   let p ← posOf s
   Parse.fresh p w (← get).taken
@@ -383,7 +386,7 @@ def stmt (s : Syntax) : C Decl := do
   | ``sPrint => pure (.print p (← expr s[1]))
   | ``sCheck => pure (.check p (← expr s[1]) (← expr s[3]) (atomIn s[2] == "="))
   | ``sDefn =>
-    -- `_on_` is one Lean identifier: its text read as `Parse.decl` reads a head
+    -- `_on_` is one Lean identifier: its text read as a head, `_n_` the infix `n`
     let (w, key) ← onText s[0] (tokText s[0][0] ++ (if s[0].getKind == ``wNeg then tokText s[0][1] else "")) do
       let w ← Parse.word
       if w != "_" then pure (w, w) else do

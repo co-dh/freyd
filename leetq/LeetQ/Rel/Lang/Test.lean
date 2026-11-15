@@ -3,9 +3,9 @@ import LeetQ.Rel.Programs.SudokuAC
 import LeetQ.Rel.AC3
 
 /-! The Rel language on the blocks world of `doc/rel-lang-design.md` §g, the program `Programs.blocks`; its
-    front-end errors; the parser's round trip on every operator of §b. Every program runs as its expansion
-    (`rel_program`, `Expand`): its definitions `n.expanded`, its prints `n.prints`, its checks and ok bits
-    `n.failures`, `n.ok`; a front-end error is read off a text by `Expand.read`, which evaluates nothing. -/
+    front-end errors; the round trip of `rel_program`'s grammar on every operator of §b. Every program runs as its
+    expansion (`rel_program`, `Expand`): its definitions `n.expanded`, its prints `n.prints`, its checks and ok bits
+    `n.failures`, `n.ok`; a front-end error is read off statements by `Expand.read`, which evaluates nothing. -/
 
 namespace LeetQ.Rel.Lang.Test
 
@@ -15,9 +15,15 @@ open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Alg QLean
 #guard (typesOf none).isOk
 #guard Programs.prelude.ok
 
-/-- The program `prog` and the text `src` read after it, in the scope `prog` leaves after the prelude. -/
-def extend (prog : Program) (src : String) : Except Err Program := do
-  pure (prog ++ (← Parse.parseIn (Parse.after (Parse.scope Programs.prelude) prog) src))
+abbrev CM := Lean.Elab.Command.CommandElabM
+
+/-- The statements `src` read as a `rel_program`'s (`Embed`, the one grammar) in the scope `s`, nothing elaborated;
+    they start on the line of `where`, so a line of `src` is a line of the error. A Lean parse error has no line. -/
+def readIn (s : Parse.S) (src : String) : CM (Except Err Program) := do
+  let txt := "rel_program t where " ++ src
+  match Lean.Parser.runParserCategory (← Lean.getEnv) `command txt with
+  | .ok stx => pure (Embed.program (Lean.FileMap.ofString txt) s stx[5].getArgs)
+  | .error e => pure (.error ⟨default, e⟩)
 
 /-- The definition `n` of an expansion at the objects `A ⟶ B`. -/
 def get (gs : List (String × Gen.Gv)) (n : String) (A B : Obj) : Option (Rel A B) := do
@@ -216,55 +222,74 @@ def reach : List St.El := [[(0, 0), (1, 1), (2, 0)], [(0, 0), (1, 2), (2, 0)], [
 def elabErr (prog : Except Err Program) : Option Err :=
   match prog >>= Expand.read (some Programs.prelude) [] with | .error e => some e | .ok _ => none
 
-def errAt (src : String) (line : Nat) (what : String) : Bool :=
-  match elabErr (Parse.parse src) with
-  | some e => e.pos.line == line && (e.msg.splitOn what).length > 1
-  | none => false
+/-- The statements `src` read after the prelude and `prog` fail at `line` (and `col`, when given) with `what` in the
+    message. -/
+def errAt (src : String) (line : Nat) (what : String) (col : Option Nat := none) (prog : Program := []) :
+    CM Unit := do
+  let r ← readIn (Parse.after (Parse.scope Programs.prelude) prog) src
+  match elabErr (r.map (prog ++ ·)) with
+  | some e => unless e.pos.line == line && col.all (· == e.pos.col) && (e.msg.splitOn what).length > 1 do
+      throwError "expected an error at line {line} with '{what}', got {e}"
+  | none => throwError "expected an error at line {line} with '{what}', got none"
 
 -- unknown name
-#guard errAt "obj X = {A,B,C}\nf : X ⟶ X ≜ {(A,B)}\ng ≜ fh\n" 3 "unknown name 'h'"
+#eval errAt "obj X = {A,B,C}\nf : X ⟶ X ≜ {(A,B)}\ng ≜ fh\n" 3 "unknown name 'h'"
 -- type mismatch
-#guard errAt "obj X = {A,B,C}\nobj N = 0…3\na : X ⟶ X ≜ {(A,B)}\nb : N ⟶ N ≜ {(1,2)}\nf ≜ ab\n" 5
+#eval errAt "obj X = {A,B,C}\nobj N = 0…3\na : X ⟶ X ≜ {(A,B)}\nb : N ⟶ N ≜ {(1,2)}\nf ≜ ab\n" 5
   "found N, expected X"
 -- a family given where the row is not liftable
-#guard errAt "obj X = {A,B,C}\nobj St = 𝒫(X×X)\nL(S : X ⟶ X) : X ⟶ X ≜ ⦇S,S⦈\nf : St ⟶ X×X ≜ L(∋)\n" 3
+#eval errAt "obj X = {A,B,C}\nobj St = 𝒫(X×X)\nL(S : X ⟶ X) : X ⟶ X ≜ ⦇S,S⦈\nf : St ⟶ X×X ≜ L(∋)\n" 3
   "not liftable"
 -- a term that needs a universe its object does not have
-#guard errAt "obj X = {A,B,C}\nobj St = 𝒫(X×X)\nprint ⊤(St,X)\n" 3 "has no universe"
+#eval errAt "obj X = {A,B,C}\nobj St = 𝒫(X×X)\nprint ⊤(St,X)\n" 3 "has no universe"
 -- a definition or parameter taking a builtin's name, or a name already defined or declared
-#guard errAt "obj B = 0…1\nq : α×β ⟶ α ≜ π₁\nπ₂ ≜ π₁π₁\n" 3 "`π₂` is a builtin"
-#guard errAt "obj B = 0…1\nf(S : B ⟶ B, E : B ⟶ B) : B ⟶ B ≜ S ∩ E\n" 2 "`E` is a builtin"
-#guard errAt "obj B = 0…1\nK : α×β ⟶ α ≜ π₁\nq : α×β ⟶ α ≜ K\nK ≜ π₂\n" 4 "`K` is already defined at line 2"
-#guard errAt "obj B = 0…1\nB ≜ π₁\n" 2 "`B` is already defined at line 1"
+#eval errAt "obj B = 0…1\nq : α×β ⟶ α ≜ π₁\nπ₂ ≜ π₁π₁\n" 3 "`π₂` is a builtin"
+#eval errAt "obj B = 0…1\nf(S : B ⟶ B, E : B ⟶ B) : B ⟶ B ≜ S ∩ E\n" 2 "`E` is a builtin"
+#eval errAt "obj B = 0…1\nK : α×β ⟶ α ≜ π₁\nq : α×β ⟶ α ≜ K\nK ≜ π₂\n" 4 "`K` is already defined at line 2"
+#eval errAt "obj B = 0…1\nB ≜ π₁\n" 2 "`B` is already defined at line 1"
 -- an object variable met at two objects, in one parameter's type or across two; a defined name is no variable
-#guard errAt "obj X = {A,B,C}\nobj N = 0…3\nf(R : α ⟶ α) : α ⟶ α ≜ R\ng ≜ f({(A,1)})\n" 4
+#eval errAt "obj X = {A,B,C}\nobj N = 0…3\nf(R : α ⟶ α) : α ⟶ α ≜ R\ng ≜ f({(A,1)})\n" 4
   "`α` in the type of 'R' is both X and N"
-#guard errAt "obj X = {A,B,C}\nobj N = 0…3\nh(R : α ⟶ X, S : α ⟶ X) : α ⟶ X ≜ R\ng ≜ h({(A,B)},{(1,B)})\n" 4
+#eval errAt "obj X = {A,B,C}\nobj N = 0…3\nh(R : α ⟶ X, S : α ⟶ X) : α ⟶ X ≜ R\ng ≜ h({(A,B)},{(1,B)})\n" 4
   "`α` in the type of 'S' is both X and N"
-#guard errAt "obj X = {A,B,C}\nπ : X ⟶ X ≜ 𝟙(X)\nf(R : π ⟶ π) ≜ R\n" 3 "expected an object, found 'π'"
+#eval errAt "obj X = {A,B,C}\nπ : X ⟶ X ≜ 𝟙(X)\nf(R : π ⟶ π) ≜ R\n" 3 "expected an object, found 'π'"
 -- a `where` item taking a defined name, a parameter's, an earlier item's or a builtin's; an item used outside
-#guard errAt "obj B = 0…1\nK : α×β ⟶ α ≜ π₁\nf ≜ a where a ≜ π₂, K ≜ π₁\n" 3 "`K` is already defined at line 2"
-#guard errAt "obj B = 0…1\nf(S : B ⟶ B) : B ⟶ B ≜ a where a ≜ S, S ≜ π₁\n" 2 "`S` is already a parameter of `f`"
-#guard errAt "obj B = 0…1\nf : α×β ⟶ β ≜ a where a ≜ π₂, a ≜ π₁\n" 2 "`a` is already an item"
-#guard errAt "obj B = 0…1\nf : α×β ⟶ β ≜ a where a ≜ π₂, π₁ ≜ a\n" 2 "`π₁` is a builtin"
-#guard errAt "obj B = 0…1\nf : α×β ⟶ β ≜ a where a ≜ π₂\ng ≜ a\n" 3 "unknown name 'a'"
+#eval errAt "obj B = 0…1\nK : α×β ⟶ α ≜ π₁\nf ≜ a where a ≜ π₂, K ≜ π₁\n" 3 "`K` is already defined at line 2"
+#eval errAt "obj B = 0…1\nf(S : B ⟶ B) : B ⟶ B ≜ a where a ≜ S, S ≜ π₁\n" 2 "`S` is already a parameter of `f`"
+#eval errAt "obj B = 0…1\nf : α×β ⟶ β ≜ a where a ≜ π₂, a ≜ π₁\n" 2 "`a` is already an item"
+#eval errAt "obj B = 0…1\nf : α×β ⟶ β ≜ a where a ≜ π₂, π₁ ≜ a\n" 2 "`π₁` is a builtin"
+#eval errAt "obj B = 0…1\nf : α×β ⟶ β ≜ a where a ≜ π₂\ng ≜ a\n" 3 "unknown name 'a'"
 
 /-! The parser's round trip: each operator row of §b, printed as it was read. -/
 
-def parsed (s : String) : Except Err Expr := Parse.parseExpr s [("R", 0), ("S", 0), ("p", 0), ("e", 0)] ["X"]
-def trip (s : String) : Bool := match parsed s with | .ok e => e.show == s | .error _ => false
-/-- `s` reads as `r`, every composite and infix term of `r` in parentheses (§c: one level, left to right). -/
-def reads (s r : String) : Bool := match parsed s with | .ok e => e.render 0 true == r | .error _ => false
+/-- The term `s` read after the prelude with `R S p e` and the object `X` in scope, printed by `out`. -/
+def parsed (s : String) (out : Expr → String) : CM String := do
+  let sc := Parse.scope Programs.prelude
+  match ← readIn { sc with known := [("R", 0), ("S", 0), ("p", 0), ("e", 0)] ++ sc.known, objs := "X" :: sc.objs }
+      ("print " ++ s) with
+  | .ok [.print _ e] => pure (out e)
+  | .ok _ => throwError "'{s}' is no one term"
+  | .error e => throwError "'{s}': {e}"
+/-- Each `s` of `ss` reads back as itself. -/
+def trips (ss : List String) : CM Unit := ss.forM fun s => do
+  let r ← parsed s Expr.show
+  unless r == s do throwError "'{s}' reads back as '{r}'"
+/-- Each `s` reads as its `r`, every composite and infix term of `r` in parentheses (§c: one level, left to right). -/
+def readsAll (ps : List (String × String)) : CM Unit := ps.forM fun (s, r) => do
+  let q ← parsed s (·.render 0 true)
+  unless q == r do throwError "'{s}' reads as '{q}', not '{r}'"
 
-#guard ["R S", "R°", "R ∩ S", "R ∪ S", "R − S", "∼R", "R ⇒ S", "𝟘", "⊤", "𝟙", "⊤(X, X)", "𝟙(X)", "dom(R)",
+#eval trips ["R S", "R°", "R ∩ S", "R ∪ S", "R − S", "∼R", "R ⇒ S", "𝟘", "⊤", "𝟙", "⊤(X, X)", "𝟙(X)", "dom(R)",
   "ran(R)", "R \\ S", "R / S", "frac(R, S)", "⟨R, S⟩", "π₁", "π₂", "R × S", "[R, S]", "inl", "inr", "R + S",
   "Λ(R)", "∋", "∈", "E(R)", "P(R)", "union", "τ", "nil", "α", "cons°", "⦇e, S⦈", "F(R)", "est(R)", "thin(R)",
-  "filter(p)", "takewhile(p)", "length", "sum", "head", "tail", "prefix", "suffix", "succ", "plus", "≤", "<",
+  "filter(p)", "takewhile(p)", "length", "sum", "head", "tail", "suffix", "succ", "plus", "≤", "<",
   "{(A, B), (B, A)}", "R ∪ S R", "R S ∪ R", "R ∩ S ∪ R", "R ∪ S ∩ R", "R ∪ (S R)", "R (S p)", "∼(R S)°",
-  "(∼R)°", "∼R S", "{((A, B), A), ((B, A), B)}", "{(A, (B, (A, B)))}"].all trip
+  "(∼R)°", "∼R S", "{((A, B), A), ((B, A), B)}", "{(A, (B, (A, B)))}"]
+-- `prefix` is a Lean keyword, written in Lean's escape
+#eval readsAll [("«prefix»", "prefix")]
 
-#guard ["inits", "tails", "cat", "cat°", "zip", "snoc", "snoc°", "init", "concat", "perm", "setify", "bagify",
-  "subseq", "tic", "ordered(R)", "sort(R)", "thinL(R)", "merge(R)", "loop(R)", "R inits concat", "⟨R, S⟩ merge(p)"].all trip
+#eval trips ["inits", "tails", "cat", "cat°", "zip", "snoc", "snoc°", "init", "concat", "perm", "setify", "bagify",
+  "subseq", "tic", "ordered(R)", "sort(R)", "thinL(R)", "merge(R)", "loop(R)", "R inits concat", "⟨R, S⟩ merge(p)"]
 
 /-! The list builtins of §b on arrays built by `Λ` and `cons`, each value as `Algebra.lean`'s guard of the op
     states it: `x` is `a ↦ [3 1 2]`, `b ↦ [1 5]`; `y` is `a ↦ [7]`, `b ↦ [8 9]`; `z` is `a ↦ [3 3 1 2]`. -/
@@ -319,7 +344,7 @@ rel_program lists after Programs.prelude where
 
 /-! `at(i)`, positions from `0`, on the arrays `x` above: `at(0) = head`, `tail at(i) = at(i+1)`, and a position
     past every array's end the empty relation. -/
-#guard ["at(0)", "at(12)", "R at(2) S"].all trip
+#eval trips ["at(0)", "at(12)", "R at(2) S"]
 rel_program ats after Programs.prelude where
     obj N = 0…9
     obj K = {a,b}
@@ -335,10 +360,8 @@ rel_program ats after Programs.prelude where
     check x at(3) = 𝟘
 #guard ats.ok && ats.prints == ["x at(0) = {(a, 3), (b, 1)}", "x at(1) = {(a, 1), (b, 5)}", "x at(2) = {(a, 2)}",
   "x at(3) = {}"]
-#guard match elabErr (Parse.parse "obj N = 0…9\nf : [N] ⟶ N ≜ at(x)\n") with
-  | some e => e.msg == "at( ) takes a position, a number from 0, found 'x'" | none => false
-#guard match elabErr (Parse.parse "obj N = 0…9\nf : [N] ⟶ N ≜ at(-1)\n") with
-  | some e => e.msg == "at( ) takes a position from 0 that fits a long, found -1" | none => false
+#eval errAt "obj N = 0…9\nf : [N] ⟶ N ≜ at(x)\n" 2 "at( ) takes a position, a number from 0, found 'x'"
+#eval errAt "obj N = 0…9\nf : [N] ⟶ N ≜ at(-1)\n" 2 "at( ) takes a position from 0 that fits a long, found -1"
 
 /-- A list builtin in a lifted body takes the closed row (§e): at each key of a two-key family the fibre of the
     lifted body is the body on the fibre. -/
@@ -389,7 +412,7 @@ rel_program onDemand after Programs.prelude where
   "Λ({(a, 3), (a, 1), (b, 5)}) est(≤) = {(a, 1), (b, 5)}",
   "G est(∼R) = {(a, 1 2), (b, 4 6 7)}"]
 -- refused: an order with a leaf that reads its argument whole, so neither side of its composition is tested
-#guard errAt ("obj N = 0…9\nobj K = {a,b}\nL : K ⟶ [[N]] ≜ {(a,[1 2] [3])}\n" ++
+#eval errAt ("obj N = 0…9\nobj K = {a,b}\nL : K ⟶ [[N]] ≜ {(a,[1 2] [3])}\n" ++
   "S : [N] ⟶ [α] ≜ ran(𝟙([N])) length ≤(N,N) length°\nprint L sort(S)\n") 5
   "⊤'s target: [N] has no universe"
 
@@ -421,7 +444,7 @@ rel_program arith after Programs.prelude where
   "w max = {((2, 7), 7), ((3, 5), 5), ((7, 0), 7), ((7, 2), 7)}",
   "w min = {((2, 7), 2), ((3, 5), 3), ((7, 0), 0), ((7, 2), 2)}"]
 
-#guard ["plus", "times", "minus", "div", "mod", "max", "min", "⟨R, S⟩ times", "R mod°"].all trip
+#eval trips ["plus", "times", "minus", "div", "mod", "max", "min", "⟨R, S⟩ times", "R mod°"]
 
 /-- A value verb in a lifted body takes the closed row (§e): at each key the fibre is the body on the fibre. -/
 rel_program arithLifted after Programs.prelude where
@@ -459,7 +482,7 @@ rel_program digits after Programs.prelude where
 #guard digits.ok && digits.prints == ["ds = {(107, 1 0 7)}"]
 
 -- a prelude definition given a family through a typed parameter: the lifted body reaches `perm`, closed on `[N]`
-#guard errAt "obj N = 0…3\nobj St = 𝒫(N×N)\nf(S : N ⟶ N) : [N] ⟶ [N] ≜ sort(S)\ng : St ⟶ [N]×[N] ≜ f(∋)\n" 3
+#eval errAt "obj N = 0…3\nobj St = 𝒫(N×N)\nf(S : N ⟶ N) : [N] ⟶ [N] ≜ sort(S)\ng : St ⟶ [N]×[N] ≜ f(∋)\n" 3
   "a closed term in a lifted body: [N] has no universe"
 
 -- a nested literal (§c): each leaf position its own object, the side their product
@@ -471,14 +494,14 @@ rel_program nested after Programs.prelude where
 #guard nested.ok && nested.prints == ["L = {((A, 0), (1, B)), ((B, 1), (0, A))}"] &&
   (get nested.expanded "L" (.prod .long .long) (.prod .long .long)).map (·.toList) ==
     some [((0, 0), (1, 1)), ((1, 1), (0, 0))]
-#guard errAt "obj X = {A,B}\nL ≜ {((A,B),A),(A,B)}\n" 2 "nest alike"
+#eval errAt "obj X = {A,B}\nL ≜ {((A,B),A),(A,B)}\n" 2 "nest alike"
 
 /-! Declared types (§e). -/
 
 -- a body that is not the declared type; a definition with none, told the type it has
-#guard errAt "obj X = {A,B}\nobj N = 0…1\nf : X ⟶ N ≜ 𝟙(X)\n" 3 "`f` is declared X ⟶ N, but its body is X ⟶ X"
-#guard errAt "obj X = {A,B}\nf ≜ 𝟙(X)\n" 2 "`f` has no type; it is f : X ⟶ X"
-#guard errAt "obj X = {A,B}\nf(R : X ⟶ X) ≜ R°\n" 2 "`f` has no type; it is f(R : X ⟶ X) : X ⟶ X"
+#eval errAt "obj X = {A,B}\nobj N = 0…1\nf : X ⟶ N ≜ 𝟙(X)\n" 3 "`f` is declared X ⟶ N, but its body is X ⟶ X"
+#eval errAt "obj X = {A,B}\nf ≜ 𝟙(X)\n" 2 "`f` has no type; it is f : X ⟶ X"
+#eval errAt "obj X = {A,B}\nf(R : X ⟶ X) ≜ R°\n" 2 "`f` has no type; it is f(R : X ⟶ X) : X ⟶ X"
 -- one generic definition at two objects in one program: its variables instantiated at each use
 rel_program generic after Programs.prelude where
     obj X = {A,B}
@@ -495,19 +518,19 @@ rel_program declNil after Programs.prelude where
 #guard printed declNil.prints == ["{(∗, [])}"]
 -- `typesOf` prints each definition's head as it is declared
 def heads : List String := ["f : X ⟶ X", "g(R : α ⟶ β) : β ⟶ α", "_≼_(R : α ⟶ β, S : β ⟶ γ) : α ⟶ γ"]
-#guard match typesOf (some ("obj X = {A,B}\n" ++
-    String.join ((heads.zip ["𝟙", "R°", "R S"]).map fun (h, b) => s!"{h} ≜ {b}\n"))) with
-  | .ok ts => ts == heads
-  | .error _ => false
--- a `where` item takes no type of its own, nor does a test
+def headsSrc : String := "obj X = {A,B}\n" ++
+  String.join ((heads.zip ["𝟙", "R°", "R S"]).map fun (h, b) => s!"{h} ≜ {b}\n")
+#eval do
+  match (← readIn (Parse.scope Programs.prelude) headsSrc) >>= fun p => typesOf (some p) with
+  | .ok ts => unless ts == heads do throwError "the heads print as {ts}"
+  | .error e => throwError "{e}"
+-- a `where` item; a test takes no type of its own
 rel_program whereItem after Programs.prelude where
     obj B = 0…1
     f : B×B ⟶ B ≜ a where a ≜ π₂
     print {((0,1),(0,1))}f
 #guard printed whereItem.prints == ["{((0, 1), 1)}"]
-#guard errAt "obj B = 0…1\nf : B×B ⟶ B ≜ a where a : B×B ⟶ B ≜ π₂\n" 2
-  "the `where` item `a` takes no type: make it a top-level definition to give it one"
-#guard errAt "obj X = {A,B}\nh(S : X ⟶ X) : X ⟶ X ≜ 𝟙 ⊑ S\n" 2 "the test `h` has no type of its own"
+#eval errAt "obj X = {A,B}\nh(S : X ⟶ X) : X ⟶ X ≜ 𝟙 ⊑ S\n" 2 "the test `h` has no type of its own"
 
 /-! Array literals (§c): two or more items juxtaposed, or `[…]`; an element position is one object over the
     elements of all rows' arrays there, at any depth and on either side; printed as it is read. -/
@@ -536,21 +559,16 @@ rel_program arrs after Programs.prelude where
   "{((a, 1 2), [3])}", "{(a, -1 2), (b, [])}", "{(∗, [1 2] [])}", "{(3 1 2, a b)}", "{(∗, [[]] [[1]])}"]
 #guard (get arrs.expanded "x" .long (.arr .long)).map (·.toList) == some [((0 : Int64), [(3 : Int64), 1, 2])]
 -- a printed literal reads back as itself
-#guard ["{(∗, 3 1 2)}", "{(∗, [1] [2 3])}", "{((a, 1 2), [3])}", "{(b, [])}", "{(∗, (1, 2) (3, 4))}"].all trip
+#eval trips ["{(∗, 3 1 2)}", "{(∗, [1] [2 3])}", "{((a, 1 2), [3])}", "{(b, [])}", "{(∗, (1, 2) (3, 4))}"]
 -- an element position whose arrays are all empty, a word in no object, rows nesting differently, a comma
 def arrE : String := "obj N = 0…9\n"
 def emptyErr : String := "the object of [] cannot be read off an empty array: write nil(A,[O])"
-/-- `src` fails at `line`, `col` with `what` in the message. -/
-def errAtCol (src : String) (line col : Nat) (what : String) : Bool :=
-  match elabErr (Parse.parse src) with
-  | some e => e.pos.line == line && e.pos.col == col && (e.msg.splitOn what).length > 1
-  | none => false
 -- nothing determines the object: the error at the literal
-#guard errAtCol (arrE ++ "print {(∗,[])}\n") 2 7 emptyErr
-#guard errAtCol (arrE ++ "print {(∗,[[]] [])}\n") 2 7 emptyErr
-#guard errAtCol (arrE ++ "print {(∗,[])} ∪ {(∗,[])}\n") 2 7 emptyErr
+#eval errAt (arrE ++ "print {(∗,[])}\n") 2 emptyErr (col := some 7)
+#eval errAt (arrE ++ "print {(∗,[[]] [])}\n") 2 emptyErr (col := some 7)
+#eval errAt (arrE ++ "print {(∗,[])} ∪ {(∗,[])}\n") 2 emptyErr (col := some 7)
 -- an untyped definition names the type its body has, the object left open a variable
-#guard errAt (arrE ++ "e ≜ {(∗,[])}\n") 2 "`e` has no type; it is e : 1 ⟶ [α]"
+#eval errAt (arrE ++ "e ≜ {(∗,[])}\n") 2 "`e` has no type; it is e : 1 ⟶ [α]"
 -- the context determines it (§c): the other side of a check, the other operand, the declared type, the
 -- composition, the pair
 rel_program arrCtx after Programs.prelude where
@@ -583,18 +601,17 @@ rel_program twoObjsX after Programs.prelude where
     x : A ⟶ B ≜ {(a,a)}
     print x
 #guard printed twoObjsX.prints == ["{(a, a)}"]
-#guard errAtCol (twoObjs ++ "print {(a,c)}\n") 3 7 "the elements [a] are in [B, A]; write the literal after its object"
+#eval errAt (twoObjs ++ "print {(a,c)}\n") 3 "the elements [a] are in [B, A]; write the literal after its object" (col := some 7)
 -- a wrong expectation is a failed check, not an object error
 rel_program wrongCheck after Programs.prelude where
     obj N = 0…9
     x : 1 ⟶ [N] ≜ {(∗,1 2)}
     check x = {(∗,[])}
 #guard wrongCheck.failures.any fun e => (e.msg.splitOn "check failed").length > 1
-#guard errAt (arrE ++ "e ≜ {(∗,1 12)}\n") 2 "no declared object has the elements [1, 12]"
-#guard errAt (arrE ++ "e ≜ {(∗,1 2),(∗,3)}\n") 2
+#eval errAt (arrE ++ "e ≜ {(∗,1 12)}\n") 2 "no declared object has the elements [1, 12]"
+#eval errAt (arrE ++ "e ≜ {(∗,1 2),(∗,3)}\n") 2
   "the rows of a literal nest alike: found 3, expected the form of 1 2"
-#guard errAt (arrE ++ "e ≜ {(∗,(1,2) 3)}\n") 2 "the rows of a literal nest alike: found 3, expected the form of (1, 2)"
-#guard errAt (arrE ++ "e ≜ {(∗,[1,2])}\n") 2 "the elements of an array are separated by spaces, not ','"
+#eval errAt (arrE ++ "e ≜ {(∗,(1,2) 3)}\n") 2 "the rows of a literal nest alike: found 3, expected the form of (1, 2)"
 
 /-! Signed numbers (§a, §c): a range `-3…3`, signed literal words, `succ ≤ <` and the value verbs on it, each
     against Lean's `Int` (`div` floors and `mod` takes the divisor's sign, as q's: `Int.fdiv`, `Int.fmod`); a print
@@ -648,17 +665,12 @@ rel_program negRange after Programs.prelude where
     obj Z = -5…-1
     print 𝟙(Z) succ
 #guard negRange.prints == ["𝟙(Z) succ = {(-5, -4), (-4, -3), (-3, -2), (-2, -1)}"]
-#guard match elabErr (Parse.parse "obj X = {A}\nobj Z = 3…-3\n") with
-  | some e => e.pos.line == 2 && e.pos.col == 11 && e.msg == "the range 3…-3 is empty: -3 is below 3"
-  | none => false
-#guard errAt "obj Z = -3…3\nf ≜ {(-4,0)}\n" 2 "no declared object has the elements [-4]"
--- a `-` with no digit after it is no sign: `R -3` ends the term, `R −3` is a difference before no term
-#guard errAt "obj Z = -3…3\nR : Z ⟶ Z ≜ 𝟙(Z)\nf ≜ R -3\n" 3 "expected the end of the line, found '-'"
-#guard errAt "obj Z = -3…3\nR : Z ⟶ Z ≜ 𝟙(Z)\nf ≜ R −3\n" 3 "expected a term, found '3'"
-#guard ["{(A, -1)}", "{((-1, B), -20)}", "R − S"].all trip
+#eval errAt "obj X = {A}\nobj Z = 3…-3\n" 2 "the range 3…-3 is empty: -3 is below 3" (col := some 11)
+#eval errAt "obj Z = -3…3\nf ≜ {(-4,0)}\n" 2 "no declared object has the elements [-4]"
+#eval trips ["{(A, -1)}", "{((-1, B), -20)}", "R − S"]
 
-#guard [("R ∪ S R", "((R ∪ S) R)"), ("R S ∪ R", "((R S) ∪ R)"), ("R ∩ S ∪ R", "((R ∩ S) ∪ R)"),
-  ("R ∪ S ∩ R", "((R ∪ S) ∩ R)"), ("∼R S", "(∼R S)"), ("R ∪ (S R)", "(R ∪ (S R))")].all fun (s, r) => reads s r
+#eval readsAll [("R ∪ S R", "((R ∪ S) R)"), ("R S ∪ R", "((R S) ∪ R)"), ("R ∩ S ∪ R", "((R ∩ S) ∪ R)"),
+  ("R ∪ S ∩ R", "((R ∪ S) ∩ R)"), ("∼R S", "(∼R S)"), ("R ∪ (S R)", "(R ∪ (S R))")]
 
 /-! The parser on each line of `Programs.blocks`: every composite and infix term in parentheses, as the note reads the
     formula (§c), not as the parser happens to print it. -/
@@ -671,9 +683,10 @@ def reading : Decl → Option (String × String)
   | _ => none
 
 -- a `where` item in place in the body and in the items after it (§c)
-#guard match Parse.parse "obj B = 0…1\nf(S) ≜ b ∪ S where a ≜ π₁, b ≜ a π₂ S\n" with
-  | .ok p => p.filterMap reading == [("f", "(((π₁ π₂) S) ∪ S)")]
-  | .error _ => false
+#eval do
+  match ← readIn (Parse.scope Programs.prelude) "obj B = 0…1\nf(S) ≜ b ∪ S where a ≜ π₁, b ≜ a π₂ S\n" with
+  | .ok p => unless p.filterMap reading == [("f", "(((π₁ π₂) S) ∪ S)")] do throwError "{p.filterMap reading}"
+  | .error e => throwError "{e}"
 
 /-! Terms on an object with no universe (§a): a converse pushed to the leaves, a division tested on the pairs a
     meet supplies, `R×S` as `⟨π₁R,π₂S⟩`; and what is still refused. Expected values by hand. -/
@@ -688,11 +701,6 @@ rel_program chs after Programs.prelude where
     ks : 1 ⟶ [N] ≜ {(∗,3 1 1)}
     ok : α×[α] ⟶ α×[α] ≜ cor(≤/∋)
 
-/-- The text `src` read after `chs`: its error, at its line in `src`. -/
-def chsErr (src : String) (line : Nat) (what : String) : Bool :=
-  match elabErr (extend chs src) with
-  | some e => e.pos.line == line && (e.msg.splitOn what).length > 1
-  | none => false
 
 -- the converse: `(RS)° = S°R°`, `∩`, a pair with one side's converse, `R°° = R`, a coreflexive, `cons° = uncons`
 rel_program chsConv after chs where
@@ -705,8 +713,8 @@ rel_program chsConv after chs where
   ["{(∗, a b), (∗, b a)}", "{(∗, (a, [b])), (∗, (b, [a]))}", "{(∗, a b), (∗, b a)}",
    "{(∗, (a, [b]))}", "{}"]
 -- refused at a leaf whose converse does not run on demand: `π₁` in `⟨π₁,π₂⟩°`, `∋` in `∈`
-#guard chsErr "print x (cons° ⟨π₁,π₂⟩ cons)°\n" 1 "the converse of π₁ does not run on demand"
-#guard chsErr "print {(∗,a)} ∈\n" 1 "the converse of ∋ does not run on demand"
+#eval errAt "print x (cons° ⟨π₁,π₂⟩ cons)°\n" 1 "the converse of π₁ does not run on demand" (prog := chs)
+#eval errAt "print {(∗,a)} ∈\n" 1 "the converse of ∋ does not run on demand" (prog := chs)
 -- a division tested on the pairs: `R/S`, `R\S`, `frac`, `∼`, `−`, each beside a term run on demand
 rel_program chsDiv after chs where
     print ⟨{(∗,1)},ns⟩ok
@@ -721,8 +729,8 @@ rel_program chsDiv after chs where
   ["{(∗, (1, 2 3))}", "{}", "{(∗, (2, 2 3))}", "{(∗, 3)}", "{(∗, 3 1), (∗, 3 1 1)}",
    "{(∗, 2 3)}", "{}", "{(∗, 2 3)}"]
 -- refused: a division with no term on demand to test it against, and a meet of two
-#guard chsErr "print {(∗,1)}(≤/∋)\n" 1 "R/S reads its operands whole"
-#guard chsErr "print {(∗,1)}((≤/∋) ∩ (≤/∋))\n" 1 "R/S reads its operands whole"
+#eval errAt "print {(∗,1)}(≤/∋)\n" 1 "R/S reads its operands whole" (prog := chs)
+#eval errAt "print {(∗,1)}((≤/∋) ∩ (≤/∋))\n" 1 "R/S reads its operands whole" (prog := chs)
 -- `R×S` on demand as `⟨π₁R,π₂S⟩`; closed, as before
 rel_program chsProd after chs where
     print ⟨{(1,1)},⟨{(1,2)},Λ({(1,1)})⟩⟩(𝟙×π₁)plus
@@ -732,8 +740,8 @@ rel_program chsProd after chs where
 #guard printed chsProd.prints ==
   ["{(1, 3)}", "{(∗, (a, a b)), (∗, (a, b a))}", "{(∗, (a b, b)), (∗, (b a, b))}", "{((1, 2), (1, 3))}"]
 -- refused: an operand that does not run, named; the object printed as the program writes it, `[Ch]`
-#guard chsErr "print ⟨{(∗,a)},{(∗,b)}⟩(∈×𝟙)\n" 1 "the converse of ∋ does not run on demand"
-#guard chsErr "print ⟨{(∗,a)},{(∗,b)}⟩(∈×𝟙)\n" 1 "[Ch] has no universe"
+#eval errAt "print ⟨{(∗,a)},{(∗,b)}⟩(∈×𝟙)\n" 1 "the converse of ∋ does not run on demand" (prog := chs)
+#eval errAt "print ⟨{(∗,a)},{(∗,b)}⟩(∈×𝟙)\n" 1 "[Ch] has no universe" (prog := chs)
 -- `loop(F)` runs `F` on the pairs each round meets: a state that is an array (a copy, a reverse, the
 -- subsequences), and a pair with an array (the copy with its length)
 rel_program chsLoop after chs where
@@ -744,7 +752,7 @@ rel_program chsLoop after chs where
 #guard printed chsLoop.prints ==
   ["{(∗, a b)}", "{(∗, b a a)}", "{(∗, []), (∗, [a]), (∗, a b), (∗, [b])}", "{(∗, (a b, 2))}"]
 -- refused: an `F` that runs neither way, the leaf named
-#guard chsErr "print x ⟨nil,𝟙⟩loop(snoc ran(snoc))\n" 1 "ran( ) reads its argument whole: [Ch]×Ch has no universe"
+#eval errAt "print x ⟨nil,𝟙⟩loop(snoc ran(snoc))\n" 1 "ran( ) reads its argument whole: [Ch]×Ch has no universe" (prog := chs)
 
 /-! The prelude (§c): each definition moved there against the builtin it replaced (`Alg.perm`, `Alg.ordered`, and
     `sort(Q) = perm ordered(Q)`), on a repeated element, the empty array, two element objects and arrays of arrays;
@@ -809,35 +817,37 @@ rel_program infixes after Programs.prelude where
   ["{((2, 3), 5), ((4, 1), 5)}", "{(1, 1), (2, 2)}",
    "{(1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8), (1, 9)}", "{(1, 1)}",
    "{(1, 0), (1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8), (1, 9)}", "{(1, inl 1)}"]
-#guard ["R ⇒ S", "R ⊕ S", "R + S", "frac(R, S)", "∈", "perm", "ordered(R)", "sort(R)", "cor(R)"].all trip
+#eval trips ["R ⇒ S", "R ⊕ S", "R + S", "frac(R, S)", "∈", "perm", "ordered(R)", "sort(R)", "cor(R)"]
 -- `cor(R)`: the pairs of `R` as a coreflexive on `A×B`
 rel_program corPairs after Programs.prelude where
     obj N = 0…3
     print {((1,2),(1,2)),((2,1),(2,1)),((3,3),(3,3))}cor(≤)
 #guard printed corPairs.prints == ["{((1, 2), (1, 2)), ((3, 3), (3, 3))}"]
-#guard [("R ∩ S ⇒ R", "((R ∩ S) ⇒ R)"), ("R ⇒ S ∩ R", "((R ⇒ S) ∩ R)"), ("R S + R", "((R S) + R)"),
-  ("R + S R", "((R + S) R)")].all fun (s, r) => reads s r
+#eval readsAll [("R ∩ S ⇒ R", "((R ∩ S) ⇒ R)"), ("R ⇒ S ∩ R", "((R ⇒ S) ∩ R)"), ("R S + R", "((R S) + R)"),
+  ("R + S R", "((R + S) R)")]
 -- infix only: used before its arguments, alone, or declared with other than two parameters
-#guard errAt "obj B = 0…1\nf ≜ ⇒(π₁,π₂)\n" 2 "`⇒` is an infix operator: write `R ⇒ S`, not `⇒(R, S)`"
-#guard errAt "obj B = 0…1\nf ≜ π₁ ∪ ⇒\n" 2 "`⇒` is an infix operator: it stands between two terms, `R ⇒ S`"
-#guard errAt "obj B = 0…1\n_≼_(R) ≜ R\n" 2 "the infix operator `≼` takes two parameters, `_≼_(R, S)`, found 1"
+#eval errAt "obj B = 0…1\nf ≜ ⇒(π₁,π₂)\n" 2 "`⇒` is an infix operator: write `R ⇒ S`, not `⇒(R, S)`"
+#eval errAt "obj B = 0…1\nf ≜ π₁ ∪ ⇒\n" 2 "`⇒` is an infix operator: it stands between two terms, `R ⇒ S`"
+#eval errAt "obj B = 0…1\n_≼_(R) ≜ R\n" 2 "the infix operator `≼` takes two parameters, `_≼_(R, S)`, found 1"
 -- a prelude name taken again, as a definition, an infix operator's name or an object
-#guard errAt "obj N = 0…9\nperm ≜ 𝟙(N)\n" 2 "`perm` is already defined in the prelude"
-#guard errAt "obj N = 0…9\n⊕ ≜ 𝟙(N)\n" 2 "`⊕` is already defined in the prelude"
-#guard errAt "obj N = 0…9\n_sort_(R,S) ≜ R ∩ S\n" 2 "`sort` is already defined in the prelude"
-#guard errAt "obj 1 = {∗}\nobj N = 0…9\n" 1 "`1` is already defined in the prelude"
+#eval errAt "obj N = 0…9\nperm ≜ 𝟙(N)\n" 2 "`perm` is already defined in the prelude"
+#eval errAt "obj N = 0…9\n⊕ ≜ 𝟙(N)\n" 2 "`⊕` is already defined in the prelude"
+#eval errAt "obj N = 0…9\n_sort_(R,S) ≜ R ∩ S\n" 2 "`sort` is already defined in the prelude"
+#eval errAt "obj 1 = {∗}\nobj N = 0…9\n" 1 "`1` is already defined in the prelude"
 -- an error of the prelude's own text, and one raised in a prelude body at a use: the prelude's line, the use's
 /-- The text `src` read after the prelude `pre`: its error. -/
-def afterErr (pre : Except Err Program) (src : String) : Option Err :=
-  match pre >>= fun p => Parse.parseIn (Parse.scope p) src >>= Expand.read (some p) [] with
-  | .error e => some e | .ok _ => none
-#guard match afterErr (Parse.parseIn { cs := #[] } "    f ≜ g\n") "obj X = {A}\n" with
-  | some e => toString e == "in the prelude, line 1, col 9: unknown name 'g'"
-  | none => false
-#guard match afterErr (Parse.parseIn { cs := #[] } "    f(R : α ⟶ β) : α ⟶ β ≜ R g\n")
-    "obj X = {A}\nx : X ⟶ X ≜ {(A,A)}\ny : X ⟶ X ≜ f(x)\n" with
-  | some e => e.pos.line == 3 && e.msg == "in the prelude's `f` (its line 1): unknown name 'g'"
-  | none => false
+def afterErr (pre src : String) : CM Err := do
+  let p ← match ← readIn { cs := #[] } pre with | .ok p => pure p | .error e => throwError "{e}"
+  match (← readIn (Parse.scope p) src) >>= Expand.read (some p) [] with
+  | .error e => pure e
+  | .ok _ => throwError "expected an error, got none"
+-- the prelude's line 1 starts after `rel_program t where `, 20 columns
+#eval do
+  let e ← afterErr "    f ≜ g\n" "obj X = {A}\n"
+  unless toString e == "in the prelude, line 1, col 29: unknown name 'g'" do throwError "{e}"
+#eval do
+  let e ← afterErr "    f(R : α ⟶ β) : α ⟶ β ≜ R g\n" "obj X = {A}\nx : X ⟶ X ≜ {(A,A)}\ny : X ⟶ X ≜ f(x)\n"
+  unless e.pos.line == 3 && e.msg == "in the prelude's `f` (its line 1): unknown name 'g'" do throwError "{e}"
 
 #guard Programs.blocks.filterMap reading == [
     ("S₀", "{(C, A), (A, A), (B, B)}"),
@@ -869,7 +879,7 @@ def afterErr (pre : Except Err Program) (src : String) : Option Err :=
 /-! Fixed points `μX : φ`, `νX : φ`: printed as read, run against their rounds written out, and refused where the
     body is not monotonic in `X` or the rounds have no bound. -/
 
-#guard ["νZ : R ∩ Z", "(μZ : 𝟙 ∪ (R Z)) S", "R° ∪ (νZ : R ∩ (S \\ (Z R)))", "⟨νZ : R ∩ Z, S⟩"].all trip
+#eval trips ["νZ : R ∩ Z", "(μZ : 𝟙 ∪ (R Z)) S", "R° ∪ (νZ : R ∩ (S \\ (Z R)))", "⟨νZ : R ∩ Z, S⟩"]
 -- `R*`, the least `X` with `𝟙 ∪ RX ⊑ X`, against the closure written out
 rel_program closure after Programs.prelude where
     obj N = 0…4
@@ -904,17 +914,17 @@ rel_program square after Programs.prelude where
     check z = {(x,0),(x,1),(x,2),(x,3),(y,0),(y,1),(y,4),(y,9)}
 #guard square.ok
 -- `X` under an operator not monotonic in its argument, or in an antitone place; `ν` with no bound; `μ` on an array
-#guard errAt "obj B = 0…1\nf : B ⟶ B ≜ νX : ⊤(B,B) ∩ (Λ(X)∋)\n" 2
+#eval errAt "obj B = 0…1\nf : B ⟶ B ≜ νX : ⊤(B,B) ∩ (Λ(X)∋)\n" 2
   "νX: X occurs under Λ at 2:30; Λ is not monotonic in its argument, so the fixed point need not exist"
-#guard errAt "obj B = 0…1\nr : B ⟶ B ≜ {(0,1)}\nf : B ⟶ B ≜ μX : r ∪ X\\r\n" 3
+#eval errAt "obj B = 0…1\nr : B ⟶ B ≜ {(0,1)}\nf : B ⟶ B ≜ μX : r ∪ X\\r\n" 3
   "μX: X occurs in the left operand of \\ at 3:22 (antitone); X must occur only in monotonic positions"
-#guard errAt "obj B = 0…1\nr : B ⟶ B ≜ {(0,1)}\nf : B ⟶ B ≜ νX : r X\n" 3
+#eval errAt "obj B = 0…1\nr : B ⟶ B ≜ {(0,1)}\nf : B ⟶ B ≜ νX : r X\n" 3
   "νX needs a bound: write S ∩ φ with S not mentioning X (⊤(A,B) for the whole object)"
-#guard errAt "obj B = 0…1\nr : B ⟶ [B] ≜ {(0,[1])}\nf : B ⟶ [B] ≜ μX : r ∪ X\n" 3
+#eval errAt "obj B = 0…1\nr : B ⟶ [B] ≜ {(0,[1])}\nf : B ⟶ [B] ≜ μX : r ∪ X\n" 3
   "μX: [B] has no universe; an array object can grow every round"
-#guard errAt "obj X = {A,B,C}\nobj St = 𝒫(X×X)\nL(S : X ⟶ X) : X ⟶ X ≜ νZ : S ∩ Z\nf : St ⟶ X×X ≜ L(∋)\n" 3
+#eval errAt "obj X = {A,B,C}\nobj St = 𝒫(X×X)\nL(S : X ⟶ X) : X ⟶ X ≜ νZ : S ∩ Z\nf : St ⟶ X×X ≜ L(∋)\n" 3
   "νZ given a family is not liftable"
-#guard errAt "obj B = 0…1\nνx : B ⟶ B ≜ 𝟙(B)\n" 2 "the name 'νx' reads as a fixed point"
+#eval errAt "obj B = 0…1\nνx : B ⟶ B ≜ 𝟙(B)\n" 2 "the name 'νx' reads as a fixed point"
 
 /-! `ν` of an AC-3 body runs by delta rounds (`Alg.acFix`): its result against the naive rounds (`Alg.fixOn` on
     `Alg.acRound`, called directly), and each path's work per round. -/
