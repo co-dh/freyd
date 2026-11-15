@@ -52,6 +52,9 @@ rel_program partyPlan after prelude where
     guests : E ⟶ E ≜ μX : win(𝟙 ∪ (boss° boss° X)) ∪ ((𝟙 − win)boss° X)
     check Λ(guests) ⊑ best
     check c max = best cost(rating)
+    root : E ⟶ E ≜ {(a,a)}
+    check root best = {(a,a d e f)}
+    check root c max = {(a,17)}
 
 #guard partyPlan.ok
 
