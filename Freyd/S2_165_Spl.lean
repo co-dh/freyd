@@ -943,14 +943,6 @@ public theorem coref_inter_comp_le {𝒜 : Type u} [Allegory 𝒜] {a : 𝒜}
   calc (X° ∩ Ee) ≫ Ee ⊑ Ee ≫ Ee := comp_mono_right (inter_lb_right _ _) Ee
     _ = Ee := hidem
 
--- Dual modular law (reciprocal of `modular_le`):  `(R≫S) ∩ T ⊑ R ≫ (S ∩ R°≫T)`.
-public theorem dual_modular_le {𝒜 : Type u} [Allegory 𝒜] {a b c : 𝒜}
-    (R : a ⟶ b) (S : b ⟶ c) (T : a ⟶ c) : (R ≫ S) ∩ T ⊑ R ≫ (S ∩ R° ≫ T) := by
-  have hr := recip_mono (modular_le S° R° T°)
-  rw [Allegory.recip_comp, Allegory.recip_inter, Allegory.recip_comp, Allegory.recip_recip,
-      Allegory.recip_recip] at hr
-  rw [Allegory.recip_inter, Allegory.recip_comp, Allegory.recip_recip, Allegory.recip_recip] at hr
-  exact hr
 
 /-- **§2.166**: If `𝒜` is a tabular allegory then `SplCorObj 𝒜` is a tabular allegory.
 
@@ -1337,10 +1329,10 @@ public theorem dual_modular_le {𝒜 : Type u} [Allegory 𝒜] {a b c : 𝒜}
         rw [hRleg]
         apply le_antisymm
         · -- Display 2:  Ψ.R = Ψ.R ∩ f°g ⊑ f°(1∩fΨg°)g = f°Ag,  then E.e/F.e-wrap.
-          -- `f° ∩ Ψ.R≫g° ⊑ f°≫A`  is `dual_modular_le f° (id c) (Ψ.R≫g°)` (since `f°≫id = f°`,
+          -- `f° ∩ Ψ.R≫g° ⊑ f°≫A`  is `modular_le_right f° (id c) (Ψ.R≫g°)` (since `f°≫id = f°`,
           --  `f°° = f`, so `(f°≫id)∩Z ⊑ f°≫(id ∩ f≫Z) = f°≫A`).
           have hfA : f° ∩ Ψ.R ≫ g° ⊑ f° ≫ A := by
-            have h := dual_modular_le f° (Cat.id c) (Ψ.R ≫ g°)
+            have h := modular_le_right f° (Cat.id c) (Ψ.R ≫ g°)
             rw [Cat.comp_id, Allegory.recip_recip] at h
             simpa only [Cat.assoc] using h
           -- (f°≫g) ∩ Ψ.R ⊑ f°≫A≫g  (modular + hfA).

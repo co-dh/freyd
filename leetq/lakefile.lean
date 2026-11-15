@@ -20,3 +20,5 @@ require qlean from (get_config? qlean |>.getD "../../qlean")
 @[default_target]
 lean_lib LeetQ where
   globs := #[.submodules `LeetQ]
+  -- `rel_program` runs at elaboration time; native code instead of the IR interpreter (qlean does the same)
+  precompileModules := true

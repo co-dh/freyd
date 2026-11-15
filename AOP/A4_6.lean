@@ -19,6 +19,7 @@
 module
 
 public import Freyd.S2_40
+public import Freyd.S1_18
 import AOP.A4_4
 import Freyd.S1_56
 

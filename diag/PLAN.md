@@ -358,7 +358,7 @@ First diagrams, highest payoff first (chosen from what the repo's own AOP proofs
 2. `Entire` / `Simple` / `Map` (`Freyd/S2_10.lean:408,417,420`) as (TOT)/(SV) with the four adjoint forms
    (46)–(49) — the map dictionary every derivation quotes.
 3. `simple_dist_inter` (`Freyd/S2_10.lean:476`, §2.136) — eq. (3) tightened to equality.
-4. the modular law (`Freyd/S2_10.lean:62`) with `modular_sym` / `modular_le_right` (`AOP/A4_1.lean`) — drawing
+4. the modular law (`Freyd/S2_10.lean:62`) with `modular_sym` / `modular_le_right` (`Freyd/S2_10.lean`) — drawing
    it is the phase-5 debugging tool.
 5. `dom` and `dom_UP` (`Freyd/S2_10.lean:322`, `AOP/A4_2.lean:147`) — the coreflexive-as-dot idiom.
 6. `Tabulates` / `tabulates_monic_pair` (`Freyd/S2_10.lean:502,521`).
@@ -398,7 +398,7 @@ The seven, each drawn from the Lean statement rather than from memory:
 | 1 | `map_shunt_right`, `map_shunt_left` as two-row equivalences   | `AOP/A4_2.lean`                         |
 | 2 | `Simple`/`Entire` as (46)/(47), then as the Frobenius equalities | `Freyd/S2_10.lean` §2.13             |
 | 3 | `simple_dist_inter`                                          | `Freyd/S2_10.lean` §2.136               |
-| 4 | `modular_le`, `modular_le_right`, `modular_sym`, stacked      | `Freyd/S2_10.lean` §2.11, `AOP/A4_1.lean` |
+| 4 | `modular_le`, `modular_le_right`, `modular_sym`, stacked      | `Freyd/S2_10.lean` §2.11, `AOP/A4_1.lean` (`modular_sym`) |
 | 5 | `Coreflexive`, then `dom`, then `dom_UP`                      | `Freyd/S2_10.lean` §2.122, `AOP/A4_2.lean` |
 | 6 | `Tabulates`, then `tabulates_monic_pair` as one rewrite       | `Freyd/S2_10.lean` §2.14, §2.141        |
 | 7 | `le_div_iff` two-sided, then `div_comp_le`                    | `Freyd/S2_30.lean` §2.31                |

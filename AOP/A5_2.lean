@@ -27,6 +27,7 @@
 module
 
 public import Freyd.S2_30
+public import AOP.A4_1
 public import AOP.A5_1
 import AOP.A4_2
 
