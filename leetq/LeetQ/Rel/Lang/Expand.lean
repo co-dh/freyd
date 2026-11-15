@@ -130,8 +130,9 @@ def arcs (k : Nat) : {V D : Obj} → {d : Bool} → Tm V D d →
 
 abbrev RM := StateT (Std.HashMap Lean.Expr Name) MetaM
 
-/-- The constant `c : ty := v`, compiled. -/
-def addConst (c : Name) (ty v : Lean.Expr) : MetaM Unit :=
+/-- The constant `c : ty := v`, compiled, with the heartbeats a `def` command of its own would have: one
+    `rel_program` command adds them all, and a program's count of constants is no measure of any one's cost. -/
+def addConst (c : Name) (ty v : Lean.Expr) : MetaM Unit := withCurrHeartbeats <|
   addAndCompile (.defnDecl { name := c, levelParams := [], type := ty, value := v, hints := .opaque, safety := .safe })
 
 def oE (A : Obj) : Lean.Expr := toExpr A
@@ -139,18 +140,30 @@ def uE (n : USize) : Lean.Expr := mkApp (mkConst ``USize.ofNat) (toExpr n.toNat)
 def bE (b : Bool) : Lean.Expr := toExpr b
 def g (n : Name) (as : Array Lean.Expr) : Lean.Expr := mkAppN (mkConst n) as
 
-def longs {n : USize} (x : Arr .long n) : List Int := x.toList.map (·.toInt)
+/-- The bytes `b` as hex text, two lowercase digits a byte (`Gen.unhex` reads it back). -/
+def hex (b : ByteArray) : String :=
+  let d (x : UInt8) : Char := if x < 10 then Char.ofNat (48 + x.toNat) else Char.ofNat (87 + x.toNat)
+  b.foldl (fun s x => (s.push (d (x / 16))).push (d (x % 16))) ""
 
-/-- A column rebuilt from its elements: longs, products, arrays; a sum or another atom only empty, as `build`
-    makes them (a literal's sum side has no rows). -/
+/-- An atom column rebuilt from its payload (`Gen.atom`): a fixed-width or boolean one; a symbol, general,
+    Frame-of-Reference or ALP payload is not rebuilt, and says so. -/
+def atomE (t : QLean.QAtomicType) (n : USize) (x : Arr t n) : Except String Lean.Expr :=
+  match x.enc with
+  | .bytes b => pure (g ``Gen.atom #[toExpr t, uE n, toExpr false, mkStrLit (hex b)])
+  | .bits b => pure (g ``Gen.atom #[toExpr t, uE n, toExpr true, mkStrLit (hex b)])
+  | _ => throw s!"a column of {n} rows in a symbol, general, Frame-of-Reference or ALP payload cannot be rebuilt"
+
+/-- A column rebuilt from its parts: each atom column from its payload (`atomE`), the rest by `Vals`'s shape. -/
 def valsE : (A : Obj) → (n : USize) → Vals A n → Except String Lean.Expr
-  | .atom .long, n, x => pure (g ``Gen.arrL #[uE n, toExpr (longs x)])
+  | .atom t, n, x => atomE t n x
   | .prod a b, n, x => do
     pure (mkApp4 (mkConst ``Prod.mk [0, 0]) (mkApp2 (mkConst ``Vals) (oE a) (uE n))
       (mkApp2 (mkConst ``Vals) (oE b) (uE n)) (← valsE a n x.1) (← valsE b n x.2))
-  | .arr b, n, ⟨m, lo, hi, p⟩ => do pure (g ``Gen.arrV #[oE b, uE n, uE m, toExpr (longs lo), toExpr (longs hi), ← valsE b m p])
-  | A, n, _ => if n == 0 then pure (g ``Gen.emptyV #[oE A])
-    else throw s!"a column of {n} rows of a sum or a non-long atom cannot be rebuilt: only longs, products and arrays are"
+  | .arr b, n, ⟨m, lo, hi, p⟩ => do
+    pure (g ``Gen.arrV #[oE b, uE n, uE m, ← atomE .long n lo, ← atomE .long n hi, ← valsE b m p])
+  | .sum a b, n, ⟨l, r, tag, idx, x, y⟩ => do
+    pure (g ``Gen.sumV #[oE a, oE b, uE n, uE l, uE r, ← atomE .boolean n tag, ← atomE .long n idx,
+      ← valsE a l x, ← valsE b r y])
 
 def relE {A B : Obj} (R : Rel A B) : Except String Lean.Expr := do
   pure (g ``Rel.mk #[oE A, oE B, uE R.n, ← valsE A R.n R.key, ← valsE B R.n R.val])

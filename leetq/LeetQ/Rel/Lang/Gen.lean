@@ -51,19 +51,26 @@ def ofC {A B : Obj} (r : Rel A B × Bool) : CRel A B := ⟨r.1, r.2⟩
 /-- `r` with the bits `b` of the ops that computed its inputs outside it. -/
 def also {A B : Obj} (b : Bool) (r : CRel A B) : CRel A B := ⟨r.rel, b && r.ok⟩
 
-/-! ### Leaves: the values `build` put in the term, rebuilt from their elements -/
+/-! ### Leaves: the values `build` put in the term, rebuilt from their payloads -/
 
-/-- The long column of `xs`, at the count `n` it had when the expander read it. -/
-def arrL (n : USize) (xs : List Int) : Arr .long n :=
-  let ys := xs.map Int64.ofInt
-  if h : ys.length.toUSize = n then h ▸ col ys
-  else @panic _ ⟨Arr.mk (Enc.blank .long n) (Enc.blank_WF .long n)⟩
-    s!"internal: a rebuilt column has {ys.length} longs, not {n}"
+/-- The bytes of the hex text `s` (two lowercase digits a byte, as `Expand.hex` writes them). One string
+    literal per column, so a column of any size is one node of the generated term. -/
+def unhex (s : String) : ByteArray := Id.run do
+  let u := s.toUTF8; let d (c : UInt8) : UInt8 := if c ≤ 57 then c - 48 else c - 87
+  let mut b := ByteArray.emptyWithCapacity (u.size / 2)
+  for i in [0:u.size / 2] do b := b.push (d u[2 * i]! * 16 + d u[2 * i + 1]!)
+  pure b
 
-/-- No rows: a sum side, which the expander rebuilds only empty. -/
-def emptyV (A : Obj) : Vals A (USize.ofNat 0) := Vals.empty A
+/-- The column of `t` whose payload is the hex text `s`, `bits` a boolean's (`Enc.bits`), else `Enc.bytes`;
+    `Enc.WF` is decided, so a payload that does not fit `n` is a panic, never a wrong column. -/
+def atom (t : QAtomicType) (n : USize) (bits : Bool) (s : String) : Arr t n :=
+  let e := if bits then Enc.bits (unhex s) else Enc.bytes (unhex s)
+  if h : Enc.WF t n e then Arr.mk e h
+  else @panic _ ⟨Arr.mk (Enc.blank t n) (Enc.blank_WF t n)⟩ s!"internal: a rebuilt payload does not fit {n} rows"
 
-def arrV (B : Obj) (n m : USize) (lo hi : List Int) (p : Vals B m) : Vals (.arr B) n := ⟨m, arrL n lo, arrL n hi, p⟩
+def arrV (B : Obj) (n m : USize) (lo hi : Arr .long n) (p : Vals B m) : Vals (.arr B) n := ⟨m, lo, hi, p⟩
+def sumV (A B : Obj) (n l r : USize) (tag : Arr .boolean n) (idx : Arr .long n) (x : Vals A l) (y : Vals B r) :
+    Vals (.sum A B) n := ⟨l, r, tag, idx, x, y⟩
 
 /-! ### Code -/
 
