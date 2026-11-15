@@ -346,7 +346,7 @@ end PowerOnly
 rel_program oneFold where
   r ≜ ⦇𝟙⦈
 
-/-! ### Closedness: a Lean term inside `rel(…)` is a parse error, never a term elaborated -/
+/-! ### Closedness: a Lean term inside `rel(…)` is an error, never a term elaborated; a keyword is a Rel name -/
 
 open Elab Command in
 elab "#rel_term " s:str : command => do
@@ -356,13 +356,13 @@ elab "#rel_term " s:str : command => do
 
 /-- info: parsed rel(R S°∩T) -/
 #guard_msgs in #rel_term "rel(R S° ∩ T)"
-/-- info: <input>:1:4: expected a name -/
+/-- info: <input>:1:10: expected ')' -/
 #guard_msgs in #rel_term "rel(fun x => x)"
 /-- info: <input>:1:4: expected a name -/
 #guard_msgs in #rel_term "rel(1 + 1)"
 /-- info: <input>:1:6: expected ')' -/
 #guard_msgs in #rel_term "rel((R, S))"
-/-- info: <input>:1:7: expected a name -/
+/-- info: parsed rel(R(by simp)) -/
 #guard_msgs in #rel_term "rel(R (by simp))"
 
 end LeetQ.Rel.Lang.CalcTest

@@ -287,6 +287,15 @@ def readsAll (ps : List (String × String)) : CM Unit := ps.forM fun (s, r) => d
   "(∼R)°", "∼R S", "{((A, B), A), ((B, A), B)}", "{(A, (B, (A, B)))}"]
 -- `prefix` is a Lean keyword, written in Lean's escape
 #eval readsAll [("«prefix»", "prefix")]
+-- and written bare
+#eval readsAll [("prefix", "prefix"), ("suffix prefix", "(suffix prefix)")]
+
+/-- Lean keywords as Rel names in a program, bare: one defined (`do`), one used (`prefix`); a Lean command that starts
+    with a keyword (`example`) still ends the program. -/
+rel_program kwNames after Programs.prelude where
+    do : [α] ⟶ [α] ≜ suffix prefix
+example : True := trivial
+#guard kwNames.ok
 
 #eval trips ["inits", "tails", "cat", "cat°", "zip", "snoc", "snoc°", "init", "concat", "perm", "setify", "bagify",
   "subseq", "tic", "ordered(R)", "sort(R)", "thinL(R)", "merge(R)", "loop(R)", "R inits concat", "⟨R, S⟩ merge(p)"]
