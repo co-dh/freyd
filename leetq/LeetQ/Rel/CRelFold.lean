@@ -251,15 +251,17 @@ theorem lane_sizes {w n s : Nat} (hl : laneOK(w)) (hs : s = (n * w + 7) / 8) :
     w * n ≤ 8 * s ∧ (8 ≤ w → 8 * s = w * n) := by
   subst hs; rcases hl with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> omega
 
-/-- **A cell in `dom R` picks an `R`-image of itself**: `find` on the joint codes lands on the first key whose code
-    is the cell's (`find_spec`), equal codes are equal values (`codes_faithful_wf`), and the pick of `R.val` there
-    (`pick_row`) is that key's value. -/
-theorem find_pick_image {A B : Obj} (R : Rel A B) {m : USize} (P : Vals A m)
+/-- **A cell whose `find` lands on a key picks an `R`-image of itself**: `find` on the joint codes lands on the first
+    key whose code is the cell's (`find_spec`), equal codes are equal values (`codes_faithful_wf`), and the pick of
+    `R.val` there (`pick_row`) is that key's value. -/
+theorem find_pick_found {A B : Obj} (R : Rel A B) {m : USize} (P : Vals A m)
     (hc : (A.codesC #v[⟨_, R.key⟩, ⟨_, P⟩]).2 = true)
     (hf : m.toNat ≤ len ((A.codesC #v[⟨_, R.key⟩, ⟨_, P⟩]).1[0].find (A.codesC #v[⟨_, R.key⟩, ⟨_, P⟩]).1[1]))
     (hy : (Vals.pickC B R.val (fit m.toNat ((A.codesC #v[⟨_, R.key⟩, ⟨_, P⟩]).1[0].find
       (A.codesC #v[⟨_, R.key⟩, ⟨_, P⟩]).1[1])) m (fit_len hf)).2 = true)
-    (j : Fin m.toNat) (z : B.El) (hz : rep R (P.row j) z) :
+    (j : Fin m.toNat)
+    (hfd : (Column.bitsAt (fit m.toNat ((A.codesC #v[⟨_, R.key⟩, ⟨_, P⟩]).1[0].find
+      (A.codesC #v[⟨_, R.key⟩, ⟨_, P⟩]).1[1])) (j.1 * 8) 8).toNat < R.n.toNat) :
     rep R (P.row j) ((Vals.pickC B R.val (fit m.toNat ((A.codesC #v[⟨_, R.key⟩, ⟨_, P⟩]).1[0].find
       (A.codesC #v[⟨_, R.key⟩, ⟨_, P⟩]).1[1])) m (fit_len hf)).1.row j) := by
   obtain ⟨⟨hfa, hwf⟩, -⟩ := codes_faithful_wf A _ (Obj.codesC_fits A _ hc)
@@ -272,28 +274,20 @@ theorem find_pick_image {A B : Obj} (R : Rel A B) {m : USize} (P : Vals A m)
   have hm : ((A.codesC #v[⟨_, R.key⟩, ⟨_, P⟩]).1[1]).n.toNat = m.toNat := by rw [hn1]; rfl
   have hR : ((A.codesC #v[⟨_, R.key⟩, ⟨_, P⟩]).1[0]).n.toNat = R.n.toNat := by rw [hn0]; rfl
   rw [pickC_fst, pick_row B R.val _ m _ (Vals.pickC_fits B R.val _ m _ hy) j]
-  obtain ⟨k, hk1, -⟩ := hz
-  have hv := (hfa (k := 0) (l := 1) (by decide) (by decide) (i := k.1) (j := j.1) k.2 j.2).2 hk1
-  have hk0 : k.1 < ((A.codesC #v[⟨_, R.key⟩, ⟨_, P⟩]).1[0]).n.toNat := by rw [hR]; exact k.2
-  have hmem := List.mem_map.2 ⟨k.1, List.mem_range.2 hk0, hv⟩
-  have hlt := List.idxOf_lt_length_iff.2 hmem
-  unfold List.idxOf at hlt
-  have hgetL := beq_iff_eq.1 (List.findIdx_getElem (w := hlt))
-  simp only [List.getElem_map, List.getElem_range] at hgetL
-  rw [List.length_map, List.length_range] at hlt
-  have hltR := Nat.lt_of_lt_of_eq hlt hR
-  have hk' := hfa (k := 0) (l := 1) (by decide) (by decide) (j := j.1) hltR j.2
-  have hkey := hk'.1 hgetL
-  unfold fit; rw [if_pos (hlen.trans hm)]
+  unfold fit at hfd ⊢; rw [if_pos (hlen.trans hm)] at hfd ⊢
   have hb := hget j.1 (by rw [hm]; exact j.2)
-  have hlt' := hb ▸ hltR
-  rw [dif_pos hlt']
-  exact ⟨⟨_, hlt'⟩, (congrArg R.key.row (Fin.ext hb)).trans hkey, rfl⟩
+  have hltR := hb ▸ hfd
+  -- not `rw [hR]`: it rewrites the `List.range` inside `findIdx`, and the defeq check then evaluates `codesC`
+  have hgetL := beq_iff_eq.1 (List.findIdx_getElem (w := Nat.lt_of_lt_of_eq hltR
+    (by rw [List.length_map, List.length_range]; exact hR.symm)))
+  simp only [List.getElem_map, List.getElem_range] at hgetL
+  have hk' := hfa (k := 0) (l := 1) (by decide) (by decide) (j := j.1) hltR j.2
+  rw [dif_pos hfd]
+  exact ⟨⟨_, hfd⟩, (congrArg R.key.row (Fin.ext hb)).trans (hk'.1 hgetL), rfl⟩
 
 /-- **`F(R)` for a simple `R` under `mapSimpleC`'s bit**: row `i` of `⟨X, Y⟩` reads one list of payload positions in
-    `X` and in `Y` (`row_repay`), and a cell in `dom R` reads in `Y` an `R`-image (`find_pick_image`), the only one
-    as `R` is simple; the rows `𝟙 − dom(∋ ≫ ¬dom R)` keeps are the arrays with every cell in `dom R` (`rep_memC`,
-    `rep_antiJoinC`, `rep_domC`, `rep_diffC`). -/
+    `X` and in `Y` (`row_repay`), and every cell, its `find` landing on a key by the bit, reads in `Y` an `R`-image
+    (`find_pick_found`), the only one as `R` is simple. -/
 theorem rep_mapSimpleC {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n)
     (hs : ∀ a b b', rep R a b → rep R a b' → b = b') (hb : (mapSimpleC R X).2 = true) :
     ∀ (xs : List A.El) ys, rep (mapSimpleC R X).1 xs ys ↔ (∃ i, X.row i = xs) ∧ ys.length = xs.length ∧
@@ -303,61 +297,29 @@ theorem rep_mapSimpleC {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) 
   by_cases hf : X.1.toNat ≤ len ((A.codesC #v[⟨_, R.key⟩, ⟨_, X.2.2.2⟩]).1[0].find
     (A.codesC #v[⟨_, R.key⟩, ⟨_, X.2.2.2⟩]).1[1])
   case neg => simp only [need, dif_neg hf] at hb; exact absurd hb Bool.false_ne_true
-  simp only [need, dif_pos hf, Bool.and_eq_true] at hb ⊢
-  obtain ⟨⟨⟨⟨⟨⟨⟨hc, hy⟩, he⟩, hd⟩, ho⟩, hbb⟩, hg⟩, hr⟩ := hb
-  have hcell := find_pick_image R X.2.2.2 hc hf hy
-  -- `zs` is kept iff it is an array of `X` with every cell in `dom R`
-  have hgd : ∀ zs zs', rep (diffC (idU X) (domC (antiJoinC (memC X).1 (domC R).1).1).1).1 zs zs' ↔
-      zs = zs' ∧ (∃ i, X.row i = zs) ∧ ∀ x ∈ zs, ∃ z, rep R x z := by
-    intro zs zs'
-    -- `zs ∋ x` with `x` outside `dom R`
-    have hax : ∀ x, rep (antiJoinC (memC X).1 (domC R).1).1 zs x ↔
-        ((∃ i, X.row i = zs) ∧ x ∈ zs) ∧ ¬ ∃ z, rep R x z := by
-      intro x
-      rw [rep_antiJoinC _ _ ho, comp_apply]
-      constructor
-      · rintro ⟨y, hm, rfl, hn⟩
-        refine ⟨(rep_memC X he zs y).1 hm, fun ⟨z, hz⟩ => hn ⟨y, ?_⟩⟩
-        rw [rep_domC _ hd, inter_apply, comp_apply]
-        exact ⟨rfl, z, hz, hz⟩
-      · rintro ⟨hm, hn⟩
-        refine ⟨x, (rep_memC X he zs x).2 hm, rfl, fun ⟨y, hy⟩ => hn ?_⟩
-        rw [rep_domC _ hd, inter_apply, comp_apply] at hy
-        obtain ⟨rfl, z, hz, -⟩ := hy
-        exact ⟨z, hz⟩
-    rw [rep_diffC _ _ hg, rep_apply, idU_holds, rep_domC _ hbb, inter_apply, comp_apply]
-    constructor
-    · rintro ⟨⟨rfl, hz⟩, hn⟩
-      exact ⟨rfl, hz, fun x hx => Classical.byContradiction fun hx' =>
-        hn ⟨rfl, x, (hax x).2 ⟨⟨hz, hx⟩, hx'⟩, (hax x).2 ⟨⟨hz, hx⟩, hx'⟩⟩⟩
-    · rintro ⟨rfl, hz, hall⟩
-      exact ⟨⟨rfl, hz⟩, fun ⟨_, x, hx, _⟩ => ((hax x).1 hx).2 (hall x ((hax x).1 hx).1.2)⟩
-  rw [rep_compC _ _ hr, comp_apply]
+  simp only [need, dif_pos hf, Bool.and_eq_true, List.all_eq_true, decide_eq_true_eq] at hb ⊢
+  obtain ⟨⟨hc, hy⟩, hit⟩ := hb
+  -- every cell's `find` landed on a key, so every cell picks an `R`-image
+  have hcell := fun j => find_pick_found R X.2.2.2 hc hf hy j (hit j (List.mem_finRange j))
   constructor
-  · rintro ⟨zs, hzs, i, hi1, hi2⟩
-    obtain ⟨rfl, -, hall⟩ := (hgd _ _).1 hzs
+  · rintro ⟨i, hi1, hi2⟩
     obtain ⟨js, hX, hY⟩ := row_repay X _ i
     have hX' : xs = js.map X.2.2.2.row := hi1.symm.trans hX
     have hY' : ys = js.map _ := hi2.symm.trans hY
     subst hX' hY'
     refine ⟨⟨i, hX⟩, by simp, fun t ht ht' => ?_⟩
     simp only [List.getElem_map]
-    obtain ⟨z, hz⟩ := hall _ (List.getElem_mem (l := js.map X.2.2.2.row) (by simpa using ht))
-    simp only [List.getElem_map] at hz
-    exact hcell _ z hz
+    exact hcell _
   · rintro ⟨⟨i, rfl⟩, hlen, hR⟩
     obtain ⟨js, hX, hY⟩ := row_repay X _ i
-    have hall : ∀ x ∈ X.row i, ∃ z, rep R x z := fun x hx => by
-      obtain ⟨t, ht, rfl⟩ := List.getElem_of_mem hx
-      exact ⟨ys[t]'(hlen ▸ ht), hR t ht _⟩
-    refine ⟨X.row i, (hgd _ _).2 ⟨rfl, ⟨i, rfl⟩, hall⟩, i, rfl, hY.trans ?_⟩
+    refine ⟨i, rfl, hY.trans ?_⟩
     have hl : js.length = ys.length := by rw [hlen, hX, List.length_map]
     refine List.ext_getElem (by rw [List.length_map, hl]) fun t h1 h2 => ?_
     have ht : t < (X.row i).length := by rw [hX, List.length_map]; rwa [List.length_map] at h1
     have hxt : (X.row i)[t] = X.2.2.2.row (js[t]'(by rwa [List.length_map] at h1)) := by
       simp only [hX, List.getElem_map]
     rw [List.getElem_map]
-    refine hs _ _ _ (hxt ▸ hcell _ _ (hxt ▸ hR t ht h2)) (hR t ht h2) |>.symm ▸ ?_
+    refine hs _ _ _ (hxt ▸ hcell _) (hR t ht h2) |>.symm ▸ ?_
     rfl
 
 /-- **`F(R)` as the fold under `mapFoldC`'s bit**: `rep_foldByC` at the step `consC (pairC (compC el R) pend)`, each
@@ -388,11 +350,11 @@ theorem rep_mapC {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n)
     (hb : (mapC R X).2 = true) :
     ∀ (xs : List A.El) ys, rep (mapC R X).1 xs ys ↔ (∃ i, X.row i = xs) ∧ ys.length = xs.length ∧
       ∀ t (ht : t < xs.length) (ht' : t < ys.length), rep R (xs[t]'ht) (ys[t]'ht') := by
-  by_cases hs : ((simpleC R).1 && (simpleC R).2) = true
+  by_cases hs : ((simpleC R).1 && (simpleC R).2 && (mapSimpleC R X).2) = true
   · have e : mapC R X = mapSimpleC R X := if_pos hs
     rw [e] at hb ⊢
-    rw [Bool.and_eq_true] at hs
-    exact rep_mapSimpleC R X ((rep_simpleC R hs.2).1 hs.1) hb
+    simp only [Bool.and_eq_true] at hs
+    exact rep_mapSimpleC R X ((rep_simpleC R hs.1.2).1 hs.1.1) hb
   · have e : mapC R X = mapFoldC R X := if_neg hs
     rw [e] at hb ⊢
     exact rep_mapFoldC R X hb

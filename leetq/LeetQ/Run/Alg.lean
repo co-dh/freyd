@@ -766,8 +766,7 @@ def mapFoldC {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) : Rel (
 
 /-- `F(R)` for a simple `R` on the arrays of `X`, no round: each payload cell to `R`'s value at the first key equal
     to it (`find` on the joint codes of `R`'s keys and the payload, `R.n` at a miss), each array keeping `X`'s `lo`,
-    `hi`. The bit: the codes', the pick's, and every cell's `find` landing on a key. -
-
+    `hi`. The bit: the codes', the pick's, and every cell's `find` landing on a key. -/
 def mapSimpleC {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) : Rel (.arr A) (.arr B) × Bool :=
   let c := A.codesC #v[⟨_, R.key⟩, ⟨_, X.2.2.2⟩]
   let f := c.1[0].find c.1[1]
