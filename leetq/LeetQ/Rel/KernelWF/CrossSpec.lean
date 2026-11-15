@@ -54,7 +54,7 @@ private theorem ofNat_toInt {x : Nat} (hx : x < 2 ^ 63) : (UInt64.ofNat x).toInt
 
 /-- `valStep` of a `div` or `mod` on two longs below `2^63`, the divisor positive: `Int.fdiv`/`Int.fmod` of
     naturals, which is `Nat`'s `/` and `%`. -/
-private theorem valStep_divmod (x y : Nat) (hx : x < 2 ^ 63) (hy : y < 2 ^ 63) (hy0 : 0 < y) :
+theorem valStep_divmod (x y : Nat) (hx : x < 2 ^ 63) (hy : y < 2 ^ 63) (hy0 : 0 < y) :
     Ew.valStep Ew.idiv Ew.i64 nul.toUInt64 (UInt64.ofNat x) (UInt64.ofNat y) = UInt64.ofNat (x / y) ∧
     Ew.valStep Ew.imod Ew.i64 nul.toUInt64 (UInt64.ofNat x) (UInt64.ofNat y) = UInt64.ofNat (x % y) := by
   have ex := ofNat_toInt hx; have ey := ofNat_toInt hy
