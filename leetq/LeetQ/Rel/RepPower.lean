@@ -228,52 +228,5 @@ theorem rep_tau_list {n : USize} (X : Vals A n)
 
 #print axioms rep_tau_list
 
-/-- **`rep (lamOn R U)`, as lists**: `rep_lamOn`, and every array `lamOn R U` gives holds each value once —
-    a `Λ(R)` row by `rep_transpose_list`, the empty array otherwise. Hypotheses: `rep_lamOn`'s. -/
-theorem rep_lamOn_list {B : Obj} {m : USize} (R : Rel A B) (U : Vals A m)
-    -- `rep_transpose` at `R`
-    (kc vc : Code) (hkc : kc = kcR(R)) (hvc : vc = vcR(R))
-    (hK : cOK(kc, Rel.n R, Rel.key R)) (hV : cOK(vc, Rel.n R, Rel.val R))
-    (hk : Vals.PickFits A (Rel.key R) (List.range (Rel.n R).toNat))
-    (hv : Vals.PickFits B (Rel.val R) (List.range (Rel.n R).toNat))
-    -- generic sides: the nub copies `R`'s cells, whose dictionaries, general cells, nested payloads no `R` fact bounds
-    (hWk : A.CodesFit (#v[⟨(Rel.nub R).n, (Rel.nub R).key⟩] : Vector (Part A) 1))
-    (hW : B.CodesFit (#v[⟨(Rel.nub R).n, (Rel.nub R).val⟩] : Vector (Part B) 1))
-    (h63 : (Rel.n R).toNat < 2 ^ 63)
-    -- `rep_diff` at `idU U`, `dom R`; two parts coded jointly: a generic `A`'s ALP sum and dictionaries are unbounded
-    (pc : Vector Code 2) (hpc : pc = pairs #v[LeetQ.Rel.Alg.idU U, LeetQ.Rel.Alg.dom R])
-    (hc : codesOK(pc, pcs(LeetQ.Rel.Alg.idU U, LeetQ.Rel.Alg.dom R)))
-    (hdU : Vals.PickFits A U (List.range m.toNat))
-    -- `rep_top` at `D.key`, `nilVal B`
-    (D : Rel A A) (hD : D = lD(R, U))
-    -- `D`'s count is bounded only by `U`'s, a `USize`; `top`'s `cross` needs it below `2^63`
-    (ht63 : (Rel.n D).toNat * USize.toNat 1 < 2 ^ 63)
-    -- `rep_union_full` at `T`, `N`; `L` their raze
-    (T N : Rel A (.arr B)) (hT : T = lT(R)) (hN0 : N = LeetQ.Rel.Alg.top (Rel.key D) (LeetQ.Rel.Alg.nilVal B))
-    (hN : (Rel.n T).toNat + (Rel.n N).toNat < USize.size)
-    (hFk : Vals.RazeFits A (Rel.key T) (Rel.key N)) (hFv : Vals.RazeFits (.arr B) (Rel.val T) (Rel.val N))
-    (L : Rel A (.arr B)) (hL : L = Uc(T, N, hN)) (ku vu : Code) (hku : ku = kcR(L)) (hvu : vu = vcR(L))
-    (huK : cOK(ku, Rel.n L, Rel.key L)) (huV : cOK(vu, Rel.n L, Rel.val L))
-    (huk : Vals.PickFits A (Rel.key L) (List.range (Rel.n L).toNat))
-    (huv : Vals.PickFits (.arr B) (Rel.val L) (List.range (Rel.n L).toNat)) :
-    (∀ a Y, rep (LeetQ.Rel.Alg.lamOn R U) a Y → Y.Nodup ∧ ∀ y, y ∈ Y ↔ rep R a y) ∧
-      (∀ a, (∃ Y, rep (LeetQ.Rel.Alg.lamOn R U) a Y) ↔ (∃ b, rep R a b) ∨ ∃ i, Vals.row U i = a) := by
-  obtain ⟨h1, h2⟩ := rep_lamOn R U kc vc hkc hvc hK hV hk hv hWk hW h63
-    pc hpc hc hdU D hD ht63 T N hT hN0 hN hFk hFv L hL ku vu hku hvu huK huV huk huv
-  subst hku hvu hL hN0 hD hT hpc hkc hvc
-  obtain ⟨htN, htA, htB⟩ := lamOn_top_fits R U hc hdU
-  have hX := rep_transpose_list R hK hV hk hv hWk hW h63
-  have hu := rep_union_full (lT(R)) (lN(R, U, B)) hN hFk hFv huK huV huk huv
-  refine ⟨fun a Y h => ⟨?_, h1 a Y h⟩, h2⟩
-  have h' : rep (lT(R)) a Y ∨ rep (lN(R, U, B)) a Y := by
-    rw [show LeetQ.Rel.Alg.lamOn R U = lT(R) ∪ lN(R, U, B) from rfl, hu] at h; exact h
-  rcases h' with h | h
-  · exact (hX.1 a Y h).1
-  · rw [rep_top _ _ htN ht63 htA htB] at h
-    obtain ⟨_, -, _, -, rfl, j, hj⟩ := h
-    rw [← hj]
-    exact List.nodup_nil
-
-#print axioms rep_lamOn_list
 
 end LeetQ.Rel.Rep

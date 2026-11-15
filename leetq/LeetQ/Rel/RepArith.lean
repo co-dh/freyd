@@ -384,7 +384,7 @@ theorem foldOn_on {E V : Obj} {m n : USize} (e : Vals V m) (Sf : Rel (.prod E V)
     (hv : Vals.PickFits (.arr E) X (List.range n.toNat))
     (pend₀ : Rel .long V) (hpend : pend₀ = top (A := .long) (Rel.key T) e)
     (hN : (Rel.n T).toNat * m.toNat < USize.size) (h63 : (Rel.n T).toNat * m.toNat < 2 ^ 63)
-    -- generic seed: an input fit, `pickFits_mod_of_reads` from a reads bound; `nilVal`, atoms fit outright
+    -- generic seed: an input fit; `nilVal`, atoms fit outright
     (hB : Vals.PickFits V e ((List.range ((Rel.n T).toNat * m.toNat)).map (· % m.toNat)))
     (step : Rel .long E → Rel .long V → Rel .long V) (hstep : step = demandStep Sf)
     (elK : Nat → Rel .long E) (hE : ∀ k, elK k = elR(T, k))

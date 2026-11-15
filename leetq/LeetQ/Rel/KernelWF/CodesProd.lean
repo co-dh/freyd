@@ -440,14 +440,6 @@ theorem codes_small_int_cut {t : QAtomicType} {k : Scan.Kind} (ht : orderKind t 
   rw [hbt] at hq
   rw [hc, hc', show q' = q from Option.some_inj.1 (hq'.symm.trans hq)]
 
-/-- Dense parts give `encodedParts` nothing to join, so `razeColumn` answers dense. -/
-theorem encodedParts_parts_bytes {t : QAtomicType} {p : Nat} (cs : Vector (Part (.atom t)) p)
-    (hd : ∀ k (hk : k < p), ∃ b, cs[k].2.enc = .bytes b) : encodedParts t (cs.toArray.map (·.2.part)) = none :=
-  KernelWF.encodedParts_bytes fun c hc => by
-    obtain ⟨d, hd', rfl⟩ := Array.mem_map.1 hc
-    obtain ⟨j, hj, rfl⟩ := Array.mem_iff_getElem.1 hd'
-    exact hd j (by simpa using hj)
-
 /-- **A small integral side of several parts: each part's code is well formed**, the parts' summed count a
     `USize`. -/
 theorem codes_small_int_parts_wf {t : QAtomicType} {k₀ : Scan.Kind} (ht : orderKind t = some k₀)

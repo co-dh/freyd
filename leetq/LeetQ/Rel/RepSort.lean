@@ -46,7 +46,7 @@ local notation "ordOK" =>
     and every `z` of `zs`, the test `q E` reaches `(y, z)`; and the test sees every such `(y, z)` (`E` holds it).
     The pieces are bound as `orderedOn` builds them: `Su` the suffixes, `T` their `uncons`, `D = ran T`,
     `yz` the pairs `(y, z)`, `bad` those the test misses, `C` the arrays with a bad suffix. Hypotheses:
-    `hS`, `suffix X` read back (`rep_suffix`, `rep_suffixC`), and every primitive's at the pieces (`ordOK`). -/
+    `hS`, `suffix X` read back (`rep_suffixC`), and every primitive's at the pieces (`ordOK`). -/
 theorem rep_orderedOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B))
     (X : Vals (.arr B) n) (hS : ∀ xs ys, rep (suffix X) xs ys ↔ (∃ j, X.row j = xs) ∧ ys <:+ xs)
     (Su : Rel (.arr B) (.arr B)) (hSu : Su = suffix X) (Wu : Rel (.arr B) (.arr B)) (hWu : Wu = ran Su)
@@ -189,31 +189,9 @@ theorem pairwise_of_orderedOn {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.ar
       exact ((rep_pairsIn Q E hq w (y, z)).1 hw).2,
     fun hall y zs hs z hz => ⟨(y, z), (rep_pairsIn Q E hq _ _).2 ⟨h1 xs y zs z hx hs hz, hall y zs hs z hz⟩⟩⟩
 
-/-- **`ordered(Q)`, read back**: an array `xs` of `X` goes to itself exactly when each element is `Q`-below every
-    later one. `rep_orderedOn` at `q := pairsIn Q` (`rep_pairsIn`), the suffix form turned into `Pairwise`
-    (`suffix_pairwise`). Hypotheses: `rep_orderedOn`'s, then `rep_pairsIn`'s at `E`. -/
-theorem rep_ordered {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n)
-    (hS : ∀ xs ys, rep (suffix X) xs ys ↔ (∃ j, X.row j = xs) ∧ ys <:+ xs)
-    (Su : Rel (.arr B) (.arr B)) (hSu : Su = suffix X) (Wu : Rel (.arr B) (.arr B)) (hWu : Wu = ran Su)
-    (T : Rel (.arr B) (.prod B (.arr B))) (hT : T = Su ≫ uncons (Rel.val Wu))
-    (D : Rel (.prod B (.arr B)) (.prod B (.arr B))) (hD : D = ran T)
-    (O : Rel (.prod B (.arr B)) (.arr B)) (hO : O = outr D) (V : Rel (.arr B) (.arr B)) (hV : V = ran O)
-    (M : Rel (.prod B (.arr B)) B) (hM : M = O ≫ mem (Rel.val V))
-    (yz : Rel (.prod B (.arr B)) (.prod B B)) (hyz : yz = pair (outl D) M)
-    (E : Rel (.prod B B) (.prod B B)) (hE : E = ran yz)
-    (bad : Rel (.prod B (.arr B)) (.prod B B)) (hbad : bad = antiJoin yz (pairsIn Q E))
-    (C : Rel (.arr B) (.prod B (.arr B))) (hC : C = T ≫ dom bad)
-    -- kept (h, hq): fits and codes of the suffix pieces and of the pairs `E` compared, kernel intermediates
-    (h : ∀ q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B), q = pairsIn Q → ordOK)
-    (hq : cmpOK(.prod B B, E, idU (t := .prod B B) (m := Rel.n Q) (Rel.key Q, Rel.val Q))) :
-    ∀ xs ys, rep (ordered Q X) xs ys ↔ (∃ i, X.row i = xs) ∧ ys = xs ∧ xs.Pairwise (fun y z => rep Q y z) := by
-  obtain ⟨h1, h2⟩ := rep_orderedOn (pairsIn Q) X hS Su hSu Wu hWu T hT D hD O hO V hV M hM yz hyz E hE bad hbad
-    C hC (h _ rfl)
-  exact pairwise_of_orderedOn Q X _ E hq h1 h2
-
 /-- **`sortSet(Q)`, read back**: `s` goes to `ys` exactly when `setify` takes the array `ys` of `Y` to `s` and `ys`
-    is `Q`-ordered. `sortSet Q Y` is `(setify Y)° ≫ ordered Q Y` (`rep_comp`, `rep_conv`, `rep_ordered`).
-    Hypotheses: `ordered Q Y` read back (`eO`: `rep_ordered`, `rep_orderedC`), `rep_comp`'s at the composite. -/
+    is `Q`-ordered. `sortSet Q Y` is `(setify Y)° ≫ ordered Q Y` (`rep_comp`, `rep_conv`, `rep_orderedC`).
+    Hypotheses: `ordered Q Y` read back (`eO`: `rep_orderedC`), `rep_comp`'s at the composite. -/
 theorem rep_sortSet {B : Obj} {n : USize} (Q : Rel B B) (Y : Vals (.arr B) n)
     (eO : ∀ xs ys, rep (ordered Q Y) xs ys ↔ (∃ i, Y.row i = xs) ∧ ys = xs ∧ xs.Pairwise (fun y z => rep Q y z))
     (hc : cmpOK(.arr B, (setify Y)°, ordered Q Y)) :
@@ -236,5 +214,4 @@ end LeetQ.Rel.Rep
 
 #print axioms LeetQ.Rel.Rep.suffix_pairwise
 #print axioms LeetQ.Rel.Rep.rep_orderedOn
-#print axioms LeetQ.Rel.Rep.rep_ordered
 #print axioms LeetQ.Rel.Rep.rep_sortSet

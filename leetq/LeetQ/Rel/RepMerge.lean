@@ -696,47 +696,11 @@ theorem rep_mergeOn {K B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod 
     exact hr
   exact mergeOn_rounds q P le f hf _ rfl h0' (fun i hi _ => (one i hi).1) (fun i hi _ => (one i hi).2)
 
-/-- **`merge`, read back**: `rep_mergeOn` at `q = pairsIn Q`, the test read back by `rep_pairsIn`: `le a b` is any
-    Boolean test with `le a b = true` exactly when `a Q b` (`hle`). Hypotheses as `rep_mergeOn`'s, with
-    `rep_pairsIn`'s `cmpOK` at each round's pairs of heads `mrh` in place of the test's read-back. -/
-theorem rep_merge {K B : Obj} (Q : Rel B B) (P : Rel K (.prod (.arr B) (.arr B))) (le : B.El → B.El → Bool)
-    (hle : ∀ a b, le a b = true ↔ rep Q a b)
-    (f : Rel K (.arr B) × Rel K SO → Rel K (.arr B) × Rel K SO) (hf : mergeF(pairsIn Q))
-    -- kept: fits of `ran P`'s values and the codes of `P ≫ ⟨idU, top⟩`, intermediates no input bounds
-    (h0 : initOK)
-    -- kept: each round's state and pairs of heads are intermediates whose fits grow with the rounds
-    (hR : ∀ i, i < fuelP → ∀ out St, out = (f^[i] initP).1 → St = (f^[i] initP).2 →
-      mergeVals(pairsIn Q mrh, cmpOK(.prod B B, mrh, idU (t := .prod B B) (m := Rel.n Q) (Rel.key Q, Rel.val Q)) ∧
-        mergeOK)) :
-    ∀ k zs, rep (merge Q P) k zs ↔ ∃ xs ys, rep P k (xs, ys) ∧ zs = List.merge xs ys le := by
-  rw [show merge Q P = mergeOn (pairsIn Q) P from mergeOnC_fst _ P]
-  refine rep_mergeOn (pairsIn Q) P le f hf h0 fun i hi out St ho hS => ?_
-  intro mD hD mx hx my hy macc hacc mux hux muy huy mpu hpu mboth hboth mh hh mrh hrh G hG mhq hhq ml hl mA1 hA1
-    mS1 hS1 mN1 hN1 mP1 hP1 mL1 hL1 mnb hnb mA2 hA2 mS2 hS2 mN2 hN2 mP2 hP2 mL2 hL2 mtk htk mT hT mfl hfl mSf hSf
-    mc1 hc1 mC1 hC1 mc2 hc2 mC2 hC2 mO hO mU hU
-  obtain ⟨hc, hok⟩ := hR i hi out St ho hS mD hD mx hx my hy macc hacc mux hux muy huy mpu hpu mboth hboth mh hh
-    mrh hrh G hG mhq hhq ml hl mA1 hA1 mS1 hS1 mN1 hN1 mP1 hP1 mL1 hL1 mnb hnb mA2 hA2 mS2 hS2 mN2 hN2 mP2 hP2
-    mL2 hL2 mtk htk mT hT mfl hfl mSf hSf mc1 hc1 mC1 hC1 mc2 hc2 mC2 hC2 mO hO mU hU
-  refine ⟨fun a b hab => ?_, hok⟩
-  obtain ⟨-, -, -, -, -, -, -, -, ⟨rf, rp⟩, -⟩ := hok
-  have eRh : ∀ ab ab', rep mrh ab ab' ↔ ab = ab' ∧ ∃ s, rep mh s ab := fun ab ab' => by
-    rw [hrh, rep_ran_corefl mh (one_ok _ rf) (rp)]; exact Iff.rfl
-  have eP := rep_pairsIn Q mrh hc
-  rw [hG]
-  constructor
-  · rintro ⟨c, h⟩
-    obtain ⟨h1, h2⟩ := (eP _ _).1 h
-    obtain ⟨rfl, -⟩ := (eRh _ _).1 h1
-    exact (hle a b).2 h2
-  · intro h
-    exact ⟨(a, b), (eP _ _).2 ⟨hab, (hle a b).1 h⟩⟩
-
 end Headline
 
 #print axioms mergeOnC_fst
 #print axioms merge_init
 #print axioms mergeOn_rounds
 #print axioms rep_mergeOn
-#print axioms rep_merge
 
 end LeetQ.Rel.Rep

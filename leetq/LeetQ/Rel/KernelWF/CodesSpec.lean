@@ -868,15 +868,6 @@ theorem codes_long_group_wf {t : QAtomicType} (ht : orderKind t = some .i64) (x 
   obtain ⟨p, hp, hc⟩ := codes_long_group ht x hro
   rw [hc]; exact ofIds_long_wf ht x hp
 
-/-- **One part of an eight-byte integral side: its codes are faithful**, on either branch of `codes`. -/
-theorem codes_long_one_faithful {t : QAtomicType} (ht : orderKind t = some .i64) (x : Part (.atom t))
-    {i j : Nat} (hi : i < x.1.toNat) (hj : j < x.1.toNat) :
-    Column.idAt (Obj.codes (.atom t) #v[x])[0].b (Obj.codes (.atom t) #v[x])[0].w i =
-        Column.idAt (Obj.codes (.atom t) #v[x])[0].b (Obj.codes (.atom t) #v[x])[0].w j ↔
-      Vals.row x.2 ⟨i, hi⟩ = Vals.row x.2 ⟨j, hj⟩ := by
-  cases hro : rangeOffsets t (#v[x].map fun c => Arr.part c.2) ((#v[x].map (·.1)).foldl (fun s n => s + n.toNat) 0) with
-  | none => exact codes_long_group_faithful ht x hro hi hj
-  | some os => exact codes_long_faithful ht #v[x] hro (k := 0) (l := 0) (by decide) (by decide) hi hj
 
 /-- **One part of an eight-byte integral side: its code is well formed**, on either branch of `codes`. -/
 theorem codes_long_one_wf {t : QAtomicType} (ht : orderKind t = some .i64) (x : Part (.atom t)) :

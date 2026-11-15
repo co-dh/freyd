@@ -8,9 +8,6 @@ namespace LeetQ.Rel.Alg
 
 open QLean QLean.Dep QLean.Kernel QLean.Verify LeetQ.Rel
 
-/-- `one v`'s only word is `v`. -/
-theorem elem_one (v : UInt64) : Ew.elem Ew.i64 (one v) 0 = v := elem_atomBytes_i64 v
-
 /-- **A long side of several parts in any encoding, `rangeOffsets` declining the parts: its codes are the
     grouping code of the `raze`, cut back.** -/
 theorem codes_long_cut {t : QAtomicType} (ht : orderKind t = some .i64) {p : Nat} (cs : Vector (Part (.atom t)) p)

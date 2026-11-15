@@ -57,11 +57,6 @@ theorem blockStart_shift {M m : ByteArray} (a : Nat) : ∀ b, (∀ c < b, Column
     rw [← Nat.add_assoc, blockStart_succ, blockStart_succ, blockStart_shift a b (fun c hc => h c (by omega)),
       h b (by omega), Nat.add_assoc]
 
-theorem blockStart_congr {M m : ByteArray} : ∀ b, (∀ c < b, Column.widthAt M c = Column.widthAt m c) →
-    Column.blockStart M b = Column.blockStart m b
-  | 0, _ => by simp [Column.blockStart]
-  | b + 1, h => by rw [blockStart_succ, blockStart_succ, blockStart_congr b (fun c hc => h c (by omega)), h b (by omega)]
-
 /-- `resAt` reads only the bytes its field overlaps. -/
 theorem resAt_congr {P Q : ByteArray} {s s' w j : Nat}
     (h : ∀ k < (j * w + w + 7) / 8, P[s + k]? = Q[s' + k]?) : Column.resAt P s w j = Column.resAt Q s' w j := by
