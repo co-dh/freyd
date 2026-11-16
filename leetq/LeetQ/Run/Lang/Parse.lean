@@ -38,18 +38,15 @@ abbrev P := StateT S (Except Err)
 instance {α : Type} : Inhabited (P α) := ⟨fun _ => .error default⟩
 
 def pos : P Pos := do let s ← get; pure ⟨s.line, s.col⟩
-def peekAt (k : Nat) : P (Option Char) := do let s ← get; pure s.cs[s.i + k]?
-def peek : P (Option Char) := peekAt 0
-def adv : P Unit := modify fun s => match s.cs[s.i]? with
-  | some '\n' => { s with i := s.i + 1, line := s.line + 1, col := 1 }
-  | _ => { s with i := s.i + 1, col := s.col + 1 }
+def peek : P (Option Char) := do let s ← get; pure s.cs[s.i]?
+-- the text is one Lean token, so no newline: Lean's tokenizer has read the lines, spaces and comments
+def adv : P Unit := modify fun s => { s with i := s.i + 1, col := s.col + 1 }
 
 def advN (k : Nat) : P Unit := for _ in List.range k do adv
 
 def found : P String := do
   match ← peek with
   | none => pure "the end of the text"
-  | some '\n' => pure "the end of the line"
   | some c => pure s!"'{c}'"
 
 def expected {α : Type} (what : String) : P α := do throw ⟨← pos, s!"expected {what}, found {← found}"⟩
@@ -68,19 +65,8 @@ def isVar (w : String) : Bool := match w.toList with
   | c :: cs => 0x3B1 ≤ c.val && c.val ≤ 0x3C9 && cs.all fun d => isSub d || d == '\''
   | [] => false
 
-/-- Spaces and a `--` comment, never the newline that ends a declaration. -/
-partial def ws : P Unit := do
-  match ← peek with
-  | some ' ' | some '\t' | some '\r' => adv; ws
-  | some '-' => if (← peekAt 1) == some '-' then skipLine else pure ()
-  | _ => pure ()
-where skipLine : P Unit := do
-  match ← peek with
-  | none | some '\n' => pure ()
-  | _ => adv; skipLine
-
 def tok (c : Char) : P Unit := do
-  ws; if (← peek) == some c then adv else expected s!"'{c}'"
+  if (← peek) == some c then adv else expected s!"'{c}'"
 
 /-- The run of identifier characters at the cursor. -/
 partial def run : P (List Char) := do
@@ -88,14 +74,9 @@ partial def run : P (List Char) := do
   | some c => if isIdCont c then do adv; pure (c :: (← run)) else pure []
   | none => pure []
 
-/-- At the cursor an ASCII `-` with a digit right after it: the sign of a number word (§c). `--` is a comment and
-    `−` (U+2212) the difference, so neither reads as a sign. -/
-def atSign : P Bool := do pure ((← peek) == some '-' && ((← peekAt 1).map Char.isDigit).getD false)
-
-/-- A word, whole: an object name, an element, a number (signed: `-3`), a defined name at its definition. -/
+/-- A word, whole: an object name, an element, a number, a defined name at its definition. The sign of `-3` is
+    Lean's (`Embed.wNeg`). -/
 def word : P String := do
-  ws
-  if ← atSign then do adv; return "-" ++ String.ofList (← run)
   match ← peek with
   | some c =>
     if isIdCont c then pure (String.ofList (← run))
@@ -176,43 +157,25 @@ def name : P String := do
     resolved p (s.text s.i (s.i + k))
   | none => expected "a name"
 
-mutual
-
-/-- `object := oprim (('×' | '+') oprim)*`, left to right. -/
-partial def object : P OExp := do
-  let mut o ← oprim
-  repeat
-    ws
-    match ← peek with
-    | some '×' => adv; o := .prod o (← oprim)
-    | some '+' => adv; o := .sum o (← oprim)
-    | _ => break
-  pure o
-
-partial def oprim : P OExp := do
-  ws
-  let p ← pos
-  match ← peek with
-  | some '𝒫' => adv; pure (.pow (← oprim))
-  | some '[' => adv; let o ← object; tok ']'; pure (.list o)
-  | some '(' => adv; let o ← object; tok ')'; pure o
-  | _ =>
-    let w ← qword
-    let s ← get
-    -- a variable is not a declared object and not a definition in scope (§e)
-    if s.objs.contains w then pure (.name p w)
-    else if s.vars && isVar w && !s.known.any (·.1 == w) then pure (.var p w)
-    else match s.res w with
-      | .ext e => if e.obj then do set { s with used := e.const :: s.used }; pure (.name p w) else throw ⟨p, s!"expected an object, found '{w}'"⟩
-      | .bad _ m => throw ⟨p, m⟩
-      | .none => throw ⟨p, s!"expected an object, found '{w}'"⟩
-
 /-- A word, or `m.w` where `m` is a namespace (`board9.Cell`). -/
 partial def qword : P String := do
   let w ← word
   if (← peek) == some '.' && (← get).ns w then do adv; let v ← qword; pure s!"{w}.{v}" else pure w
 
-end
+/-- The object word of `relObj`'s `oWord` (`Embed.obj`), whose `[ ]`, `( )`, `×`, `+` and `𝒫 (…)` are Lean's:
+    `𝒫`s, since Lean reads `𝒫A` as one identifier, then a qualified word. -/
+partial def object : P OExp := do
+  let p ← pos
+  if (← peek) == some '𝒫' then do adv; return .pow (← object)
+  let w ← qword
+  let s ← get
+  -- a variable is not a declared object and not a definition in scope (§e)
+  if s.objs.contains w then pure (.name p w)
+  else if s.vars && isVar w && !s.known.any (·.1 == w) then pure (.var p w)
+  else match s.res w with
+    | .ext e => if e.obj then do set { s with used := e.const :: s.used }; pure (.name p w) else throw ⟨p, s!"expected an object, found '{w}'"⟩
+    | .bad _ m => throw ⟨p, m⟩
+    | .none => throw ⟨p, s!"expected an object, found '{w}'"⟩
 
 /-- The names a definition must not take: they read as `∪ ∩ ⊤ °`. -/
 def banned : List String := ["U", "u", "n", "T", "o"]
@@ -233,9 +196,8 @@ def at_ (p : Pos) : String := s!"at line {p.line}"
 
 /-- A number word read by `String.toInt?`, the one reader every number word goes through (a literal's in
     `Elab.code`); a `long`, the type its elements are coded in. -/
-def num : P Int := do
+def num (w : String) : P Int := do
   let p ← pos
-  let w ← word
   match w.toInt? with
   | some k => if -2^63 ≤ k ∧ k < 2^63 then pure k else throw ⟨p, s!"the number {w} does not fit a long"⟩
   | none => throw ⟨p, s!"expected a number, found '{w}'"⟩

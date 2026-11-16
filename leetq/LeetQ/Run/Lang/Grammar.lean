@@ -245,7 +245,7 @@ def tokText (s : Syntax) : String := match s with
   | _ => if s.isOfKind numLitKind then s[0].getAtomVal else ""
 
 def wordOf (s : Syntax) : C String := match s.getKind with
-  | ``wNeg => onText s ("-" ++ tokText s[1]) Parse.word
+  | ``wNeg => do pure ("-" ++ (← onText s[1] (tokText s[1]) Parse.word))
   | _ => onText s (tokText s[0]) Parse.word
 
 /-- The names a run of letters is, each where it starts: `Parse.name` to the end of the token. -/

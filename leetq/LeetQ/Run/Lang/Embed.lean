@@ -55,7 +55,7 @@ def stmt (s : Syntax) : C Decl := do
     if let some r := (← get).taken.lookup n then failAt s[1] s!"`{n}` is already defined {r}"
     pure n
   let objDecl (d : C ObjDef) : C Decl := do let n ← objName; pure (.obj p n (← d))
-  let num (w : Syntax) : C Int := do onText w[0] (← wordOf w) Parse.num
+  let num (w : Syntax) : C Int := do onText w[0] "" (Parse.num (← wordOf w))
   let opt (o : Syntax) := if o.getNumArgs == 0 then #[] else o[1].getSepArgs
   match s.getKind with
   | ``sElems => objDecl do pure (.elems (← s[4].getSepArgs.toList.mapM wordOf))
@@ -68,7 +68,7 @@ def stmt (s : Syntax) : C Decl := do
   | ``sCheck => pure (.check p (← expr s[1]) (← expr s[3]) (atomIn s[2] == "="))
   | ``sDefn =>
     -- `_on_` is one Lean identifier: its text read as a head, `_n_` the infix `n`
-    let (w, key) ← onText s[0] (tokText s[0][0] ++ (if s[0].getKind == ``wNeg then tokText s[0][1] else "")) do
+    let (w, key) ← if s[0].getKind == ``wNeg then (do let w ← wordOf s[0]; pure (w, w)) else onText s[0] (tokText s[0][0]) do
       let w ← Parse.word
       if w != "_" then pure (w, w) else do
         let n ← Parse.word
