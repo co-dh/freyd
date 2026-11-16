@@ -24,7 +24,7 @@ rel_program selsort where
     /- The converse of a fold needs the arrays it folds: `C`, every rearrangement of an input. -/
 
     C : [N] ⟶ [N] ≜ ran((x ∪ y ∪ z ∪ e)perm)
-    X : [N] ⟶ [N] ≜ (C⦇ran(nil), select°⦈)°       -- 06:316 ⦇[nil, select°]⦈°
+    X : [N] ⟶ [N] ≜ (C⦇[nil, select°]⦈)°       -- 06:316 ⦇[nil, select°]⦈°
 
     check x perm ordered(≤) = {(∗,1 2 3)}
     check y perm ordered(≤) = {(∗,1 2 2)}

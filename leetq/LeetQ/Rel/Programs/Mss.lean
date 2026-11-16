@@ -20,27 +20,25 @@ rel_program mss where
     mss : [N] ⟶ N ≜ Λ(segment sum)est(≥)
 
     /- The versions the note's derivation passes through, Lean `mss_eq_scan : mss = ⦇k⦈ π₂ est(≥)`. The note writes ⊕
-       as an operator; ⊕ is the sum of relations here, so it is the ordinary definition `oplus`. The note's
-       `S ≜ [zero, ⊤zero ∪ plus]` is the fold `⦇ran(zero), ⊤zero ∪ plus⦈` in `fused`: a fold takes its seed and step
-       apart, so `S` has no definition of its own. -/
+       as an operator; ⊕ is the sum of relations here, so it is the ordinary definition `oplus`. -/
 
     oplus : N×N ⟶ N ≜ Λ(⊤zero ∪ plus)est(≥)       -- the larger of 0 and a+b; `⊤zero` is the note's `⊸ zero`
-    g : [N] ⟶ N ≜ ⦇ran(zero), oplus⦈              -- the note's `g ≜ ⦇[zero,oplus]⦈`
+    g : [N] ⟶ N ≜ ⦇[zero, oplus]⦈
     w : N×(N×α) ⟶ N ≜ (𝟙×π₁)oplus                 -- the head oplus the value the tail carries
 
     shape : [N] ⟶ N ≜ Λ(suffix)E(Λ(prefix sum)est(≥))est(≥)               -- the largest over suffixes of the largest prefix sum
-    fused : [N] ⟶ N ≜ Λ(suffix)E(Λ(⦇ran(zero), ⊤zero ∪ plus⦈)est(≥))est(≥)   -- `prefix sum` fused into the fold `⦇S⦈`
+    fused : [N] ⟶ N ≜ Λ(suffix)E(Λ(⦇[zero, ⊤zero ∪ plus]⦈)est(≥))est(≥)   -- `prefix sum` fused into the fold `⦇S⦈`
     greedy : [N] ⟶ N ≜ Λ(suffix)E(g)est(≥)                                -- each suffix keeps the one value `g`
 
     /- `k ≜ [zero⟨𝟙,Λ(𝟙)⟩, ⟨w,⟨wΛ(𝟙),π₂π₂⟩ cup⟩]` (note :844) is the fold's seed and step below; the step's set is Lean's
        own `Λ(w ∪ π₂π₂∋)` (`k`, :756), an array: the language has no `cup`. -/
 
-    scan : [N] ⟶ N ≜ ⦇ran(zero⟨𝟙,Λ(𝟙)⟩), ⟨w,Λ(w ∪ (π₂π₂∋))⟩⦈π₂est(≥)
+    scan : [N] ⟶ N ≜ ⦇[zero⟨𝟙,Λ(𝟙)⟩, ⟨w,Λ(w ∪ (π₂π₂∋))⟩]⦈π₂est(≥)
 
     /- The arrays over D = {-2,-1,3} of length at most 3: one fold round per element of D, each adding a head or not. -/
 
     D : N ⟶ N ≜ {(-2,-2),(-1,-1),(3,3)}
-    A : [N] ⟶ [N] ≜ ran(Λ(⊤(1,N)D)⦇ran(⊤(1,1)nil), π₂ ∪ (⟨⊤D,π₂⟩cons)⦈)
+    A : [N] ⟶ [N] ≜ ran(Λ(⊤(1,N)D)⦇[⊤(1,1)nil, π₂ ∪ (⟨⊤D,π₂⟩cons)]⦈)
 
     check A shape = A mss
     check A fused = A mss
@@ -58,8 +56,8 @@ rel_program mss where
     theorem zeroSimple : zero°zero ⊑ 𝟙
     theorem geqRefl : 𝟙 ⊑ ≥
     theorem estUnion : Λ(suffix)E(Λ(prefix sum))E(∋)est(≥) = Λ(suffix)E(Λ(prefix sum))E(est(≥))est(≥)  -- no set empty
-    -- the greedy row Λ(⦇S⦈)est(≥) = ⦇Λ(S)est(≥)⦈, with S's seed and step apart
-    theorem greedyFold : Λ(⦇ran(zero), ⊤zero ∪ plus⦈)est(≥) = ⦇ran(Λ(zero)est(≥)), Λ(⊤zero ∪ plus)est(≥)⦈
+    -- the greedy row Λ(⦇S⦈)est(≥) = ⦇Λ(S)est(≥)⦈
+    theorem greedyFold : Λ(⦇[zero, ⊤zero ∪ plus]⦈)est(≥) = ⦇[Λ(zero)est(≥), Λ(⊤zero ∪ plus)est(≥)]⦈
 
     theorem toShape : mss = shape := calc         -- note `mss-shape`
       _ = Λ(suffix prefix sum)est(≥) := ≜ segment
@@ -70,10 +68,10 @@ rel_program mss where
       _ = shape := ≜ shape
     theorem toFused : shape = fused               -- note `mss-prefix-sum`
     theorem toGreedy : fused = greedy := calc     -- note `mss-mono`, `mss-step`, the greedy row
-      _ = Λ(suffix)E(Λ(⦇ran(zero), ⊤zero ∪ plus⦈)est(≥))est(≥) := ≜ fused
-      _ = Λ(suffix)E(⦇ran(Λ(zero)est(≥)), Λ(⊤zero ∪ plus)est(≥)⦈)est(≥) := greedyFold
-      _ = Λ(suffix)E(⦇ran(zero), Λ(⊤zero ∪ plus)est(≥)⦈)est(≥) := estMap(zero, ≥)
-      _ = Λ(suffix)E(⦇ran(zero), oplus⦈)est(≥) := ≜ oplus
+      _ = Λ(suffix)E(Λ(⦇[zero, ⊤zero ∪ plus]⦈)est(≥))est(≥) := ≜ fused
+      _ = Λ(suffix)E(⦇[Λ(zero)est(≥), Λ(⊤zero ∪ plus)est(≥)]⦈)est(≥) := greedyFold
+      _ = Λ(suffix)E(⦇[zero, Λ(⊤zero ∪ plus)est(≥)]⦈)est(≥) := estMap(zero, ≥)
+      _ = Λ(suffix)E(⦇[zero, oplus]⦈)est(≥) := ≜ oplus
       _ = Λ(suffix)E(g)est(≥) := ≜ g
       _ = greedy := ≜ greedy
     theorem toScan : greedy = scan                -- note `mss-scan`

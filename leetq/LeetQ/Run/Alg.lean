@@ -1096,8 +1096,8 @@ def takewhileC {B : Obj} {n : USize} (P : Rel B B) (X : Vals (.arr B) n) : Rel (
 
 /-- `takewhile`: `takewhileC`'s relation. -/
 def takewhile {B : Obj} {n : USize} (P : Rel B B) (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) := (takewhileC P X).1
-/-- `concat : arr (arr B) ⟶ arr B` on the arrays of arrays `X`, each to its arrays one after another (B&dM p.129,
-    the prelude's `⦇ran(nil), cat⦈`): no round, no `cons`. The inner arrays compacted (`Vals.pickC` at `til`) lie
+/-- `concat : arr (arr B) ⟶ arr B` on the arrays of arrays `X`, each to its arrays one after another (B&dM p.129):
+    no round, no `cons`. The inner arrays compacted (`Vals.pickC` at `til`) lie
     end to end, inner array `j` ending at `hi j` (`pick_row_arr`), so outer row `i`, the inner arrays `[a, a + c)`
     (`slicesOf`), is one slice: from the end of array `a - 1` to the end of array `a + c - 1`, the index `-1`
     missing the gather and reading `0`. The inner arrays are not contiguous in general (`tails` overlaps them), so

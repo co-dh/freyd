@@ -32,11 +32,11 @@ rel_program knapsack where
 
     s : K ⟶ [N×N] ≜ Λ(X subseq within(w))est(R)
 
-    /- The specification as a fold, knap_spec: subseq within(w) = ⦇[nil, cons within(w) ∪ π₂]⦈; the seed nil of the base
-       case is the fold's coreflexive ran(X nil), the item case its step S. -/
+    /- The specification as a fold, knap_spec: subseq within(w) = ⦇[nil, cons within(w) ∪ π₂]⦈; the base
+       case is X nil, the item case its step S. -/
 
     S : (α×N)×[α×N] ⟶ [α×N] ≜ cons within(w) ∪ π₂   -- at each item, keep it if the packing still fits, or drop it
-    p : K ⟶ [N×N] ≜ Λ(X⦇ran(X nil),S⦈)est(R)     -- knap_laws_step2's left side: Λ⦇S⦈ est(R)
+    p : K ⟶ [N×N] ≜ Λ(X⦇[X nil, S]⦈)est(R)     -- knap_laws_step2's left side: Λ⦇S⦈ est(R)
 
     /- The derived program, knap_fold (08-thinning.typ:727):
 
@@ -47,11 +47,11 @@ rel_program knapsack where
        cpr(a,ps) = [(a,p) ∣ p ← ps], the fold over ps that pairs each packing with a; its arguments are families (§e), so
        the step passes the item and the packings as ⟨⊤,π₁⟩, ⟨⊤,π₂⟩ and drops the 1 of the result. -/
 
-    cpr(a : 1 ⟶ N×N, ps : 1 ⟶ [[N×N]]) : 1 ⟶ [(N×N)×[N×N]] ≜ ps⦇ran(nil(1)), ⟨⟨⊤ a, π₁⟩, π₂⟩cons⦈
+    cpr(a : 1 ⟶ N×N, ps : 1 ⟶ [[N×N]]) : 1 ⟶ [(N×N)×[N×N]] ≜ ps⦇[nil(1), ⟨⟨⊤ a, π₁⟩, π₂⟩cons]⦈
     step : (N×N)×[[N×N]] ⟶ [[N×N]] ≜ cpr(⟨⊤,π₁⟩,⟨⊤,π₂⟩)π₂⟨F(cons)filter(within(w)), F(π₂)⟩merge(R)thinL(Q)
-    knap : K ⟶ [N×N] ≜ X⦇ran(X nil τ), step⦈est(R)   -- minL(R) is est(R) on the thinned array
+    knap : K ⟶ [N×N] ≜ X⦇[X nil τ, step]⦈est(R)   -- minL(R) is est(R) on the thinned array
 
-    check X⦇ran(X nil),S⦈ = X subseq within(w)   -- knap_spec
+    check X⦇[X nil, S]⦈ = X subseq within(w)   -- knap_spec
     check p = s                                   -- knap_laws_step2
     check knap ⊑ s                                -- knap_fold: the derived program refines the specification
 

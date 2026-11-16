@@ -243,13 +243,6 @@ example (R : F.obj A ⟶ A) (S : A ⟶ B) (K : Coproduct (F.obj A) U W) (e : U �
   guard_expr rel(α ⦇R⦈) =ₛ I.α ≫ relCata R
   guard_expr rel(F(⦇R⦈) R) =~ F.map (relCata R) ≫ R
   guard_expr rel(⦇[e,V]⦈) =ₛ relCata (junc K e V)
-  -- the program fold: the base from `1` whose range is the seed
-  guard_expr rel(⦇ran(e),V⦈) =ₛ relCata (junc K e V)
-  trivial
-
-set_option linter.unusedVariables false in
-example (K : Coproduct (F.obj A) U W) (c : A ⟶ A) (V : W ⟶ A) : True := by
-  guard_expr rel(⦇c,V⦈) =ₛ relCata (junc K (topHom U A ≫ c) V)
   trivial
 
 /-- B&dM fold fusion (`relCata_fusion`): `⦇R⦈ S` satisfies the fold's equation at `Q`, then uniqueness. -/
@@ -395,11 +388,6 @@ example (Q : (⟨Int⟩ : RelSet.{0}) ⟶ ⟨Int⟩) : True := by
 #check rel(div)
 
 end RelSet
-
-/-- error: line 402, col 7: one-argument fold is for rel(…) proofs: a program folds a list with `⦇e,S⦈` -/
-#guard_msgs (whitespace := lax) in
-rel_program oneFold where
-  r ≜ ⦇𝟙⦈
 
 /-! ### Closedness: a Lean term inside `rel(…)` is an error, never a term elaborated; a keyword is a Rel name -/
 

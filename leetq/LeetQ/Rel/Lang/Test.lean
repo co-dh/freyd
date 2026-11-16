@@ -94,14 +94,14 @@ rel_program twoIdx where
     print (s₀×{(1,1)})k(∋,ζ∋)
 
 open LeetQ.Rel.Programs.prelude in
-/-- `X⦇e,S⦈` given a family (§e): at each key of a three-key family, the fibre of the lifted fold is the fold of
+/-- `X⦇R⦈` given a family (§e): at each key of a three-key family, the fibre of the lifted fold is the fold of
     the fibre. `p(R)` holds the pairs `(a,b)` with `b` at most two steps of `R` from `a`. -/
 rel_program foldLaw where
     obj X = {A,B,C}
     obj K = 0…2
     obj L = 5…6
     ℓ : 1 ⟶ [L] ≜ Λ(⊤(1,L))
-    p(R : X ⟶ X) : X×X ⟶ X×X ≜ ran(ℓ⦇ran⟨𝟙,𝟙⟩, π₂ ∪ (π₂(𝟙×R))⦈)
+    p(R : X ⟶ X) : X×X ⟶ X×X ≜ ran(ℓ⦇[⟨𝟙,𝟙⟩, π₂ ∪ (π₂(𝟙×R))]⦈)
     R₀ : X ⟶ X ≜ {(A,B)}
     R₁ : X ⟶ X ≜ {(A,B),(B,C)}
     R₂ : X ⟶ X ≜ {(A,B),(B,C),(C,A)}
@@ -132,7 +132,7 @@ rel_program foldClosed where
     obj L = 5…6
     ℓ : 1 ⟶ [L] ≜ Λ(⊤(1,L))
     G : X ⟶ X ≜ {(A,B),(C,C)}
-    p(R : X ⟶ X) : X×X ⟶ X×X ≜ ran(ℓ⦇ran⟨𝟙,𝟙⟩, π₂(𝟙×G) ∪ (π₂(𝟙×(∼R ∩ G))) ∪ (π₂(𝟙×dom(R))) ∪ (π₂⟨π₁,π₁⟩)⦈)
+    p(R : X ⟶ X) : X×X ⟶ X×X ≜ ran(ℓ⦇[⟨𝟙,𝟙⟩, π₂(𝟙×G) ∪ (π₂(𝟙×(∼R ∩ G))) ∪ (π₂(𝟙×dom(R))) ∪ (π₂⟨π₁,π₁⟩)]⦈)
     R₀ : X ⟶ X ≜ {(A,B)}
     R₁ : X ⟶ X ≜ {(A,B),(B,C)}
     R₂ : X ⟶ X ≜ {(A,B),(B,C),(C,A)}
@@ -290,7 +290,7 @@ def errAt (src : String) (line : Nat) (what : String) (col : Option Nat := none)
 #eval errAt "obj X = {A,B,C}\nobj N = 0…3\na : X ⟶ X ≜ {(A,B)}\nb : N ⟶ N ≜ {(1,2)}\nf ≜ ab\n" 5
   "found N, expected X"
 -- a family given where the row is not liftable
-#eval errAt "obj X = {A,B,C}\nobj St = 𝒫(X×X)\nL(S : X ⟶ X) : X ⟶ X ≜ ⦇S,S⦈\nf : St ⟶ X×X ≜ L(∋)\n" 3
+#eval errAt "obj X = {A,B,C}\nobj St = 𝒫(X×X)\nL(S : X ⟶ X) : X ⟶ X ≜ ⦇[S,S]⦈\nf : St ⟶ X×X ≜ L(∋)\n" 3
   "not liftable"
 -- a term that needs a universe its object does not have
 #eval errAt "obj X = {A,B,C}\nobj St = 𝒫(X×X)\nprint ⊤(St,X)\n" 3 "has no universe"
@@ -333,7 +333,7 @@ def readsAll (ps : List (String × String)) : CM Unit := ps.forM fun (s, r) => d
 
 #eval trips ["R S", "R°", "R ∩ S", "R ∪ S", "R − S", "∼R", "R ⇒ S", "𝟘", "⊤", "𝟙", "⊤(X, X)", "𝟙(X)", "dom(R)",
   "ran(R)", "R \\ S", "R / S", "frac(R, S)", "⟨R, S⟩", "π₁", "π₂", "R × S", "[R, S]", "inl", "inr", "R + S",
-  "Λ(R)", "∋", "∈", "E(R)", "τ", "nil", "α", "cons°", "⦇e, S⦈", "F(R)", "est(R)", "thin(R)",
+  "Λ(R)", "∋", "∈", "E(R)", "τ", "nil", "α", "cons°", "⦇R⦈", "F(R)", "est(R)", "thin(R)",
   "filter(p)", "takewhile(p)", "length", "sum", "head", "tail", "suffix", "succ", "plus", "≤", "<",
   "{(A, B), (B, A)}", "R ∪ S R", "R S ∪ R", "R ∩ S ∪ R", "R ∪ S ∩ R", "R ∪ (S R)", "R (S p)", "∼(R S)°",
   "(∼R)°", "∼R S", "{((A, B), A), ((B, A), B)}", "{(A, (B, (A, B)))}"]
@@ -552,10 +552,23 @@ rel_program digits where
     r : N ⟶ [K] ≜ xΛ(⊤(N,K))
     nz : N ⟶ N ≜ 𝟙(N) − {(0,0)}
     step : N×[N] ⟶ N×[N] ≜ ⟨π₁{(0,0)},π₂⟩ ∪ ⟨π₁ nz op° π₁,⟨π₁ nz op° π₂,π₂⟩cons⟩
-    ds : N ⟶ [N] ≜ r⦇ran(x⟨𝟙,nil⟩),π₂ step⦈π₂
+    ds : N ⟶ [N] ≜ r⦇[x⟨𝟙,nil⟩, π₂ step]⦈π₂
     print ds
 
 #guard digits.ok && digits.prints == ["ds = {(107, 1 0 7)}"]
+
+open LeetQ.Rel.Programs.prelude in
+/-- `⦇R⦈` with `R` not written as `[a,S]`, a name and a composite: read through `inl R`, `inr R`, the fold of
+    `[nil, cons]` is `𝟙` on the arrays `As` over `X` of length at most 2. -/
+rel_program foldNamed where
+    obj X = {A,B}
+    R : 1+(X×[X]) ⟶ [X] ≜ [nil, cons]
+    As : [X] ⟶ [X] ≜ ran(Λ(⊤(1,X))⦇[⊤(1,1)nil, π₂ ∪ (⟨⊤,π₂⟩cons)]⦈)
+    check As⦇R⦈ = As
+    check As⦇R 𝟙⦈ = As
+    check As⦇[nil, cons]⦈ = As
+
+#guard foldNamed.ok
 
 -- a prelude definition given a family through a typed parameter: the lifted body reaches `perm`, closed on `[N]`
 #eval errAt "obj N = 0…3\nobj St = 𝒫(N×N)\nf(S : N ⟶ N) : [N] ⟶ [N] ≜ sort(S)\ng : St ⟶ [N]×[N] ≜ f(∋)\n" 3
@@ -973,7 +986,7 @@ def afterErr (pre src : String) : CM Err := do
     ("t", "(c Λ(⇝))"),
     ("s₀", "ran(Λ((⊤(X, X) ⟨𝟙, S₀⟩)))"),
     ("r", "(dom(s₀) Λ(⊤))"),
-    ("L", "ran((r ⦇ran(⟨D, ((D ⊤) {(0, 0)})⟩), (π₂ ∪ (π₂ ⟨(π₁ B), (π₂ succ)⟩))⦈))"),
+    ("L", "ran((r ⦇[⟨D, ((D ⊤) {(0, 0)})⟩, (π₂ ∪ (π₂ ⟨(π₁ B), (π₂ succ)⟩))]⦈))"),
     ("Q", "ran((L(s₀, t) π₁))"),
     ("H", "(Q h(∋))"),
     ("C", "L(H, (Q t)°)"),

@@ -19,15 +19,15 @@ rel_program edit where
 
     r₂ : 1 ⟶ [N] ≜ Λ(⊤{(0,0),(1,1)})              -- the array 0…1, one fold round each
     r₄ : 1 ⟶ [N] ≜ Λ(⊤{(0,0),(1,1),(2,2),(3,3)})  -- the array 0…3
-    Ss : [A] ⟶ [A] ≜ ran(r₂⦇ran(nil(1)), π₂ ∪ (⟨π₂⊤,π₂⟩cons)⦈)    -- the strings
-    Es : [A+(A+A)] ⟶ [A+(A+A)] ≜ ran(r₄⦇ran(nil(1)), π₂ ∪ (⟨π₂⊤,π₂⟩cons)⦈)   -- the edit sequences
+    Ss : [A] ⟶ [A] ≜ ran(r₂⦇[nil(1), π₂ ∪ (⟨π₂⊤,π₂⟩cons)]⦈)    -- the strings
+    Es : [A+(A+A)] ⟶ [A+(A+A)] ≜ ran(r₄⦇[nil(1), π₂ ∪ (⟨π₂⊤,π₂⟩cons)]⦈)   -- the edit sequences
     D : [A]×[A] ⟶ [A]×[A] ≜ Ss×Ss                 -- the pairs of strings
 
     /- The specification (09:485, edit-defn). -/
 
     base : 1 ⟶ [A]×[A] ≜ ⟨nil,nil⟩                -- ([],[])
     step : (A+(A+A))×([A]×[A]) ⟶ [A]×[A] ≜ ⟨⟨π₁cpy°,π₂π₁⟩cons,⟨π₁cpy°,π₂π₂⟩cons⟩ ∪ ⟨⟨π₁del°,π₂π₁⟩cons,π₂π₂⟩ ∪ ⟨π₂π₁,⟨π₁ins°,π₂π₂⟩cons⟩
-    edit : [A+(A+A)] ⟶ [A]×[A] ≜ Es⦇ran(base), step⦈   -- edit ≜ ⦇[base,step]⦈, on the sequences Es
+    edit : [A+(A+A)] ⟶ [A]×[A] ≜ Es⦇[base, step]⦈   -- edit ≜ ⦇[base,step]⦈, on the sequences Es
     R : [α] ⟶ [β] ≜ length ≤(N,N) length°         -- R ≜ length ≤ length°, run on the pairs est compares
     spec : [A]×[A] ⟶ [A+(A+A)] ≜ DΛ(edit°)est(R)  -- Λ(edit°) est(R): a shortest sequence of each pair
 
@@ -61,12 +61,12 @@ rel_program edit where
        the fold's own left (§e). `xus` pairs each character of `x` with the entries of `us` for the string before it and
        after it (p.229, `xus = zip (x, zip (init us, tail us))`). -/
 
-    nextcol(x : 1 ⟶ [A], b : 1 ⟶ A, us : 1 ⟶ [[Op]]) : 1 ⟶ [[Op]] ≜ xus⦇ran(base'(b,us last)), step'(b)⦈ where xus ≜ ⟨x,⟨us init,us tail⟩zip⟩zip
+    nextcol(x : 1 ⟶ [A], b : 1 ⟶ A, us : 1 ⟶ [[Op]]) : 1 ⟶ [[Op]] ≜ xus⦇[base'(b,us last), step'(b)]⦈ where xus ≜ ⟨x,⟨us init,us tail⟩zip⟩zip
 
     /- `column(x,y)` is the fold over `y` from `fstcol(x)` by `nextcol x` (p.228, `column x = ([fstcol x, nextcol x])`):
        the step takes `(b,us)` to `nextcol(x,b,us)`, applied to the closed families of `(x,(b,us))`. -/
 
-    column(x : 1 ⟶ [A], y : 1 ⟶ [A]) : 1 ⟶ [[Op]] ≜ y⦇ran(fstcol(x)), ⟨⊤x,⟨π₁,π₂⟩⟩(nextcol(⟨⊤,π₁⟩,⟨⊤,π₂π₁⟩,⟨⊤,π₂π₂⟩)π₂)⦈
+    column(x : 1 ⟶ [A], y : 1 ⟶ [A]) : 1 ⟶ [[Op]] ≜ y⦇[fstcol(x), ⟨⊤x,⟨π₁,π₂⟩⟩(nextcol(⟨⊤,π₁⟩,⟨⊤,π₂π₁⟩,⟨⊤,π₂π₂⟩)π₂)]⦈
 
     /- `mle` is the first entry of the column, a minimal edit sequence (p.229, `mle (x,y) = outl (head (column x y))`). -/
 

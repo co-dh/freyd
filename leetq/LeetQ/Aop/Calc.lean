@@ -24,7 +24,7 @@ import AOP.A1_7_Pointfree
     `BooleanAllegory`; the book's fold `⦇R⦈` and `α` over an `InitialAlgebra` instance, `F(R)` over a `Relator`
     hypothesis; the power group `∋`, `∈`, `Λ(R)`, `E(R)`, `est(R)`, `thin(Q)`, `τ` as the book's
     power-object operators, each over the class AOP defines it in; the list and number builtins as their `Rel(Set)`
-    declarations; the program fold `⦇e,S⦈` as the book's `⦇[e',S]⦈` (`toTerm`). `builtins` holds every builtin's
+    declarations. `builtins` holds every builtin's
     reading or why it has none. `⊑` and `=` are Lean's, between `rel(…)` terms. Every other construct is an error
     naming it. The translation is `toTerm` and its elaboration `elabExpr`, functions of the Rel term, not of `rel(…)`.
 
@@ -193,20 +193,18 @@ def top (w : Lean.Expr) (p : Lang.Pos) : TermElabM Unit := do
       s!"{name k} (AOP's {name f})")}: AOP's `⊤` is one of these"
     else outside p "`⊤`" m!"is {" and ".intercalate (found.map fun (k, f) => s!"{name f} (by {name k})")} here, and no theorem identifies them"
 
-/-- `e` written as AOP notation; `vars` the local variables a name may be, `folds` the names `lift` gave the
-    one-argument folds, `hs` what the term does not write. -/
-partial def toTerm (vars : List String) (folds : List (String × Lang.Expr)) (hs : Holes) :
-    Lang.Expr → TermElabM Term
-  | .name p n => match folds.lookup n, prelude.lookup n with
-    | some r, _ => do cata hs p "`⦇R⦈`" (← toTerm vars folds hs r)
-    | none, some e => toTerm vars folds hs (e p)
-    | none, none => if vars.contains n then pure (mkIdent (.mkSimple n)) else
+/-- `e` written as AOP notation; `vars` the local variables a name may be, `hs` what the term does not
+    write. -/
+partial def toTerm (vars : List String) (hs : Holes) : Lang.Expr → TermElabM Term
+  | .name p n => match prelude.lookup n with
+    | some e => toTerm vars hs (e p)
+    | none => if vars.contains n then pure (mkIdent (.mkSimple n)) else
       outside p s!"`{n}`" "is not a local variable: a name in rel(…) is a variable or hypothesis of the statement"
-  | .comp a b => do `($(← toTerm vars folds hs a) ≫ $(← toTerm vars folds hs b))
-  | .conv _ a => do `($(← toTerm vars folds hs a)°)
-  | .compl p a => do let (c, _, a) ← boolean p "`∼R`" (← toTerm vars folds hs a); `(Freyd.Alg.neg (𝒜 := $c) $a)
+  | .comp a b => do `($(← toTerm vars hs a) ≫ $(← toTerm vars hs b))
+  | .conv _ a => do `($(← toTerm vars hs a)°)
+  | .compl p a => do let (c, _, a) ← boolean p "`∼R`" (← toTerm vars hs a); `(Freyd.Alg.neg (𝒜 := $c) $a)
   | .bin p o a b => do
-    let (a, b) := (← toTerm vars folds hs a, ← toTerm vars folds hs b)
+    let (a, b) := (← toTerm vars hs a, ← toTerm vars hs b)
     match o with
     | .meet => `($a ∩ $b)
     | .join => `($a ∪ $b)
@@ -216,15 +214,15 @@ partial def toTerm (vars : List String) (folds : List (String × Lang.Expr)) (hs
     | .diff => do let (c, i, a) ← boolean p "`R − S`" a; `(@Freyd.Alg.sub $c $i _ _ $a $b)
     | .prod => `(Freyd.Alg.prodMap $(← prod hs p "`R × S`") $(← prod hs p "`R × S`") $a $b)
   | .pair p a b => do
-    `(Freyd.Alg.RelProd.pair $(← prod hs p "`⟨R,S⟩`") $(← toTerm vars folds hs a) $(← toTerm vars folds hs b))
+    `(Freyd.Alg.RelProd.pair $(← prod hs p "`⟨R,S⟩`") $(← toTerm vars hs a) $(← toTerm vars hs b))
   | .junc p a b => do
-    `(Freyd.Alg.junc $(← coprod hs p "`[R,S]`") $(← toTerm vars folds hs a) $(← toTerm vars folds hs b))
+    `(Freyd.Alg.junc $(← coprod hs p "`[R,S]`") $(← toTerm vars hs a) $(← toTerm vars hs b))
   | .op _ .id [] [] => `(𝟙 _)
   | .op _ .zero [] [] => `(𝟘)
   | .op p .top [] [] => do
     let w ← mkFreshExprMVar none; hs.modify (·.push (top w p)); exprToSyntax w
-  | .op _ .dom [] [a] => do `(Freyd.Alg.dom $(← toTerm vars folds hs a))
-  | .op _ .ran [] [a] => do `(Freyd.Alg.ran $(← toTerm vars folds hs a))
+  | .op _ .dom [] [a] => do `(Freyd.Alg.dom $(← toTerm vars hs a))
+  | .op _ .ran [] [a] => do `(Freyd.Alg.ran $(← toTerm vars hs a))
   | .op p .outl [] [] => do `(Freyd.Alg.RelProd.π₁ (self := $(← prod hs p "`π₁`")))
   | .op p .outr [] [] => do `(Freyd.Alg.RelProd.π₂ (self := $(← prod hs p "`π₂`")))
   | .op p .inl [] [] => do `(Freyd.Alg.Coproduct.u₁ $(← coprod hs p "`inl`"))
@@ -234,20 +232,16 @@ partial def toTerm (vars : List String) (folds : List (String × Lang.Expr)) (hs
     -- an endorelator, as Rel's `F` and the one an `InitialAlgebra` folds: its target allegory is its source
     let c ← exprToSyntax (← mkFreshTypeMVar)
     let f ← hole hs p "`F(R)`" "rel(…) never writes the relator" (← `(Freyd.Alg.Relator $c $c))
-    `(Freyd.Functor.map (Freyd.Alg.Relator.toFunctor $f) $(← toTerm vars folds hs a))
+    `(Freyd.Functor.map (Freyd.Alg.Relator.toFunctor $f) $(← toTerm vars hs a))
   | .op p o (_ :: _) _ => outside p s!"`{o.sym}(…)`" "names Rel objects: rel(…) takes its objects from the Lean types"
   | .op p o [] as =>
     let what := s!"`{o.sym}{if as.isEmpty then "" else "(R)"}`"
     match builtins.lookup (match o with | .index _ => .index 0 | o => o) with
-    | some (.ok (some f)) => do power p what f (← as.mapM (toTerm vars folds hs))
+    | some (.ok (some f)) => do power p what f (← as.mapM (toTerm vars hs))
     | some (.error why) => outside p what s!"has no AOP reading: {why}"
     | _ => outside p what "has no row in `Calc.builtins` that toTerm can read"
   | .lit p _ => outside p "a literal `{…}`" "has no AOP counterpart"
-  -- Rel folds from the values of the coreflexive seed `e`; the book's base is the `e' : 1 ⟶ V` with `ran(e') = e`:
-  -- `b` where `e` is written `ran(b)` (the base's type fixes `b`'s source to `1`), else `⊤e`
-  | .fold p e s => do
-    let e' := match e with | .op _ .ran [] [b] => b | e => .comp (.op p .top [] []) e
-    cata hs p "`⦇e,S⦈`" (← toTerm vars folds hs (.junc p e' s))
+  | .fold p r => do cata hs p "`⦇R⦈`" (← toTerm vars hs r)
   | .app p n _ | .inf p n .. => outside p s!"`{n}`" "is a Rel definition, and rel(…) has none"
   | .fix p l x _ => outside p s!"`{if l then "μ" else "ν"}{x} : …`" "is outside the allegory fragment of rel(…)"
 where
@@ -271,10 +265,9 @@ where
 
 /-- The Rel term `e` elaborated as its AOP reading at the expected type `ty?`, each hole filled: the one entry for
     every caller of the translation (`rel(…)`, and any command or proof step that holds a `Lang.Expr`). -/
-def elabExpr (vars : List String) (folds : List (String × Lang.Expr)) (e : Lang.Expr) (ty? : Option Lean.Expr) :
-    TermElabM Lean.Expr := do
+def elabExpr (vars : List String) (e : Lang.Expr) (ty? : Option Lean.Expr) : TermElabM Lean.Expr := do
   let hs ← IO.mkRef #[]
-  let r ← elabTermEnsuringType (← toTerm vars folds hs e) ty?
+  let r ← elabTermEnsuringType (← toTerm vars hs e) ty?
   synthesizeSyntheticMVars (postpone := .yes)
   -- each hole that fills fixes objects of the others (a coproduct, the relator of its fold): retry until none moves
   let mut todo ← hs.get
@@ -292,20 +285,14 @@ syntax:max (name := rThin) "thin(" rel ")" : rel
 
 def delimited : List (SyntaxNodeKind × Op) := [(``rEst, .est), (``rThin, .thin)]
 
-/-- `s` with each delimited notation read back and each one-argument fold `⦇R⦈` replaced by a fresh name not in `taken`, and `R` under that name: `Lang`
-    has the program fold only, so the book's fold is read here, by syntax kind, before `Embed.expr` sees the term. -/
-partial def lift (taken : List String) (s : Syntax) : StateM (Array (String × Syntax)) Syntax := do
+/-- `s` with each delimited notation read back as the builtin it spells. -/
+partial def lift (s : Syntax) : Syntax :=
   if let some o := delimited.lookup s.getKind then
     let h := mkNode ``Embed.hId #[mkIdentFrom s[0] (.mkSimple o.sym)]
-    pure (mkNode ``Embed.rApp #[h, mkAtom "(", mkNullNode #[← lift taken s[1]], mkAtom ")"])
-  else if s.getKind == ``Embed.rFold1 then
-    let r ← lift taken s[1]
-    let used := taken ++ (← get).toList.map (·.1)
-    let n := ((List.range (used.length + 1)).map (s!"fold{·}")).find? (!used.contains ·) |>.getD "fold"
-    modify (·.push (n, r)); pure (mkNode ``Embed.rId #[mkIdentFrom s (.mkSimple n)])
+    mkNode ``Embed.rApp #[h, mkAtom "(", mkNullNode #[lift s[1]], mkAtom ")"]
   else match s with
-    | .node i k as => pure (.node i k (← as.mapM (lift taken)))
-    | _ => pure s
+    | .node i k as => .node i k (as.map lift)
+    | _ => s
 
 -- `withoutPosition`: juxtaposition may cross a line here, the term ends at its `)`
 syntax (name := relTerm) "rel(" withoutPosition(rel) ")" : term
@@ -316,16 +303,11 @@ syntax (name := relTerm) "rel(" withoutPosition(rel) ")" : term
     let n := d.userName.toString false
     if d.isImplementationDetail || d.userName.hasMacroScopes || (Parse.builtin n).isSome || (prelude.lookup n).isSome
     then ns else n :: ns
-  let (t, fs) := (lift vars stx[1]).run #[]
-  let known := (vars ++ fs.toList.map (·.1)).map (·, 0)
-  let read (s : Syntax) : TermElabM Lang.Expr := do
-    match ((Embed.expr s).run (← getFileMap)).run' { cs := #[], known } with
+  let e ← match ((Embed.expr (lift stx[1])).run (← getFileMap)).run' { cs := #[], known := vars.map (·, 0) } with
     | .error e => throwErrorAt (← refAt e.pos) "{e.msg}"
     | .ok e => pure e
-  let e ← read t
-  let folds ← fs.toList.mapM fun (n, s) => do pure (n, ← read s)
   withRef stx do
-    let r ← elabExpr vars folds e ty?
+    let r ← elabExpr vars e ty?
     -- the term names its locals by synthetic identifiers or by `fill`: a use the unused-variable linter cannot see
     for f in (collectFVars {} (← instantiateMVars r)).fvarIds do addTermInfo' stx (.fvar f)
     pure r

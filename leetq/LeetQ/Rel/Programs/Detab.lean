@@ -23,7 +23,7 @@ rel_program detab where
 
     /- S(r,A): the strings over the characters A, one round of r per character (each round keeps or appends one). -/
 
-    S(r : α ⟶ [β], A : γ ⟶ Ch) : [Ch] ⟶ [Ch] ≜ ran(r⦇ran(e), π₂ ∪ (⟨π₂,π₁⊤A⟩snoc)⦈)
+    S(r : α ⟶ [β], A : γ ⟶ Ch) : [Ch] ⟶ [Ch] ≜ ran(r⦇[e, π₂ ∪ (⟨π₂,π₁⊤A⟩snoc)]⦈)
 
     /- blanks k = k blanks: the converse of length on the all-blank strings, which step needs up to m of. -/
 

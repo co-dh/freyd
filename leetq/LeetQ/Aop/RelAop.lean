@@ -47,7 +47,8 @@ partial def names : Lang.Expr → List String
   | .app _ n as => n :: as.flatMap names
   | .inf _ n a b => n :: (names a ++ names b)
   | .op _ _ _ as => as.flatMap names
-  | .comp a b | .bin _ _ a b | .pair _ a b | .junc _ a b | .fold _ a b => names a ++ names b
+  | .comp a b | .bin _ _ a b | .pair _ a b | .junc _ a b => names a ++ names b
+  | .fold _ r => names r
   | .conv _ a | .compl _ a => names a
   | .lit .. => []
   | .fix _ _ x b => (names b).filter (· != x)
@@ -104,9 +105,9 @@ partial def obj (vs : List String) : OExp → TermElabM Term
 /-- `Calc.elabExpr` of `e`; with no outer term to wait for, a hole still waiting is read again without waiting, so
     that it fails naming the witness it cannot choose. -/
 def read (what : String) (vs : List String) (e : Lang.Expr) (ty? : Option Lean.Expr) : TermElabM Lean.Expr :=
-  catchInternalId postponeExceptionId (Calc.elabExpr vs [] e ty?) fun _ =>
+  catchInternalId postponeExceptionId (Calc.elabExpr vs e ty?) fun _ =>
     withoutPostponing do
-      try Calc.elabExpr vs [] e ty? catch ex => throwError "{what}: {ex.toMessageData}"
+      try Calc.elabExpr vs e ty? catch ex => throwError "{what}: {ex.toMessageData}"
 
 /-- `e` closed: every metavariable solved, every `let` of the model put in place. -/
 def close (what : String) (e : Lean.Expr) : TermElabM Lean.Expr := do

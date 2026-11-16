@@ -50,8 +50,8 @@ rel_program laws where
       _ = Λ(suffix)E(Λ(prefix sum))E(∋)est(≥) := Eunion(prefix sum)
     theorem comp : Λ(suffix)E(Λ(prefix sum))E(est(≥))est(≥) = Λ(suffix)E(Λ(prefix sum)est(≥))est(≥) := calc
       _ = Λ(suffix)E(Λ(prefix sum)est(≥))est(≥) := Ecomp(Λ(prefix sum), est(≥))
-    theorem point : ⦇ran(Λ(zero)est(≥)), oplus⦈ = g := calc
-      _ = ⦇ran(zero), oplus⦈ := estMap(zero, ≥)
+    theorem point : ⦇[Λ(zero)est(≥), oplus]⦈ = g := calc
+      _ = ⦇[zero, oplus]⦈ := estMap(zero, ≥)
       _ = g := ≜ g
 
 rel_aop laws

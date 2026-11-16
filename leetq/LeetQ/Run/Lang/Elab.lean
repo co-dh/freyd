@@ -321,8 +321,7 @@ partial def Pre.nilSrcs : Pre → List OTy
   | x => x.parts.flatMap (·.1.nilSrcs)
 
 /-- A `nil` whose source no context fixed, once the whole term is elaborated, starts at `1`: B&dM's
-    `nil : 1 ⟶ [A]`, `one` the object `1` in scope (`Env.one`). A fold's seed `ran(nil)` drops that source, so only
-    this rule gives it (§e). -/
+    `nil : 1 ⟶ [A]`, `one` the object `1` in scope (`Env.one`) (§e). -/
 def settleNil (one : OTy) (p : Pos) (x : Pre) : M Unit := x.nilSrcs.forM fun a => do
   if let .mv _ := zonk (← Lean.getMCtx) a then unify p "nil's source" a one
 
@@ -552,7 +551,7 @@ def rows : List Row := [
   -- a closed `C` onto `V`: `π₂VC`, `C` run on the sources `π₂V` meets
   ⟨fun I q R S a _ _ _ => constSh q I a (some R) S, fun _ a _ h => return comp (comp (outr I a) (← h.R)) (← h.S)⟩,
   ⟨fun I q _ S a _ _ _ => constSh q I a none S, fun _ a _ h => return comp (outr I a) (← h.S)⟩,
-  -- `RS` lifted, and `X⦇e,S⦈` lifted, `G : I×b ⟶ c` keyed: `⟨π₁,Rᴵ⟩G`
+  -- `RS` lifted, and `X⦇R⦈` lifted, `G : I×b ⟶ c` keyed: `⟨π₁,Rᴵ⟩G`
   ⟨fun I _ R S a b _ _ => compSh I a b R S, fun K _ _ h => do
     let a ← h.a; return comp (pair (outl I a) (K (← h.R) a (← h.b))) (← h.S)⟩,
   -- `⟨R,S⟩` lifted: `⟨Rᴵ,Sᴵ⟩`
@@ -792,6 +791,31 @@ def appliedL (I : OTy) (p : Pos) (o : Op) (as : List Arg) : M Arg := do
     | o, _ => notLiftable p s!"{o.sym}( )"
   pure (.fam r.1 I r.2.1 r.2.2)
 
+/-- `⦇R⦈`, `R : 1 + E×V ⟶ V`, as the kernel's start `ran(inl R)` and step `inr R`, given `R` elaborated (`.inr`) or
+    `R` written `[a,S]` with `a`, `S` elaborated (`.inl`): then `ran(a)` and `S` by `inl[a,S] = a`, `inr[a,S] = S`, so
+    no injection runs. The parts come elaborated because `elabE` recurses only on subterms. -/
+def foldParts (env : Env) (m : Option OTy) (p : Pos) : (Arg × Arg) ⊕ Arg → M (Arg × Arg)
+  | .inl (a, s) => base a s
+  | .inr x => do
+    let inj (o : Op) : M Arg := do
+      let i ← constant env p o []
+      match m, x with
+      | some I, .fam .. => let q ← lComp I p (← famOf I p i) (← famOf I p x); pure (.fam q.1 I q.2.1 q.2.2)
+      | _, _ =>
+        let (q, s, t) := i.plain; let (q', s', t') := x.plain
+        unify p "the source of ⦇R⦈'s algebra R, 1 + E×V" s' t; pure (.rel (.comp q q') s t')
+    base (← inj .inl) (← inj .inr)
+where
+  base (a s : Arg) : M (Arg × Arg) := do
+    let (src, tgt) := match a with | .rel _ s t | .fam _ _ s t => (s, t)
+    unify p "the target of ⦇R⦈'s base inl R, the target of its step inr R" tgt (match s with | .rel _ _ t | .fam _ _ _ t => t)
+    -- a base `a : B ⟶ V` means the book's `⊤a`, `⊤ : 1 ⟶ B`, as `ran(⊤a) = ran(a)` is the kernel's start
+    -- either way; so `1` is its source only where nothing else fixed one, as `settleNil` does for `nil`
+    if let .mv _ := zonk (← Lean.getMCtx) src then unify p "the source of ⦇R⦈'s base inl R" src env.one
+    match m, a with
+    | some I, .fam .. => pure (← appliedL I p .ran [a], s)
+    | _, _ => pure (← applied env p .ran [a.plain], s)
+
 /-- A binary operator on one relation each side. -/
 def binary (p : Pos) (o : Bin) : Pre × OTy × OTy → Pre × OTy × OTy → M Arg
   | (q, s, t), (r, s', t') => do
@@ -918,10 +942,12 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
         let y ← elabE env m qe; pure (if y.isFam then some y else none)
       | _, _ => pure none
     let est := match b with | .op _ .est _ _ => true | _ => false
-    -- `X⦇e,S⦈` with `e` or `S` a family: the fold keyed by the index, on the arrays `X` gives each key (§e)
+    -- `X⦇R⦈` with `R` a family: the fold keyed by the index, on the arrays `X` gives each key (§e)
     let fold? ← match m, b with
-      | some _, .fold _ ea sa => do
-        let y ← elabE env m ea; let z ← elabE env m sa
+      | some _, .fold _ r => do
+        let (y, z) ← foldParts env m p (← match r with
+          | .junc _ a s => do pure (.inl (← elabE env m a, ← elabE env m s))
+          | r => do pure (.inr (← elabE env m r)))
         pure (if y.isFam || z.isFam then some (y, z) else none)
       | _, _ => pure none
     if let (some I, some (y, z)) := (m, fold?) then
@@ -978,10 +1004,12 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
       unify p "the target of the case's second part" t' t
       let w := "[R,S] reads its parts whole"
       pure (.rel (.junc (.close p q s w) (.close p r s' w)) (.sum s s') t)
-  | .fold p a b => do
-    let x ← elabE env m a; let y ← elabE env m b
+  | .fold p r => do
+    let (x, y) ← foldParts env m p (← match r with
+      | .junc _ a s => do pure (.inl (← elabE env m a, ← elabE env m s))
+      | r => do pure (.inr (← elabE env m r)))
     if x.isFam || y.isFam then
-      throw ⟨p, "⦇e,S⦈ given a family is not liftable on its own: its arrays come from its left, X⦇e,S⦈ (§e)"⟩
+      throw ⟨p, "⦇R⦈ given a family is not liftable on its own: its arrays come from its left, X⦇R⦈ (§e)"⟩
     let (q, v, v') := x.plain; let (r, ev, w) := y.plain
     unify p "the fold's start, a coreflexive" v' v
     let e ← fresh

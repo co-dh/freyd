@@ -24,18 +24,18 @@ rel_program prelude where
     tail : [α] ⟶ [α] ≜ cat° dom(π₁(at(0)τ ∩ 𝟙))π₂                 -- B&dM p.149 tail = outr cons°
     init : [α] ⟶ [α] ≜ cat° dom(π₂(at(0)τ ∩ 𝟙))π₁                 -- B&dM p.249 init = outl snoc°
     last : [α] ⟶ α ≜ cat° π₂(at(0)τ ∩ 𝟙)at(0)                     -- B&dM p.267 last = outr snoc°
-    prefix : [α] ⟶ [α] ≜ ⦇ran(nil), nil ∪ cons⦈                -- B&dM p.126 prefix = ⦇[nil, nil ∪ cons]⦈
+    prefix : [α] ⟶ [α] ≜ ⦇[nil, nil ∪ cons]⦈                -- B&dM p.126
     suffix : [α] ⟶ [α] ≜ cat° π₂                                  -- B&dM p.127 suffix, dual to prefix: x ⧺ y ↦ y
-    concat : [[α]] ⟶ [α] ≜ ⦇ran(nil), cat⦈                    -- B&dM p.129 concat = ⦇[nil, cat]⦈
-    subseq : [α] ⟶ [α] ≜ ⦇ran(nil), cons ∪ π₂⦈                -- B&dM p.123 subseq = ⦇[nil, cons ∪ outr]⦈
-    tails : [α] ⟶ [[α]] ≜ ⦇ran(nil τ), ⟨⟨π₁,π₂head⟩cons,π₂⟩cons⦈   -- B&dM p.127 tails = ⦇[wrap nil, extend]⦈
-    filter(p : α ⟶ α) : [α] ⟶ [α] ≜ ⦇ran(nil), dom(π₁p)cons ∪ ((𝟙 − dom(π₁p))π₂)⦈      -- B&dM p.66 ⦇[nil, p outl → cons, outr]⦈
-    takewhile(p : α ⟶ α) : [α] ⟶ [α] ≜ ⦇ran(nil), dom(π₁p)cons ∪ ((𝟙 − dom(π₁p))nil)⦈  -- B&dM p.174 (7.39) ⦇[nil, p outl → cons, nil]⦈
+    concat : [[α]] ⟶ [α] ≜ ⦇[nil, cat]⦈                    -- B&dM p.129
+    subseq : [α] ⟶ [α] ≜ ⦇[nil, cons ∪ π₂]⦈                -- B&dM p.123
+    tails : [α] ⟶ [[α]] ≜ ⦇[nil τ, ⟨⟨π₁,π₂head⟩cons,π₂⟩cons]⦈   -- B&dM p.127 tails = ⦇[wrap nil, extend]⦈
+    filter(p : α ⟶ α) : [α] ⟶ [α] ≜ ⦇[nil, dom(π₁p)cons ∪ ((𝟙 − dom(π₁p))π₂)]⦈      -- B&dM p.66 ⦇[nil, p outl → cons, outr]⦈
+    takewhile(p : α ⟶ α) : [α] ⟶ [α] ≜ ⦇[nil, dom(π₁p)cons ∪ ((𝟙 − dom(π₁p))nil)]⦈  -- B&dM p.174 (7.39) ⦇[nil, p outl → cons, nil]⦈
 
     -- B&dM p.130 `perm ≜ ⦇[nil, add]⦈`: add puts the head anywhere in the tail. Its converse is itself, a rule the
     -- language keeps for this one name (`Tm.own`), because `perm° = perm` cannot be derived from the fold.
 
-    perm : [α] ⟶ [α] ≜ ⦇ran(nil), add⦈ where add ≜ (𝟙×cat°)⟨π₂π₁,⟨π₁,π₂π₂⟩cons⟩cat
+    perm : [α] ⟶ [α] ≜ ⦇[nil, add]⦈ where add ≜ (𝟙×cat°)⟨π₂π₁,⟨π₁,π₂π₂⟩cons⟩cat
     ordered(Q : α ⟶ α) : [α] ⟶ [α] ≜ 𝟙 − dom(tails ∋ ⟨at(0),tail⟩(π₁∼Q ∩ (π₂∋)))   -- every element is Q-related to each later one
     sort(Q : α ⟶ α) : [α] ⟶ [α] ≜ perm ordered(Q)
 

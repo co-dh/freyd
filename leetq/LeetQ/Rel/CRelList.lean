@@ -340,7 +340,7 @@ theorem flatten_windows {α : Type} (S : Nat → Nat) (g : Nat → α) (a : Nat)
     apply List.map_congr_left; intro k _; simp only [Function.comp_apply]; congr 1; omega
 
 /-- **`concat` under `concatC`'s bit**: an array of arrays `xss` of `X` goes to `xss.flatten`, B&dM's
-    `concat = ⦇[nil, cat]⦈` (p.129), the prelude's `⦇ran(nil), cat⦈`. The compacted inner arrays lie end to end
+    `concat = ⦇[nil, cat]⦈` (p.129). The compacted inner arrays lie end to end
     (`pick_row_arr`'s `S`), so outer row `i`, inner arrays `[a, a + c)` (`slicesOf_row`), is `[S a, S (a + c))`
     (`flatten_windows`), each end gathered at the index one before (`gather8_get`, `gather8_miss` at `-1`). -/
 theorem rep_concatC {B : Obj} {n : USize} (X : Vals (.arr (.arr B)) n) (hb : (concatC X).2 = true) :

@@ -291,7 +291,7 @@ inductive Expr
   | compl (p : Pos) (a : Expr)
   | pair (p : Pos) (a b : Expr)
   | junc (p : Pos) (a b : Expr)
-  | fold (p : Pos) (e s : Expr)
+  | fold (p : Pos) (r : Expr)
   | lit (p : Pos) (ps : List (Tup × Tup))
   /-- `μX : φ` (`least`) or `νX : φ`: the least or the greatest `X` with `X = φ(X)`; the body reaches to the
       closing parenthesis or the end of the declaration. -/
@@ -316,7 +316,7 @@ partial def Expr.subst (σ : List (String × Expr)) : Expr → Expr
   | .compl p a => .compl p (a.subst σ)
   | .pair p a b => .pair p (a.subst σ) (b.subst σ)
   | .junc p a b => .junc p (a.subst σ) (b.subst σ)
-  | .fold p a b => .fold p (a.subst σ) (b.subst σ)
+  | .fold p r => .fold p (r.subst σ)
   | .lit p ps => .lit p ps
   -- `x` is bound in the body, so an outer `x` is not replaced there
   | .fix p l x b => .fix p l x (b.subst (σ.filter (·.1 != x)))
@@ -327,7 +327,8 @@ partial def Expr.names : Expr → List String
   | .name _ n => [n]
   | .op _ _ _ as => as.flatMap (·.names)
   | .app _ n as => n :: as.flatMap (·.names)
-  | .comp a b | .bin _ _ a b | .pair _ a b | .junc _ a b | .fold _ a b => a.names ++ b.names
+  | .comp a b | .bin _ _ a b | .pair _ a b | .junc _ a b => a.names ++ b.names
+  | .fold _ r => r.names
   | .inf _ n a b => n :: (a.names ++ b.names)
   | .conv _ a | .compl _ a => a.names
   | .lit .. => []
@@ -439,7 +440,7 @@ def Expr.render (l : Nat) (full : Bool := false) : Expr → String
   | .compl _ a => let s := s!"∼{a.render 1 full}"; if l ≥ 2 then s!"({s})" else s
   | .pair _ a b => s!"⟨{a.render 0 full}, {b.render 0 full}⟩"
   | .junc _ a b => s!"[{a.render 0 full}, {b.render 0 full}]"
-  | .fold _ a b => s!"⦇{a.render 0 full}, {b.render 0 full}⦈"
+  | .fold _ r => s!"⦇{r.render 0 full}⦈"
   | .lit _ ps => "{" ++ ", ".intercalate (ps.map fun (a, b) => (Tup.pair a b).show) ++ "}"
   | .fix _ least x b =>
     let s := s!"{if least then "μ" else "ν"}{x} : {b.render 0 full}"; if full || l ≥ 1 then s!"({s})" else s
