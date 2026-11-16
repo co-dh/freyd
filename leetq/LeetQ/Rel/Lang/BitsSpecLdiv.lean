@@ -14,6 +14,8 @@ namespace LeetQ.Rel.Lang.Bits
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.Rep
 
+variable {ρ : Val}
+
 /-- **`zeros n`** is `n` longs, each `0`. -/
 theorem zeros_ids {n : Nat} (hn : n < min (2 ^ 63) USize.size) :
     len (zeros n) = n ∧ ∀ x ∈ ids (zeros n), x = 0 := by
@@ -67,25 +69,25 @@ variable {A B C : Obj} {ua : Nat → A.El} {ub : Nat → B.El}
     relation: the `∧` of `S`'s rows answers the `∀` clause, the mask `ran R ⊗ ⊤ ∪ Ub ⊗ Uc` the vacuous one. -/
 theorem rep_ldivB {R : Tm A B false} {S : Tm A C false} {UB : Tm B B false} {UC : Tm C C false} {uc : Nat → C.El} (nb : Nat)
     (y a : ByteArray) {s : Bits} (kb kc : ByteArray)
-    (hs : s.Enc ua uc S.den) (hl : len a = len y) (hsort : (ids y).Pairwise (· ≤ ·)) (hJ : ∀ x ∈ ids a, x < s.na)
-    (hR : ∀ b < nb, ∀ x, R.den x (ub b) ↔
+    (hs : s.Enc ua uc (S.den ρ)) (hl : len a = len y) (hsort : (ids y).Pairwise (· ≤ ·)) (hJ : ∀ x ∈ ids a, x < s.na)
+    (hR : ∀ b < nb, ∀ x, R.den ρ x (ub b) ↔
       ∃ (k : Nat) (hk : k < (ids y).length) (hk' : k < (ids a).length), (ids y)[k]'hk = b ∧ ua ((ids a)[k]'hk') = x)
     (hkb : ∀ x ∈ ids kb, x < nb) (hUB : ∀ b < nb, (∃ p, UB.tab.val.row p = ub b) ↔ b ∈ ids kb)
     (hkc : ∀ x ∈ ids kc, x < s.w) (hUC : ∀ c < s.w, (∃ q, UC.tab.val.row q = uc c) ↔ c ∈ ids kc)
     (hnb : nb ≤ 2 ^ 27) (hfit : s.na * s.w ≤ 2 ^ 27) (hsw : s.w ≤ 2 ^ 27) (hout : nb * s.w ≤ 2 ^ 27)
     (hm : len y < min (2 ^ 63) USize.size) (hmb : len kb < min (2 ^ 63) USize.size)
-    (hmc : len kc < min (2 ^ 63) USize.size) :
-    (Bits.ldiv nb y a s kb kc).Enc ub uc (Tm.ldiv R S UB UC).den := by
+    (hmc : len kc < min (2 ^ 63) USize.size) (hvB : UB.isVal = true) (hvC : UC.isVal = true) :
+    (Bits.ldiv nb y a s kb kc).Enc ub uc (Tm.den ρ (Tm.ldiv R S UB UC)) := by
   have hsw' : 1 * s.w ≤ 2 ^ 27 := by omega
   -- the `∀` clause: `∧` of `S`'s rows over `R`'s segments
-  have hd := enc_rows (ua := ub) (ub := ua) (r := fun b x => R.den x b) (t := S.den) true nb y a hs hl hsort hJ hR
+  have hd := enc_rows (ua := ub) (ub := ua) (r := fun b x => R.den ρ x b) (t := (S.den ρ)) true nb y a hs hl hsort hJ hR
     hnb hfit hsw hm
   -- `ran R ⊗ ⊤`: `R`'s segments into the one point, whose row is all ones
   obtain ⟨hzy, hzy0⟩ := zeros_ids hm
-  have hran := enc_rows (ua := ub) (ub := fun _ => uc 0) (r := fun b m => (∃ x, R.den x b) ∧ m = uc 0)
+  have hran := enc_rows (ua := ub) (ub := fun _ => uc 0) (r := fun b m => (∃ x, R.den ρ x b) ∧ m = uc 0)
     (t := fun _ _ => True) false nb y (zeros (len y)) (const_true_enc (fun _ => uc 0) uc hsw) hzy hsort
     (fun x hx => by rw [hzy0 x hx]; exact Nat.zero_lt_one)
-    (fun b hb m => pt_iff (P := ∃ x, R.den x (ub b)) (u := fun _ => uc 0) hzy hzy0
+    (fun b hb m => pt_iff (P := ∃ x, R.den ρ x (ub b)) (u := fun _ => uc 0) hzy hzy0
       ⟨fun ⟨x, hx⟩ => let ⟨k, hk, _, e, _⟩ := (hR b hb x).1 hx; ⟨k, hk, e⟩,
         fun ⟨k, hk, e⟩ => ⟨_, (hR b hb _).2 ⟨k, hk, by rw [← len_eq_ids, hl, len_eq_ids]; exact hk, e, rfl⟩⟩⟩)
     hnb hsw' hsw hm
@@ -131,7 +133,7 @@ theorem rep_ldivB {R : Tm A B false} {S : Tm A C false} {UB : Tm B B false} {UC 
   have hmeet := enc_bit _ And (fun p q => by rw [bitStep_lesser, Bool.and_eq_true]) hd hjoin rfl rfl hout
   intro b hb c hc
   refine Iff.trans (hmeet b hb c hc) ?_
-  simp [Tm.den]
+  simp [Tm.den, ldivDen, Tm.tab_den hvB, Tm.tab_den hvC, valRow]
 
 #print axioms rep_ldivB
 

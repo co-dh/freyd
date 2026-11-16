@@ -1,5 +1,5 @@
 /-
-  The bit-matrix route (`Bits.lean`) read back. `Tm.den` is the route's relation in `Rel(Set)`; `rep_tableC` says the
+  The bit-matrix route (`Bits.lean`) read back against `⟦−⟧` (`Tm.den`, `Den.lean`); `rep_tableC` says the
   table side computes it under `tableC`'s one bit. The bit side is read at the codes: `Bits.Enc` says a matrix holds,
   at bit `i·w + j`, a relation between the elements `ua i`, `ub j`, and each bit rule maps encodings to encodings.
 -/
@@ -9,29 +9,24 @@ import LeetQ.Run.CRelFoldDef
 import LeetQ.Rel.KernelWF.BitRows
 import LeetQ.Rel.KernelWF.MemberSpec
 import LeetQ.Rel.RepArith
+import LeetQ.Rel.Lang.Den
 
 namespace LeetQ.Rel.Lang.Bits
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.Rep Freyd Freyd.Alg Freyd.Alg.RelSet
 
+variable {ρ : Val}
+
 /-! ### The route's relation -/
 
-/-- The route's relation in `Rel(Set)`: each node the set-theoretic op on its children's, a leaf its table's `rep`;
-    empty at a constructor with no bit rule, whose `tableC` bit is false. -/
-def _root_.LeetQ.Rel.Lang.Tm.den : {A B : Obj} → {d : Bool} → Tm A B d → A.El → B.El → Prop
-  | _, _, _, .val R => rep R
-  | _, _, _, .comp R S => fun a c => ∃ b, R.den a b ∧ S.den b c
-  | _, _, _, .conv R => fun b a => R.den a b
-  | _, _, _, .meet R S => fun a b => R.den a b ∧ S.den a b
-  | _, _, _, .join R S => fun a b => R.den a b ∨ S.den a b
-  | _, _, _, .diff R S => fun a b => R.den a b ∧ ¬ S.den a b
-  | _, _, _, .ldiv R S UB UC => fun b c =>
-    (∀ a, R.den a b → S.den a c) ∧ ((∃ a, R.den a b) ∨ ((∃ p, UB.tab.val.row p = b) ∧ ∃ j, UC.tab.val.row j = c))
-  | _, _, _, _ => fun _ _ => False
+/-- A table leaf means its table: the universes of `\` in a route. -/
+theorem _root_.LeetQ.Rel.Lang.Tm.tab_den {A B : Obj} {d : Bool} {t : Tm A B d} (h : t.isVal = true) :
+    t.den ρ = rep t.tab := by
+  cases t <;> first | rfl | exact (Bool.false_ne_true h).elim
 
 /-- **The table side**: under `tableC`'s bit the route's table denotes `Tm.den`, each node by its C twin's read-back
     (`rep_compC`, `rep_interC`, `rep_unionC`, `rep_diffC`, `rep_leftDivC`, `rep_conv`). -/
-theorem rep_tableC {A B : Obj} {d : Bool} (p : Tm A B d) : p.tableC.2 = true → ∀ a b, rep p.tableC.1 a b ↔ p.den a b := by
+theorem rep_tableC {A B : Obj} {d : Bool} (p : Tm A B d) : p.tableC.2 = true → ∀ a b, rep p.tableC.1 a b ↔ p.den ρ a b := by
   induction p with
   | val _ => exact fun _ _ _ => Iff.rfl
   | comp R S ihR ihS =>
@@ -74,13 +69,13 @@ theorem rep_tableC {A B : Obj} {d : Bool} (p : Tm A B d) : p.tableC.2 = true →
     intro hb b c
     unfold Tm.tableC at hb ⊢
     simp only [opC, Bool.and_eq_true] at hb ⊢
-    rw [rep_leftDivC _ _ _ _ hb.2]
-    simp only [Tm.den, ihR hb.1.1, ihS hb.1.2]
+    rw [rep_leftDivC _ _ _ _ hb.1.1.2]
+    simp only [Tm.den, ldivDen, ihR hb.1.1.1.1, ihS hb.1.1.1.2, Tm.tab_den hb.1.2, Tm.tab_den hb.2, valRow]
   | _ => intro hb; simp [Tm.tableC] at hb
 
 /-- `Tm.table` denotes `Tm.den` under `tableC`'s bit. -/
 theorem rep_table {A B : Obj} {d : Bool} (p : Tm A B d) (hb : p.tableC.2 = true) (a : A.El) (b : B.El) :
-    rep p.table a b ↔ p.den a b := rep_tableC p hb a b
+    rep p.table a b ↔ p.den ρ a b := rep_tableC p hb a b
 
 #print axioms rep_tableC
 
@@ -117,19 +112,19 @@ theorem enc_bit (op : UInt8) (F : Prop → Prop → Prop) (hF : ∀ p q, Ew.bitS
   rw [bitAt_bit _ _ _ ht, hF, propext ex, propext ey]
 
 /-- **`∩` as bits** (`rep_inter`'s side, `rep_tableC`): the `∧` of the two matrices holds `Tm.meet`'s relation. -/
-theorem rep_meetB {R : Tm A B d} {S : Tm A B e} {x y : Bits} (hx : x.Enc ua ub R.den) (hy : y.Enc ua ub S.den) (hn : y.na = x.na)
-    (hw : y.w = x.w) (hfit : x.na * x.w ≤ 2 ^ 27) : (x.meet y).Enc ua ub (Tm.meet R S).den :=
+theorem rep_meetB {R : Tm A B d} {S : Tm A B e} {x y : Bits} (hx : x.Enc ua ub (R.den ρ)) (hy : y.Enc ua ub (S.den ρ)) (hn : y.na = x.na)
+    (hw : y.w = x.w) (hfit : x.na * x.w ≤ 2 ^ 27) : (x.meet y).Enc ua ub (Tm.den ρ (Tm.meet R S)) :=
   enc_bit _ And (fun p q => by rw [bitStep_lesser, Bool.and_eq_true]) hx hy hn hw hfit
 
 /-- **`∪` as bits**: the `∨` of the two matrices holds `Tm.join`'s relation. -/
-theorem rep_joinB {R : Tm A B d} {S : Tm A B e} {x y : Bits} (hx : x.Enc ua ub R.den) (hy : y.Enc ua ub S.den) (hn : y.na = x.na)
-    (hw : y.w = x.w) (hfit : x.na * x.w ≤ 2 ^ 27) : (x.join y).Enc ua ub (Tm.join R S).den :=
+theorem rep_joinB {R : Tm A B d} {S : Tm A B e} {x y : Bits} (hx : x.Enc ua ub (R.den ρ)) (hy : y.Enc ua ub (S.den ρ)) (hn : y.na = x.na)
+    (hw : y.w = x.w) (hfit : x.na * x.w ≤ 2 ^ 27) : (x.join y).Enc ua ub (Tm.den ρ (Tm.join R S)) :=
   enc_bit _ Or (fun p q => by rw [bitStep_greater, Bool.or_eq_true]) hx hy hn hw hfit
 
 /-- **`−` as bits**: the `∧` with the complement (`notBits`) holds `Tm.diff`'s relation. -/
-theorem rep_diffB {R : Tm A B d} {S : Tm A B e} {x y : Bits} (hx : x.Enc ua ub R.den) (hy : y.Enc ua ub S.den) (hn : y.na = x.na)
-    (hw : y.w = x.w) (hfit : x.na * x.w ≤ 2 ^ 27) : (x.diff y).Enc ua ub (Tm.diff R S).den := by
-  have hy' : (⟨y.na, y.w, Ew.notBits (y.na * y.w).toUSize y.b⟩ : Bits).Enc ua ub fun a b => ¬ S.den a b := by
+theorem rep_diffB {R : Tm A B d} {S : Tm A B e} {x y : Bits} (hx : x.Enc ua ub (R.den ρ)) (hy : y.Enc ua ub (S.den ρ)) (hn : y.na = x.na)
+    (hw : y.w = x.w) (hfit : x.na * x.w ≤ 2 ^ 27) : (x.diff y).Enc ua ub (Tm.den ρ (Tm.diff R S)) := by
+  have hy' : (⟨y.na, y.w, Ew.notBits (y.na * y.w).toUSize y.b⟩ : Bits).Enc ua ub fun a b => ¬ S.den ρ a b := by
     intro i hi j hj
     have ht : i * y.w + j < (y.na * y.w).toUSize.toNat := by
       rw [toUSize_fit (hn ▸ hw ▸ hfit)]; exact idx_lt hi hj
@@ -319,13 +314,13 @@ theorem enc_rows {r : A.El → B.El → Prop} {t : B.El → C.El → Prop} {uc :
 
 /-- **`≫` as bits** (`rep_comp`'s side, `rep_tableC`): `enc_rows`' `∨`, which holds `Tm.comp`'s relation. -/
 theorem rep_compB {R : Tm A B d} {S : Tm B C e} {uc : Nat → C.El} (na : Nat) (i j : ByteArray) {s : Bits}
-    (hs : s.Enc ub uc S.den) (hl : len j = len i) (hsort : (ids i).Pairwise (· ≤ ·))
+    (hs : s.Enc ub uc (S.den ρ)) (hl : len j = len i) (hsort : (ids i).Pairwise (· ≤ ·))
     (hJ : ∀ b ∈ ids j, b < s.na)
-    (hR : ∀ a < na, ∀ y, R.den (ua a) y ↔
+    (hR : ∀ a < na, ∀ y, R.den ρ (ua a) y ↔
       ∃ (k : Nat) (hk : k < (ids i).length) (hk' : k < (ids j).length), (ids i)[k]'hk = a ∧ ub ((ids j)[k]'hk') = y)
     (hna : na ≤ 2 ^ 27) (hfit : s.na * s.w ≤ 2 ^ 27) (hsw : s.w ≤ 2 ^ 27)
     (hm : len i < min (2 ^ 63) USize.size) :
-    (Bits.comp na i j s).Enc ua uc (Tm.comp R S).den :=
+    (Bits.comp na i j s).Enc ua uc (Tm.den ρ (Tm.comp R S)) :=
   enc_rows false na i j hs hl hsort hJ hR hna hfit hsw hm
 
 #print axioms rep_compB
@@ -433,7 +428,7 @@ theorem rep_leafB {R : Rel A B} {na nb : Nat} {k v : ByteArray} (hl : len v = le
     (hv : ∀ x ∈ ids v, x < nb) (hfit : na * nb ≤ 2 ^ 27) (hm : len k < USize.size)
     (hR : ∀ a < na, ∀ b < nb, rep R (ua a) (ub b) ↔
       ∃ (r : Nat) (h1 : r < (ids k).length) (h2 : r < (ids v).length), (ids k)[r]'h1 = a ∧ (ids v)[r]'h2 = b) :
-    (Bits.ofCodes na nb k v).Enc ua ub (Tm.val R).den := fun a ha b hb =>
+    (Bits.ofCodes na nb k v).Enc ua ub (Tm.den ρ (Tm.val R)) := fun a ha b hb =>
   (ofCodes_at hl hk hv hfit hm ha hb).trans (hR a ha b hb).symm
 
 #print axioms ofCodes_at

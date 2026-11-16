@@ -124,14 +124,6 @@ abbrev Top := ((A : Obj) × (B : Obj) × Tm A B false) × OTy × OTy
 /-- A `check`: where, both sides' texts, `=` (else `⊑`), the objects as named, both sides at one type. -/
 abbrev Chk := Pos × String × String × Bool × OTy × OTy × ((A : Obj) × (B : Obj) × Tm A B false × Tm A B false)
 
-/-- The fixed-point variables `t` reads unbound. -/
-partial def fv : {A B : Obj} → {d : Bool} → Tm A B d → List Nat
-  | _, _, _, .var k => [k]
-  | _, _, _, .nu k S b => fv S ++ (fv b).filter (· != k)
-  | _, _, _, .mu k _ _ b => (fv b).filter (· != k)
-  | _, _, _, .refold k _ ch b => fv ch ++ (fv b).filter (· != k)
-  | _, _, _, t => t.parts.flatMap fun ⟨_, _, _, c⟩ => fv c
-
 /-- The object variable of the family index class `i` at a call (§e): a name no declaration can write. -/
 def idxVar (i : Nat) : String := s!"ι#{i}"
 
@@ -145,7 +137,7 @@ def formKey (c : Lean.Name) (fs : List Form) : Lean.Name :=
 def sigOf (o : Once) : Sig :=
   let ⟨_, _, d, t⟩ := o.res
   let cv := if o.tst then none else (convTm t).toOption
-  { const := o.const, demand := d, vars := o.gen.zip ((List.range o.gen.length).map (fv t).contains),
+  { const := o.const, demand := d, vars := o.gen.zip ((List.range o.gen.length).map t.fv.contains),
     conv := cv.map fun ⟨e, _⟩ => (o.const ++ `conv, e), tst := o.tst, kf := o.kf }
 
 /-- What a program reads: its closed definitions, its prints (text and term), its checks, its objects, and its
@@ -531,10 +523,10 @@ partial def mus : {A B : Obj} → {d : Bool} → Tm A B d → List String
   | _, _, _, t => t.parts.flatMap fun ⟨_, _, _, c⟩ => mus c
 
 /-- A term that needs no keys and reads no fixed-point variable: computed once, its own constant (`share`). -/
-def closed {A B : Obj} {d : Bool} (t : Tm A B d) : Bool := !d && (fv t).isEmpty
+def closed {A B : Obj} {d : Bool} (t : Tm A B d) : Bool := !d && t.fv.isEmpty
 
 /-- `t` with each closed sub-term `R` wrapped as `.share k R`, `k` the next number: `code` keeps each number's
-    code and `fv` stops there (a share is closed), so building and proving a closed sub-term never rebuilds it. -/
+    code and `Tm.fv` stops there (a share is closed), so building and proving a closed sub-term never rebuilds it. -/
 partial def number : {A B : Obj} → {d : Bool} → Tm A B d → StateM Nat (Tm A B d)
   | _, _, _, .share _ R => number R
   | _, _, _, t => do w (← t.mapM fun c => number c)
@@ -543,7 +535,7 @@ where w {A B : Obj} {d : Bool} (t : Tm A B d) : StateM Nat (Tm A B d) :=
 
 /-- `t` needs no keys and does not read the variable `k`: fixed across the rounds of `k`'s fixed point, though it
     may read a parameter of a definition elaborated once or an enclosing fixed point's variable. -/
-def free (k : Nat) {A B : Obj} {d : Bool} (t : Tm A B d) : Bool := !d && !(fv t).contains k
+def free (k : Nat) {A B : Obj} {d : Bool} (t : Tm A B d) : Bool := !d && !t.fv.contains k
 
 /-- `X C`, `X` the variable `k`, `C` free of it: `C`. -/
 def varComp (k : Nat) : {A B : Obj} → {d : Bool} → Tm A B d → Option ((D : Obj) × Tm D B false)
@@ -832,7 +824,7 @@ def emit (n : Name) (r : Read) : MetaM Unit := do
     -- caller's plan runs through the call; `n.x.conv` its converse, when its body has one (`convTm`)
     for o@{ key, const := c, gen, params := qs, res := ⟨A, B, d, t⟩, tst, .. } in fs do
       let nv := gen.length
-      let reads := (List.range nv).map (fv t).contains
+      let reads := (List.range nv).map t.fv.contains
       let pl (e : Bool) (X Y : Obj) := mkApp3 (mkConst ``Gen.Pl) (bE e) (oE X) (oE Y)
       let vo (k : Nat) : Obj := if gen.getD k false then (varObj k).getD .long else .long
       let rk := (List.range nv).filter (reads.getD · false)

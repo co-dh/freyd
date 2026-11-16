@@ -11,6 +11,8 @@ namespace LeetQ.Rel.Lang.Bits
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.Rep Freyd Freyd.Alg Freyd.Alg.RelSet
 
+variable {ρ : Val}
+
 variable {A B : Obj}
 
 /-- **`Ew.val` of a long column against one long**: where `op` with `c` maps each entry `t` of `p` to `f t`, the
@@ -112,13 +114,13 @@ theorem pairs_len_lt (x : Bits) (hfit : x.na * x.w ≤ 2 ^ 27) : len x.pairs.1 <
     (Nat.lt_of_le_of_lt hfit (Nat.lt_of_lt_of_le (by decide) USize.le_size))
 
 /-- **`°` as bits** (`rep_conv`'s side, `rep_tableC`): the pairs swapped and scattered hold the converse of `R`. -/
-theorem rep_convB {ua : Nat → A.El} {ub : Nat → B.El} {d : Bool} {R : Tm A B d} {x : Bits} (hx : x.Enc ua ub R.den)
-    (hfit : x.na * x.w ≤ 2 ^ 27) : x.conv.Enc ub ua fun b a => R.den a b := by
+theorem rep_convB {ua : Nat → A.El} {ub : Nat → B.El} {d : Bool} {R : Tm A B d} {x : Bits} (hx : x.Enc ua ub (R.den ρ))
+    (hfit : x.na * x.w ≤ 2 ^ 27) : x.conv.Enc ub ua fun b a => R.den ρ a b := by
   obtain ⟨hl, -, -, h1, h2, hat⟩ := pairs_spec x hfit
   intro b hb a ha
   change b < x.w at hb
   change a < x.na at ha
-  show (Bits.ofCodes x.w x.na x.pairs.2 x.pairs.1).at b a = true ↔ R.den (ua a) (ub b)
+  show (Bits.ofCodes x.w x.na x.pairs.2 x.pairs.1).at b a = true ↔ R.den ρ (ua a) (ub b)
   rw [ofCodes_at hl.symm h2 h1 (by rw [Nat.mul_comm]; exact hfit) (hl ▸ pairs_len_lt x hfit) hb ha,
     ← hx a ha b hb, hat a ha b hb]
   exact ⟨fun ⟨r, h1, h2, e1, e2⟩ => ⟨r, h2, h1, e2, e1⟩, fun ⟨r, h1, h2, e1, e2⟩ => ⟨r, h2, h1, e2, e1⟩⟩

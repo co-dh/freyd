@@ -96,7 +96,7 @@ abbrev Res := (A : Obj) × (B : Obj) × (d : Bool) × Tm A B d
 instance {A B : Obj} {d : Bool} : Inhabited (Tm A B d) := ⟨.var 0⟩
 
 /-- `t` with each of its parts through `f`, one level down; every walk over `Tm` is an instance (`Tm.parts`,
-    `Expand.fv`, `Expand.mus`, `Expand.number`). A `share` is closed and numbered, so no walk enters it. -/
+    `Tm.fv`, `Expand.mus`, `Expand.number`). A `share` is closed and numbered, so no walk enters it. -/
 def Tm.mapM {m : Type → Type} [Monad m] (f : {A B : Obj} → {d : Bool} → Tm A B d → m (Tm A B d)) :
     {A B : Obj} → {d : Bool} → Tm A B d → m (Tm A B d)
   | _, _, _, .top V => return .top (← f V)
@@ -134,5 +134,72 @@ def Tm.mapM {m : Type → Type} [Monad m] (f : {A B : Obj} → {d : Bool} → Tm
 /-- The parts of `t`, in `Tm.mapM`'s order. -/
 def Tm.parts {A B : Obj} {d : Bool} (t : Tm A B d) : List Res :=
   (Id.run ((t.mapM (m := StateM (List Res)) fun c => do modify (· ++ [⟨_, _, _, c⟩]); pure c).run [])).2
+
+/-- The variables free in `t`: a binder (`μ`, `ν`, `refold`) drops its own, and a `share` is closed. Structural,
+    so `den_congr` can be stated with it. -/
+def Tm.fv : {A B : Obj} → {d : Bool} → Tm A B d → List Nat
+  | _, _, _, .var k => [k]
+  | _, _, _, .top V => V.fv
+  | _, _, _, .comp R S => R.fv ++ S.fv
+  | _, _, _, .conv R => R.fv
+  | _, _, _, .meet R S => R.fv ++ S.fv
+  | _, _, _, .join R S => R.fv ++ S.fv
+  | _, _, _, .diff R S => R.fv ++ S.fv
+  | _, _, _, .dom R => R.fv
+  | _, _, _, .ran R => R.fv
+  | _, _, _, .ldiv R S U V => R.fv ++ S.fv ++ U.fv ++ V.fv
+  | _, _, _, .rdiv R S U V => R.fv ++ S.fv ++ U.fv ++ V.fv
+  | _, _, _, .pair R S => R.fv ++ S.fv
+  | _, _, _, .prod R S => R.fv ++ S.fv
+  | _, _, _, .junc R S => R.fv ++ S.fv
+  | _, _, _, .juncD R S => R.fv ++ S.fv
+  | _, _, _, .lam R => R.fv
+  | _, _, _, .E R => R.fv
+  | _, _, _, .est Q => Q.fv
+  | _, _, _, .thin Q => Q.fv
+  | _, _, _, .own R => R.fv
+  | _, _, _, .succ U => U.fv
+  | _, _, _, .arith _ U => U.fv
+  | _, _, _, .leq U => U.fv
+  | _, _, _, .lt U => U.fv
+  | _, _, _, .fold e S => e.fv ++ S.fv
+  | _, _, _, .foldI e S => e.fv ++ S.fv
+  | _, _, _, .flat R => R.fv
+  | _, _, _, .arg g x => g.fv ++ x.fv
+  | _, _, _, .nu k S b => S.fv ++ b.fv.filter (· != k)
+  | _, _, _, .mu k _ _ b => b.fv.filter (· != k)
+  | _, _, _, .refold k _ ch b => ch.fv ++ b.fv.filter (· != k)
+  -- every leaf listed: a wildcard makes the equation lemmas of this 40-constructor family slow to build
+  | _, _, _, .val _ | _, _, _, .uni _ | _, _, _, .zero | _, _, _, .id | _, _, _, .outl | _, _, _, .outr
+  | _, _, _, .nil | _, _, _, .prim _ | _, _, _, .atPos _ | _, _, _, .share .. | _, _, _, .call .. => []
+
+/-- `X`, the variable `k`, occurs in `t` only with sign `s` (`true` positive): the one monotonicity check (D5 = J),
+    `den_mono`/`den_anti`. A node with no rule below must not mention `k` at all. `ldiv`'s `R` and `rdiv`'s `S`
+    occur on both sides (`ldivDen`'s `∀` and its `∃`), so they must be free of `k`. -/
+def Tm.pol (s : Bool) (k : Nat) : {A B : Obj} → {d : Bool} → Tm A B d → Bool
+  | _, _, _, .var j => if j == k then s else true
+  | _, _, _, .top V => V.pol s k
+  | _, _, _, .comp R S => R.pol s k && S.pol s k
+  | _, _, _, .conv R => R.pol s k
+  | _, _, _, .meet R S => R.pol s k && S.pol s k
+  | _, _, _, .join R S => R.pol s k && S.pol s k
+  | _, _, _, .diff R S => R.pol s k && S.pol (!s) k
+  | _, _, _, .dom R => R.pol s k
+  | _, _, _, .ran R => R.pol s k
+  | _, _, _, .ldiv R S U V => !R.fv.contains k && S.pol s k && U.pol s k && V.pol s k
+  | _, _, _, .rdiv R S U V => R.pol s k && !S.fv.contains k && U.pol s k && V.pol s k
+  | _, _, _, .pair R S => R.pol s k && S.pol s k
+  | _, _, _, .prod R S => R.pol s k && S.pol s k
+  | _, _, _, .junc R S => R.pol s k && S.pol s k
+  | _, _, _, .juncD R S => R.pol s k && S.pol s k
+  | _, _, _, .own R => R.pol s k
+  | _, _, _, .nu j _ b => j == k || b.pol s k
+  | _, _, _, .mu j _ _ b => j == k || b.pol s k
+  | _, _, _, .refold j _ _ b => j == k || b.pol s k
+  | _, _, _, t@(.lam _) | _, _, _, t@(.E _) | _, _, _, t@(.est _) | _, _, _, t@(.thin _) | _, _, _, t@(.succ _)
+  | _, _, _, t@(.arith ..) | _, _, _, t@(.leq _) | _, _, _, t@(.lt _) | _, _, _, t@(.fold ..) | _, _, _, t@(.foldI ..)
+  | _, _, _, t@(.flat _) | _, _, _, t@(.arg ..) => !t.fv.contains k
+  | _, _, _, .val _ | _, _, _, .uni _ | _, _, _, .zero | _, _, _, .id | _, _, _, .outl | _, _, _, .outr
+  | _, _, _, .nil | _, _, _, .prim _ | _, _, _, .atPos _ | _, _, _, .share .. | _, _, _, .call .. => true
 
 end LeetQ.Rel.Lang

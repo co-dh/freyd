@@ -48,7 +48,9 @@ def _root_.LeetQ.Rel.Lang.Tm.tableC : {A B : Obj} → {d : Bool} → Tm A B d �
   | _, _, _, .meet R S => opC interC R.tableC S.tableC
   | _, _, _, .join R S => opC unionC R.tableC S.tableC
   | _, _, _, .diff R S => opC diffC R.tableC S.tableC
-  | _, _, _, .ldiv R S UB UC => opC (leftDivC · · UB.tab.val UC.tab.val) R.tableC S.tableC
+  -- the universes are read as tables: a universe that is not one clears the bit
+  | _, _, _, .ldiv R S UB UC =>
+    let r := opC (leftDivC · · UB.tab.val UC.tab.val) R.tableC S.tableC; (r.1, r.2 && UB.isVal && UC.isVal)
   | _, _, _, _ => (Alg.zero, false)
 
 /-- The route as a table: `tableC`'s relation. -/
@@ -73,7 +75,9 @@ def _root_.LeetQ.Rel.Lang.Tm.cols : {A B : Obj} → {d : Bool} → Tm A B d → 
 def _root_.LeetQ.Rel.Lang.Tm.fits (sz : Obj → Nat) : {A B : Obj} → {d : Bool} → Tm A B d → Bool
   | A, B, _, .val _ => sz A * sz B ≤ 2 ^ 27
   | A, B, _, .meet R S | A, B, _, .join R S | A, B, _, .diff R S => sz A * sz B ≤ 2 ^ 27 && R.fits sz && S.fits sz
-  | A, B, _, .comp R S | A, B, _, .ldiv R S _ _ => sz A * sz B ≤ 2 ^ 27 && (R.isVal || R.fits sz) && S.fits sz
+  | A, B, _, .comp R S => sz A * sz B ≤ 2 ^ 27 && (R.isVal || R.fits sz) && S.fits sz
+  -- the universes are read as tables, as in `tableC`
+  | A, B, _, .ldiv R S UB UC => sz A * sz B ≤ 2 ^ 27 && (R.isVal || R.fits sz) && S.fits sz && UB.isVal && UC.isVal
   | A, B, _, .conv R => sz A * sz B ≤ 2 ^ 27 && R.fits sz
   | _, _, _, _ => false
 

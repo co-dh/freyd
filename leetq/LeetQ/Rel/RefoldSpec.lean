@@ -124,7 +124,7 @@ theorem refoldRounds_ok {chN : CRel A A} {φ : CRel A B → CRel A A → CRel A 
 
 /-- **`refoldRounds` read back** (`rounds_lfp` on arrays): from the nodes `N` (a coreflexive closed under the
     children `chN`), all pending and none valued, rounds whose bits say the pending nodes emptied and the value is
-    ok leave `lfp Φ` at every node of `N`, where `φ X P` is `Φ` at the nodes `P` (`onNodes`) and `Φ` is monotonic
+    ok leave `Refold.lfp Φ` at every node of `N`, where `φ X P` is `Φ` at the nodes `P` (`onNodes`) and `Φ` is monotonic
     and local along `chN`. Rounds stuck are `stuck_not_acc`. -/
 theorem rep_refold {chN : CRel A A} {φ : CRel A B → CRel A A → CRel A B} {Φ : Rl A.El B.El → Rl A.El B.El}
     (hm : Mono Φ) (hl : Local (fun a a' => rep chN.rel a a') Φ)
@@ -134,12 +134,12 @@ theorem rep_refold {chN : CRel A A} {φ : CRel A B → CRel A A → CRel A B} {�
     (hN : ∀ a a', rep N.rel a a → rep chN.rel a a' → rep N.rel a' a') (f : Nat)
     (hb : (refoldRounds chN φ f N ⟨Alg.zero, true⟩).2 = true)
     (hx : (refoldRounds chN φ f N ⟨Alg.zero, true⟩).1.ok = true) :
-    ∀ a, rep N.rel a a → ∀ b, (rep (refoldRounds chN φ f N ⟨Alg.zero, true⟩).1.rel a b ↔ lfp Φ a b) := by
+    ∀ a, rep N.rel a a → ∀ b, (rep (refoldRounds chN φ f N ⟨Alg.zero, true⟩).1.rel a b ↔ Refold.lfp Φ a b) := by
   suffices h : ∀ f (pend : CRel A A) (X : CRel A B), (refoldRounds chN φ f pend X).2 = true →
       (refoldRounds chN φ f pend X).1.ok = true → (∀ x y, rep pend.rel x y → x = y) →
       Inv (fun a a' => rep chN.rel a a') Φ (fun a => rep N.rel a a) (fun a => rep pend.rel a a)
         (fun a b => rep X.rel a b) →
-      ∀ a, rep N.rel a a → ∀ b, (rep (refoldRounds chN φ f pend X).1.rel a b ↔ lfp Φ a b) from
+      ∀ a, rep N.rel a a → ∀ b, (rep (refoldRounds chN φ f pend X).1.rel a b ↔ Refold.lfp Φ a b) from
     h f N _ hb hx hc ⟨fun _ h => h, fun _ h hn => absurd h hn,
       fun _ _ _ h => by rw [rep_zero] at h; exact h, fun _ _ h hn => absurd h hn⟩
   intro f
