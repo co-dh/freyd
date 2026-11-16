@@ -424,6 +424,297 @@ theorem rep_concatC {B : Obj} {n : USize} (X : Vals (.arr (.arr B)) n) (hb : (co
   · rintro ⟨⟨i, rfl⟩, rfl⟩
     exact ⟨i, rfl, key i⟩
 
+/-! ### `filter(p)`, `takewhile(p)`: masks on the payload -/
+
+/-- **`gatherT t src idx`'s long `j`**: `src`'s long `idx[j]` where that is below `src`'s count, else `t`. -/
+theorem gatherT_get {t : Nat} (ht : t < 2 ^ 64) {src idx : ByteArray} {j : Nat} (hj : j < len idx) :
+    (Column.bitsAt (gatherT t src idx) (j * 8) 8).toNat =
+      if (Column.bitsAt idx (j * 8) 8).toNat < len src then
+        (Column.bitsAt src ((Column.bitsAt idx (j * 8) 8).toNat * 8) 8).toNat else t := by
+  have h8 : (Nat.toUSize 8).toNat = 8 := KernelWF.toNat_small 8 (by decide)
+  have h := (gatherBytes_spec (Nat.toUSize 8) (by rw [h8]; decide) t.toUInt64 src idx).2 j (by simpa [len] using hj)
+  rw [h8] at h
+  unfold gatherT; rw [h]
+  by_cases h1 : (Column.bitsAt idx (j * 8) 8).toNat < len src
+  · rw [if_pos (by simpa [len] using h1), if_pos h1]
+  · rw [if_neg (by simpa [len] using h1), if_neg h1]
+    simp [Nat.mod_eq_of_lt ht]
+
+/-- **`countBefore` read back**: at a position `p` up to the cell count `M`, the set bits of `b` below `p` — the
+    position `M` misses the gather and reads the total `t`. -/
+theorem countBefore_get {M : USize} (hM : M.toNat < 2 ^ 63) (b idx : ByteArray) {t : Nat}
+    (ht : t = ((List.range M.toNat).filter (Column.bitAt b)).length) {j : Nat} (hj : j < len idx)
+    (hp : (Column.bitsAt idx (j * 8) 8).toNat ≤ M.toNat) :
+    (Column.bitsAt (countBefore M b t idx) (j * 8) 8).toNat =
+      ((List.range (Column.bitsAt idx (j * 8) 8).toNat).filter (Column.bitAt b)).length := by
+  have hl : len (sub M (sums M (Kernel.Ew.widen Ew.bits Ew.i64 nul nul b M))
+      (Kernel.Ew.widen Ew.bits Ew.i64 nul nul b M)) = M.toNat := len_val ..
+  have hf : t ≤ M.toNat := ht ▸ Nat.le_trans (List.length_filter_le _ _) (by simp)
+  unfold countBefore; dsimp only
+  rw [gatherT_get (by omega) hj, hl]
+  split
+  · exact rank_get b M hM ‹_›
+  · rw [ht, show (Column.bitsAt idx (j * 8) 8).toNat = M.toNat by omega]
+
+/-- **`keyBitsC`'s bit `k`**: set exactly when cell `k` of the payload is a key of `P`, the joint codes faithful
+    (`codes_faithful_wf`, `member_bit`). -/
+theorem keyBitsC_bit {B : Obj} {M : USize} (F : Vals B M) (P : Rel B B) (hb : (keyBitsC F P).2 = true) {k : Nat}
+    (hk : k < M.toNat) : Column.bitAt (keyBitsC F P).1 k = true ↔ ∃ y, rep P (F.row ⟨k, hk⟩) y := by
+  have hc := codes_faithful_wf B _ (Obj.codesC_fits B _ hb)
+  obtain ⟨hw0, hn0, hs0, -⟩ := hc.1.2 (k := 0) (by decide)
+  obtain ⟨hw1, hn1, hs1, -⟩ := hc.1.2 (k := 1) (by decide)
+  simp only [keyBitsC]; rw [Obj.codesC_fst]
+  rw [member_bit _ _ hw0 hw1 hs0 hs1 (by rw [hn0]; exact hk)]
+  simp only [rep_apply, Rel.Holds]
+  constructor
+  · rintro ⟨j, hj, he⟩
+    have hj' : j < P.n.toNat := by rw [hn1] at hj; exact hj
+    exact ⟨P.val.row ⟨j, hj'⟩, ⟨j, hj'⟩, (hc.1.1 (k := 1) (l := 0) (by decide) (by decide) hj' hk).1 he, rfl⟩
+  · rintro ⟨y, j, hj, -⟩
+    exact ⟨j.1, by rw [hn1]; exact j.2, (hc.1.1 (k := 1) (l := 0) (by decide) (by decide) j.2 hk).2 hj⟩
+
+/-- **A window's kept positions are a slice of all kept positions**: with `L` the positions below `M` that `m`
+    keeps, those in `[a, a + c)` are `L`'s entries from the count kept below `a` to the count kept below `a + c`. -/
+theorem filter_window (m : Nat → Bool) {a c M : Nat} (h : a + c ≤ M) :
+    ((List.range c).map (a + ·)).filter m =
+      (List.range (((List.range (a + c)).filter m).length - ((List.range a).filter m).length)).map fun j =>
+        ((List.range M).filter m).getD (((List.range a).filter m).length + j) 0 := by
+  obtain ⟨r, rfl⟩ : ∃ r, M = a + c + r := ⟨M - a - c, by omega⟩
+  have e1 : (List.range (a + c)).filter m = (List.range a).filter m ++ ((List.range c).map (a + ·)).filter m := by
+    rw [List.range_add, List.filter_append]
+  have e2 : (List.range (a + c + r)).filter m =
+      ((List.range a).filter m ++ ((List.range c).map (a + ·)).filter m) ++
+        ((List.range r).map (a + c + ·)).filter m := by
+    rw [List.range_add, List.filter_append, e1]
+  rw [e1, e2, List.length_append, Nat.add_sub_cancel_left]
+  apply List.ext_getElem (by simp) fun j h1 h2 => ?_
+  rw [List.getElem_map, List.getElem_range, List.getD_eq_getElem?_getD, List.append_assoc,
+    List.getElem?_append_right (by omega), Nat.add_sub_cancel_left, List.getElem?_append_left h1,
+    List.getElem?_eq_getElem h1, Option.getD_some]
+
+/-- The window `[a, a + c + 1)` is `a` before the window `[a + 1, a + 1 + c)`. -/
+theorem range_succ_map (a c : Nat) : (List.range (c + 1)).map (a + ·) = a :: (List.range c).map (a + 1 + ·) := by
+  rw [List.range_succ_eq_map, List.map_cons, List.map_map]; congr 1
+  apply List.map_congr_left; intro k _; simp only [Function.comp_apply]; omega
+
+/-- **The first position from `a` in `[a, a + r)` that `d` sets**, `a + r` if none: every position before it
+    unset. -/
+theorem first_set (d : Nat → Bool) : ∀ (r a : Nat),
+    a ≤ (((List.range r).map (a + ·)).filter d).getD 0 (a + r) ∧
+    (((List.range r).map (a + ·)).filter d).getD 0 (a + r) ≤ a + r ∧
+    (∀ k, a ≤ k → k < (((List.range r).map (a + ·)).filter d).getD 0 (a + r) → d k = false) ∧
+    ((((List.range r).map (a + ·)).filter d).getD 0 (a + r) < a + r →
+      d ((((List.range r).map (a + ·)).filter d).getD 0 (a + r)) = true)
+  | 0, a => by simp; intro k h1 h2; omega
+  | r + 1, a => by
+    rw [range_succ_map]
+    cases hd : d a
+    · rw [List.filter_cons_of_neg (by simp [hd])]
+      obtain ⟨h1, h2, h3, h4⟩ := first_set d r (a + 1)
+      rw [show a + 1 + r = a + (r + 1) by omega] at h1 h2 h3 h4
+      refine ⟨by omega, h2, fun k hk hk' => ?_, h4⟩
+      rcases Nat.eq_or_lt_of_le hk with rfl | hk
+      · exact hd
+      · exact h3 k hk hk'
+    · rw [List.filter_cons_of_pos (by simp [hd])]
+      simp only [List.getD_cons_zero]
+      exact ⟨Nat.le_refl _, by omega, fun k h1 h2 => absurd h2 (by omega), fun _ => hd⟩
+
+/-- **`takeWhile` on a window**: the positions from `a` before `e`, where every one in `[a, e)` passes `m` and `e`,
+    inside the window, fails it. -/
+theorem takeWhile_window (m : Nat → Bool) : ∀ (c : Nat) {a e : Nat}, a ≤ e → (∀ k, a ≤ k → k < e → m k = true) →
+    (e < a + c → m e = false) →
+    ((List.range c).map (a + ·)).takeWhile m = (List.range (min (a + c) e - a)).map (a + ·)
+  | 0, a, e, hae, _, _ => by simp [show min a e - a = 0 by omega]
+  | c + 1, a, e, hae, hk, he => by
+    rw [range_succ_map]
+    rcases Nat.eq_or_lt_of_le hae with rfl | hlt
+    · rw [List.takeWhile_cons_of_neg (by simp [he (by omega)])]
+      simp [show min (a + (c + 1)) a - a = 0 by omega]
+    · rw [List.takeWhile_cons_of_pos (by simp [hk a (Nat.le_refl _) hlt]),
+        takeWhile_window m c (a := a + 1) hlt (fun k h1 h2 => hk k (by omega) h2) (fun h => he (by omega)),
+        show min (a + (c + 1)) e - a = (min (a + 1 + c) e - (a + 1)) + 1 by omega, range_succ_map]
+
+/-- The positions below `a` that `m` keeps are no more than those below `b ≥ a`. -/
+theorem filter_range_le (m : Nat → Bool) {a b : Nat} (h : a ≤ b) :
+    ((List.range a).filter m).length ≤ ((List.range b).filter m).length :=
+  ((List.range_sublist.2 h).filter m).length_le
+
+/-- An array row read at its slice `[a, a + c)`: the payload's cells there, `g` reading the payload. -/
+theorem row_window {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 2 ^ 63) (i : Fin n.toNat) :
+    Vals.row X i = (List.range (Column.bitsAt (slicesOf X).2 (i.1 * 8) 8).toNat).map fun j =>
+      if h : (Column.bitsAt (slicesOf X).1 (i.1 * 8) 8).toNat + j < X.1.toNat then
+        Vals.row X.2.2.2 ⟨_, h⟩ else B.dflt := by
+  obtain ⟨i, hi⟩ := i
+  obtain ⟨hac, hlen, hel⟩ := slicesOf_row X hp hi
+  apply List.ext_getElem (by rw [hlen]; simp)
+  intro j h1 h2
+  rw [hel j h1 (by omega), List.getElem_map, List.getElem_range]
+
+/-- A relation keyed by the arrays `X`, row `i` valued `φ` of array `i`: each array of `X` goes to its `φ`. -/
+theorem rep_rowwise {B C : Obj} {n : USize} (X : Vals (.arr B) n) (V : Vals C n) (φ : List B.El → C.El)
+    (h : ∀ i, V.row i = φ (X.row i)) :
+    ∀ xs ys, rep (⟨n, X, V⟩ : Rel (.arr B) C) xs ys ↔ (∃ j, X.row j = xs) ∧ ys = φ xs := by
+  intro xs ys; rw [rep_apply]
+  constructor
+  · rintro ⟨i, h1, h2⟩; exact ⟨⟨i, h1⟩, h2 ▸ h1 ▸ h i⟩
+  · rintro ⟨⟨i, rfl⟩, rfl⟩; exact ⟨i, rfl, h i⟩
+
+open Classical in
+/-- **`filter(p)` under `filterC`'s bit**: an array `xs` of `X` goes to its cells that are keys of `P`, in order
+    (B&dM p.66, `filter p = ⦇[nil, p outl → cons, outr]⦈`). The mask is `keyBitsC_bit`, the kept cells `L`
+    (`whereBits_ids`); a row `[a, a + c)` is `L` between the counts kept below `a` and below `a + c`
+    (`countBefore_get`, `filter_window`), each picked from the payload (`pick_row`). -/
+theorem rep_filterC {B : Obj} {n : USize} (P : Rel B B) (X : Vals (.arr B) n) (hb : (filterC P X).2 = true) :
+    ∀ xs ys, rep (filterC P X).1 xs ys ↔ (∃ j, X.row j = xs) ∧ ys = xs.filter fun x => decide (∃ y, rep P x y) := by
+  obtain ⟨M, lo, hi, F⟩ := X
+  have hb' := hb
+  simp only [filterC, need] at hb'
+  split at hb'
+  case isFalse => exact absurd hb' Bool.false_ne_true
+  rename_i hK
+  simp only [Bool.and_eq_true, decide_eq_true_eq] at hb'
+  obtain ⟨⟨⟨hk, hp⟩, -⟩, hv⟩ := hb'
+  have hbit : ∀ k (h : k < M.toNat), Column.bitAt (keyBitsC F P).1 k = decide (∃ y, rep P (F.row ⟨k, h⟩) y) :=
+    fun k h => by rw [Bool.eq_iff_iff, decide_eq_true_iff]; exact keyBitsC_bit F P hk h
+  obtain ⟨hids, -, -⟩ := whereBits_ids M (keyBitsC F P).1
+  have hlenK : len (whereBits M (keyBitsC F P).1) =
+      ((List.range M.toNat).filter (Column.bitAt (keyBitsC F P).1)).length := by
+    rw [← hids]; simp [ids, len]
+  have hKs : (len (whereBits M (keyBitsC F P).1)).toUSize.toNat = len (whereBits M (keyBitsC F P).1) :=
+    USize.toNat_ofNat_of_lt' hK
+  have hpick := pick_row B F _ _ (USize.toNat_ofNat_of_lt' hK).symm (Vals.pickC_fits B F _ _ _ hv)
+  simp only [filterC, need]; rw [dif_pos hK]
+  refine rep_rowwise _ _ _ fun i => ?_
+  · have hac := (slicesOf_row (⟨M, lo, hi, F⟩ : Vals (.arr B) n) hp i.2).1
+    have hsum := add_get (n := n) (a := (slicesOf (⟨M, lo, hi, F⟩ : Vals (.arr B) n)).1)
+      (b := (slicesOf (⟨M, lo, hi, F⟩ : Vals (.arr B) n)).2) i.2 (by change _ ≤ M.toNat at hac; omega)
+    have hlo := countBefore_get hp (keyBitsC F P).1 (slicesOf (⟨M, lo, hi, F⟩ : Vals (.arr B) n)).1 hlenK
+      (Nat.lt_of_lt_of_le i.2 (Nat.le_of_eq (len_slices ..).1.symm)) (by change _ ≤ M.toNat at hac; omega)
+    have hhi := countBefore_get hp (keyBitsC F P).1 (add n (slicesOf (⟨M, lo, hi, F⟩ : Vals (.arr B) n)).1
+      (slicesOf (⟨M, lo, hi, F⟩ : Vals (.arr B) n)).2) hlenK
+      (Nat.lt_of_lt_of_le i.2 (Nat.le_of_eq (len_val ..).symm)) (by rw [hsum]; exact hac)
+    rw [hsum] at hhi
+    rw [row_window (⟨M, lo, hi, F⟩ : Vals (.arr B) n) hp, arr_row]; dsimp only
+    rw [longsN_get, longsN_get]
+    generalize (Column.bitsAt (slicesOf (⟨M, lo, hi, F⟩ : Vals (.arr B) n)).1 (i.1 * 8) 8).toNat = a at hac hlo hhi ⊢
+    generalize (Column.bitsAt (slicesOf (⟨M, lo, hi, F⟩ : Vals (.arr B) n)).2 (i.1 * 8) 8).toNat = c at hac hhi ⊢
+    change a + c ≤ M.toNat at hac
+    have hA : ((List.range a).filter (Column.bitAt (keyBitsC F P).1)).length ≤ a :=
+      Nat.le_trans (List.length_filter_le _ _) (by simp)
+    have hAC := filter_range_le (Column.bitAt (keyBitsC F P).1) (Nat.le_add_right a c)
+    have hCL := filter_range_le (Column.bitAt (keyBitsC F P).1) hac
+    rw [toInt64_toInt (by rw [hlo]; omega), toInt64_toInt (by rw [hhi];
+      omega), hlo, hhi,
+      show min (max (((List.range a).filter (Column.bitAt (keyBitsC F P).1)).length : Int) 0).toNat
+        (len (whereBits M (keyBitsC F P).1)).toUSize.toNat =
+        ((List.range a).filter (Column.bitAt (keyBitsC F P).1)).length by rw [hKs]; omega,
+      show min (max (((List.range (a + c)).filter (Column.bitAt (keyBitsC F P).1)).length : Int) 0).toNat
+        (len (whereBits M (keyBitsC F P).1)).toUSize.toNat =
+        ((List.range (a + c)).filter (Column.bitAt (keyBitsC F P).1)).length by rw [hKs]; omega]
+    rw [show ((List.range c).map fun j => if h : a + j < M.toNat then F.row ⟨a + j, h⟩ else B.dflt) =
+        ((List.range c).map (a + ·)).map fun k => if h : k < M.toNat then F.row ⟨k, h⟩ else B.dflt by
+          rw [List.map_map]; rfl,
+      List.filter_map,
+      List.filter_congr (q := Column.bitAt (keyBitsC F P).1) fun k hk => by
+        obtain ⟨j, hj, rfl⟩ := List.mem_map.1 hk
+        have h : a + j < M.toNat := by rw [List.mem_range] at hj; omega
+        simp only [Function.comp_apply, dif_pos h]; exact (hbit _ h).symm,
+      filter_window _ hac, List.map_map]
+    apply List.map_congr_left
+    intro j hj
+    rw [List.mem_range] at hj
+    have hj' : ((List.range a).filter (Column.bitAt (keyBitsC F P).1)).length + j < ((List.range M.toNat).filter (Column.bitAt (keyBitsC F P).1)).length := by omega
+    rw [dif_pos (by rw [hKs, hlenK]; exact hj'), hpick, dif_pos (by rw [ids_get hids hj']; exact
+      (List.mem_range.1 (List.mem_filter.1 (List.getElem_mem hj')).1))]
+    simp only [Function.comp_apply, List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hj', Option.getD_some]
+    rw [dif_pos (List.mem_range.1 (List.mem_filter.1 (List.getElem_mem hj')).1)]
+    congr 2; exact ids_get hids hj'
+
+open Classical in
+/-- **`takewhile(p)` under `takewhileC`'s bit**: an array `xs` of `X` goes to its longest prefix of keys of `P`
+    (B&dM p.174, `takewhile p = ⦇[nil, p outl → cons, nil]⦈`). The failing cells `L` (`notBits`, `whereBits_ids`)
+    read at the count failing below a row's start `a` give the first failing cell `e` from `a` (`first_set`), the
+    row's end the lesser of `e` and its own (`lesser_get`, `takeWhile_window`). -/
+theorem rep_takewhileC {B : Obj} {n : USize} (P : Rel B B) (X : Vals (.arr B) n) (hb : (takewhileC P X).2 = true) :
+    ∀ xs ys, rep (takewhileC P X).1 xs ys ↔
+      (∃ j, X.row j = xs) ∧ ys = xs.takeWhile fun x => decide (∃ y, rep P x y) := by
+  obtain ⟨M, lo, hi, F⟩ := X
+  have hb' := hb
+  simp only [takewhileC, Bool.and_eq_true, decide_eq_true_eq] at hb'
+  obtain ⟨⟨hk, hp⟩, -⟩ := hb'
+  have hbit : ∀ k (h : k < M.toNat), Column.bitAt (keyBitsC F P).1 k = decide (∃ y, rep P (F.row ⟨k, h⟩) y) :=
+    fun k h => by rw [Bool.eq_iff_iff, decide_eq_true_iff]; exact keyBitsC_bit F P hk h
+  have hfb : ∀ k < M.toNat, Column.bitAt (Ew.notBits M (keyBitsC F P).1) k = !Column.bitAt (keyBitsC F P).1 k :=
+    fun k h => notBits_bitAt _ _ h
+  obtain ⟨hids, -, -⟩ := whereBits_ids M (Ew.notBits M (keyBitsC F P).1)
+  have hlenF : len (whereBits M (Ew.notBits M (keyBitsC F P).1)) =
+      ((List.range M.toNat).filter (Column.bitAt (Ew.notBits M (keyBitsC F P).1))).length := by
+    rw [← hids]; simp [ids, len]
+  simp only [takewhileC]
+  refine rep_rowwise _ _ _ fun i => ?_
+  · have hac := (slicesOf_row (⟨M, lo, hi, F⟩ : Vals (.arr B) n) hp i.2).1
+    have hsum := add_get (n := n) (a := (slicesOf (⟨M, lo, hi, F⟩ : Vals (.arr B) n)).1)
+      (b := (slicesOf (⟨M, lo, hi, F⟩ : Vals (.arr B) n)).2) i.2 (by change _ ≤ M.toNat at hac; omega)
+    have hs1 : i.1 < len (slicesOf (⟨M, lo, hi, F⟩ : Vals (.arr B) n)).1 :=
+      Nat.lt_of_lt_of_le i.2 (Nat.le_of_eq (len_slices ..).1.symm)
+    have hlo := countBefore_get hp (Ew.notBits M (keyBitsC F P).1) _ hlenF hs1 (by change _ ≤ M.toNat at hac; omega)
+    have hcb : i.1 < len (countBefore M (Ew.notBits M (keyBitsC F P).1)
+        (len (whereBits M (Ew.notBits M (keyBitsC F P).1))) (slicesOf (⟨M, lo, hi, F⟩ : Vals (.arr B) n)).1) := by
+      unfold countBefore; dsimp only; rw [len_gatherT]; exact hs1
+    have he := gatherT_get (t := M.toNat) (src := whereBits M (Ew.notBits M (keyBitsC F P).1)) (by omega) hcb
+    rw [hlo] at he
+    rw [row_window (⟨M, lo, hi, F⟩ : Vals (.arr B) n) hp, arr_row]; dsimp only
+    rw [longsN_get, longsN_get, toInt64_toInt (x := Column.bitsAt (slicesOf (⟨M, lo, hi, F⟩ : Vals (.arr B) n)).1
+      (i.1 * 8) 8) (by change _ ≤ M.toNat at hac; omega)]
+    generalize (Column.bitsAt (slicesOf (⟨M, lo, hi, F⟩ : Vals (.arr B) n)).1 (i.1 * 8) 8).toNat = a at hac hlo he hsum ⊢
+    generalize (Column.bitsAt (slicesOf (⟨M, lo, hi, F⟩ : Vals (.arr B) n)).2 (i.1 * 8) 8).toNat = c at hac hsum ⊢
+    change a + c ≤ M.toNat at hac
+    -- the first failing cell from `a`
+    obtain ⟨r, hr⟩ : ∃ r, M.toNat = a + r := ⟨M.toNat - a, by omega⟩
+    obtain ⟨e1, e2, e3, e4⟩ := first_set (Column.bitAt (Ew.notBits M (keyBitsC F P).1)) r a
+    have hL : (List.range M.toNat).filter (Column.bitAt (Ew.notBits M (keyBitsC F P).1)) =
+        (List.range a).filter (Column.bitAt (Ew.notBits M (keyBitsC F P).1)) ++
+          ((List.range r).map (a + ·)).filter (Column.bitAt (Ew.notBits M (keyBitsC F P).1)) := by
+      rw [hr, List.range_add, List.filter_append]
+    have hE : (Column.bitsAt (gatherT M.toNat (whereBits M (Ew.notBits M (keyBitsC F P).1))
+        (countBefore M (Ew.notBits M (keyBitsC F P).1) (len (whereBits M (Ew.notBits M (keyBitsC F P).1)))
+          (slicesOf (⟨M, lo, hi, F⟩ : Vals (.arr B) n)).1)) (i.1 * 8) 8).toNat =
+        (((List.range r).map (a + ·)).filter (Column.bitAt (Ew.notBits M (keyBitsC F P).1))).getD 0 (a + r) := by
+      rw [he, hlenF, hL, List.length_append]
+      split
+      · rename_i h
+        rw [ids_get hids (by rw [hL, List.length_append]; exact h)]
+        simp only [hL, List.getElem_append_right (Nat.le_refl _), Nat.sub_self]
+        rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem (by omega), Option.getD_some]
+      · rw [List.getD_eq_getElem?_getD, List.getElem?_eq_none (by omega), Option.getD_none, hr]
+    generalize (((List.range r).map (a + ·)).filter (Column.bitAt (Ew.notBits M (keyBitsC F P).1))).getD 0
+      (a + r) = e at e1 e2 e3 e4 hE
+    rw [← hr] at e2 e4
+    have hmin := lesser_get (n := n) (a := add n (slicesOf (⟨M, lo, hi, F⟩ : Vals (.arr B) n)).1
+      (slicesOf (⟨M, lo, hi, F⟩ : Vals (.arr B) n)).2) (b := gatherT M.toNat
+        (whereBits M (Ew.notBits M (keyBitsC F P).1)) (countBefore M (Ew.notBits M (keyBitsC F P).1)
+          (len (whereBits M (Ew.notBits M (keyBitsC F P).1))) (slicesOf (⟨M, lo, hi, F⟩ : Vals (.arr B) n)).1))
+      i.2 (by rw [hsum]; omega) (by rw [hE]; omega)
+    rw [hsum, hE] at hmin
+    rw [toInt64_toInt (by rw [hmin]; omega), hmin,
+      show min (max ((a : Nat) : Int) 0).toNat M.toNat = a by omega,
+      show min (max ((min (a + c) e : Nat) : Int) 0).toNat M.toNat = min (a + c) e by omega]
+    rw [show ((List.range c).map fun j => if h : a + j < M.toNat then F.row ⟨a + j, h⟩ else B.dflt) =
+        ((List.range c).map (a + ·)).map fun k => if h : k < M.toNat then F.row ⟨k, h⟩ else B.dflt by
+          rw [List.map_map]; rfl,
+      List.takeWhile_map,
+      takeWhile_window _ c e1 (fun k h1 h2 => by
+          have h : k < M.toNat := by omega
+          simp only [Function.comp_apply, dif_pos h, ← hbit k h]
+          have := e3 k h1 h2; rw [hfb k h] at this; simpa using this)
+        (fun h => by
+          have h' : e < M.toNat := by omega
+          simp only [Function.comp_apply, dif_pos h', ← hbit e h']
+          have := e4 h'; rw [hfb e h'] at this; simpa using this),
+      List.map_map]
+    rfl
+
 #print axioms rep_concatC
 #print axioms rep_consC
 #print axioms rep_catC
