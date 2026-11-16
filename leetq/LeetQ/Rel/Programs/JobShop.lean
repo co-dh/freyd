@@ -23,7 +23,7 @@ rel_program jobshop where
 
     fin : Job×N ⟶ N ≜ ⟨π₁dur,π₂⟩plus             -- the finish time m + d(x)
     bef : Job×N ⟶ Job×N ≜ fin ≤ π₂°               -- (x,m) finishes before (y,n) starts
-    bad : Job×N ⟶ Job×N ≜ (π₁ pre π₁° − bef) ∪ (π₁(tool ∪ tool°)π₁° − bef − bef°)   -- two assignments that conflict
+    bad : Job×N ⟶ Job×N ≜ (π₁ pre π₁° − bef) ∪ (π₁ (tool ∪ tool°)π₁° − bef − bef°)  -- two assignments that conflict
 
     /- The solver: place the jobs in declaration order, each at its earliest start that conflicts with no placed one. -/
 

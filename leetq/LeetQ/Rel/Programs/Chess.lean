@@ -8,7 +8,7 @@ open LeetQ.Rel.Programs.prelude in
 rel_program chess where
     obj Sq = 0…63                                 -- the squares, a1 = 0, b1 = 1, …, h8 = 63
     obj Pc = {P,N,B,R,Q,K,p,n,b,r,q,k}            -- the pieces, white then black: colour*6 + kind
-    obj Bd = 𝒫(Sq×Pc)                             -- a board: the set of its (square, piece) rows
+    obj Bd = [Sq×Pc]                               -- a board: the set of its (square, piece) rows
     on : Sq ⟶ Pc ≜ {(6,K),(48,R),(1,R),(60,k)}    -- W Kg1 Ra7 Rb1, B Ke8
 
     h : Sq ⟶ Sq ≜ {(7,7),(15,15),(23,23),(31,31),(39,39),(47,47),(55,55),(63,63)}   -- the h-file
@@ -42,8 +42,8 @@ rel_program chess where
     Pin(on : Sq ⟶ Pc) : Sq ⟶ Sq ≜ q(s,→,ε,κ) ∪ q(s,←,ε,κ) ∪ q(s,↑,ε,κ) ∪ q(s,↓,ε,κ) ∪ q(d,↗,ε,κ) ∪ q(d,↖,ε,κ) ∪ q(d,↘,ε,κ) ∪ q(d,↙,ε,κ) where s ≜ dom(on{(R,R),(Q,Q)}), d ≜ dom(on{(B,B),(Q,Q)}), ε ≜ e(on), κ ≜ k(on)   -- the pinned squares
     M(on : Sq ⟶ Pc) : Sq ⟶ Sq ≜ ρ(s, d, ε) ∪ (dom(on{(N,N)})N) ∪ (dom(on{(K,K)})K) (𝟙 − dom(on{(P,P),(N,N),(B,B),(R,R),(Q,Q),(K,K),(k,k)})) ∪ (dom(on{(P,P)})p(↑,S₀,X₀,ε,dom(on{(p,p),(n,n),(b,b),(r,r),(q,q)}))) where s ≜ dom(on{(R,R),(Q,Q)}), d ≜ dom(on{(B,B),(Q,Q)}), ε ≜ e(on)   -- white's moves
 
-    a(k : Sq ⟶ Sq, f : Sq ⟶ Sq, W : Sq ⟶ Sq) ≜ k(𝟙 ∪ (Kf)) ⊑ ⊤W   -- the king and each of its steps attacked
-    i(B : Sq ⟶ Sq, Pin : Sq ⟶ Sq, W : Sq ⟶ Sq, k : Sq ⟶ Sq) ≜ B(𝟙 ∪ Pin°)Wk ⊑ Pin°⊤   -- each capture or interposition pinned
+    a(k : Sq ⟶ Sq, f : Sq ⟶ Sq, W : Sq ⟶ Sq) ≜ k (𝟙 ∪ (Kf)) ⊑ ⊤W  -- the king and each of its steps attacked
+    i(B : Sq ⟶ Sq, Pin : Sq ⟶ Sq, W : Sq ⟶ Sq, k : Sq ⟶ Sq) ≜ B (𝟙 ∪ Pin°)Wk ⊑ Pin°⊤  -- each capture or interposition pinned
 
     b : [Sq×Pc] ⟶ [Sq×Pc] ≜ ran(Λ(⊤(Sq,Sq)⟨𝟙,on⟩))   -- the board on
     W' : [Sq×Pc] ⟶ Sq×Sq ≜ bW(∋)

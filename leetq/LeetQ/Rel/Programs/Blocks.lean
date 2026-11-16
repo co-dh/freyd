@@ -8,7 +8,7 @@ open LeetQ.Rel.Programs.prelude in
 rel_program blocks where
     obj X = {A,B,C}                               -- the blocks
     obj N = 0…27                                  -- counts: a bound fixed before the search
-    obj St = 𝒫(X×X)                               -- a state: the set of its pairs
+    obj St = [X×X]                                 -- a state: the set of its pairs
     S₀ : X ⟶ X ≜ {(C,A),(A,A),(B,B)}              -- C on A, A and B on the table
     G : X ⟶ X ≜ {(A,B),(B,C)}                     -- A on B, B on C
 

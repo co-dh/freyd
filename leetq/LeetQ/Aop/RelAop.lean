@@ -23,8 +23,8 @@ import AOP.A6_ConsList
     The model: each item `x := v` (or `x : T := v`) is a `let` every term is elaborated under. It names what has no
     AOP reading of its own: an object (`N := (⟨Int⟩ : RelSet.{0})`), a definition read as a given declaration
     (a literal `zero`, the prelude's `suffix`), and a witness `rel(…)` never writes (a `RelProd`, a `Coproduct`).
-    A composite object is read structurally in `Rel(Set)`: `A×B` the set of pairs, `A+B` the disjoint union, `𝒫A` the
-    power object, `[A]` the cons lists of `A`, `1` the one-point set. -/
+    A composite object is read structurally in `Rel(Set)`: `A×B` the set of pairs, `A+B` the disjoint union,
+    `[A]` the cons lists of `A`, `1` the one-point set. -/
 
 namespace LeetQ.Rel.Lang.RelAop
 
@@ -99,7 +99,6 @@ partial def obj (vs : List String) : OExp → TermElabM Term
       throwError "{p}: the object `{n}` has no reading: the model names none"
   | .prod a b => do `((⟨($(← obj vs a)).carrier × ($(← obj vs b)).carrier⟩ : RelSet.{0}))
   | .sum a b => do `((⟨($(← obj vs a)).carrier ⊕ ($(← obj vs b)).carrier⟩ : RelSet.{0}))
-  | .pow a => do `(P $(← obj vs a))
   | .list a => do `(dCL Unit ($(← obj vs a)).carrier)
 
 /-- `Calc.elabExpr` of `e`; with no outer term to wait for, a hole still waiting is read again without waiting, so

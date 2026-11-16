@@ -15,11 +15,11 @@ rel_program wumpus where
     /- The views of one KB: V visited, B breeze, S stench; R(𝟙 − X) keeps the rows of R whose value is not in X. -/
 
     uniq(R : α ⟶ β) : α ⟶ β ≜ R ∩ (R°\𝟙)         -- the rows whose key has one value
-    noB(V : C ⟶ C, B : C ⟶ C) : C ⟶ C ≜ V(𝟙 − B)
+    noB(V : C ⟶ C, B : C ⟶ C) : C ⟶ C ≜ V (𝟙 − B)
     noPit(V : C ⟶ C, B : C ⟶ C) : C ⟶ C ≜ V ∪ ran(noB(V,B) adj)
-    cand(V : C ⟶ C, B : C ⟶ C) : C ⟶ C ≜ B adj(𝟙 − noPit(V,B))
+    cand(V : C ⟶ C, B : C ⟶ C) : C ⟶ C ≜ B adj (𝟙 − noPit(V,B))
     pit(V : C ⟶ C, B : C ⟶ C) : C ⟶ C ≜ ran(uniq(cand(V,B)))
-    noS(V : C ⟶ C, S : C ⟶ C) : C ⟶ C ≜ V(𝟙 − S)
+    noS(V : C ⟶ C, S : C ⟶ C) : C ⟶ C ≜ V (𝟙 − S)
     noW(V : C ⟶ C, S : C ⟶ C) : C ⟶ C ≜ V ∪ ran(noS(V,S) adj)
     wmay(S : C ⟶ C) : 1 ⟶ C ≜ S⊤ \ adj           -- the cells beside every stench
     wcand(V : C ⟶ C, S : C ⟶ C) : 1 ⟶ C ≜ wmay(S)(𝟙 − noW(V,S))

@@ -101,7 +101,7 @@ rel_program foldLaw where
     obj K = 0…2
     obj L = 5…6
     ℓ : 1 ⟶ [L] ≜ Λ(⊤(1,L))
-    p(R : X ⟶ X) : X×X ⟶ X×X ≜ ran(ℓ⦇[⟨𝟙,𝟙⟩, π₂ ∪ (π₂(𝟙×R))]⦈)
+    p(R : X ⟶ X) : X×X ⟶ X×X ≜ ran(ℓ⦇[⟨𝟙,𝟙⟩, π₂ ∪ (π₂ (𝟙×R))]⦈)
     R₀ : X ⟶ X ≜ {(A,B)}
     R₁ : X ⟶ X ≜ {(A,B),(B,C)}
     R₂ : X ⟶ X ≜ {(A,B),(B,C),(C,A)}
@@ -132,7 +132,7 @@ rel_program foldClosed where
     obj L = 5…6
     ℓ : 1 ⟶ [L] ≜ Λ(⊤(1,L))
     G : X ⟶ X ≜ {(A,B),(C,C)}
-    p(R : X ⟶ X) : X×X ⟶ X×X ≜ ran(ℓ⦇[⟨𝟙,𝟙⟩, π₂(𝟙×G) ∪ (π₂(𝟙×(∼R ∩ G))) ∪ (π₂(𝟙×dom(R))) ∪ (π₂⟨π₁,π₁⟩)]⦈)
+    p(R : X ⟶ X) : X×X ⟶ X×X ≜ ran(ℓ⦇[⟨𝟙,𝟙⟩, π₂ (𝟙×G) ∪ (π₂ (𝟙×(∼R ∩ G))) ∪ (π₂ (𝟙×dom(R))) ∪ (π₂⟨π₁,π₁⟩)]⦈)
     R₀ : X ⟶ X ≜ {(A,B)}
     R₁ : X ⟶ X ≜ {(A,B),(B,C)}
     R₂ : X ⟶ X ≜ {(A,B),(B,C),(C,A)}
@@ -290,10 +290,10 @@ def errAt (src : String) (line : Nat) (what : String) (col : Option Nat := none)
 #eval errAt "obj X = {A,B,C}\nobj N = 0…3\na : X ⟶ X ≜ {(A,B)}\nb : N ⟶ N ≜ {(1,2)}\nf ≜ ab\n" 5
   "found N, expected X"
 -- a family given where the row is not liftable
-#eval errAt "obj X = {A,B,C}\nobj St = 𝒫(X×X)\nL(S : X ⟶ X) : X ⟶ X ≜ ⦇[S,S]⦈\nf : St ⟶ X×X ≜ L(∋)\n" 3
+#eval errAt "obj X = {A,B,C}\nobj St = [X×X]\nL(S : X ⟶ X) : X ⟶ X ≜ ⦇[S,S]⦈\nf : St ⟶ X×X ≜ L(∋)\n" 3
   "not liftable"
 -- a term that needs a universe its object does not have
-#eval errAt "obj X = {A,B,C}\nobj St = 𝒫(X×X)\nprint ⊤(St,X)\n" 3 "has no universe"
+#eval errAt "obj X = {A,B,C}\nobj St = [X×X]\nprint ⊤(St,X)\n" 3 "has no universe"
 -- a definition or parameter taking a builtin's name, or a name already defined or declared
 #eval errAt "obj B = 0…1\nq : α×β ⟶ α ≜ π₁\nπ₂ ≜ π₁π₁\n" 3 "`π₂` is a builtin"
 #eval errAt "obj B = 0…1\nf(S : B ⟶ B, E : B ⟶ B) : B ⟶ B ≜ S ∩ E\n" 2 "`E` is a builtin"
@@ -341,6 +341,22 @@ def readsAll (ps : List (String × String)) : CM Unit := ps.forM fun (s, r) => d
 #eval readsAll [("«prefix»", "prefix")]
 -- and written bare
 #eval readsAll [("prefix", "prefix"), ("suffix prefix", "(suffix prefix)")]
+-- a space before `(` and `|` compose, as juxtaposition does; `R|S` is `R S` at the one level
+#eval readsAll [("R (S)", "(R S)"), ("R|(S)", "(R S)"), ("R | S", "(R S)"), ("R | S p ∪ R", "(((R S) p) ∪ R)"),
+  ("tail|(S)", "(tail S)"), ("𝟙 (S)", "(𝟙 S)")]
+-- `f(a)` with no space applies `f`: a name taking no arguments, or a builtin taking objects, is an error there
+#eval errAt "obj X = {A,B}\nf : X ⟶ X ≜ {(A,B)}\ng : X ⟶ X ≜ f(f)\n" 3 "`f` takes no arguments; write `f (…)` or `f|(…)`"
+#eval errAt "obj X = {A,B}\nf : X ⟶ X ≜ {(A,B)}\ng : X ⟶ X ≜ 𝟙(f)\n" 3 "`𝟙(…)` gives `𝟙` its objects"
+#eval errAt "obj X = {A,B}\nf : X ⟶ X ≜ {(A,B)}\ng : X ⟶ X ≜ 𝟙(f f)\n" 3 "`𝟙` takes objects, not terms"
+-- the same as Lean reports it on a program
+/--
+error: line 359, col 17: `f` takes no arguments; write `f (…)` or `f|(…)` to compose
+-/
+#guard_msgs in
+rel_program arity0 where
+    obj X = {A,B}
+    f : X ⟶ X ≜ {(A,B)}
+    g : X ⟶ X ≜ f(f)
 
 open LeetQ.Rel.Programs.prelude in
 open LeetQ.Rel.Programs.prelude in
@@ -571,7 +587,7 @@ rel_program foldNamed where
 #guard foldNamed.ok
 
 -- a prelude definition given a family through a typed parameter: the lifted body reaches `perm`, closed on `[N]`
-#eval errAt "obj N = 0…3\nobj St = 𝒫(N×N)\nf(S : N ⟶ N) : [N] ⟶ [N] ≜ sort(S)\ng : St ⟶ [N]×[N] ≜ f(∋)\n" 3
+#eval errAt "obj N = 0…3\nobj St = [N×N]\nf(S : N ⟶ N) : [N] ⟶ [N] ≜ sort(S)\ng : St ⟶ [N]×[N] ≜ f(∋)\n" 3
   "a closed term in a lifted body: [N] has no universe"
 
 -- a nested literal (§c): each leaf position its own object, the side their product
@@ -841,7 +857,7 @@ rel_program chsDiv where
     print ks (subseq ∩ frac(∋,∋))
     print ⟨{(∗,3)},ns⟩(π₂ ∩ (π₁∼(≤/∋)))
     print ⟨{(∗,1)},ns⟩(π₂ ∩ (π₁∼(≤/∋)))
-    print ⟨{(∗,3)},ns⟩(π₂ − (π₁(≤/∋)))
+    print ⟨{(∗,3)},ns⟩(π₂ − (π₁ (≤/∋)))
 #guard printed chsDiv.prints ==
   ["{(∗, (1, 2 3))}", "{}", "{(∗, (2, 2 3))}", "{(∗, 3)}", "{(∗, 3 1), (∗, 3 1 1)}",
    "{(∗, 2 3)}", "{}", "{(∗, 2 3)}"]
@@ -927,8 +943,8 @@ open LeetQ.Rel.Programs.prelude in
 rel_program infixes where
     obj N = 0…9
     w : N×N ⟶ N×N ≜ {((2,3),(2,3)),((4,1),(4,1))}
-    print w(π₁ + π₂)
-    check w(π₁ + π₂) = w⟨π₁,π₂⟩plus
+    print w (π₁ + π₂)
+    check w (π₁ + π₂) = w⟨π₁,π₂⟩plus
     _≼_(R : α ⟶ β, S : β ⟶ α) : α ⟶ β ≜ R ∩ S°
     print {(1,1),(2,2)}(≤ ≼ ≤)
     print {(1,1)}(≤ ≼ ≤ ∪ <)
@@ -1091,7 +1107,7 @@ rel_program muGrow where
   "μX: X occurs in the left operand of \\ at 3:22 (antitone); X must occur only in monotonic positions"
 #eval errAt "obj B = 0…1\nr : B ⟶ B ≜ {(0,1)}\nf : B ⟶ B ≜ νX : r X\n" 3
   "νX needs a bound: write S ∩ φ with S not mentioning X (⊤(A,B) for the whole object)"
-#eval errAt "obj X = {A,B,C}\nobj St = 𝒫(X×X)\nL(S : X ⟶ X) : X ⟶ X ≜ νZ : S ∩ Z\nf : St ⟶ X×X ≜ L(∋)\n" 3
+#eval errAt "obj X = {A,B,C}\nobj St = [X×X]\nL(S : X ⟶ X) : X ⟶ X ≜ νZ : S ∩ Z\nf : St ⟶ X×X ≜ L(∋)\n" 3
   "νZ given a family is not liftable"
 #eval errAt "obj B = 0…1\nνx : B ⟶ B ≜ 𝟙(B)\n" 2 "the name 'νx' reads as a fixed point"
 

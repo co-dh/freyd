@@ -19,8 +19,8 @@ open QLean.Kernel (need needSize)
     both are stored as `.long` (F6); irreducible, so the unifier never reads a name as its storage. -/
 @[irreducible] def _root_.LeetQ.Rel.Obj.named (_ : String) : Obj := .long
 
-/-- An object up to its declared names: `X` and `N` are both `long` and still different objects. `𝒫A` and
-    `[A]` are both `arr`. `mv` is an object variable of the inference, a Lean metavariable of type `Obj`. -/
+/-- An object up to its declared names: `X` and `N` are both `long` and still different objects. `[A]` is
+    `arr`. `mv` is an object variable of the inference, a Lean metavariable of type `Obj`. -/
 inductive OTy
   | base (n : String)
   | prod (a b : OTy)
@@ -51,7 +51,7 @@ def OTy.exp : OTy → OExp
   | .base n => .name {} n
   | .prod a b => .prod a.exp b.exp
   | .sum a b => .sum a.exp b.exp
-  -- `𝒫A` and `[A]` are one object, an array; printed as the array the interpreter holds
+  -- `[A]` is an array; printed as the array the interpreter holds
   | .arr a => .list a.exp
   | .mv m => .var {} (match m.name with | .num _ k => s!"?{k}" | n => s!"?{n}")
 
@@ -405,7 +405,7 @@ def oty (env : Env) (vs : List (String × OTy) := []) : OExp → M OTy
     | none => throw ⟨p, s!"the object variable '{n}' is not instantiated here"⟩
   | .prod a b => return .prod (← oty env vs a) (← oty env vs b)
   | .sum a b => return .sum (← oty env vs a) (← oty env vs b)
-  | .pow a | .list a => return .arr (← oty env vs a)
+  | .list a => return .arr (← oty env vs a)
 
 /-! ### The lifted rows of §e, each shape stated once -/
 
@@ -1068,7 +1068,7 @@ def pmatch (env : Env) (p : Pos) (vs : List (String × OTy)) : OExp → OTy → 
   | .sum x y, t => do match ← split p .sum t with
     | some (a, b) => (← pmatch env p vs x a).bind (pmatch env p · y b)
     | none => pure .no
-  | .pow x, t | .list x, t => do match ← split p (fun a _ => .arr a) t with
+  | .list x, t => do match ← split p (fun a _ => .arr a) t with
     | some (a, _) => pmatch env p vs x a
     | none => pure .no
   | o@(.name ..), t => do

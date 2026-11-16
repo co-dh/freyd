@@ -57,7 +57,7 @@ def isLetter (c : Char) : Bool := c.isAlpha || (0x370 ≤ c.val && c.val ≤ 0x3
 def isIdCont (c : Char) : Bool := isLetter c || c.isDigit || isSub c || c == '\''
 /-- The characters of the grammar itself; any other non-letter is a one-character name (`⊤ ≤ ≼ ∋`). -/
 def reserved : List Char :=
-  ['(', ')', ',', '⟨', '⟩', '[', ']', '⦇', '⦈', '{', '}', '°', '*', '∼', '≜', '⊑', '=', ':', '⟶', '…', '-', '𝒫', '.'] ++
+  ['(', ')', ',', '⟨', '⟩', '[', ']', '⦇', '⦈', '{', '}', '°', '*', '∼', '≜', '⊑', '=', ':', '⟶', '…', '-', '|', '.'] ++
     Bin.table.map (·.1)
 def isSym (c : Char) : Bool := !(c.isWhitespace || isIdCont c || reserved.contains c)
 /-- The form of an object variable: one lowercase Greek letter `α`…`ω`, then only primes and subscript digits. -/
@@ -162,11 +162,10 @@ partial def qword : P String := do
   let w ← word
   if (← peek) == some '.' && (← get).ns w then do adv; let v ← qword; pure s!"{w}.{v}" else pure w
 
-/-- The object word of `relObj`'s `oWord` (`Embed.obj`), whose `[ ]`, `( )`, `×`, `+` and `𝒫 (…)` are Lean's:
-    `𝒫`s, since Lean reads `𝒫A` as one identifier, then a qualified word. -/
+/-- The object word of `relObj`'s `oWord` (`Embed.obj`), whose `[ ]`, `( )`, `×` and `+` are Lean's:
+    a qualified word. -/
 partial def object : P OExp := do
   let p ← pos
-  if (← peek) == some '𝒫' then do adv; return .pow (← object)
   let w ← qword
   let s ← get
   -- a variable is not a declared object and not a definition in scope (§e)

@@ -57,14 +57,13 @@ inductive Found
   | none
   deriving Inhabited
 
-/-- An object as written: a declared name, `A×B`, `A+B`, `𝒫A`, `[A]`; in a parameter's type also an object
+/-- An object as written: a declared name, `A×B`, `A+B`, `[A]`; in a parameter's type also an object
     variable `α`, instantiated at each use (§e). -/
 inductive OExp
   | name (p : Pos) (n : String)
   | var (p : Pos) (n : String)
   | prod (a b : OExp)
   | sum (a b : OExp)
-  | pow (a : OExp)
   | list (a : OExp)
   deriving Repr, Inhabited
 
@@ -380,12 +379,11 @@ abbrev Program := List Decl
 
 /-! ### Printing, in the syntax the parser reads: a composite on the right of an operator in parentheses -/
 
-/-- `o` printed; `inner` parenthesises a product or sum, as an operand of `×`, `+`, `𝒫` needs. -/
+/-- `o` printed; `inner` parenthesises a product or sum, as an operand of `×`, `+` needs. -/
 def OExp.render (inner : Bool) : OExp → String
   | .name _ n | .var _ n => n
   | .prod a b => let s := s!"{a.render true}×{b.render true}"; if inner then s!"({s})" else s
   | .sum a b => let s := s!"{a.render true}+{b.render true}"; if inner then s!"({s})" else s
-  | .pow a => s!"𝒫{a.render true}"
   | .list a => s!"[{a.render false}]"
 
 def OExp.show (o : OExp) : String := o.render false
@@ -395,7 +393,7 @@ def OExp.vars : OExp → List String
   | .var _ n => [n]
   | .name .. => []
   | .prod a b | .sum a b => (a.vars ++ b.vars).eraseDups
-  | .pow a | .list a => a.vars
+  | .list a => a.vars
 
 /-- The object variables of a row's parameters and type, in order, each once. -/
 def Prim.vars (r : Prim) : List String :=

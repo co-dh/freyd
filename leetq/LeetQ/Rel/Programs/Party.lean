@@ -35,7 +35,7 @@ rel_program partyPlan where
     best : E ⟶ [E] ≜ Λ(party)est(R(rating)°)
 
     -- the sets with no employee beside his boss
-    check party setify = Λ(under)subseq(𝟙 − dom(∋ ∩ (∋ boss)))setify
+    check party setify = Λ(under)subseq (𝟙 − dom(∋ ∩ (∋ boss)))setify
 
     /- The greedy form (p. 178): exclude keeps only the best party of each child. -/
 
@@ -49,7 +49,7 @@ rel_program partyPlan where
     tally : E×[N×N] ⟶ N×N ≜ ⟨(π₁rating) + (π₂F(π₂)sum), π₂F(max)sum⟩
     c : E ⟶ N×N ≜ refold(⟨𝟙, kids⟩, tally)
     win : E ⟶ E ≜ dom((c π₁ ≥) ∩ (c π₂))
-    guests : E ⟶ E ≜ μX : win(𝟙 ∪ (boss° boss° X)) ∪ ((𝟙 − win)boss° X)
+    guests : E ⟶ E ≜ μX : win (𝟙 ∪ (boss° boss° X)) ∪ ((𝟙 − win)boss° X)
     check Λ(guests) ⊑ best
     check c max = best cost(rating)
     root : E ⟶ E ≜ {(a,a)}

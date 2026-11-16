@@ -36,7 +36,7 @@ rel_program detab where
        step((x,c),a) = (a=NL → (x⧺[NL],0), a=TB → (x⧺blanks(w),c+w), (x⧺[a],c+1)), w = n − c mod n
        ``` -/
 
-    step : ([Ch]×N)×Ch ⟶ [Ch]×N ≜ dom(π₂nl)⟨⟨π₁π₁,π₂⟩snoc,z⟩ ∪ (dom(π₂tb)⟨⟨π₁π₁,w blanks⟩cat,⟨π₁π₂,w⟩plus⟩) ∪ (dom(π₂(𝟙(Ch) − nl − tb))⟨⟨π₁π₁,π₂⟩snoc,π₁π₂ succ⟩) where w ≜ ⟨⊤m,⟨π₁π₂,⊤m⟩mod⟩minus
+    step : ([Ch]×N)×Ch ⟶ [Ch]×N ≜ dom(π₂nl)⟨⟨π₁π₁,π₂⟩snoc,z⟩ ∪ (dom(π₂tb)⟨⟨π₁π₁,w blanks⟩cat,⟨π₁π₂,w⟩plus⟩) ∪ (dom(π₂ (𝟙(Ch) − nl − tb))⟨⟨π₁π₁,π₂⟩snoc,π₁π₂ succ⟩) where w ≜ ⟨⊤m,⟨π₁π₂,⊤m⟩mod⟩minus
     detab : [Ch] ⟶ [Ch] ≜ ⟨⟨nil,z⟩,𝟙⟩loop(step)π₁
 
     /- The specification Λ(detab°)est(R), R ≜ length ≤ length° (entab_laws, 10:148), on the candidates C: every string of
@@ -51,12 +51,12 @@ rel_program detab where
     /- The derived program (triple_fold 10:247, entab_triple 10:259): triple ≜ ⦇[base,op]⦈ on snoc-lists, run as the left
        loop of op from base = ([],(0,0)); h: the character a is a blank off a tab stop, on ((t,c),a); tc: ⟨tbc,col⟩'s step. -/
 
-    h : (α×N)×Ch ⟶ (α×N)×Ch ≜ dom(π₂bl) ∩ dom(π₁π₂ succ⟨𝟙,⊤m⟩mod(𝟙(N) − {(0,0)}))
-    tc : (N×N)×Ch ⟶ N×N ≜ h⟨π₁π₁ succ,k⟩ ∪ ((dom(π₂bl) − h)⟨z,k⟩) ∪ (dom(π₂nl)⟨z,z⟩) ∪ (dom(π₂(𝟙(Ch) − bl − nl))⟨z,k⟩) where k ≜ π₁π₂ succ
+    h : (α×N)×Ch ⟶ (α×N)×Ch ≜ dom(π₂bl) ∩ dom(π₁π₂ succ⟨𝟙,⊤m⟩mod (𝟙(N) − {(0,0)}))
+    tc : (N×N)×Ch ⟶ N×N ≜ h⟨π₁π₁ succ,k⟩ ∪ ((dom(π₂bl) − h)⟨z,k⟩) ∪ (dom(π₂nl)⟨z,z⟩) ∪ (dom(π₂ (𝟙(Ch) − bl − nl))⟨z,k⟩) where k ≜ π₁π₂ succ
 
     /- op((x,(t,c)),a): hold the blank, or emit a tab on a tab stop, or cash the t held blanks in and append a. -/
 
-    op : ([Ch]×(N×N))×Ch ⟶ [Ch]×(N×N) ≜ ⟨g π₁π₁ ∪ ((dom(π₂bl) − g)⟨π₁π₁,⊤tb⟩snoc) ∪ (dom(π₂(𝟙(Ch) − bl))⟨⟨π₁π₁,π₁π₂π₁ blanks⟩cat,π₂⟩snoc),⟨π₁π₂,π₂⟩tc⟩ where g ≜ dom(⟨π₁π₂,π₂⟩h)
+    op : ([Ch]×(N×N))×Ch ⟶ [Ch]×(N×N) ≜ ⟨g π₁π₁ ∪ ((dom(π₂bl) − g)⟨π₁π₁,⊤tb⟩snoc) ∪ (dom(π₂ (𝟙(Ch) − bl))⟨⟨π₁π₁,π₁π₂π₁ blanks⟩cat,π₂⟩snoc),⟨π₁π₂,π₂⟩tc⟩ where g ≜ dom(⟨π₁π₂,π₂⟩h)
     triple : [Ch] ⟶ [Ch]×(N×N) ≜ ⟨⟨nil,⟨z,z⟩⟩,𝟙⟩loop(op)
     assocl : α×(β×γ) ⟶ (α×β)×γ ≜ ⟨⟨π₁,π₂π₁⟩,π₂π₂⟩
     entab : [Ch] ⟶ [Ch] ≜ triple assocl π₁ (𝟙×blanks) cat

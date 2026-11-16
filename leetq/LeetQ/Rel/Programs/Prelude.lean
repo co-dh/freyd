@@ -21,9 +21,9 @@ rel_program prelude where
     -- `at(0)τ ∩ 𝟙` holds the one-element arrays; it stands for τ°, whose converse does not run on demand.
 
     head : [α] ⟶ α ≜ at(0)                                        -- B&dM p.267 head = outl cons°
-    tail : [α] ⟶ [α] ≜ cat° dom(π₁(at(0)τ ∩ 𝟙))π₂                 -- B&dM p.149 tail = outr cons°
-    init : [α] ⟶ [α] ≜ cat° dom(π₂(at(0)τ ∩ 𝟙))π₁                 -- B&dM p.249 init = outl snoc°
-    last : [α] ⟶ α ≜ cat° π₂(at(0)τ ∩ 𝟙)at(0)                     -- B&dM p.267 last = outr snoc°
+    tail : [α] ⟶ [α] ≜ cat° dom(π₁ (at(0)τ ∩ 𝟙))π₂                -- B&dM p.149 tail = outr cons°
+    init : [α] ⟶ [α] ≜ cat° dom(π₂ (at(0)τ ∩ 𝟙))π₁                -- B&dM p.249 init = outl snoc°
+    last : [α] ⟶ α ≜ cat° π₂ (at(0)τ ∩ 𝟙)at(0)                    -- B&dM p.267 last = outr snoc°
     prefix : [α] ⟶ [α] ≜ ⦇[nil, nil ∪ cons]⦈                -- B&dM p.126
     suffix : [α] ⟶ [α] ≜ cat° π₂                                  -- B&dM p.127 suffix, dual to prefix: x ⧺ y ↦ y
     concat : [[α]] ⟶ [α] ≜ ⦇[nil, cat]⦈                    -- B&dM p.129

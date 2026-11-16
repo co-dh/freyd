@@ -62,7 +62,7 @@ rel_program sel where
 #guard sel.ok
 end
 
-/-- error: line 70, col 17: expected ')' -/
+/-- error: line 70, col 17: unknown name 'AC3' -/
 #guard_msgs in
 open LeetQ.Rel.Programs.prelude in
 rel_program selNo where

@@ -140,7 +140,6 @@ syntax (name := hId) ident : relHead
 syntax (name := hSym) relSym : relHead
 
 syntax:max (name := oWord) relWord : relObj
-syntax (name := oPow) "𝒫" relObj:max : relObj
 syntax (name := oList) "[" relObj "]" : relObj
 syntax (name := oParen) "(" relObj ")" : relObj
 syntax:60 (name := oProd) relObj:60 "×" relObj:61 : relObj
@@ -172,6 +171,8 @@ syntax:max (name := rConv) rel:max "°" : rel
 syntax:max (name := rStar) rel:max "*" : rel
 syntax:60 (name := rComp) rel:60 sameLine rel:61 : rel
 syntax:60 (name := rBin) rel:60 binOp rel:61 : rel
+-- `R | S` is `R S`, written so where juxtaposition would read `f(a)` as an application; `|` is no name
+syntax:60 (name := rPipe) rel:60 "|" rel:61 : rel
 -- `μX : φ`, `νX : φ`, one identifier then the body to the end: below every operator, so an operand only in
 -- parentheses
 syntax:0 (name := rFix) ident ":" rel : rel
@@ -260,7 +261,6 @@ partial def obj (s : Syntax) : C OExp := match s.getKind with
   | ``oWord => match s[0].getKind with
     | ``wNeg => failAt s "expected an object"
     | _ => onText s (tokText s[0][0]) Parse.object
-  | ``oPow => do pure (.pow (← obj s[1]))
   | ``oList => do pure (.list (← obj s[1]))
   | ``oParen => obj s[1]
   | ``oProd => do pure (.prod (← obj s[0]) (← obj s[2]))
@@ -283,6 +283,11 @@ where tup (xs : Array Syntax) : C Tup := do
 /-- A side's item list, each item a primary and, unless juxtaposed, the builtin infix operator before it. -/
 abbrev Items := List (Option (Lang.Pos × Bin) × Lang.Expr)
 
+/-- `e` is no infix name standing where an operand is. -/
+def infixFree (e : Lang.Expr) : C Unit := do
+  if let .name p n := e then if ← Parse.isInfix n then
+    throw ⟨p, s!"`{n}` is an infix operator: it stands between two terms, `R {n} S`"⟩
+
 mutual
 
 /-- A term: its items folded left to right, a declared infix name taking the primary after it (§c). -/
@@ -291,9 +296,6 @@ partial def expr (s : Syntax) : C Lang.Expr := do
   | (none, e) :: xs => do infixFree e; go e xs
   | _ => failAt s "expected a term"
 where
-  infixFree (e : Lang.Expr) : C Unit := do
-    if let .name p n := e then if ← Parse.isInfix n then
-      throw ⟨p, s!"`{n}` is an infix operator: it stands between two terms, `R {n} S`"⟩
   go (e : Lang.Expr) : Items → C Lang.Expr
   | [] => pure e
   | (some (p, o), b) :: xs => do infixFree b; go (.bin p o e b) xs
@@ -306,6 +308,10 @@ where
 partial def items (s : Syntax) : C Items := do
   match s.getKind with
   | ``rComp => pure ((← items s[0]) ++ (← prim s.getArgs.back!).map (none, ·))
+  -- composition as juxtaposition is, its right operand no infix name (`R | ≼ S` is no term)
+  | ``rPipe => match ← prim s[2] with
+    | b :: bs => do infixFree b; pure ((← items s[0]) ++ (b :: bs).map (none, ·))
+    | [] => failAt s[2] "expected a term"
   | ``rBin =>
     let some o := Bin.table.lookup (atomIn s[1]).front | failAt s[1] "expected an operator"
     match ← prim s[2] with
@@ -372,13 +378,13 @@ partial def prim (s : Syntax) : C (List Lang.Expr) := do
 /-- The name `n` at `p`: `app` its parenthesised terms, `objs` the same parentheses
     read as objects, `pair` a pair right after it; each `none` when not written so. -/
 partial def atomOf (s : Syntax) (p : Lang.Pos) (n : String) (app objs pair : Option Syntax) : C (List Lang.Expr) := do
-  -- what follows a name taking no arguments: a parenthesis or a pair is a term composed after it
-  let after : C (List Lang.Expr) := match app, pair with
-    | some a, _ => match a[2].getSepArgs with
-      | #[e] => do pure [← expr e]
-      | _ => failAt a "expected ')'"
-    | _, some q => do pure [.pair (← posOf q[1]) (← expr q[2]) (← expr q[4])]
-    | none, none => if objs.isSome then failAt s "expected a term" else pure []
+  -- a parenthesis right after a name applies it (§c), so after a name taking no arguments it is an error, never a
+  -- term composed after it; a pair right after it is composed after it
+  let compose := s!"write `{n} (…)` or `{n}|(…)` to compose"
+  let after : C (List Lang.Expr) := match app, objs, pair with
+    | none, none, some q => do pure [.pair (← posOf q[1]) (← expr q[2]) (← expr q[4])]
+    | none, none, none => pure []
+    | _, _, _ => failAt s s!"`{n}` takes no arguments; {compose}"
   let args (a : Syntax) : C (List Lang.Expr) := a[2].getSepArgs.toList.mapM expr
   -- the program's names, then the kernel table, then the resolver's (§2.3)
   let st ← get
@@ -399,18 +405,24 @@ partial def atomOf (s : Syntax) (p : Lang.Pos) (n : String) (app objs pair : Opt
       | none => failAt o s!"at( ) takes a position, a number from 0, found '{w}'"
     | _ => failAt s "at( ) takes a position, a number from 0"
   | none, some (o, 0) => match objs with
-    -- the objects when they read as objects, else the parenthesis is a term
+    -- the parenthesis is the builtin's objects, and nothing else
     | some os => do
       try pure [.op p o (← os[2].getSepArgs.toList.mapM obj) []]
-      catch _ => pure (.op p o [] [] :: (← after))
-    | none => do pure (.op p o [] [] :: (← after))
+      catch e => throw ⟨e.pos, s!"{e.msg}: `{n}(…)` gives `{n}` its objects; {compose}"⟩
+    | none => match app with
+      | some _ => failAt s s!"`{n}` takes objects, not terms; {compose}"
+      | none => do pure (.op p o [] [] :: (← after))
   | none, some (o, _) => match pair, app with
     | some q, _ => do pure [.op p o [] [.pair (← posOf q[1]) (← expr q[2]) (← expr q[4])]]
     | none, some a => do pure [.op p o [] (← args a)]
     | none, none => failAt s "expected '('"
   | none, none =>
     if (← get).thms.contains n || ((← get).ext n).any (·.thm) then throw ⟨p, s!"`{n}` is a theorem, not a relation"⟩
-    if !(← Parse.isInfix n) then do pure (.name p n :: (← after))
+    -- a name no scope gives, applied: the elaborator names it unknown
+    if !(← Parse.isInfix n) then match app, objs with
+      | some a, _ => do pure [.app p n (← args a)]
+      | none, some _ => throw ⟨p, s!"unknown name '{n}'"⟩
+      | none, none => do pure (.name p n :: (← after))
     else if app.isSome || objs.isSome then failAt s s!"`{n}` is an infix operator: write `R {n} S`, not `{n}(R, S)`"
     else pure [.name p n]
 
