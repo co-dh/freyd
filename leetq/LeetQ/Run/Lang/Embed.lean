@@ -602,6 +602,7 @@ def define (stx id : Syntax) (prog : Program) (used : List Name) (more : List Na
     defConst n (toExpr (α := List Decl) prog)
     addDocString' n mkNullNode (stx[0].getOptional?.map (⟨·⟩))
     Term.addTermInfo' id (mkConst n) (isBinder := true)
+  addDeclarationRangesFromSyntax n stx id
   let env ← getEnv
   let opts ← getOptions
   let reg := Expand.relRegistry.getState env
@@ -659,5 +660,12 @@ def define (stx id : Syntax) (prog : Program) (used : List Name) (more : List Na
       | none => throwErrorAt stx[5] "`{x}` is no definition of `{b}`"
     define stx stx[2] (kept.map fun d => ((named d).bind fun x => news.find? (named · == some x)).getD d) s'.used
       ((reg.chains.lookup b).getD []) (some (bns, bos))
+
+/-- `decl_line% c`: the line the declaration `c` is named at, so a test writes a position in `c`'s text as `c`'s line
+    plus an offset, which holds wherever `c` moves in its file. -/
+elab "decl_line% " c:ident : term => do
+  let n ← realizeGlobalConstNoOverloadWithInfo c
+  let some r ← findDeclarationRanges? n | throwErrorAt c "`{n}` has no declaration range to read its line from"
+  pure (mkNatLit r.selectionRange.pos.line)
 
 end LeetQ.Rel.Lang.Embed

@@ -128,9 +128,8 @@ rel_program thmData where
       _ = two := unit
 
 #guard !thmData.ok
-/-- info: ["line 128, col 7: check failed: x up = {(a, 2)}, x two = {(a, 2), (b, 2)}"] -/
-#guard_msgs in
-#eval thmData.failures.map toString
+#guard thmData.failures.map toString ==
+  [s!"line {decl_line% thmData + 2}, col 7: check failed: x up = \{(a, 2)}, x two = \{(a, 2), (b, 2)}"]
 
 /-! A juxtaposed antiquotation ends its statement at its line, as a name does: the next line, a statement or a Lean
     command, is not read into it. `#rel_stmts` shows each statement a program's lines parse to. -/
