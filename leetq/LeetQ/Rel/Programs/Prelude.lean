@@ -1,5 +1,4 @@
 import LeetQ.Run.Lang.Embed
-import LeetQ.Rel.Lang.GenSpec
 /-! # The prelude: definitions every program sees (`rel_program … after prelude`), elaborated before it. A program
     that defines one of these names again gets "already defined … in the prelude". -/
 namespace LeetQ.Rel.Programs
