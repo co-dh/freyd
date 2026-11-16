@@ -47,6 +47,17 @@ theorem rep_antiJoinC (R : Rel A B) (T : Rel B B) (hb : (antiJoinC R T).2 = true
   simp only [antiJoinC, okbit] at hb
   refine rep_antiJoin R T (codes_faithful_wf B _ (Obj.codesC_fits B _ hb.1.1)).1 ?_ ?_ <;> simp only [okbit, hb]
 
+/-- **The anti-join is canonical where `R` is**: it keeps the rows of `R` that `anti` picks (`anti_sublist`), `anti`
+    running over the first joint code, whose count is `R`'s (`codes_faithful_wf`). -/
+theorem canon_antiJoinC (R : Rel A B) (T : Rel B B) (hb : (antiJoinC R T).2 = true) (hR : R.Canon) :
+    (antiJoinC R T).1.Canon := by
+  simp only [antiJoinC, Bool.and_eq_true] at hb
+  obtain ⟨-, hn0, -⟩ := (codes_faithful_wf B _ (Obj.codesC_fits B _ hb.1.1)).1.2 (k := 0) (by decide)
+  refine canon_rows R hR _ ?_ hb.1.2 hb.2
+  rw [Obj.codesC_fst]
+  have h := anti_sublist (B.codes #v[⟨R.n, R.val⟩, ⟨T.n, T.val⟩])[0] (B.codes #v[⟨R.n, R.val⟩, ⟨T.n, T.val⟩])[1]
+  rw [hn0] at h; exact h
+
 /-- **`rep (top Ua Ub) = Ua? ⊤ Ub?` under `topC`'s bit**: the decided counts are `hN`, `h63`, the `fitsN` bits at the
     `ma · mb` rows `hA`, `hB`. -/
 theorem rep_topC {ma mb : USize} (Ua : Vals A ma) (Ub : Vals B mb) (hb : (topC Ua Ub).2 = true) :
@@ -308,7 +319,12 @@ theorem rep_rightDiv {ma mb : USize} (R : CRel C A) (S : CRel B A) (Ua : Vals C 
 
 theorem rep_antiJoin (R : CRel A B) (T : CRel B B) (hb : (R.antiJoin T).ok = true) :
     rep (R.antiJoin T).rel = rep R.rel ≫ corefl (A := (⟨B.El⟩ : RelSet.{0})) fun b => ¬ ∃ y, rep T.rel y b := by
-  have e : R.antiJoin T = _ := guard_eq ok hb; rw [e] at hb ⊢; rw [rep_ofC hb]; replace hb := (ofC_ok hb).1; exact rep_antiJoinC R.rel T.rel hb
+  have e : R.antiJoin T = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_antiJoinC R.rel T.rel hb
+
+/-- **`CRel.antiJoin` is canonical where `R` is**: `canon_antiJoinC`. -/
+theorem canon_antiJoin (R : CRel A B) (T : CRel B B) (hb : (R.antiJoin T).ok = true) (hR : R.rel.Canon) :
+    (R.antiJoin T).rel.Canon := by
+  have e : R.antiJoin T = _ := guard_eq ok hb; rw [e] at hb ⊢; exact canon_antiJoinC R.rel T.rel hb hR
 
 theorem rep_top {ma mb : USize} (Ua : Vals A ma) (Ub : Vals B mb) (hb : (top Ua Ub).ok = true) :
     rep (top Ua Ub).rel = corefl (A := (⟨A.El⟩ : RelSet.{0})) (fun a => ∃ i, Ua.row i = a) ≫

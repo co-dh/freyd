@@ -262,8 +262,20 @@ theorem canon_canonC {k v : Obj} (R : Rel k v) (hb : (canonC R).2 = true) (ho : 
   · exact absurd (hi _ _ h) hne
   · exact absurd h hna
 
+/-- **A subsequence of a canonical table is canonical**: the rows `i` names, ascending among `R`'s positions, keep
+    `R`'s order, so an op that only drops rows of `R` (`∩`, `−`, the anti-join) needs no `canonC`. -/
+theorem canon_rows {k v : Obj} (R : Rel k v) (hR : R.Canon) (i : ByteArray) (hsub : (ids i).Sublist (List.range R.n.toNat))
+    (hk : Vals.fitsN k R.key R.n.toNat = true) (hv : Vals.fitsN v R.val R.n.toNat = true) : (R.rows i).Canon := by
+  have hlen := hsub.length_le; rw [List.length_range] at hlen
+  unfold Rel.Canon at hR ⊢
+  rw [rows_toList R i (by rw [len_eq_ids]; exact Nat.lt_of_le_of_lt hlen R.n.toNat_lt_size)
+    (pickFits_sublist hsub (pickFits_range k _ hk)) (pickFits_sublist hsub (pickFits_range v _ hv))]
+  rw [toList_rowAt] at hR
+  exact List.Pairwise.sublist (hsub.map _) hR
+
 #print axioms canon_canonC
 #print axioms rep_canonC
+#print axioms canon_rows
 
 end Rep
 
@@ -306,7 +318,7 @@ theorem rep_comp (R : CRel A B) (S : CRel B C) (hb : (R.comp S).ok = true) :
   have e : R.comp S = _ := guard_eq ok hb; rw [e] at hb ⊢; rw [rep_ofC hb]; replace hb := (ofC_ok hb).1; exact rep_compC R.rel S.rel hb
 
 theorem rep_inter (R S : CRel A B) (hb : (R.inter S).ok = true) : rep (R.inter S).rel = rep R.rel ∩ rep S.rel := by
-  have e : R.inter S = _ := guard_eq ok hb; rw [e] at hb ⊢; rw [rep_ofC hb]; replace hb := (ofC_ok hb).1; exact rep_interC R.rel S.rel hb
+  have e : R.inter S = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_interC R.rel S.rel hb
 
 theorem rep_union (R S : CRel A B) (hb : (R.union S).ok = true) : rep (R.union S).rel = rep R.rel ∪ rep S.rel := by
   have e : R.union S = _ := guard_eq ok hb; rw [e] at hb ⊢; rw [rep_ofC hb]; replace hb := (ofC_ok hb).1; exact rep_unionC R.rel S.rel hb
@@ -315,9 +327,12 @@ theorem canon_comp (R : CRel A B) (S : CRel B C) (hb : (R.comp S).ok = true) (ho
     (hi : (Obj.prod A C).KeyInj) : (R.comp S).rel.Canon := by
   have e : R.comp S = _ := guard_eq ok hb; rw [e] at hb ⊢; exact canon_ofC hb ho hi
 
-theorem canon_inter (R S : CRel A B) (hb : (R.inter S).ok = true) (ho : (Obj.prod A B).Ordered)
-    (hi : (Obj.prod A B).KeyInj) : (R.inter S).rel.Canon := by
-  have e : R.inter S = _ := guard_eq ok hb; rw [e] at hb ⊢; exact canon_ofC hb ho hi
+/-- **`∩` is canonical where `R` is**: it keeps the rows of `R` that `whereBits` picks (`whereBits_sublist`). -/
+theorem canon_inter (R S : CRel A B) (hb : (R.inter S).ok = true) (hR : R.rel.Canon) : (R.inter S).rel.Canon := by
+  have e : R.inter S = _ := guard_eq ok hb; rw [e] at hb ⊢
+  replace hb : (interC R.rel S.rel).2 = true := hb
+  simp only [interC, Bool.and_eq_true] at hb
+  exact canon_rows R.rel hR _ (whereBits_sublist _ _) hb.1.2 hb.2
 
 theorem canon_union (R S : CRel A B) (hb : (R.union S).ok = true) (ho : (Obj.prod A B).Ordered)
     (hi : (Obj.prod A B).KeyInj) : (R.union S).rel.Canon := by
@@ -332,9 +347,9 @@ theorem comp_assoc {D : Obj} (R : CRel A B) (S : CRel B C) (T : CRel C D) (h₁ 
   rw [rep_comp _ _ h₁, rep_comp _ _ hl.1, rep_comp _ _ h₂, rep_comp _ _ hr.2, Cat.assoc]
 
 /-- **`R ∩ R` is `R` on data**, for a canonical `R`. -/
-theorem inter_self (R : CRel A B) (hb : (R.inter R).ok = true) (hR : R.rel.Canon) (ho : (Obj.prod A B).Ordered)
-    (hi : (Obj.prod A B).KeyInj) : (R.inter R).rel.toList = R.rel.toList :=
-  canon_eq (canon_inter _ _ hb ho hi) hR (by rw [rep_inter _ _ hb, Freyd.Alg.Allegory.inter_idem])
+theorem inter_self (R : CRel A B) (hb : (R.inter R).ok = true) (hR : R.rel.Canon) :
+    (R.inter R).rel.toList = R.rel.toList :=
+  canon_eq (canon_inter _ _ hb hR) hR (by rw [rep_inter _ _ hb, Freyd.Alg.Allegory.inter_idem])
 
 /-- **`R ∪ R` is `R` on data**, for a canonical `R`. -/
 theorem union_self (R : CRel A B) (hb : (R.union R).ok = true) (hR : R.rel.Canon) (ho : (Obj.prod A B).Ordered)
