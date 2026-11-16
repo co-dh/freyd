@@ -161,7 +161,7 @@ rel_program kfUse where
 
 run_cmd do
   let cs := (Expand.relRegistry.getState (← getEnv)).calls.filter (`LeetQ.Rel.Programs.kf.refl.form |>.isPrefixOf ·.1)
-  unless !cs.isEmpty && cs.all (·.2.2.2.2.2.2) do
+  unless !cs.isEmpty && cs.all (·.2.kf) do
     throwError "`kf.refl` at a family has no keyed constant: {cs.map (·.1)}"
 
 end LeetQ.Rel.Programs

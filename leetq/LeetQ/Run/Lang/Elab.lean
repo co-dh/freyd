@@ -326,16 +326,40 @@ def noLeft : String := "the term here needs keys and has no left context"
     the call's indices (§e). Part of the constant's signature. -/
 abbrev Form := Option Bool × Option Nat
 
-/-- What a call needs of a constant (the registry): the constant; its plan's demand bit; per object variable,
-    whether it is generic over it and whether it reads its universe; its converse's constant and demand bit;
-    whether it is a pair test; whether a family result `I ⟶ a×b` is its keyed form `I×a ⟶ b` (`keyed`). -/
-abbrev Sig := Lean.Name × Bool × List (Bool × Bool) × Option (Lean.Name × Bool) × Bool × Bool
+/-- What a call needs of a constant (the registry), read off its `Once` by `sigOf`. -/
+structure Sig where
+  /-- The constant. -/
+  const : Lean.Name
+  /-- Its plan's demand bit. -/
+  demand : Bool
+  /-- Per object variable, whether it is generic over it and whether it reads its universe. -/
+  vars : List (Bool × Bool)
+  /-- Its converse's constant and demand bit. -/
+  conv : Option (Lean.Name × Bool)
+  /-- Whether it is a pair test. -/
+  tst : Bool
+  /-- Whether a family result `I ⟶ a×b` is its keyed form `I×a ⟶ b` (`keyed`). -/
+  kf : Bool
+  deriving Inhabited, Repr, BEq
 
-/-- A definition elaborated once at its arguments' forms (`once`): its registry key (`formKey`), its constant, per
-    object variable whether the constant is generic over it (the variables' universes are the term variables
-    `0 … n-1`), its parameters' objects and demand bits as the constant takes them (the variables from `n` on), its
-    body, whether that body is its pair test (it builds no relation, §a), and whether it is a family's keyed form. -/
-abbrev Once := Lean.Name × Lean.Name × List Bool × List (Obj × Obj × Bool) × Res × Bool × Bool
+/-- A definition elaborated once at its arguments' forms (`once`). Not an extension of `Sig`: a `Sig` is computed
+    from it (`sigOf`), its universes read and converse taken from the body. -/
+structure Once where
+  /-- Its registry key (`formKey`). -/
+  key : Lean.Name
+  /-- Its constant. -/
+  const : Lean.Name
+  /-- Per object variable whether the constant is generic over it (the variables' universes are the term
+      variables `0 … n-1`). -/
+  gen : List Bool
+  /-- Its parameters' objects and demand bits as the constant takes them (the variables from `n` on). -/
+  params : List (Obj × Obj × Bool)
+  /-- Its body. -/
+  res : Res
+  /-- Whether that body is its pair test (it builds no relation, §a). -/
+  tst : Bool
+  /-- Whether it is a family's keyed form. -/
+  kf : Bool
 
 structure St where
   /-- The fixed points so far: the next one's variable. -/
