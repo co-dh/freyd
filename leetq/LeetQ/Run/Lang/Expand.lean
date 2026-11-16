@@ -155,9 +155,10 @@ def formKey (c : Lean.Name) (fs : List Form) : Lean.Name :=
 
 /-- What a call reads of the constant `o` (`Sig`): the universes its body reads, its converse when it has one. -/
 def sigOf (o : Once) : Sig :=
-  let (_, k, gen, _, ⟨_, _, d, t⟩, tst, kf) := o
-  let cv := if tst then none else (convTm t).toOption
-  (k, d, gen.zip ((List.range gen.length).map (fv t).contains), cv.map fun ⟨e, _⟩ => (k ++ `conv, e), tst, kf)
+  let ⟨_, _, d, t⟩ := o.res
+  let cv := if o.tst then none else (convTm t).toOption
+  { const := o.const, demand := d, vars := o.gen.zip ((List.range o.gen.length).map (fv t).contains),
+    conv := cv.map fun ⟨e, _⟩ => (o.const ++ `conv, e), tst := o.tst, kf := o.kf }
 
 /-- What a program reads: its closed definitions, its prints (text and term), its checks, its objects, and its
     definitions elaborated once. -/
@@ -218,10 +219,12 @@ def once (env : Env) (p : Pos) (n : String) (qs : List Param) (e : Expr) (ty : O
     let gen := fl.map (·.1)
     -- a family that does not build whole (its index has no universe) builds keyed, run on the (key, source) pairs
     let kq := match r with | .fam q i a b => some (keyed i q a b) | .rel .. => none
+    let mk (res : Res) (tst kf : Bool) : Once × List Once :=
+      ({ key := k, const := c, gen, params := os, res, tst, kf }, st.specs)
     let mc ← Lean.getMCtx; match build objs mc p q, kq.map (build objs mc p), test objs mc p q with
-    | .ok res, _, _ => pure ((k, c, gen, os, res, false, false), st.specs)
-    | .error _, some (.ok res), _ => pure ((k, c, gen, os, res, false, true), st.specs)
-    | .error _, _, .ok ⟨A, B, t⟩ => pure ((k, c, gen, os, ⟨.prod A B, .prod A B, true, t⟩, true, false), st.specs)
+    | .ok res, _, _ => pure (mk res false false)
+    | .error _, some (.ok res), _ => pure (mk res false true)
+    | .error _, _, .ok ⟨A, B, t⟩ => pure (mk ⟨.prod A B, .prod A B, true, t⟩ true false)
     | .error err, _, .error _ => throw err
   let mut fl := vs.map fun _ => (false, true)
   let mut out ← run fl
@@ -231,7 +234,7 @@ def once (env : Env) (p : Pos) (n : String) (qs : List Param) (e : Expr) (ty : O
   for i in List.range (min vs.length varAtoms.length) do
     for b in [(true, false), (true, true)] do
       -- a body that built stays built: a pair test runs nowhere (`build`'s `.call`)
-      if let some o := (← tryCatch (some <$> run (fl.set i b)) fun _ => pure none) then if o.1.2.2.2.2.2.1 ≤ out.1.2.2.2.2.2.1 then fl := fl.set i b; out := o; break
+      if let some o := (← tryCatch (some <$> run (fl.set i b)) fun _ => pure none) then if o.1.tst ≤ out.1.tst then fl := fl.set i b; out := o; break
   pure out
 
 /-- `n(qs) ≜ e : ty`, defined at `dp` in `env`, `c` its constant, `vs` its object variables, `d` its expansion:
@@ -281,7 +284,7 @@ def callDef (env : Env) (dp : Pos) (n : String) (qs : List Param) (e : Expr) (ty
         fs := fs ++ [(f, k?)]; xs := xs ++ [(if f.isNone then Pre.close p x a why else x, f == some true)]
       let some us := vs.mapM (m.lookup ·) | throw ⟨p, s!"internal: `{c}` has an object variable no type names"⟩
       let key := formKey c fs
-      let sig? ← match calls key, (← get).specs.find? (·.1 == key) with
+      let sig? ← match calls key, (← get).specs.find? (·.key == key) with
         | some g, _ => pure (some g)
         | none, some o => pure (some (sigOf o))
         | none, none => do
@@ -292,7 +295,7 @@ def callDef (env : Env) (dp : Pos) (n : String) (qs : List Param) (e : Expr) (ty
           match ← (once env dp n qs e ty vs key k fs (← get).specs).run with
           | .ok (o, specs) => modify (fun st => { st with specs := specs ++ [o] }); pure (some (sigOf o))
           | .error _ => pure none
-      let some (k, dm, fl, cv, tst, kf) := sig? | return r
+      let some { const := k, demand := dm, vars := fl, conv := cv, tst, kf } := sig? | return r
       let us := us ++ ix.toList
       unless us.length == fl.length do
         throw ⟨p, s!"internal: `{k}` has {fl.length} object variables in the registry, {us.length} here"⟩
@@ -936,7 +939,7 @@ def emit (n : Name) (r : Read) : MetaM Unit := do
   let ms : List (String × List String) := ds.map fun (x, ⟨_, _, _, t⟩) => (x, mus t)
   -- one numbering over the whole program, as the code of each number is kept across it
   let ((ds, ps, cs), fs) := Prod.fst <| (do
-    let fs ← os.mapM fun (k, x, gen, qs, ⟨A, B, d, t⟩, tst) => return (k, x, gen, qs, (⟨A, B, d, ← number t⟩ : Res), tst)
+    let fs ← os.mapM fun o => do let ⟨A, B, d, t⟩ := o.res; return { o with res := ⟨A, B, d, ← number t⟩ }
     let ds ← ds.mapM fun (x, ⟨A, B, d, t⟩) => return (x, ⟨A, B, d, ← number t⟩)
     let ps ← ps.mapM fun (x, ⟨A, B, t⟩, s, u) => return (x, ⟨A, B, ← number t⟩, s, u)
     let cs ← cs.mapM fun (p, x, y, eq, s, u, ⟨A, B, R, S⟩) =>
@@ -949,7 +952,7 @@ def emit (n : Name) (r : Read) : MetaM Unit := do
     -- each definition elaborated once: `n.x : (A₁ … : Obj) → Pl U₁ → … → Pl R₁ → … → Pl d A B`, generic over the
     -- objects of its generic variables, then plans in and out, the universes it reads then its parameters, so a
     -- caller's plan runs through the call; `n.x.conv` its converse, when its body has one (`convTm`)
-    for o@(key, c, gen, qs, ⟨A, B, d, t⟩, tst, _) in fs do
+    for o@{ key, const := c, gen, params := qs, res := ⟨A, B, d, t⟩, tst, .. } in fs do
       let nv := gen.length
       let reads := (List.range nv).map (fv t).contains
       let pl (e : Bool) (X Y : Obj) := mkApp3 (mkConst ``Gen.Pl) (bE e) (oE X) (oE Y)
