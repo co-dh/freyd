@@ -45,7 +45,7 @@ open QLean QLean.Dep QLean.Kernel
 abbrev Fn (d : Bool) (A B : Obj) := Dem d A → CRel A B
 
 /-- A term's bit-matrix plan on the keys it is given, and the ok bit of the tables at its leaves. -/
-abbrev Pl (d : Bool) (A B : Obj) := Dem d A → Bits.Route A B × Bool
+abbrev Pl (d : Bool) (A B : Obj) := Dem d A → Tm A B false × Bool
 
 /-- A definition's value with its objects: what `rel_program n` lists as `n.expanded`. -/
 abbrev Gv := (A : Obj) × (B : Obj) × CRel A B
@@ -103,7 +103,7 @@ def inr (A B : Obj) : Fn true B (.sum A B) := fun D => CRel.inr D.val
 
 /-- The demand of `S` in `R S`: `ran(R)` where `S` takes one, `R`'s plan run for it, `ranC`'s bit kept so the
     demand is proved a coreflexive on `R`'s range (`GenSpec.demP_spec`). -/
-def demP {A B : Obj} : (e : Bool) → Bits.Route A B → Dem e B × Bool
+def demP {A B : Obj} : (e : Bool) → Tm A B false → Dem e B × Bool
   | false, _ => ((), true)
   | true, r => let x := Bits.runC r; let k := ranC x.1; (k.1, x.2 && k.2)
 
@@ -123,7 +123,7 @@ def diffB (A B : Obj) (R S : Pl false A B) : Fn false A B := fun _ =>
 def ldivB (A B C : Obj) (R : Pl false A B) (S : Pl false A C) (UB : Fn false B B) (UC : Fn false C C) :
     Fn false B C := fun _ =>
   let r := R (); let s := S (); let ub := UB (); let uc := UC ()
-  also (r.2 && s.2 && ub.ok && uc.ok) (ofC (Bits.runC (.ldiv r.1 s.1 ub.rel uc.rel)))
+  also (r.2 && s.2 && ub.ok && uc.ok) (ofC (Bits.runC (.ldiv r.1 s.1 (.val ub.rel) (.val uc.rel))))
 
 def conv (A B : Obj) (R : Fn false A B) : Fn false B A := fun _ => let r := R (); ⟨r.rel°, r.ok⟩
 def meet (A B : Obj) (d e : Bool) (R : Fn d A B) (S : Fn e A B) : Fn (d || e) A B := fun D =>
@@ -268,9 +268,9 @@ def refold (A B : Obj) (d e : Bool) (ch : Fn d A A) (φ : CRel A B → Fn e A B)
   let r := refoldRounds (onNodes d ch N.1) (fun X P => onNodes e (φ X) P) (N.1.rel.n.toNat + 1) N.1 ⟨Alg.zero, true⟩
   also (decide (N.2 < USize.size) && r.2) (CRel.comp ⟨D, true⟩ r.1)
 
-/-! ### Plans: the bit-rule nodes kept, every other sub-term its table -/
+/-! ### Plans: terms with the bit-rule nodes kept, every other sub-term its table (`Tm.val`) -/
 
-def pleaf (A B : Obj) (d : Bool) (f : Fn d A B) : Pl d A B := fun D => let r := f D; (.leaf r.rel, r.ok)
+def pleaf (A B : Obj) (d : Bool) (f : Fn d A B) : Pl d A B := fun D => let r := f D; (.val r.rel, r.ok)
 /-- The plan `P` run to its relation: a constant's result or argument read where a table is wanted. -/
 def ofPl (A B : Obj) (d : Bool) (P : Pl d A B) : Fn d A B := fun D => let r := P D; also r.2 (ofC (Bits.runC r.1))
 def pcomp (A B C : Obj) (d e : Bool) (R : Pl d A B) (S : Pl e B C) : Pl d A C := fun D =>
@@ -285,7 +285,7 @@ def pdiff (A B : Obj) (d e : Bool) (R : Pl d A B) (S : Pl e A B) : Pl (d || e) A
 def pldiv (A B C : Obj) (R : Pl false A B) (S : Pl false A C) (UB : Fn false B B) (UC : Fn false C C) :
     Pl false B C := fun _ =>
   let r := R (); let s := S (); let ub := UB (); let uc := UC ()
-  (.ldiv r.1 s.1 ub.rel uc.rel, r.2 && s.2 && ub.ok && uc.ok)
+  (.ldiv r.1 s.1 (.val ub.rel) (.val uc.rel), r.2 && s.2 && ub.ok && uc.ok)
 
 end Gen
 

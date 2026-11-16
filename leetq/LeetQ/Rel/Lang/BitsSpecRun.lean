@@ -10,20 +10,23 @@ namespace LeetQ.Rel.Lang.Bits
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.Rep
 
-/-- The columns `Route.cols` appends, in its order. -/
-def Route.colsL : {A B : Obj} → Route A B → List Col
-  | A, B, .leaf R => [⟨A, ⟨R.n, R.key⟩⟩, ⟨B, ⟨R.n, R.val⟩⟩]
-  | _, _, .comp R S | _, _, .meet R S | _, _, .join R S | _, _, .diff R S => R.colsL ++ S.colsL
-  | _, _, .conv R => R.colsL
-  | B, C, .ldiv R S UB UC =>
-    R.colsL ++ S.colsL ++ [⟨B, ⟨UB.n, UB.key⟩⟩, ⟨B, ⟨UB.n, UB.val⟩⟩, ⟨C, ⟨UC.n, UC.key⟩⟩, ⟨C, ⟨UC.n, UC.val⟩⟩]
+/-- The columns `Tm.cols` appends, in its order. -/
+def _root_.LeetQ.Rel.Lang.Tm.colsL : {A B : Obj} → {d : Bool} → Tm A B d → List Col
+  | A, B, _, .val R => [⟨A, ⟨R.n, R.key⟩⟩, ⟨B, ⟨R.n, R.val⟩⟩]
+  | _, _, _, .comp R S | _, _, _, .meet R S | _, _, _, .join R S | _, _, _, .diff R S => R.colsL ++ S.colsL
+  | _, _, _, .conv R => R.colsL
+  | B, C, _, .ldiv R S UB UC => R.colsL ++ S.colsL ++
+    [⟨B, ⟨UB.tab.n, UB.tab.key⟩⟩, ⟨B, ⟨UB.tab.n, UB.tab.val⟩⟩, ⟨C, ⟨UC.tab.n, UC.tab.key⟩⟩, ⟨C, ⟨UC.tab.n, UC.tab.val⟩⟩]
+  | _, _, _, _ => []
 
-theorem cols_toList : ∀ {A B : Obj} (p : Route A B) (acc : Array Col), (p.cols acc).toList = acc.toList ++ p.colsL
-  | _, _, .leaf _, _ => by simp [Route.cols, Route.colsL, relCols]
-  | _, _, .comp R S, acc | _, _, .meet R S, acc | _, _, .join R S, acc | _, _, .diff R S, acc => by
-    simp [Route.cols, Route.colsL, cols_toList S, cols_toList R]
-  | _, _, .conv R, acc => by simp [Route.cols, Route.colsL, cols_toList R]
-  | _, _, .ldiv R S _ _, acc => by simp [Route.cols, Route.colsL, relCols, cols_toList S, cols_toList R]
+theorem cols_toList {A B : Obj} {d : Bool} (p : Tm A B d) (acc : Array Col) :
+    (p.cols acc).toList = acc.toList ++ p.colsL := by
+  induction p generalizing acc with
+  | val _ => simp [Tm.cols, Tm.colsL, relCols]
+  | comp R S ihR ihS | meet R S ihR ihS | join R S ihR ihS | diff R S ihR ihS => simp [Tm.cols, Tm.colsL, ihS, ihR]
+  | conv R ih => simp [Tm.cols, Tm.colsL, ih]
+  | ldiv R S _ _ ihR ihS => simp [Tm.cols, Tm.colsL, relCols, ihS, ihR]
+  | _ => simp [Tm.cols, Tm.colsL]
 
 /-- An object's picked part as `run?` reads it from `codeAll`'s second result. -/
 def spOf (sps : Array Col) (X : Obj) : Part X := match sps.find? (·.1 == X) with
@@ -34,24 +37,24 @@ theorem spOf_eq {sps : Array Col} {X : Obj} {q : Part X} (h : sps.find? (·.1 ==
     spOf sps X = q := by simp [spOf, h]
 
 /-- `run?` is `codeAll`, `fits` with `capsOK` and the root read back at `spOf`. -/
-theorem run?_eq {A B : Obj} (p : Route A B) : run? p = (do
+theorem run?_eq {A B : Obj} {d : Bool} (p : Tm A B d) : run? p = (do
     let (ids, sps) ← codeAll (p.cols #[])
     guard ((p.fits fun X => (spOf sps X).1.toNat) && capsOK (p.cols #[]) sps (spOf sps A) (spOf sps B))
     pure ((Id.run ((p.bits ids fun X => (spOf sps X).1.toNat).run' 0)).table (spOf sps A) (spOf sps B))) := rfl
 
 /-- A leaf's matrix reads the two code columns at the state and moves it by two. -/
 theorem bits_leaf (ids : Array ByteArray) (sz : Obj → Nat) {A B : Obj} (R : Rel A B) (n : Nat) :
-    ((Route.leaf R).bits ids sz).run n = (Bits.ofCodes (sz A) (sz B) (ids.getD n .empty) (ids.getD (n + 1) .empty), n + 2) :=
-  by rw [Route.bits]; rfl
+    ((Tm.val R).bits ids sz).run n = (Bits.ofCodes (sz A) (sz B) (ids.getD n .empty) (ids.getD (n + 1) .empty), n + 2) :=
+  by rw [Tm.bits]; rfl
 
-/-- **A leaf at position `n` of the coded columns** holds `Route.leaf R`'s relation under `uOf`, its shape the objects'
+/-- **A leaf at position `n` of the coded columns** holds `Tm.val R`'s relation under `uOf`, its shape the objects'
     picked counts. -/
 theorem enc_leaf (cs : Array Col) {out : Array ByteArray} {sps : Array Col} (h : codeAll cs = some (out, sps))
     {A B : Obj} (R : Rel A B) {n : Nat} (hj : n + 1 < cs.size) (ek : cs[n] = ⟨A, ⟨R.n, R.key⟩⟩)
     (ev : cs[n + 1] = ⟨B, ⟨R.n, R.val⟩⟩)
     (hfit : (spOf sps A).1.toNat * (spOf sps B).1.toNat ≤ 2 ^ 27) :
-    let x := (((Route.leaf R).bits out fun X => (spOf sps X).1.toNat).run n).1
-    x.na = (spOf sps A).1.toNat ∧ x.w = (spOf sps B).1.toNat ∧ x.Enc (uOf cs A) (uOf cs B) (Route.leaf R).den := by
+    let x := (((Tm.val R).bits out fun X => (spOf sps X).1.toNat).run n).1
+    x.na = (spOf sps A).1.toNat ∧ x.w = (spOf sps B).1.toNat ∧ x.Enc (uOf cs A) (uOf cs B) (Tm.val R).den := by
   obtain ⟨qa, qb, ha, hb, he⟩ := codeAll_leaf cs h R (by omega) hj ek ev
   rw [spOf_eq ha, spOf_eq hb] at hfit; simp only [bits_leaf, spOf_eq ha, spOf_eq hb]
   exact ⟨rfl, rfl, he hfit⟩
@@ -60,7 +63,7 @@ theorem enc_leaf (cs : Array Col) {out : Array ByteArray} {sps : Array Col} (h :
 
 /-! ### What `run?`'s success leaves: the coding, the fits and the capacities -/
 
-theorem run?_some {A B : Obj} {p : Route A B} {R : Rel A B} (h : run? p = some R) :
+theorem run?_some {A B : Obj} {d : Bool} {p : Tm A B d} {R : Rel A B} (h : run? p = some R) :
     ∃ out sps, codeAll (p.cols #[]) = some (out, sps) ∧ (p.fits fun X => (spOf sps X).1.toNat) = true ∧
       capsOK (p.cols #[]) sps (spOf sps A) (spOf sps B) = true := by
   rw [run?_eq] at h
@@ -73,7 +76,7 @@ theorem run?_some {A B : Obj} {p : Route A B} {R : Rel A B} (h : run? p = some R
     · rw [Bool.and_eq_true] at hb; exact ⟨out, sps, rfl, hb.1, hb.2⟩
 
 /-- Every column of the route has fewer than `2^63` rows. -/
-theorem caps_col {A B : Obj} {p : Route A B} {sps : Array Col} {pa : Part A} {pb : Part B}
+theorem caps_col {A B : Obj} {d : Bool} {p : Tm A B d} {sps : Array Col} {pa : Part A} {pb : Part B}
     (h : capsOK (p.cols #[]) sps pa pb = true) : ∀ c ∈ p.colsL, c.2.1.toNat < 2 ^ 63 := fun c hc => by
   simp only [capsOK, Bool.and_eq_true, Array.all_eq_true', decide_eq_true_eq] at h
   exact h.1.1.1 c (by rw [← Array.mem_toList_iff, cols_toList]; simp [hc])
@@ -179,16 +182,14 @@ theorem pairsOK_bits {r : A.El → B.El → Prop} {x : Bits} (hx : x.Enc ua ub r
     exact (hx _ ha _ hj).1 ((hat _ ha _ hj).2 ⟨q, hq1, hq2, rfl, rfl⟩)
 
 /-- A node that is no table reads its pairs off its matrix, of the converse under `flip`. -/
-theorem pairs_node (ids : Array ByteArray) (sz : Obj → Nat) (flip : Bool) {A B : Obj} (p : Route A B)
-    (hp : ∀ R, p ≠ .leaf R) (n : Nat) :
+theorem pairs_node (ids : Array ByteArray) (sz : Obj → Nat) (flip : Bool) {A B : Obj} {d : Bool} (p : Tm A B d)
+    (hp : p.isVal = false) (n : Nat) :
     (p.pairs ids sz flip).run n = (let x := ((p.bits ids sz).run n).1
       (if flip then x.conv.pairs else x.pairs, ((p.bits ids sz).run n).2)) := by
-  cases p with
-  | leaf R => exact absurd rfl (hp R)
-  | _ => rw [Route.pairs] <;> first | rfl | (intro _ h; cases h)
+  simp only [Tm.pairs, pairsOf, hp]; rfl
 
 /-- **A non-table node's pairs** in `rep_compB`'s form, and under `flip` in `rep_ldivB`'s. -/
-theorem pairsOK_node (ids : Array ByteArray) (sz : Obj → Nat) {p : Route A B} (hp : ∀ R, p ≠ .leaf R) (n : Nat)
+theorem pairsOK_node (ids : Array ByteArray) (sz : Obj → Nat) {d : Bool} {p : Tm A B d} (hp : p.isVal = false) (n : Nat)
     (hx : ((p.bits ids sz).run n).1.Enc ua ub p.den)
     (hfit : ((p.bits ids sz).run n).1.na * ((p.bits ids sz).run n).1.w ≤ 2 ^ 27) :
     ((∀ a < ((p.bits ids sz).run n).1.na, ∀ y, p.den (ua a) y → ∃ j < ((p.bits ids sz).run n).1.w, ub j = y) →
@@ -203,9 +204,9 @@ theorem pairsOK_node (ids : Array ByteArray) (sz : Obj → Nat) {p : Route A B} 
 
 /-- A table's pairs read the two code columns at the state, sorted, and move it by two. -/
 theorem pairs_leaf (ids : Array ByteArray) (sz : Obj → Nat) (flip : Bool) (R : Rel A B) (n : Nat) :
-    ((Route.leaf R).pairs ids sz flip).run n = (if flip then sortBy (ids.getD (n + 1) .empty) (ids.getD n .empty)
+    ((Tm.val R).pairs ids sz flip).run n = (if flip then sortBy (ids.getD (n + 1) .empty) (ids.getD n .empty)
       else sortBy (ids.getD n .empty) (ids.getD (n + 1) .empty), n + 2) := by
-  rw [Route.pairs]; rfl
+  rfl
 
 /-- **A table at position `n` of the coded columns, as code pairs**: in `rep_compB`'s form, and under `flip` in
     `rep_ldivB`'s, under `uOf`, the codes below the objects' picked counts, at most `2²⁷` of them. -/
@@ -213,10 +214,10 @@ theorem pairsOK_leaf (cs : Array Col) {out : Array ByteArray} {sps : Array Col} 
     (sz : Obj → Nat) (R : Rel A B) {n : Nat} (hj : n + 1 < cs.size) (ek : cs[n] = ⟨A, ⟨R.n, R.key⟩⟩)
     (ev : cs[n + 1] = ⟨B, ⟨R.n, R.val⟩⟩) (hm : R.n.toNat < 2 ^ 63) (ha27 : (spOf sps A).1.toNat ≤ 2 ^ 27)
     (hb27 : (spOf sps B).1.toNat ≤ 2 ^ 27) :
-    PairsOK (uOf cs A) (uOf cs B) (spOf sps A).1.toNat (spOf sps B).1.toNat (Route.leaf R).den
-      (((Route.leaf R).pairs out sz false).run n).1.1 (((Route.leaf R).pairs out sz false).run n).1.2 ∧
-    PairsOK (uOf cs B) (uOf cs A) (spOf sps B).1.toNat (spOf sps A).1.toNat (fun b a => (Route.leaf R).den a b)
-      (((Route.leaf R).pairs out sz true).run n).1.1 (((Route.leaf R).pairs out sz true).run n).1.2 := by
+    PairsOK (uOf cs A) (uOf cs B) (spOf sps A).1.toNat (spOf sps B).1.toNat (Tm.val R).den
+      (((Tm.val R).pairs out sz false).run n).1.1 (((Tm.val R).pairs out sz false).run n).1.2 ∧
+    PairsOK (uOf cs B) (uOf cs A) (spOf sps B).1.toNat (spOf sps A).1.toNat (fun b a => (Tm.val R).den a b)
+      (((Tm.val R).pairs out sz true).run n).1.1 (((Tm.val R).pairs out sz true).run n).1.2 := by
   obtain ⟨-, hany, hcol, -⟩ := codeAll_inv cs h
   have hin : ∀ i (hi : i < cs.size), (sps.any (·.1 == cs[i].1)) = true := fun i hi => by
     have := hany _ (List.getElem_mem (l := cs.toList) (by simpa using hi)); simpa using this
@@ -314,42 +315,40 @@ theorem spOf_row {cs : Array Col} {out : Array ByteArray} {sps : Array Col} (h :
 /-- `run?`'s code counts. -/
 abbrev szOf (sps : Array Col) (X : Obj) : Nat := (spOf sps X).1.toNat
 
-theorem fits_le {sz : Obj → Nat} {A B : Obj} {p : Route A B} (h : p.fits sz = true) : sz A * sz B ≤ 2 ^ 27 := by
-  cases p <;> simp_all [Route.fits]
+theorem fits_le {sz : Obj → Nat} {A B : Obj} {d : Bool} {p : Tm A B d} (h : p.fits sz = true) : sz A * sz B ≤ 2 ^ 27 := by
+  cases p <;> simp_all [Tm.fits]
 
-theorem fitsP_node {sz : Obj → Nat} {A B : Obj} {p : Route A B} (hn : ∀ R, p ≠ .leaf R) : p.fitsP sz = p.fits sz := by
-  cases p <;> first | exact absurd rfl (hn _) | (rw [Route.fitsP] <;> first | rfl | (intro _ h; cases h))
 
-theorem bits_comp (ids : Array ByteArray) (sz : Obj → Nat) {A B C : Obj} (R : Route A B) (S : Route B C) (n : Nat) :
-    ((Route.comp R S).bits ids sz).run n = (Bits.comp (sz A) ((R.pairs ids sz false).run n).1.1
+theorem bits_comp (ids : Array ByteArray) (sz : Obj → Nat) {A B C : Obj} {d e : Bool} (R : Tm A B d) (S : Tm B C e) (n : Nat) :
+    ((Tm.comp R S).bits ids sz).run n = (Bits.comp (sz A) ((R.pairs ids sz false).run n).1.1
       ((R.pairs ids sz false).run n).1.2 ((S.bits ids sz).run ((R.pairs ids sz false).run n).2).1,
-      ((S.bits ids sz).run ((R.pairs ids sz false).run n).2).2) := by rw [Route.bits]; rfl
-theorem bits_conv (ids : Array ByteArray) (sz : Obj → Nat) {A B : Obj} (R : Route A B) (n : Nat) :
-    ((Route.conv R).bits ids sz).run n = (((R.bits ids sz).run n).1.conv, ((R.bits ids sz).run n).2) := by rw [Route.bits]; rfl
-theorem bits_meet (ids : Array ByteArray) (sz : Obj → Nat) {A B : Obj} (R S : Route A B) (n : Nat) :
-    ((Route.meet R S).bits ids sz).run n = (((R.bits ids sz).run n).1.meet ((S.bits ids sz).run ((R.bits ids sz).run n).2).1,
-      ((S.bits ids sz).run ((R.bits ids sz).run n).2).2) := by rw [Route.bits]; rfl
-theorem bits_join (ids : Array ByteArray) (sz : Obj → Nat) {A B : Obj} (R S : Route A B) (n : Nat) :
-    ((Route.join R S).bits ids sz).run n = (((R.bits ids sz).run n).1.join ((S.bits ids sz).run ((R.bits ids sz).run n).2).1,
-      ((S.bits ids sz).run ((R.bits ids sz).run n).2).2) := by rw [Route.bits]; rfl
-theorem bits_diff (ids : Array ByteArray) (sz : Obj → Nat) {A B : Obj} (R S : Route A B) (n : Nat) :
-    ((Route.diff R S).bits ids sz).run n = (((R.bits ids sz).run n).1.diff ((S.bits ids sz).run ((R.bits ids sz).run n).2).1,
-      ((S.bits ids sz).run ((R.bits ids sz).run n).2).2) := by rw [Route.bits]; rfl
-theorem bits_ldiv (ids : Array ByteArray) (sz : Obj → Nat) {A B C : Obj} (R : Route A B) (S : Route A C) (UB : Rel B B)
-    (UC : Rel C C) (n : Nat) :
-    ((Route.ldiv R S UB UC).bits ids sz).run n = (Bits.ldiv (sz B) ((R.pairs ids sz true).run n).1.1
+      ((S.bits ids sz).run ((R.pairs ids sz false).run n).2).2) := by rw [Tm.bits]; rfl
+theorem bits_conv (ids : Array ByteArray) (sz : Obj → Nat) {A B : Obj} (R : Tm A B false) (n : Nat) :
+    ((Tm.conv R).bits ids sz).run n = (((R.bits ids sz).run n).1.conv, ((R.bits ids sz).run n).2) := by rw [Tm.bits]; rfl
+theorem bits_meet (ids : Array ByteArray) (sz : Obj → Nat) {A B : Obj} {d e : Bool} (R : Tm A B d) (S : Tm A B e) (n : Nat) :
+    ((Tm.meet R S).bits ids sz).run n = (((R.bits ids sz).run n).1.meet ((S.bits ids sz).run ((R.bits ids sz).run n).2).1,
+      ((S.bits ids sz).run ((R.bits ids sz).run n).2).2) := by rw [Tm.bits]; rfl
+theorem bits_join (ids : Array ByteArray) (sz : Obj → Nat) {A B : Obj} {d e : Bool} (R : Tm A B d) (S : Tm A B e) (n : Nat) :
+    ((Tm.join R S).bits ids sz).run n = (((R.bits ids sz).run n).1.join ((S.bits ids sz).run ((R.bits ids sz).run n).2).1,
+      ((S.bits ids sz).run ((R.bits ids sz).run n).2).2) := by rw [Tm.bits]; rfl
+theorem bits_diff (ids : Array ByteArray) (sz : Obj → Nat) {A B : Obj} {d e : Bool} (R : Tm A B d) (S : Tm A B e) (n : Nat) :
+    ((Tm.diff R S).bits ids sz).run n = (((R.bits ids sz).run n).1.diff ((S.bits ids sz).run ((R.bits ids sz).run n).2).1,
+      ((S.bits ids sz).run ((R.bits ids sz).run n).2).2) := by rw [Tm.bits]; rfl
+theorem bits_ldiv (ids : Array ByteArray) (sz : Obj → Nat) {A B C : Obj} (R : Tm A B false) (S : Tm A C false)
+    (UB : Tm B B false) (UC : Tm C C false) (n : Nat) :
+    ((Tm.ldiv R S UB UC).bits ids sz).run n = (Bits.ldiv (sz B) ((R.pairs ids sz true).run n).1.1
       ((R.pairs ids sz true).run n).1.2 ((S.bits ids sz).run ((R.pairs ids sz true).run n).2).1
       (ids.getD (((S.bits ids sz).run ((R.pairs ids sz true).run n).2).2 + 1) .empty)
       (ids.getD (((S.bits ids sz).run ((R.pairs ids sz true).run n).2).2 + 3) .empty),
-      ((S.bits ids sz).run ((R.pairs ids sz true).run n).2).2 + 4) := by rw [Route.bits]; rfl
+      ((S.bits ids sz).run ((R.pairs ids sz true).run n).2).2 + 4) := by rw [Tm.bits]; rfl
 
 /-- Every element `p` relates has a code. -/
-def Supp (cs sps : Array Col) {A B : Obj} (p : Route A B) : Prop :=
+def Supp (cs sps : Array Col) {A B : Obj} {d : Bool} (p : Tm A B d) : Prop :=
   ∀ a b, p.den a b → (∃ i < szOf sps A, uOf cs A i = a) ∧ ∃ j < szOf sps B, uOf cs B j = b
 
 /-- `p`'s matrix read from state `n`: the state past `p`'s columns, the shape the objects' code counts, and `p`'s
     relation at the codes. -/
-def Good (cs : Array Col) (out : Array ByteArray) (sps : Array Col) {A B : Obj} (p : Route A B) (n : Nat) : Prop :=
+def Good (cs : Array Col) (out : Array ByteArray) (sps : Array Col) {A B : Obj} {d : Bool} (p : Tm A B d) (n : Nat) : Prop :=
   ((p.bits out (szOf sps)).run n).2 = n + p.colsL.length ∧ ((p.bits out (szOf sps)).run n).1.na = szOf sps A ∧
     ((p.bits out (szOf sps)).run n).1.w = szOf sps B ∧
     ((p.bits out (szOf sps)).run n).1.Enc (uOf cs A) (uOf cs B) p.den
@@ -360,72 +359,72 @@ variable {cs : Array Col} {out : Array ByteArray} {sps : Array Col} (h : codeAll
 include h h63 h27
 
 /-- **The left side of `≫` and `\` as code pairs**, from its induction claim. -/
-theorem pairs_enc {A B : Obj} (R : Route A B) (pre post : List Col) (hp : cs.toList = pre ++ R.colsL ++ post)
-    (hf : R.fitsP (szOf sps) = true) (ih : Supp cs sps R ∧ (R.fits (szOf sps) = true → Good cs out sps R pre.length)) :
+theorem pairs_enc {A B : Obj} {d : Bool} (R : Tm A B d) (pre post : List Col) (hp : cs.toList = pre ++ R.colsL ++ post)
+    (hf : (R.isVal || R.fits (szOf sps)) = true) (ih : Supp cs sps R ∧ (R.fits (szOf sps) = true → Good cs out sps R pre.length)) :
     ((R.pairs out (szOf sps) false).run pre.length).2 = pre.length + R.colsL.length ∧
     ((R.pairs out (szOf sps) true).run pre.length).2 = pre.length + R.colsL.length ∧
     PairsOK (uOf cs A) (uOf cs B) (szOf sps A) (szOf sps B) R.den
       ((R.pairs out (szOf sps) false).run pre.length).1.1 ((R.pairs out (szOf sps) false).run pre.length).1.2 ∧
     PairsOK (uOf cs B) (uOf cs A) (szOf sps B) (szOf sps A) (fun b a => R.den a b)
       ((R.pairs out (szOf sps) true).run pre.length).1.1 ((R.pairs out (szOf sps) true).run pre.length).1.2 := by
-  by_cases hl : ∃ R', R = .leaf R'
-  · obtain ⟨R', rfl⟩ := hl
-    obtain ⟨h0, e0⟩ := pos_get hp (k := 0) (by simp [Route.colsL])
-    obtain ⟨h1, e1⟩ := pos_get hp (k := 1) (by simp [Route.colsL])
-    simp only [Nat.add_zero, Route.colsL, List.getElem_cons_zero, List.getElem_cons_succ] at e0 e1
-    exact ⟨by rw [pairs_leaf]; simp [Route.colsL], by rw [pairs_leaf]; simp [Route.colsL],
-      pairsOK_leaf cs h _ R' h1 e0 e1 (h63 ⟨A, ⟨R'.n, R'.key⟩⟩ (by rw [hp]; simp [Route.colsL])) (h27 A) (h27 B)⟩
-  · have hn : ∀ R', R ≠ .leaf R' := fun R' e => hl ⟨R', e⟩
-    have hf' : R.fits (szOf sps) = true := by rwa [fitsP_node hn] at hf
+  cases hl : R.isVal
+  · have hf' : R.fits (szOf sps) = true := by simpa [hl] using hf
     obtain ⟨st, hna, hw, hx⟩ := ih.2 hf'
-    obtain ⟨o1, o2⟩ := pairsOK_node out (szOf sps) hn pre.length hx (by rw [hna, hw]; exact fits_le hf')
-    refine ⟨by rw [pairs_node _ _ _ R hn]; exact st, by rw [pairs_node _ _ _ R hn]; exact st, ?_, ?_⟩
+    obtain ⟨o1, o2⟩ := pairsOK_node out (szOf sps) hl pre.length hx (by rw [hna, hw]; exact fits_le hf')
+    refine ⟨by rw [pairs_node _ _ _ R hl]; exact st, by rw [pairs_node _ _ _ R hl]; exact st, ?_, ?_⟩
     · have := o1 fun a _ y hd => by obtain ⟨j, hj, e⟩ := (ih.1 _ _ hd).2; exact ⟨j, by rw [hw]; exact hj, e⟩
       rwa [hna, hw] at this
     · have := o2 fun b _ y hd => by obtain ⟨i, hi, e⟩ := (ih.1 _ _ hd).1; exact ⟨i, by rw [hna]; exact hi, e⟩
       rwa [hna, hw] at this
+  · cases R <;> simp only [Tm.isVal, Bool.false_eq_true] at hl
+    rename_i R'
+    obtain ⟨h0, e0⟩ := pos_get hp (k := 0) (by simp [Tm.colsL])
+    obtain ⟨h1, e1⟩ := pos_get hp (k := 1) (by simp [Tm.colsL])
+    simp only [Nat.add_zero, Tm.colsL, List.getElem_cons_zero, List.getElem_cons_succ] at e0 e1
+    exact ⟨by rw [pairs_leaf]; simp [Tm.colsL], by rw [pairs_leaf]; simp [Tm.colsL],
+      pairsOK_leaf cs h _ R' h1 e0 e1 (h63 ⟨A, ⟨R'.n, R'.key⟩⟩ (by rw [hp]; simp [Tm.colsL])) (h27 A) (h27 B)⟩
 
 /-- **Every node of the route at its position**: what it relates has codes, and under `fits` its matrix holds its
     relation at the codes, the state moved past its columns. -/
-theorem bits_enc {A B : Obj} (p : Route A B) : ∀ pre post, cs.toList = pre ++ p.colsL ++ post →
+theorem bits_enc {A B : Obj} {d : Bool} (p : Tm A B d) : ∀ pre post, cs.toList = pre ++ p.colsL ++ post →
     Supp cs sps p ∧ (p.fits (szOf sps) = true → Good cs out sps p pre.length) := by
   induction p with
-  | leaf R =>
+  | val R =>
     intro pre post hp
-    obtain ⟨h0, e0⟩ := pos_get hp (k := 0) (by simp [Route.colsL])
-    obtain ⟨h1, e1⟩ := pos_get hp (k := 1) (by simp [Route.colsL])
-    simp only [Nat.add_zero, Route.colsL, List.getElem_cons_zero, List.getElem_cons_succ] at e0 e1
+    obtain ⟨h0, e0⟩ := pos_get hp (k := 0) (by simp [Tm.colsL])
+    obtain ⟨h1, e1⟩ := pos_get hp (k := 1) (by simp [Tm.colsL])
+    simp only [Nat.add_zero, Tm.colsL, List.getElem_cons_zero, List.getElem_cons_succ] at e0 e1
     refine ⟨fun a b hd => colOK_rep R (colAt h h0 e0) (colAt h h1 e1) hd, fun hf => ?_⟩
     obtain ⟨hna, hw, hx⟩ := enc_leaf cs h R h1 e0 e1 (fits_le hf)
-    exact ⟨by rw [bits_leaf]; simp [Route.colsL], hna, hw, hx⟩
+    exact ⟨by rw [bits_leaf]; simp [Tm.colsL], hna, hw, hx⟩
   | comp R S ihR ihS =>
     intro pre post hp
-    have hR := ihR pre (S.colsL ++ post) (by simpa [Route.colsL] using hp)
-    have hS := ihS (pre ++ R.colsL) post (by simpa [Route.colsL] using hp)
+    have hR := ihR pre (S.colsL ++ post) (by simpa [Tm.colsL] using hp)
+    have hS := ihS (pre ++ R.colsL) post (by simpa [Tm.colsL] using hp)
     refine ⟨fun a c ⟨b, h1, h2⟩ => ⟨(hR.1 a b h1).1, (hS.1 b c h2).2⟩, fun hf => ?_⟩
-    simp only [Route.fits, Bool.and_eq_true, decide_eq_true_eq] at hf
+    simp only [Tm.fits, Bool.and_eq_true, decide_eq_true_eq] at hf
     obtain ⟨⟨hfa, hfR⟩, hfS⟩ := hf
-    obtain ⟨st1, -, ⟨hl, hs, hb, hm, hRR⟩, -⟩ := pairs_enc h h63 h27 R pre (S.colsL ++ post) (by simpa [Route.colsL] using hp) hfR hR
+    obtain ⟨st1, -, ⟨hl, hs, hb, hm, hRR⟩, -⟩ := pairs_enc h h63 h27 R pre (S.colsL ++ post) (by simpa [Tm.colsL] using hp) hfR hR
     obtain ⟨st2, hna, hw, hx⟩ := hS.2 hfS
     rw [List.length_append, ← st1] at st2 hna hw hx
     unfold Good; rw [bits_comp]
-    exact ⟨by rw [st2, st1]; simp [Route.colsL]; omega, rfl, hw, rep_compB _ _ _ hx hl hs (by rw [hna]; exact hb) hRR
+    exact ⟨by rw [st2, st1]; simp [Tm.colsL]; omega, rfl, hw, rep_compB _ _ _ hx hl hs (by rw [hna]; exact hb) hRR
       (h27 _) (by rw [hna, hw]; exact fits_le hfS) (by rw [hw]; exact h27 _) hm⟩
   | conv R ih =>
     intro pre post hp
-    have hR := ih pre post (by simpa [Route.colsL] using hp)
+    have hR := ih pre post (by simpa [Tm.colsL] using hp)
     refine ⟨fun b a hd => ⟨(hR.1 a b hd).2, (hR.1 a b hd).1⟩, fun hf => ?_⟩
-    simp only [Route.fits, Bool.and_eq_true, decide_eq_true_eq] at hf
+    simp only [Tm.fits, Bool.and_eq_true, decide_eq_true_eq] at hf
     obtain ⟨st, hna, hw, hx⟩ := hR.2 hf.2
     unfold Good; rw [bits_conv]
-    exact ⟨by rw [st]; simp [Route.colsL], hw, hna, rep_convB hx (by rw [hna, hw]; exact fits_le hf.2)⟩
+    exact ⟨by rw [st]; simp [Tm.colsL], hw, hna, rep_convB hx (by rw [hna, hw]; exact fits_le hf.2)⟩
   | meet R S ihR ihS | join R S ihR ihS | diff R S ihR ihS =>
     intro pre post hp
-    have hR := ihR pre (S.colsL ++ post) (by simpa [Route.colsL] using hp)
-    have hS := ihS (pre ++ R.colsL) post (by simpa [Route.colsL] using hp)
+    have hR := ihR pre (S.colsL ++ post) (by simpa [Tm.colsL] using hp)
+    have hS := ihS (pre ++ R.colsL) post (by simpa [Tm.colsL] using hp)
     refine ⟨?_, fun hf => ?_⟩
     · first | exact fun a b hd => hR.1 a b hd.1 | exact fun a b hd => hd.elim (hR.1 a b) (hS.1 a b)
-    simp only [Route.fits, Bool.and_eq_true, decide_eq_true_eq] at hf
+    simp only [Tm.fits, Bool.and_eq_true, decide_eq_true_eq] at hf
     obtain ⟨⟨hfa, hfR⟩, hfS⟩ := hf
     obtain ⟨st1, na1, w1, x1⟩ := hR.2 hfR
     obtain ⟨st2, na2, w2, x2⟩ := hS.2 hfS
@@ -438,13 +437,13 @@ theorem bits_enc {A B : Obj} (p : Route A B) : ∀ pre post, cs.toList = pre ++ 
       | (rw [bits_meet]; exact ⟨hst, na1, w1, rep_meetB x1 x2 e1 e2 (by rw [na1, w1]; exact hfa)⟩)
       | (rw [bits_join]; exact ⟨hst, na1, w1, rep_joinB x1 x2 e1 e2 (by rw [na1, w1]; exact hfa)⟩)
       | (rw [bits_diff]; exact ⟨hst, na1, w1, rep_diffB x1 x2 e1 e2 (by rw [na1, w1]; exact hfa)⟩)
-  | @ldiv A B C R S UB UC ihR ihS =>
+  | @ldiv A B C R S UB UC ihR ihS _ _ =>
     intro pre post hp
-    obtain ⟨L, hL⟩ : ∃ L : List Col, L = [⟨B, ⟨UB.n, UB.key⟩⟩, ⟨B, ⟨UB.n, UB.val⟩⟩,
-        ⟨C, ⟨UC.n, UC.key⟩⟩, ⟨C, ⟨UC.n, UC.val⟩⟩] := ⟨_, rfl⟩
-    have hR := ihR pre (S.colsL ++ L ++ post) (by simpa [Route.colsL, hL] using hp)
-    have hS := ihS (pre ++ R.colsL) (L ++ post) (by simpa [Route.colsL, hL] using hp)
-    have hU : cs.toList = (pre ++ R.colsL ++ S.colsL) ++ L ++ post := by rw [hp, hL]; simp [Route.colsL]
+    obtain ⟨L, hL⟩ : ∃ L : List Col, L = [⟨B, ⟨UB.tab.n, UB.tab.key⟩⟩, ⟨B, ⟨UB.tab.n, UB.tab.val⟩⟩,
+        ⟨C, ⟨UC.tab.n, UC.tab.key⟩⟩, ⟨C, ⟨UC.tab.n, UC.tab.val⟩⟩] := ⟨_, rfl⟩
+    have hR := ihR pre (S.colsL ++ L ++ post) (by simpa [Tm.colsL, hL] using hp)
+    have hS := ihS (pre ++ R.colsL) (L ++ post) (by simpa [Tm.colsL, hL] using hp)
+    have hU : cs.toList = (pre ++ R.colsL ++ S.colsL) ++ L ++ post := by rw [hp, hL]; simp [Tm.colsL]
     obtain ⟨i1, e1⟩ := pos_get hU (k := 1) (by simp [hL])
     obtain ⟨i3, e3⟩ := pos_get hU (k := 3) (by simp [hL])
     simp only [hL, List.getElem_cons_zero, List.getElem_cons_succ] at e1 e3
@@ -454,10 +453,10 @@ theorem bits_enc {A B : Obj} (p : Route A B) : ∀ pre post, cs.toList = pre ++ 
       fun ⟨⟨r, er⟩, ⟨q, eq⟩⟩ => ?_, fun hf => ?_⟩
     · obtain ⟨i, hi, e⟩ := (colK cB).2.2.2 r; obtain ⟨j, hj, e'⟩ := (colK cC).2.2.2 q
       exact ⟨⟨i, hi, e.trans er⟩, ⟨j, hj, e'.trans eq⟩⟩
-    simp only [Route.fits, Bool.and_eq_true, decide_eq_true_eq] at hf
+    simp only [Tm.fits, Bool.and_eq_true, decide_eq_true_eq] at hf
     obtain ⟨⟨hfa, hfR⟩, hfS⟩ := hf
     obtain ⟨-, st1, -, hl, hs, ha, hm, hRR⟩ :=
-      pairs_enc h h63 h27 R pre (S.colsL ++ L ++ post) (by simpa [Route.colsL, hL] using hp) hfR hR
+      pairs_enc h h63 h27 R pre (S.colsL ++ L ++ post) (by simpa [Tm.colsL, hL] using hp) hfR hR
     obtain ⟨st2, na2, w2, x2⟩ := hS.2 hfS
     rw [List.length_append, ← st1] at st2 na2 w2 x2
     have ei : (pre ++ R.colsL ++ S.colsL).length = ((S.bits out (szOf sps)).run
@@ -466,15 +465,16 @@ theorem bits_enc {A B : Obj} (p : Route A B) : ∀ pre post, cs.toList = pre ++ 
     obtain ⟨kb1, kb2, kb3, -⟩ := colK cB
     obtain ⟨kc1, kc2, kc3, -⟩ := colK cC
     unfold Good; rw [bits_ldiv]
-    exact ⟨by rw [st2, st1]; simp [Route.colsL]; omega, rfl, w2, rep_ldivB _ _ _ _ _ x2 hl hs (by rw [na2]; exact ha) hRR
+    exact ⟨by rw [st2, st1]; simp [Tm.colsL]; omega, rfl, w2, rep_ldivB _ _ _ _ _ x2 hl hs (by rw [na2]; exact ha) hRR
       kb1 kb2 (by rw [w2]; exact kc1) (by rw [w2]; exact kc2) (h27 _) (by rw [na2, w2]; exact fits_le hfS)
-      (by rw [w2]; exact h27 _) (by rw [w2]; exact hfa) hm (kb3 (h63 ⟨B, ⟨UB.n, UB.val⟩⟩ (by rw [hp]; simp [Route.colsL])))
-      (kc3 (h63 ⟨C, ⟨UC.n, UC.val⟩⟩ (by rw [hp]; simp [Route.colsL])))⟩
+      (by rw [w2]; exact h27 _) (by rw [w2]; exact hfa) hm (kb3 (h63 ⟨B, ⟨UB.tab.n, UB.tab.val⟩⟩ (by rw [hp]; simp [Tm.colsL])))
+      (kc3 (h63 ⟨C, ⟨UC.tab.n, UC.tab.val⟩⟩ (by rw [hp]; simp [Tm.colsL])))⟩
+  | _ => exact fun _ _ _ => ⟨fun _ _ hd => hd.elim, fun hf => by simp [Tm.fits] at hf⟩
 
 end
 
 /-- **The bit run is the route's relation**: where `run?` answers, its table relates exactly what the route does. -/
-theorem bits_table {A B : Obj} {p : Route A B} {R : Rel A B} (hr : run? p = some R) (a : A.El) (b : B.El) :
+theorem bits_table {A B : Obj} {d : Bool} {p : Tm A B d} {R : Rel A B} (hr : run? p = some R) (a : A.El) (b : B.El) :
     rep R a b ↔ p.den a b := by
   obtain ⟨out, sps, hc, hf, hcap⟩ := run?_some hr
   have e : R = (((p.bits out (szOf sps)).run 0).1).table (spOf sps A) (spOf sps B) := by

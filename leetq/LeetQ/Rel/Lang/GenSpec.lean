@@ -242,12 +242,11 @@ theorem rdiv_sound {A B C : Obj} {R : Fn false A C} {S : Fn false B C} {UA : Fn 
 
 /-- **`runC`'s answer is the plan's relation** under its bit, on either path, in check mode too (`die` is its
     argument). -/
-theorem rep_runC {A B : Obj} (p : Bits.Route A B) (hb : (Bits.runC p).2 = true) (a : A.El) (b : B.El) :
+theorem rep_runC {A B : Obj} {d : Bool} (p : Tm A B d) (hb : (Bits.runC p).2 = true) (a : A.El) (b : B.El) :
     rep (Bits.runC p).1 a b ↔ p.den a b := by
-  match p with
-  | .leaf _ => exact Iff.rfl
-  | .comp .. | .conv .. | .meet .. | .join .. | .diff .. | .ldiv .. =>
-    simp only [Bits.runC] at hb ⊢
+  by_cases hv : p.isVal = true
+  · simp only [Bits.runC, hv, if_true] at hb ⊢; exact Bits.rep_tableC p hb a b
+  · simp only [Bits.runC, hv, Bool.false_eq_true, if_false] at hb ⊢
     revert hb; split
     · rename_i R h; simp only [dbgTrace, Bits.die, ite_self]; exact fun _ => Bits.bits_table h a b
     · by_cases hc : (Bits.checkOn == 0) = true
@@ -255,7 +254,7 @@ theorem rep_runC {A B : Obj} (p : Bits.Route A B) (hb : (Bits.runC p).2 = true) 
       · rw [if_neg hc]; simp only [dbgTrace]; exact fun hb => Bits.rep_table _ hb a b
 
 /-- The demand `demP` hands `S` in `R S`: a coreflexive holding every value of `R`'s plan. -/
-theorem demP_spec {A B : Obj} (e : Bool) (r : Bits.Route A B) (hb : (demP e r).2 = true) :
+theorem demP_spec {A B : Obj} (e : Bool) (r : Tm A B false) (hb : (demP e r).2 = true) :
     Cor (demP e r).1 ∧ ∀ a b, r.den a b → keys (demP e r).1 b b := by
   cases e
   · exact ⟨trivial, fun _ _ _ => rfl⟩
@@ -318,7 +317,7 @@ theorem pldiv_sound {A B C : Obj} {R : Pl false A B} {S : Pl false A C} {UB : Fn
     have r a b := hR () trivial h1 a b rfl
     have s a c := hS () trivial h2 a c rfl
     show ((∀ a, _ → _) ∧ ((∃ a, _) ∨ ((∃ p, _) ∧ ∃ j, _))) ↔ _
-    rw [valRow, valRow, hB.eq h3, hC.eq h4]
+    rw [Tm.tab, Tm.tab, valRow, valRow, hB.eq h3, hC.eq h4]
     simp only [r, s]
 
 /-- A closed plan run as bits (`Bits.runC`), its leaves' bits kept: the plan's relation. -/

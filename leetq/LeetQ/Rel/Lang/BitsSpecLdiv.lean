@@ -1,6 +1,6 @@
 /-
   `\` as bits: `Bits.ldiv`'s `∧` of `S`'s rows over `R`'s segments, masked by `ran R ⊗ ⊤ ∪ Ub ⊗ Uc`, holds
-  `Route.ldiv`'s relation. Each part is `enc_rows` (`∧` for the rows, `∨` for each mask through the one point).
+  `Tm.ldiv`'s relation. Each part is `enc_rows` (`∧` for the rows, `∨` for each mask through the one point).
 -/
 import LeetQ.Rel.Lang.BitsSpec
 import LeetQ.Rel.KernelWF.SortSpec
@@ -63,19 +63,19 @@ theorem pt_iff {α : Sort _} {P : Prop} {u : Nat → α} {m : α} {i z : ByteArr
 variable {A B C : Obj} {ua : Nat → A.El} {ub : Nat → B.El}
 
 /-- **`\` as bits** (`rep_leftDiv`'s side, `rep_tableC`): from `R°`'s code pairs `y`, `a` (`y` ascending, `R` read
-    off them), `S`'s matrix and the codes `kb`, `kc` of `UB`'s and `UC`'s elements, `Bits.ldiv` holds `Route.ldiv`'s
+    off them), `S`'s matrix and the codes `kb`, `kc` of `UB`'s and `UC`'s elements, `Bits.ldiv` holds `Tm.ldiv`'s
     relation: the `∧` of `S`'s rows answers the `∀` clause, the mask `ran R ⊗ ⊤ ∪ Ub ⊗ Uc` the vacuous one. -/
-theorem rep_ldivB {R : Route A B} {S : Route A C} {UB : Rel B B} {UC : Rel C C} {uc : Nat → C.El} (nb : Nat)
+theorem rep_ldivB {R : Tm A B false} {S : Tm A C false} {UB : Tm B B false} {UC : Tm C C false} {uc : Nat → C.El} (nb : Nat)
     (y a : ByteArray) {s : Bits} (kb kc : ByteArray)
     (hs : s.Enc ua uc S.den) (hl : len a = len y) (hsort : (ids y).Pairwise (· ≤ ·)) (hJ : ∀ x ∈ ids a, x < s.na)
     (hR : ∀ b < nb, ∀ x, R.den x (ub b) ↔
       ∃ (k : Nat) (hk : k < (ids y).length) (hk' : k < (ids a).length), (ids y)[k]'hk = b ∧ ua ((ids a)[k]'hk') = x)
-    (hkb : ∀ x ∈ ids kb, x < nb) (hUB : ∀ b < nb, (∃ p, UB.val.row p = ub b) ↔ b ∈ ids kb)
-    (hkc : ∀ x ∈ ids kc, x < s.w) (hUC : ∀ c < s.w, (∃ q, UC.val.row q = uc c) ↔ c ∈ ids kc)
+    (hkb : ∀ x ∈ ids kb, x < nb) (hUB : ∀ b < nb, (∃ p, UB.tab.val.row p = ub b) ↔ b ∈ ids kb)
+    (hkc : ∀ x ∈ ids kc, x < s.w) (hUC : ∀ c < s.w, (∃ q, UC.tab.val.row q = uc c) ↔ c ∈ ids kc)
     (hnb : nb ≤ 2 ^ 27) (hfit : s.na * s.w ≤ 2 ^ 27) (hsw : s.w ≤ 2 ^ 27) (hout : nb * s.w ≤ 2 ^ 27)
     (hm : len y < min (2 ^ 63) USize.size) (hmb : len kb < min (2 ^ 63) USize.size)
     (hmc : len kc < min (2 ^ 63) USize.size) :
-    (Bits.ldiv nb y a s kb kc).Enc ub uc (Route.ldiv R S UB UC).den := by
+    (Bits.ldiv nb y a s kb kc).Enc ub uc (Tm.ldiv R S UB UC).den := by
   have hsw' : 1 * s.w ≤ 2 ^ 27 := by omega
   -- the `∀` clause: `∧` of `S`'s rows over `R`'s segments
   have hd := enc_rows (ua := ub) (ub := ua) (r := fun b x => R.den x b) (t := S.den) true nb y a hs hl hsort hJ hR
@@ -108,11 +108,11 @@ theorem rep_ldivB {R : Route A B} {S : Route A C} {UB : Rel B B} {UC : Rel C C} 
   obtain ⟨hzb, hzb0⟩ := zeros_ids hmb
   obtain ⟨hzc, hzc0⟩ := zeros_ids hmc
   have hofc : (Bits.ofCodes 1 s.w (zeros (len kc)) kc).Enc (fun _ => uc 0) uc
-      fun _ c => ∃ q, UC.val.row q = c := by
+      fun _ c => ∃ q, UC.tab.val.row q = c := by
     intro i hi c hc
     change i < 1 at hi; change c < s.w at hc
     obtain rfl : i = 0 := by omega
-    show _ ↔ ∃ q, UC.val.row q = uc c
+    show _ ↔ ∃ q, UC.tab.val.row q = uc c
     rw [ofCodes_at hzc.symm (fun x hx => by rw [hzc0 x hx]; exact Nat.zero_lt_one) hkc hsw'
       (by rw [hzc]; exact Nat.lt_of_lt_of_le hmc (Nat.min_le_right _ _)) hi hc, hUC c hc, List.mem_iff_getElem]
     constructor
@@ -120,8 +120,8 @@ theorem rep_ldivB {R : Route A B} {S : Route A C} {UB : Rel B B} {UC : Rel C C} 
     · rintro ⟨r, h2, e⟩
       have h1 : r < (ids (zeros (len kc))).length := by rw [← len_eq_ids, hzc, len_eq_ids]; exact h2
       exact ⟨r, h1, h2, hzc0 _ (List.getElem_mem h1), e⟩
-  have hvac := enc_rows (ua := ub) (ub := fun _ => uc 0) (r := fun b m => (∃ p, UB.val.row p = b) ∧ m = uc 0)
-    (t := fun _ c => ∃ q, UC.val.row q = c) false nb _ (zeros (len kb)) hofc (hzb.trans hlb.symm) hsb
+  have hvac := enc_rows (ua := ub) (ub := fun _ => uc 0) (r := fun b m => (∃ p, UB.tab.val.row p = b) ∧ m = uc 0)
+    (t := fun _ c => ∃ q, UC.tab.val.row q = c) false nb _ (zeros (len kb)) hofc (hzb.trans hlb.symm) hsb
     (fun x hx => by rw [hzb0 x hx]; exact Nat.zero_lt_one)
     (fun b hb m => pt_iff (u := fun _ => uc 0) (hzb.trans hlb.symm) hzb0
       ((hUB b hb).trans (hpb.mem_iff.symm.trans List.mem_iff_getElem)))
@@ -131,7 +131,7 @@ theorem rep_ldivB {R : Route A B} {S : Route A C} {UB : Rel B B} {UC : Rel C C} 
   have hmeet := enc_bit _ And (fun p q => by rw [bitStep_lesser, Bool.and_eq_true]) hd hjoin rfl rfl hout
   intro b hb c hc
   refine Iff.trans (hmeet b hb c hc) ?_
-  simp [Route.den]
+  simp [Tm.den]
 
 #print axioms rep_ldivB
 
