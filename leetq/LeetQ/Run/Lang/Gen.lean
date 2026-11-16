@@ -250,12 +250,12 @@ def juncD (A B C : Obj) (d e : Bool) (R : Fn d A C) (S : Fn e B C) : Fn true (.s
 
 /-- `refold`'s rounds, at most `f`, from the nodes `pend` not yet valued and the values `X` so far: the nodes
     of `pend` with no child in `pend` (`chN`, each node's children) are ready, valued by `φ X` there and leave
-    `pend`. The bit: `pend` emptied; none ready while some pend is a cycle of `chN`. -/
+    `pend`. The bit: `pend` emptied, under its own bit; none ready while some pend is a cycle of `chN`. -/
 def refoldRounds {A B : Obj} (chN : CRel A A) (φ : CRel A B → CRel A A → CRel A B) :
     Nat → CRel A A → CRel A B → CRel A B × Bool
   | 0, _, X => (X, false)
   | f + 1, pend, X =>
-    if pend.rel.n == 0 then (X, true) else
+    if pend.rel.n == 0 then (X, pend.ok) else
     let ready := CRel.diff pend (CRel.dom (CRel.comp (CRel.comp pend chN) pend))
     if ready.rel.n == 0 then (X, false) else
     refoldRounds chN φ f (CRel.diff pend ready) (CRel.union X (φ X ready))

@@ -38,7 +38,7 @@ rel_program refoldCycle where
     bad : E ⟶ N ≜ refold(⟨𝟙, Λ(next)⟩, S)
 
 #guard refoldCycle.failures.map (·.msg) == ["an op ran out of capacity (its twin's ok bit is false); in bad, or the " ++
-  s!"refold at line {decl_line% refoldCycle + 5}, col 19 met a cycle: a node its coalgebra c reaches from itself, so c is not well-founded there"]
+  s!"coalgebra c at line {decl_line% refoldCycle + 5}, col 26 reaches a node from itself, so it is not well-founded there"]
 
 open LeetQ.Rel.Programs.prelude in
 rel_program quicksort where

@@ -1,9 +1,12 @@
+import LeetQ.Rel.Lang.GenSpec
+
 /-! `refold(c, S)` (`Gen.refold`, `Gen.refoldRounds`) computes `μX : c G(X) S`, read on relations as predicates:
     `Φ X = c G(X) S` is monotonic (the elaborator's polarity check) and local — its value at `a` reads `X` only at
     the children `ch = c ∈_G` of `a`, as `G(X)` reads `X` only at the members of a `G`-value. From the nodes `N`
     closed under `ch`, nothing valued, each round values the pending nodes with no pending child by `Φ` and drops
     them; the rounds that empty the pending set leave the least fixed point on `N` (`rounds_lfp`), and rounds stuck
-    with nodes pending mean `ch` is not well-founded there (`stuck_not_acc`), the cycle `Gen.refold` reports. -/
+    with nodes pending mean `ch` is not well-founded there (`stuck_not_acc`), the cycle `Gen.refold` reports.
+    `Gen.rep_refold` reads the kernel `Gen.refoldRounds` back as `rounds_lfp` on its arrays. -/
 
 namespace LeetQ.Rel.Refold
 
@@ -86,3 +89,108 @@ theorem stuck_not_acc {ch : α → α → Prop} {pend : α → Prop} (hs : ∀ a
   | intro a _ ih => exact fun hp => hs a ⟨hp, fun a' hc hp' => ih a' hc hp'⟩
 
 end LeetQ.Rel.Refold
+
+/-! ### The kernel read back -/
+
+namespace LeetQ.Rel.Lang.Gen
+
+open LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.Rep LeetQ.Rel.Refold Freyd Freyd.Alg Freyd.Alg.RelSet
+
+variable {A B : Obj}
+
+/-- A relation with no rows relates nothing. -/
+theorem rep_empty {C : Obj} {R : Rel A C} (h : (R.n == 0) = true) (a : A.El) (c : C.El) : ¬ rep R a c := by
+  rintro ⟨i, -⟩
+  have : R.n.toNat = 0 := by simp [beq_iff_eq.1 h]
+  exact absurd i.2 (by omega)
+
+/-- `refoldRounds`' bits: where it reports the pending nodes emptied and its value ok, the pending nodes and the
+    values it started from were ok. -/
+theorem refoldRounds_ok {chN : CRel A A} {φ : CRel A B → CRel A A → CRel A B} :
+    ∀ (f : Nat) (pend : CRel A A) (X : CRel A B), (refoldRounds chN φ f pend X).2 = true →
+      (refoldRounds chN φ f pend X).1.ok = true → pend.ok = true ∧ X.ok = true
+  | 0, _, _, h, _ => by simp [refoldRounds] at h
+  | f + 1, pend, X, h, hx => by
+    simp only [refoldRounds] at h hx
+    by_cases h0 : (pend.rel.n == 0) = true
+    · rw [if_pos h0] at h hx; exact ⟨h, hx⟩
+    · rw [if_neg h0] at h hx
+      by_cases h1 : ((CRel.diff pend (CRel.dom (CRel.comp (CRel.comp pend chN) pend))).rel.n == 0) = true
+      · rw [if_pos h1] at h; exact absurd h Bool.false_ne_true
+      · rw [if_neg h1] at h hx
+        obtain ⟨hp, hx'⟩ := refoldRounds_ok f _ _ h hx
+        have hp' := ok_and hp; have hx'' := ok_and hx'; rw [Bool.and_eq_true] at hp' hx''
+        exact ⟨hp'.1, hx''.1⟩
+
+/-- **`refoldRounds` read back** (`rounds_lfp` on arrays): from the nodes `N` (a coreflexive closed under the
+    children `chN`), all pending and none valued, rounds whose bits say the pending nodes emptied and the value is
+    ok leave `lfp Φ` at every node of `N`, where `φ X P` is `Φ` at the nodes `P` (`onNodes`) and `Φ` is monotonic
+    and local along `chN`. Rounds stuck are `stuck_not_acc`. -/
+theorem rep_refold {chN : CRel A A} {φ : CRel A B → CRel A A → CRel A B} {Φ : Rl A.El B.El → Rl A.El B.El}
+    (hm : Mono Φ) (hl : Local (fun a a' => rep chN.rel a a') Φ)
+    (hφ : ∀ X P, (φ X P).ok = true → (∀ x y, rep P.rel x y → x = y) →
+      ∀ a b, (rep (φ X P).rel a b ↔ rep P.rel a a ∧ Φ (fun a b => rep X.rel a b) a b))
+    {N : CRel A A} (hc : ∀ x y, rep N.rel x y → x = y)
+    (hN : ∀ a a', rep N.rel a a → rep chN.rel a a' → rep N.rel a' a') (f : Nat)
+    (hb : (refoldRounds chN φ f N ⟨Alg.zero, true⟩).2 = true)
+    (hx : (refoldRounds chN φ f N ⟨Alg.zero, true⟩).1.ok = true) :
+    ∀ a, rep N.rel a a → ∀ b, (rep (refoldRounds chN φ f N ⟨Alg.zero, true⟩).1.rel a b ↔ lfp Φ a b) := by
+  suffices h : ∀ f (pend : CRel A A) (X : CRel A B), (refoldRounds chN φ f pend X).2 = true →
+      (refoldRounds chN φ f pend X).1.ok = true → (∀ x y, rep pend.rel x y → x = y) →
+      Inv (fun a a' => rep chN.rel a a') Φ (fun a => rep N.rel a a) (fun a => rep pend.rel a a)
+        (fun a b => rep X.rel a b) →
+      ∀ a, rep N.rel a a → ∀ b, (rep (refoldRounds chN φ f pend X).1.rel a b ↔ lfp Φ a b) from
+    h f N _ hb hx hc ⟨fun _ h => h, fun _ h hn => absurd h hn,
+      fun _ _ _ h => by rw [rep_zero] at h; exact h, fun _ _ h hn => absurd h hn⟩
+  intro f
+  induction f with
+  | zero => intro _ _ h; simp [refoldRounds] at h
+  | succ f ih =>
+    intro pend X h hx hcp hinv
+    simp only [refoldRounds] at h hx ⊢
+    by_cases h0 : (pend.rel.n == 0) = true
+    · rw [if_pos h0]
+      exact fun a hNa b => hinv.2.1 a hNa (rep_empty h0 a a) b
+    · rw [if_neg h0] at h hx ⊢
+      by_cases h1 : ((CRel.diff pend (CRel.dom (CRel.comp (CRel.comp pend chN) pend))).rel.n == 0) = true
+      · rw [if_pos h1] at h; exact absurd h Bool.false_ne_true
+      · rw [if_neg h1] at h hx ⊢
+        obtain ⟨hp, hxo⟩ := refoldRounds_ok f _ _ h hx
+        have hpr := ok_and hp; rw [Bool.and_eq_true] at hpr
+        have hxr := ok_and hxo; rw [Bool.and_eq_true] at hxr
+        have hro := ok_and hpr.2; rw [Bool.and_eq_true] at hro
+        have hdo := ok_and hro.2
+        have hc1 := ok_and hdo; rw [Bool.and_eq_true] at hc1
+        -- the pending nodes' arcs into pending nodes: `pend ≫ chN ≫ pend`, `pend` coreflexive
+        have hC : ∀ a y, rep (CRel.comp (CRel.comp pend chN) pend).rel a y ↔
+            rep pend.rel a a ∧ rep chN.rel a y ∧ rep pend.rel y y := fun a y => by
+          rw [CRel.rep_comp _ _ hdo, CRel.rep_comp _ _ hc1.1]
+          constructor
+          · rintro ⟨m, ⟨k, h1, h2⟩, h3⟩
+            cases hcp _ _ h1; cases hcp _ _ h3; exact ⟨h1, h2, h3⟩
+          · rintro ⟨h1, h2, h3⟩; exact ⟨y, ⟨a, h1, h2⟩, h3⟩
+        have hRd := CRel.rep_diff _ _ hpr.2
+        have hready : ∀ a, rep (CRel.diff pend (CRel.dom (CRel.comp (CRel.comp pend chN) pend))).rel a a ↔
+            rep pend.rel a a ∧ ∀ a', rep chN.rel a a' → ¬ rep pend.rel a' a' := fun a => by
+          rw [hRd, CRel.rep_dom _ hro.2]
+          exact ⟨fun ⟨hp, hn⟩ => ⟨hp, fun a' hc hp' => hn ⟨rfl, a', (hC a a').2 ⟨hp, hc, hp'⟩, (hC a a').2 ⟨hp, hc, hp'⟩⟩⟩,
+            fun ⟨hp, hr⟩ => ⟨hp, fun ⟨_, y, hy, _⟩ => let ⟨_, hc, hp'⟩ := (hC a y).1 hy; hr y hc hp'⟩⟩
+        have hcr : ∀ x y, rep (CRel.diff pend (CRel.dom (CRel.comp (CRel.comp pend chN) pend))).rel x y → x = y :=
+          fun x y h => hcp x y ((hRd x y).1 h).1
+        have eP : (fun a => rep (CRel.diff pend (CRel.diff pend
+              (CRel.dom (CRel.comp (CRel.comp pend chN) pend)))).rel a a) =
+            fun a => rep pend.rel a a ∧ ¬ Refold.ready (fun a a' => rep chN.rel a a') (fun a => rep pend.rel a a) a :=
+          funext fun a => propext <| by rw [CRel.rep_diff _ _ hp, hready]; exact Iff.rfl
+        have eX : (fun a b => rep (CRel.union X (φ X (CRel.diff pend
+              (CRel.dom (CRel.comp (CRel.comp pend chN) pend))))).rel a b) =
+            fun a b => rep X.rel a b ∨ (Refold.ready (fun a a' => rep chN.rel a a') (fun a => rep pend.rel a a) a ∧
+              Φ (fun a b => rep X.rel a b) a b) :=
+          funext fun a => funext fun b => propext <| by
+            rw [CRel.rep_union _ _ hxo]
+            exact or_congr Iff.rfl ((hφ _ _ hxr.2 hcr a b).trans (and_congr_left' (hready a)))
+        refine ih _ _ h hx (fun x y h => hcp x y ((CRel.rep_diff _ _ hp x y).1 h).1) ?_
+        rw [eP, eX]; exact round_inv hm hl hN hinv
+
+#print axioms rep_refold
+
+end LeetQ.Rel.Lang.Gen

@@ -469,7 +469,7 @@ def mus : {A B : Obj} → {d : Bool} → Tm A B d → List String
   | _, _, _, .nu _ S b => mus S ++ mus b
   | _, _, _, .mu _ w n b => s!"{w} ran its cap of {n} rounds without reaching a fixed point" :: mus b
   | _, _, _, .refold _ w ch b =>
-    s!"{w} met a cycle: a node its coalgebra c reaches from itself, so c is not well-founded there" :: mus ch ++ mus b
+    s!"{w} reaches a node from itself, so it is not well-founded there" :: mus ch ++ mus b
   | _, _, _, .juncD R S => mus R ++ mus S
   | _, _, _, _ => []
 

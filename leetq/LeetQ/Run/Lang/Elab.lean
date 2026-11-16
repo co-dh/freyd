@@ -102,7 +102,7 @@ inductive Tm : Obj → Obj → Bool → Type where
   | mu {A B : Obj} (k : Nat) (what : String) (cap : Nat) (body : Tm A B false) : Tm A B false
   /-- `refold(c, S)` = `μX : c G(X) S`, `X` the variable `k`, on the keys in demand: bottom-up over the nodes `ch`
       (`c` then `G`'s membership) reaches from them, each node's value `body` run once its children have theirs;
-      `what` names the fold in the failure a cycle of `ch` reports. -/
+      `what` names the coalgebra `c`, where the failure a cycle of `ch` reports is. -/
   | refold {A B : Obj} {d e : Bool} (k : Nat) (what : String) (ch : Tm A A d) (body : Tm A B e) : Tm A B true
 
 /-- A built term with its objects. -/
@@ -259,7 +259,7 @@ inductive Pre
   /-- `μX : body` (`least`) or `νX : body`, `X` the variable `k`; `S` the meet of `body`'s conjuncts that do not
       mention `X`, a `ν`'s start. -/
   | fix (pos : Pos) (least : Bool) (k : Nat) (S : Option Pre) (body : Pre) (a b : OTy)
-  /-- `refold(c, S)` at `pos`: `body` the `μX : c G(X) S` it is, `X` the variable `k`; `ch : a ⟶ a` the children
+  /-- `refold(c, S)`, `c` at `pos`, where a cycle of `c` is reported: `body` the `μX : c G(X) S` it is, `X` the variable `k`; `ch : a ⟶ a` the children
       `c` gives a node, `c` then `G`'s membership. -/
   | refold (pos : Pos) (k : Nat) (ch body : Pre) (a b : OTy)
   /-- The constant `c` at `pos`, at the objects `us` of its object variables, each with whether `c` is generic
@@ -969,7 +969,7 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
     let mc ← Lean.getMCtx
     let (gx, gb, mem) ← refoldG p k (zonk mc a) (zonk mc b) (zonk mc t) (zonk mc s')
     unify p "the source of refold's algebra S, G(B)" s' gb
-    pure (.rel (.refold p k ((mem.map (.comp qc)).getD (.zero a a)) (.comp (.comp qc gx) qs) a b) a b)
+    pure (.rel (.refold c.pos k ((mem.map (.comp qc)).getD (.zero a a)) (.comp (.comp qc gx) qs) a b) a b)
   | .op p o objs args => do
     let as ← elabArgs env m args
     if args.isEmpty then constant env p o objs
@@ -1713,7 +1713,7 @@ def build : Pre → Except Err Res
     let A ← toObj objs mc dp a; let B ← toObj objs mc dp b
     let ⟨_, c⟩ ← at? dp (A := A) (B := A) (← build ch)
     let ⟨_, t⟩ ← at? dp (A := A) (B := B) (← build q)
-    pure ⟨A, B, true, .refold k s!"the refold at {p}" c t⟩
+    pure ⟨A, B, true, .refold k s!"the coalgebra c at {p}" c t⟩
   | .var _ k a b none => return ⟨← toObj objs mc dp a, ← toObj objs mc dp b, false, .var k⟩
   | .var _ k a b (some false) => return ⟨← toObj objs mc dp a, ← toObj objs mc dp b, true, .var k⟩
   -- a parameter given a pair test runs nowhere; `test` reads it
