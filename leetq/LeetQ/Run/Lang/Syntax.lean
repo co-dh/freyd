@@ -161,9 +161,11 @@ def mapRow : Prim := { sym := "F", sig := prim% CRel.map, written := false }
 def prims : List Prim :=
   [{ sym := "τ", sig := prim% CRel.τ, sound := `LeetQ.Rel.Lang.Gen.τ_sound,
      aop := .ok `Freyd.Alg.singletonMap }, consRow, memRow, inlRow, inrRow, mapRow,
-   -- `filter(p)`, `takewhile(p)` given one relation run as their mask forms (`rep_filterC`, `rep_takewhileC`)
-   { sym := "filter", sig := prim% CRel.filter, prelude := `LeetQ.Rel.Programs.prelude.filter },
-   { sym := "takewhile", sig := prim% CRel.takewhile, prelude := `LeetQ.Rel.Programs.prelude.takewhile },
+   -- `filter(p)`, `takewhile(p)` given one relation run as their mask forms (`rep_filterC`, `rep_takewhileC`, `elems_test`)
+   { sym := "filter", sig := prim% CRel.filter, sound := `LeetQ.Rel.Lang.Gen.filter_sound,
+     prelude := `LeetQ.Rel.Programs.prelude.filter },
+   { sym := "takewhile", sig := prim% CRel.takewhile, sound := `LeetQ.Rel.Lang.Gen.takewhile_sound,
+     prelude := `LeetQ.Rel.Programs.prelude.takewhile },
    { sym := "thinL", sig := prim% CRel.thinLOn, sound := `LeetQ.Rel.Lang.Gen.thinL_sound,
      mono := false, aop := .ok `Freyd.Alg.RelSet.ListRel.thinL },
    { sym := "merge", sig := prim% CRel.mergeOn, sound := `LeetQ.Rel.Lang.Gen.merge_sound,
