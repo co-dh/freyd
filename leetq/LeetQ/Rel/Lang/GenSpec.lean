@@ -6,6 +6,8 @@ import LeetQ.Rel.CRelArith
 import LeetQ.Run.CRelArithDef
 import LeetQ.Rel.CRelFold
 import LeetQ.Run.CRelFoldDef
+import LeetQ.Rel.CRelPower
+import LeetQ.Rel.CRelLoop
 
 /-! The code of `Gen` read back: one lemma per combinator, saying that where its ok bit is set its relation is
     the allegory's operation on its parts' relations, so `Expand` assembles the correctness of a definition from
@@ -127,6 +129,115 @@ theorem inr_sound {A B : Obj} : Sound (inr A B) (sumCop (⟨A.El⟩ : RelSet.{0}
 theorem mem_sound {B : Obj} : Sound (mem B) (fun xs x => x ∈ xs) := fun D _ hb xs x hx => by
   show rep (CRel.mem D.val).rel xs x ↔ _; rw [CRel.rep_mem _ hb]
   exact ⟨fun h => h.2, fun h => ⟨keyRow hx, h⟩⟩
+
+/-! ### The rows of `prims` -/
+
+/-- A row read on its keys' values computes `T` where its kernel relates each listed value by `T`. -/
+theorem ofVals_sound {A B : Obj} {f : {n : USize} → Vals A n → CRel A B} {T : Den A B}
+    (h : ∀ {n : USize} (X : Vals A n), (f X).ok = true → ∀ x y, rep (f X).rel x y ↔ (∃ j, X.row j = x) ∧ T x y) :
+    Sound (ofVals A B f) T := fun D _ hb x y hx => (h D.val hb x y).trans ⟨And.right, fun t => ⟨keyRow hx, t⟩⟩
+
+/-- A row composed after its keys computes `T` where its kernel is `P` then `T`. -/
+theorem after_sound {A B : Obj} {f : {K : Obj} → CRel K A → CRel K B} {T : Den A B}
+    (h : ∀ {K : Obj} (P : CRel K A), (f P).ok = true → ∀ k y, rep (f P).rel k y ↔ ∃ a, rep P.rel k a ∧ T a y) :
+    Sound (after A B f) T := fun D hD hb x y hx =>
+  (h ⟨D, true⟩ hb x y).trans ⟨fun ⟨_, hk, t⟩ => hD x _ hk ▸ t, fun t => ⟨x, hx, t⟩⟩
+
+theorem τ_sound {A : Obj} : Sound (ofVals A (.arr A) fun X => CRel.τ X) (fun a Y => Y = [a]) :=
+  ofVals_sound fun X hb => by
+    obtain ⟨hX, -, hx, -, hWk, hW, h63⟩ := transposeC_ok (idU X) hb
+    exact rep_tau_list X hX hx hWk hW h63
+
+theorem uncons_sound {B : Obj} :
+    Sound (ofVals (.arr B) (.prod B (.arr B)) fun X => CRel.uncons X) (fun xs p => xs = p.1 :: p.2) :=
+  ofVals_sound fun X hb xs _ => CRel.rep_uncons X hb xs _ _
+
+theorem unsnoc_sound {B : Obj} :
+    Sound (ofVals (.arr B) (.prod (.arr B) B) fun X => CRel.unsnoc X) (fun xs p => xs = p.1 ++ [p.2]) :=
+  ofVals_sound fun X hb xs _ => CRel.rep_unsnoc X hb xs _ _
+
+theorem uncat_sound {B : Obj} :
+    Sound (ofVals (.arr B) (.prod (.arr B) (.arr B)) fun X => CRel.uncat X) (fun xs p => xs = p.1 ++ p.2) :=
+  ofVals_sound fun X hb xs _ => CRel.rep_uncat X hb xs _ _
+
+theorem length_sound {B : Obj} :
+    Sound (ofVals (.arr B) .long fun X => CRel.length X) (fun xs w => w = Int64.ofNat xs.length) :=
+  ofVals_sound fun X hb => CRel.rep_length X hb
+
+/-- `sum` adds in `Int64`: its kernel has no row at an array holding `nul` or one whose partial sums leave the
+    `Int64` range, so this is its relation, not `foldr (+) 0` on every array. -/
+theorem sum_sound : Sound (ofVals (.arr .long) .long fun X => CRel.Arr.sum X) (fun xs w =>
+    (∀ t, t ≤ xs.length → -2 ^ 63 < List.sum (List.map Int64.toInt (List.drop t xs)) ∧
+      List.sum (List.map Int64.toInt (List.drop t xs)) < 2 ^ 63) ∧ (∀ x ∈ xs, x ≠ nul) ∧
+      w = xs.foldr (· + ·) 0) :=
+  ofVals_sound fun X hb => CRel.Arr.rep_sum X hb
+
+theorem inits_sound {B : Obj} : Sound (ofVals (.arr B) (.arr (.arr B)) fun X => CRel.inits X)
+    (fun xs yss => yss = (List.range (xs.length + 1)).map fun k => xs.take k) :=
+  ofVals_sound fun X hb => CRel.rep_inits X hb
+
+theorem tails_sound {B : Obj} : Sound (ofVals (.arr B) (.arr (.arr B)) fun X => CRel.tails X)
+    (fun xs yss => yss = (List.range (xs.length + 1)).map fun k => xs.drop k) :=
+  ofVals_sound fun X hb => CRel.rep_tails X hb
+
+theorem prefix_sound {B : Obj} : Sound (ofVals (.arr B) (.arr B) fun X => CRel.«prefix» X) (fun xs ys => ys <+: xs) :=
+  ofVals_sound fun X hb => CRel.rep_prefix X hb
+
+theorem suffix_sound {B : Obj} : Sound (ofVals (.arr B) (.arr B) fun X => CRel.suffix X) (fun xs ys => ys <:+ xs) :=
+  ofVals_sound fun X hb => CRel.rep_suffix X hb
+
+theorem concat_sound {B : Obj} :
+    Sound (ofVals (.arr (.arr B)) (.arr B) fun X => CRel.concat X) (fun xss ys => ys = xss.flatten) :=
+  ofVals_sound fun X hb => CRel.rep_concat X hb
+
+open Classical in
+theorem distinct_sound {B : Obj} :
+    Sound (ofVals (.arr B) (.arr B) fun X => CRel.distinct X) (fun xs ys => ys = xs.eraseDups) :=
+  ofVals_sound fun X hb xs ys => by
+    obtain ⟨h1, h2⟩ := CRel.rep_distinct X hb
+    refine ⟨h1 xs ys, fun ⟨hx, e⟩ => ?_⟩
+    obtain ⟨Y, hY⟩ := (h2 xs).2 hx
+    rwa [e, ← (h1 xs Y hY).2]
+
+theorem cons_sound {B : Obj} :
+    Sound (after (.prod B (.arr B)) (.arr B) fun P => CRel.cons P) (fun p ys => ys = p.1 :: p.2) :=
+  after_sound fun P hb k ys => (CRel.rep_cons P hb k ys).trans
+    ⟨fun ⟨_, _, h, e⟩ => ⟨_, h, e⟩, fun ⟨_, h, e⟩ => ⟨_, _, h, e⟩⟩
+
+theorem snoc_sound {B : Obj} :
+    Sound (after (.prod (.arr B) B) (.arr B) fun P => CRel.snoc P) (fun p ys => ys = p.1 ++ [p.2]) :=
+  after_sound fun P hb k ys => (CRel.rep_snoc P hb k ys).trans
+    ⟨fun ⟨_, _, h, e⟩ => ⟨_, h, e⟩, fun ⟨_, h, e⟩ => ⟨_, _, h, e⟩⟩
+
+theorem cat_sound {B : Obj} :
+    Sound (after (.prod (.arr B) (.arr B)) (.arr B) fun P => CRel.cat P) (fun p zs => zs = p.1 ++ p.2) :=
+  after_sound fun P hb k zs => (CRel.rep_cat P hb k zs).trans
+    ⟨fun ⟨_, _, h, e⟩ => ⟨_, h, e⟩, fun ⟨_, h, e⟩ => ⟨_, _, h, e⟩⟩
+
+theorem zip_sound {A B : Obj} :
+    Sound (after (.prod (.arr A) (.arr B)) (.arr (.prod A B)) fun P => CRel.zip P) (fun p zs => zs = p.1.zip p.2) :=
+  after_sound fun P hb k zs => (CRel.rep_zip P hb k zs).trans
+    ⟨fun ⟨_, _, h, e⟩ => ⟨_, h, e⟩, fun ⟨_, h, e⟩ => ⟨_, _, h, e⟩⟩
+
+theorem tic_sound {B : Obj} : Sound (after (.prod B (.arr B)) (.arr (.arr B)) fun P => CRel.tic P)
+    (fun p zss => zss = (List.range (p.2.length + 1)).map fun j => (p.1 :: p.2).take (j + 1)) :=
+  after_sound fun P hb k zss => (CRel.rep_tic P hb k zss).trans
+    ⟨fun ⟨_, _, h, e⟩ => ⟨_, h, e⟩, fun ⟨_, h, e⟩ => ⟨_, _, h, e⟩⟩
+
+open Classical in
+/-- `merge(Q)` merges by the test `Q` read as an order: `a` goes first where `Q` relates `(a, b)` to something. -/
+theorem merge_sound {B : Obj} {Q : Fn true (.prod B B) (.prod B B)} {TQ : Den (.prod B B) (.prod B B)}
+    (hQ : Sound Q TQ) : Sound (testAfter B (.prod (.arr B) (.arr B)) (.arr B) Q fun q P => CRel.mergeOn q P)
+      (fun p zs => zs = List.merge p.1 p.2 fun a b => decide (∃ c, TQ (a, b) c)) := fun D hD hb x zs hx => by
+  have hq : ∀ (E : Rel (.prod B B) (.prod B B)) (S : (Obj.prod B B).El → Prop),
+      rep E = corefl (A := (⟨(Obj.prod B B).El⟩ : RelSet.{0})) S → (Q E).ok = true →
+      ∀ a b, S (a, b) → ((∃ c, rep (Q E).rel (a, b) c) ↔ decide (∃ c, TQ (a, b) c) = true) := fun E S hE hb a b hS => by
+    have hC : Cor (d := true) E := fun u v h => (show corefl S u v by rw [← hE]; exact h).1
+    have hk : rep E (a, b) (a, b) := by rw [hE]; exact ⟨rfl, hS⟩
+    rw [decide_eq_true_iff]; exact exists_congr fun c => hQ E hC hb _ c hk
+  have hb' : (CRel.mergeOn (fun P => Q P.rel) ⟨D, true⟩).ok = true := hb
+  exact (CRel.rep_mergeOn (fun P => Q P.rel) ⟨D, true⟩ (fun a b => decide (∃ c, TQ (a, b) c)) hq hb' x zs).trans
+    ⟨fun ⟨_, _, h, e⟩ => hD x _ h ▸ e, fun e => ⟨x.1, x.2, hx, e⟩⟩
 
 /-! ### The allegory's operations -/
 
