@@ -1,4 +1,4 @@
-import LeetQ.Run.Lang.Embed
+import LeetQ.Run.Lang.Grammar
 import Freyd.S2_30
 import AOP.A4_4
 import AOP.A4_5

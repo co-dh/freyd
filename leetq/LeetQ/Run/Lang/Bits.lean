@@ -1,4 +1,4 @@
-import LeetQ.Run.Lang.Elab
+import LeetQ.Run.Lang.Tm
 
 /-! # Bit matrices: a closed term over small objects with no table at its inner nodes
 

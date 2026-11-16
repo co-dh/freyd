@@ -1,4 +1,4 @@
-import LeetQ.Run.Lang.Expand
+import LeetQ.Run.Lang.Tm
 import QLean.Db.Own
 
 /-! # A program as kernel calls (`doc/rel-native-design.md` §6), stage 1a: `lit`, `call`, `fail`

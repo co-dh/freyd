@@ -1,4 +1,5 @@
 import LeetQ.Run.Lang.Plan
+import LeetQ.Run.Lang.Expand
 
 /-! # `relc`: a plan printed as C (`doc/rel-native-design.md` §6, stage 1a)
 
