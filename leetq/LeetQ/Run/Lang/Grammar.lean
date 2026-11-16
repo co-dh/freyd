@@ -208,4 +208,214 @@ syntax (name := relProgram) (docComment)? "rel_program " ident " where" relStmts
 syntax (name := relVariant) (docComment)? "rel_program " ident &" from " ident (&" upto " relWord)? " where" relStmts :
   command
 
+deriving instance ToExpr for OExp
+deriving instance ToExpr for Op
+deriving instance ToExpr for Bin
+deriving instance ToExpr for Tup
+deriving instance ToExpr for Lang.Expr
+deriving instance ToExpr for Body
+deriving instance ToExpr for Param
+deriving instance ToExpr for ObjDef
+deriving instance ToExpr for Why
+deriving instance ToExpr for Decl
+
+/-! ### From syntax to the AST, in the state of `Parse` -/
+
+abbrev C := ReaderT FileMap P
+
+def posOf (s : Syntax) : C Lang.Pos := do
+  let p := (← read).toPosition (s.getPos?.getD 0); pure ⟨p.line, p.column + 1⟩
+
+def failAt {α : Type} (s : Syntax) (m : String) : C α := do throw ⟨← posOf s, m⟩
+
+/-- `p` run on `t`, the text of the token `s`, in the current scope, to its end. -/
+def onText {α : Type} (s : Syntax) (t : String) (p : P α) : C α := do
+  let q ← posOf s
+  let whole : P α := do let a ← p; if (← Parse.peek).isSome then Parse.expected "the end of the token" else pure a
+  match whole.run { (← get) with cs := t.toList.toArray, i := 0, line := q.line, col := q.col } with
+  -- a token's reads leave only the constants they resolved (`used`); the rest is the token's own
+  | .ok (a, t) => do modify ({ · with used := t.used }); pure a
+  | .error e => throw e
+
+/-- The source text of a token: an identifier as Lean reads it, a number, a symbol. A name that is a Lean keyword
+    is written bare, `prefix`, and comes as its atom (`kwName`). -/
+def tokText (s : Syntax) : String := match s with
+  | .ident _ _ n _ => n.toString (escape := false)
+  | .atom _ v => v
+  | _ => if s.isOfKind numLitKind then s[0].getAtomVal else ""
+
+def wordOf (s : Syntax) : C String := match s.getKind with
+  | ``wNeg => onText s ("-" ++ tokText s[1]) Parse.word
+  | _ => onText s (tokText s[0]) Parse.word
+
+/-- The names a run of letters is, each where it starts: `Parse.name` to the end of the token. -/
+partial def namesOf (s : Syntax) (t : String := tokText s) : C (List (Lang.Pos × String)) :=
+  onText s t go
+where go : P (List (Lang.Pos × String)) := do
+  if (← Parse.peek).isNone then return []
+  let p ← Parse.pos; let n ← Parse.name
+  if n == "" then Parse.expected "a term"
+  pure ((p, n) :: (← go))
+
+partial def obj (s : Syntax) : C OExp := match s.getKind with
+  | ``oWord => match s[0].getKind with
+    | ``wNeg => failAt s "expected an object"
+    | _ => onText s (tokText s[0][0]) Parse.object
+  | ``oPow => do pure (.pow (← obj s[1]))
+  | ``oList => do pure (.list (← obj s[1]))
+  | ``oParen => obj s[1]
+  | ``oProd => do pure (.prod (← obj s[0]) (← obj s[2]))
+  | ``oSum => do pure (.sum (← obj s[0]) (← obj s[2]))
+  | _ => failAt s "expected an object"
+
+/-- `: A ⟶ B`, its objects possibly object variables (§e). -/
+def typeOf (s : Syntax) : C (OExp × OExp) := do
+  modify fun st => { st with vars := true }
+  let t := (← obj s[1], ← obj s[3])
+  modify fun st => { st with vars := false }; pure t
+
+partial def litItem (s : Syntax) : C Tup := match s.getKind with
+  | ``lWord => do pure (.leaf (← wordOf s[0]))
+  | ``lRow => do pure (.pair (← tup s[1].getArgs) (← tup s[3].getArgs))
+  | _ => do pure (.arr (← s[1].getArgs.toList.mapM litItem))
+where tup (xs : Array Syntax) : C Tup := do
+  match ← xs.toList.mapM litItem with | [t] => pure t | ts => pure (.arr ts)
+
+/-- A side's item list, each item a primary and, unless juxtaposed, the builtin infix operator before it. -/
+abbrev Items := List (Option (Lang.Pos × Bin) × Lang.Expr)
+
+mutual
+
+/-- A term: its items folded left to right, a declared infix name taking the primary after it (§c). -/
+partial def expr (s : Syntax) : C Lang.Expr := do
+  match ← items s with
+  | (none, e) :: xs => do infixFree e; go e xs
+  | _ => failAt s "expected a term"
+where
+  infixFree (e : Lang.Expr) : C Unit := do
+    if let .name p n := e then if ← Parse.isInfix n then
+      throw ⟨p, s!"`{n}` is an infix operator: it stands between two terms, `R {n} S`"⟩
+  go (e : Lang.Expr) : Items → C Lang.Expr
+  | [] => pure e
+  | (some (p, o), b) :: xs => do infixFree b; go (.bin p o e b) xs
+  | (none, b@(.name p n)) :: xs => do
+    if !(← Parse.isInfix n) then go (.comp e b) xs else match xs with
+      | (none, c) :: ys => do infixFree c; go (.inf p n e c) ys
+      | _ => throw ⟨p, s!"`{n}` is an infix operator: it stands between two terms, `R {n} S`"⟩
+  | (none, b) :: xs => go (.comp e b) xs
+
+partial def items (s : Syntax) : C Items := do
+  match s.getKind with
+  | ``rComp => pure ((← items s[0]) ++ (← prim s.getArgs.back!).map (none, ·))
+  | ``rBin =>
+    let some o := Bin.table.lookup (atomIn s[1]).front | failAt s[1] "expected an operator"
+    match ← prim s[2] with
+    | b :: bs => pure ((← items s[0]) ++ (some (← posOf s[1], o), b) :: bs.map (none, ·))
+    | [] => failAt s[2] "expected a term"
+  | _ => do pure ((← prim s).map (none, ·))
+
+/-- A primary: the terms a run of letters is, `∼` on the first and `°` on the last of them (§c). -/
+partial def prim (s : Syntax) : C (List Lang.Expr) := do
+  let p ← posOf s
+  match s.getKind with
+  | ``rId | ``rSym => do (← namesOf s[0]).flatMapM fun (p, n) => atomOf s p n none none none
+  | ``rQSym => do (← namesOf s s!"{tokText s[0]}.{tokText s[2]}").flatMapM fun (p, n) => atomOf s p n none none none
+  | ``rParen => pure [← expr s[1]]
+  -- a fixed point: `X` in scope in the body only
+  | ``rFix => do
+    let (c, x) := match (tokText s[0]).toList with | c :: cs => (c, String.ofList cs) | [] => (' ', "")
+    unless Parse.isFix c do failAt s "expected a term"
+    Parse.fresh ⟨p.line, p.col + 1⟩ x (← get).taken
+    let k := (← get).known
+    modify fun st => { st with known := (x, 0) :: k }
+    let b ← expr s[2]
+    modify fun st => { st with known := k }
+    pure [.fix p (c == 'μ') x b]
+  | ``rPair => pure [.pair p (← expr s[1]) (← expr s[3])]
+  | ``rJunc => pure [.junc p (← expr s[1]) (← expr s[3])]
+  | ``rFold => pure [.fold p (← expr s[1]) (← expr s[3])]
+  | ``rFold1 => failAt s "one-argument fold is for rel(…) proofs: a program folds a list with `⦇e,S⦈`"
+  | ``rLit => pure [.lit p (← s[1].getSepArgs.toList.mapM fun r => do match ← litItem r with
+      | .pair a b => pure (a, b)
+      | _ => failAt r "expected '('")]
+  | ``rCompl => match ← prim s[1] with
+    | e :: es => pure (.compl p e :: es)
+    | [] => failAt s "expected a term"
+  | ``rConv => match (← prim s[0]).reverse with
+    | e :: es => pure ((.conv (← posOf s[1]) e :: es).reverse)
+    | [] => failAt s "expected a term"
+  -- `e*` on the last of the terms, as `°`: the closure `μX : 𝟙 ∪ e X`, no op of its own, so typed, checked and run
+  -- as every `μ`; `X` primed past every name of `e` and of the scope, so it captures none
+  | ``rStar => match (← prim s[0]).reverse with
+    | e :: es => do
+      let st ← get
+      let used := e.names ++ st.known.map (·.1) ++ st.taken.map (·.1) ++ st.objs
+      let xs := (List.range (used.length + 1)).map fun k => "X" ++ String.ofList (List.replicate k '\'')
+      match xs.find? fun x => !used.contains x && (Parse.builtin x).isNone with
+      | some x =>
+        let q ← posOf s[1]
+        pure ((.fix q true x (.bin q .join (.op q .id [] []) (.comp e (.name q x))) :: es).reverse)
+      | none => failAt s "no variable for the μ of `*` is free of the names in scope"
+    | [] => failAt s "expected a term"
+  | k =>
+    -- Lean gives every category `$x`, at any quotation depth: outside a quotation it is no term of the language
+    if s.isAntiquot then failAt s "`$` is no term of the Rel language: an antiquotation has no place in a program"
+    -- a head with its arguments; `⊤(X,X)` reads as terms and as objects, a `choice` of both
+    let alts := if k == choiceKind then s.getArgs else #[s]
+    let find (k : SyntaxNodeKind) := alts.find? (·.getKind == k)
+    let some a := alts[0]? | failAt s "expected a term"
+    unless [``rApp, ``rObjs, ``rAppPair].contains a.getKind do failAt s "expected a term"
+    match (← namesOf a[0][0]).reverse with
+    | (q, n) :: ns => do
+      let init ← ns.reverse.flatMapM fun (p, m) => atomOf s p m none none none
+      pure (init ++ (← atomOf s q n (find ``rApp) (find ``rObjs) (find ``rAppPair)))
+    | [] => failAt s "expected a term"
+
+/-- The name `n` at `p`: `app` its parenthesised terms, `objs` the same parentheses
+    read as objects, `pair` a pair right after it; each `none` when not written so. -/
+partial def atomOf (s : Syntax) (p : Lang.Pos) (n : String) (app objs pair : Option Syntax) : C (List Lang.Expr) := do
+  -- what follows a name taking no arguments: a parenthesis or a pair is a term composed after it
+  let after : C (List Lang.Expr) := match app, pair with
+    | some a, _ => match a[2].getSepArgs with
+      | #[e] => do pure [← expr e]
+      | _ => failAt a "expected ')'"
+    | _, some q => do pure [.pair (← posOf q[1]) (← expr q[2]) (← expr q[4])]
+    | none, none => if objs.isSome then failAt s "expected a term" else pure []
+  let args (a : Syntax) : C (List Lang.Expr) := a[2].getSepArgs.toList.mapM expr
+  -- the program's names, then the kernel table, then the resolver's (§2.3)
+  let st ← get
+  let ar := (st.known.lookup n).orElse fun _ =>
+    if (Parse.builtin n).isSome then none else (st.ext n).bind fun e => if e.isInfix || e.obj || e.thm then none else some e.arity
+  match ar, Parse.builtin n with
+  | some 0, _ => do pure (.name p n :: (← after))
+  | some _, _ => match app with
+    | some a => do pure [.app p n (← args a)]
+    | none => failAt s "expected '('"
+  | none, some (.index _, _) => match objs.map (·[2].getSepArgs) with
+    | some #[o] => do
+      -- a position is a number word read by `String.toInt?`, as every number word is, its sign included
+      let w ← if o.getKind == ``oWord then wordOf o[0] else pure ""
+      match w.toInt? with
+      | some k => if 0 ≤ k ∧ k < 2^63 then pure [.op p (.index k.toNat) [] []]
+                  else failAt o s!"at( ) takes a position from 0 that fits a long, found {w}"
+      | none => failAt o s!"at( ) takes a position, a number from 0, found '{w}'"
+    | _ => failAt s "at( ) takes a position, a number from 0"
+  | none, some (o, 0) => match objs with
+    -- the objects when they read as objects, else the parenthesis is a term
+    | some os => do
+      try pure [.op p o (← os[2].getSepArgs.toList.mapM obj) []]
+      catch _ => pure (.op p o [] [] :: (← after))
+    | none => do pure (.op p o [] [] :: (← after))
+  | none, some (o, _) => match pair, app with
+    | some q, _ => do pure [.op p o [] [.pair (← posOf q[1]) (← expr q[2]) (← expr q[4])]]
+    | none, some a => do pure [.op p o [] (← args a)]
+    | none, none => failAt s "expected '('"
+  | none, none =>
+    if (← get).thms.contains n || ((← get).ext n).any (·.thm) then throw ⟨p, s!"`{n}` is a theorem, not a relation"⟩
+    if !(← Parse.isInfix n) then do pure (.name p n :: (← after))
+    else if app.isSome || objs.isSome then failAt s s!"`{n}` is an infix operator: write `R {n} S`, not `{n}(R, S)`"
+    else pure [.name p n]
+
+end
+
 end LeetQ.Rel.Lang.Embed
