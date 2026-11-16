@@ -43,18 +43,9 @@ error: owed: 2 theorem(s) of `LeetQ.Rel.Lang.RelAopTest.mssOwed` with no calc an
 rel_aop mssOwed
 
 open LeetQ.Rel.Programs.prelude Programs.mss in
-/-- Laws with parameters, quantified over their objects, and with hypotheses; steps citing them applied, two of which
-    put a composite in place inside a longer composite (re-association, no left context in the law). -/
+/-- Steps citing the prelude's laws, which have parameters, quantified objects and hypotheses, applied; two of them
+    put a composite in place inside a longer composite, and `estMap`'s hypotheses are the opened `mss`'s facts. -/
 rel_program laws where
-    simple(f : α ⟶ β) ≜ f°f ⊑ 𝟙
-
-    theorem Eunion(R : α ⟶ β) : E(R) = E(Λ(R))E(∋)
-    theorem Ecomp(R : α ⟶ β, S : β ⟶ γ) : E(R S) = E(R)E(S)
-    theorem estMap(f : α ⟶ β, R : β ⟶ β) if dom(f) = 𝟙, simple(f), 𝟙 ⊑ R : Λ(f)est(R) = f
-    theorem zeroEntire : dom(zero) = 𝟙
-    theorem zeroSimple : zero°zero ⊑ 𝟙
-    theorem geqRefl : 𝟙 ⊑ ≥
-
     theorem union : Λ(suffix)E(prefix sum)est(≥) = Λ(suffix)E(Λ(prefix sum))E(∋)est(≥) := calc
       _ = Λ(suffix)E(Λ(prefix sum))E(∋)est(≥) := Eunion(prefix sum)
     theorem comp : Λ(suffix)E(Λ(prefix sum))E(est(≥))est(≥) = Λ(suffix)E(Λ(prefix sum)est(≥))est(≥) := calc
@@ -67,36 +58,29 @@ rel_aop laws
   model N := (⟨Int⟩ : RelSet.{0}), zero := MSS.zero, «≥» := MSS.geq, suffix := ListRel.suffix (A := Int),
     «prefix» := ListRel.«prefix» (A := Int),
     K : Coproduct ((F Unit Int).obj ⟨Int⟩) (dL Unit) (relProd (⟨Int⟩ : RelSet.{0}) ⟨Int⟩).p := sumCop _ _
-  proof
-    Eunion := existsImage_eq_Λ_bigUnion R,
-    Ecomp := existsImage_comp R S,
-    estMap := Λ_map_comp_est ⟨h₁, h₂⟩ h₃,
-    zeroEntire := (graph_map _).1,
-    zeroSimple := (graph_map _).2,
-    geqRefl := MSS.geq_refl
 
-/-- info: @laws.estMap.aop : ∀ {α β : RelSet} (f : α ⟶ β) (R : β ⟶ β), dom f = 𝟙α → f° ≫ f ⊑ 𝟙β → 𝟙β ⊑ R → f%∋ ≫ est(R) = f -/
-#guard_msgs in
-#check @laws.estMap.aop
+open LeetQ.Rel.Programs.prelude Programs.mss in
+/-- A second program declaring `geqRefl`, as `mss` does, so that a bare citation of it is ambiguous below. -/
+rel_program lawsTwin where
+    theorem geqRefl : 𝟙 ⊑ ≥
 
 -- a bare citation two opened programs declare is ambiguous, and the error names both
-/-- error: line 88, col 20: ambiguous name `estMap`: it is [LeetQ.Rel.Programs.prelude.estMap, LeetQ.Rel.Lang.RelAopTest.laws.estMap] -/
+/-- error: line 73, col 16: ambiguous name `geqRefl`: it is [LeetQ.Rel.Programs.mss.geqRefl, LeetQ.Rel.Lang.RelAopTest.lawsTwin.geqRefl] -/
 #guard_msgs in
-open LeetQ.Rel.Programs.prelude Programs.mss laws in
+open LeetQ.Rel.Programs.prelude Programs.mss lawsTwin in
 rel_program lawsAmbiguous where
-    theorem twice : Λ(oplus)est(≥) = oplus := calc
-      _ = oplus := estMap(oplus, ≥)
+    theorem twice : 𝟙 ⊑ ≥ := calc
+      _ ⊑ ≥ := geqRefl
 
-open LeetQ.Rel.Programs.prelude Programs.mss laws in
-/-- A cited law whose hypothesis nothing discharges: `laws.estMap` at `oplus` needs `dom(oplus) = 𝟙`, which no
-    hypothesis of `bad` and no theorem of `laws` states. The program-qualified name picks `laws`'s law where
-    the prelude declares an `estMap` too. -/
+open LeetQ.Rel.Programs.prelude Programs.mss in
+/-- A cited law whose hypothesis nothing discharges: `prelude.estMap` at `oplus` needs `dom(oplus) = 𝟙`, which no
+    hypothesis of `bad` and no theorem of an opened program states. The program-qualified name resolves too. -/
 rel_program lawsBad where
     theorem bad : Λ(oplus)est(≥) = oplus := calc
-      _ = oplus := laws.estMap(oplus, ≥)
+      _ = oplus := prelude.estMap(oplus, ≥)
 
 /--
-error: line 96, col 7: the step `_ … oplus` cites `laws.estMap`, whose hypothesis
+error: line 80, col 7: the step `_ … oplus` cites `prelude.estMap`, whose hypothesis
   dom oplus = 𝟙(Int × Int)
 no hypothesis of `bad` and no theorem proved before it that takes no parameters discharges
 Tactic `assumption` failed
