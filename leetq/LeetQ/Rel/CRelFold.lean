@@ -210,16 +210,28 @@ theorem Arr.rep_sumC {n : USize} (X : Vals (.arr .long) n)
       exact and_iff_right ⟨i, h⟩) xs w).trans (and_congr Iff.rfl (sum_chain xs w))
 
 open CompN in
-/-- **`rep (R \ S)` under `diffC`'s bit**: `rep_diff` at the joint pair codes' bit (as `rep_interC`) and the
-    `fitsN` bits. -/
-theorem rep_diffC {A B : Obj} (R S : Rel A B) (hb : (diffC R S).2 = true) (a : A.El) (b : B.El) :
-    rep (diffC R S).1 a b ↔ rep R a b ∧ ¬ rep S a b := by
+/-- `diffC`'s bit taken apart: the joint pair codes (as `rep_interC`) and `R`'s `fitsN` bits. -/
+theorem diffC_bits {A B : Obj} (R S : Rel A B) (hb : (diffC R S).2 = true) :
+    pairsOK(R, S) ∧ Vals.fitsN A R.key R.n.toNat = true ∧ Vals.fitsN B R.val R.n.toNat = true := by
   simp only [diffC, Bool.and_eq_true] at hb
   obtain ⟨⟨hcb, hk⟩, hv⟩ := hb
-  have hc := (codes_faithful_wf (.prod A B) _ (Obj.codesC_fits (.prod A B) _ hcb)).1
-  have e : ∀ {α β : Type} (f : α → β) (a b : α), #v[a, b].map f = #v[f a, f b] := fun _ _ _ => by simp
-  have hp : pairsOK(R, S) := by rw [pairs_eq_codes, e]; exact hc
-  exact rep_diff R S hp (pickFits_of_fitsN A R.key _ hk _ (by simp)) (pickFits_of_fitsN B R.val _ hv _ (by simp)) a b
+  exact ⟨by rw [pairs_eq_codes, map_pair]; exact (codes_faithful_wf (.prod A B) _ (Obj.codesC_fits (.prod A B) _ hcb)).1,
+    hk, hv⟩
+
+/-- **`rep (R \ S)` under `diffC`'s bit**: `rep_diff` at `diffC_bits`. -/
+theorem rep_diffC {A B : Obj} (R S : Rel A B) (hb : (diffC R S).2 = true) (a : A.El) (b : B.El) :
+    rep (diffC R S).1 a b ↔ rep R a b ∧ ¬ rep S a b :=
+  let ⟨hp, hk, hv⟩ := diffC_bits R S hb; rep_diff R S hp (pickFits_range A _ hk) (pickFits_range B _ hv) a b
+
+open CompN in
+/-- **`−` is canonical where `R` is**: it keeps the rows of `R` that `anti` picks (`anti_sublist`). -/
+theorem canon_diffC {A B : Obj} (R S : Rel A B) (hb : (diffC R S).2 = true) (hR : R.Canon) : (diffC R S).1.Canon := by
+  obtain ⟨hp, hk, hv⟩ := diffC_bits R S hb
+  obtain ⟨-, hn0, -⟩ := hp.2 (k := 0) (by decide)
+  replace hn0 : ((pairs #v[R, S])[0]'Nat.zero_lt_two).n = R.n := hn0
+  show (R \ S).Canon
+  rw [diff_eq_misses]
+  exact canon_rows R hR _ (by rw [← hn0]; exact anti_sublist _ _) hk hv
 
 /-- `filterMap` of a guarded `some` is `map` after `filter`: how `Vals.row` reads an array's cells. -/
 theorem filterMap_ite {α β : Type _} (p : α → Prop) [DecidablePred p] (g : α → β) :
@@ -605,7 +617,12 @@ theorem rep_thinLOn {B : Obj} {n : USize} (q : CRel (.prod B B) (.prod B B) → 
 /-- **`CRel.diff` read back under its bit**: `rep_diffC`. -/
 theorem rep_diff {A B : Obj} (R S : CRel A B) (hb : (diff R S).ok = true) (a : A.El) (b : B.El) :
     rep (diff R S).rel a b ↔ rep R.rel a b ∧ ¬ rep S.rel a b := by
-  have e : diff R S = _ := guard_eq ok hb; rw [e] at hb ⊢; rw [rep_ofC hb]; replace hb := (ofC_ok hb).1; exact rep_diffC R.rel S.rel hb a b
+  have e : diff R S = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_diffC R.rel S.rel hb a b
+
+/-- **`CRel.diff` is canonical where `R` is**: `canon_diffC`. -/
+theorem canon_diff {A B : Obj} (R S : CRel A B) (hb : (diff R S).ok = true) (hR : R.rel.Canon) :
+    (diff R S).rel.Canon := by
+  have e : diff R S = _ := guard_eq ok hb; rw [e] at hb ⊢; exact canon_diffC R.rel S.rel hb hR
 
 end CRel
 

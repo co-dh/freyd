@@ -6,9 +6,10 @@ namespace CRel
 open QLean QLean.Kernel LeetQ.Rel.Alg
 variable {A B C D E : Obj}
 
-/-- `R ≫ ¬ran(T)`, ok where both inputs are and `antiJoinC` ran within capacity. -/
+/-- `R ≫ ¬ran(T)`, ok where both inputs are and `antiJoinC` ran within capacity. Its rows are a subsequence of `R`'s,
+    canonical where `R` is (`canon_antiJoin`), so it skips `canonC`. -/
 def antiJoin (R : CRel A B) (T : CRel B B) : CRel A B :=
-  guard (R.ok && T.ok) fun _ => ofC (antiJoinC R.rel T.rel)
+  guard (R.ok && T.ok) fun _ => let r := antiJoinC R.rel T.rel; ⟨r.1, r.2⟩
 
 /-- `⊤` on the universes `Ua`, `Ub`, ok where `topC` ran within capacity. -/
 def top {ma mb : USize} (Ua : Vals A ma) (Ub : Vals B mb) : CRel A B := ofC (topC Ua Ub)

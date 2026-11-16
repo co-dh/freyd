@@ -52,8 +52,9 @@ def guard {α : Type} [Inhabited α] (b : Bool) (k : Unit → α) : α := if b t
 /-- `R ≫ S`, ok where both inputs are and `compC` ran within capacity. -/
 def comp (R : CRel A B) (S : CRel B C) : CRel A C := guard (R.ok && S.ok) fun _ => ofC (compC R.rel S.rel)
 
-/-- `R ∩ S`, ok where both inputs are and `interC` ran within capacity. -/
-def inter (R S : CRel A B) : CRel A B := guard (R.ok && S.ok) fun _ => ofC (interC R.rel S.rel)
+/-- `R ∩ S`, ok where both inputs are and `interC` ran within capacity. Its rows are a subsequence of `R`'s, canonical
+    where `R` is (`canon_inter`), so it skips `canonC`. -/
+def inter (R S : CRel A B) : CRel A B := guard (R.ok && S.ok) fun _ => let r := interC R.rel S.rel; ⟨r.1, r.2⟩
 
 /-- `R ∪ S`, ok where both inputs are and `unionC` ran within capacity. -/
 def union (R S : CRel A B) : CRel A B := guard (R.ok && S.ok) fun _ => ofC (unionC R.rel S.rel)

@@ -47,8 +47,9 @@ def thinLOn {B : Obj} {n : USize} (q : CRel (.prod B B) (.prod B B) → CRel (.p
     (X : Vals (.arr B) n) : CRel (.arr B) (.arr B) :=
   ofC (thinLOnC (fun D => ((q ⟨D, true⟩).rel, (q ⟨D, true⟩).ok)) X)
 
-/-- `R − S`, ok where both inputs are and `diffC` ran within capacity. -/
-def diff {A B : Obj} (R S : CRel A B) : CRel A B := guard (R.ok && S.ok) fun _ => ofC (diffC R.rel S.rel)
+/-- `R − S`, ok where both inputs are and `diffC` ran within capacity. Its rows are a subsequence of `R`'s, canonical
+    where `R` is (`canon_diff`), so it skips `canonC`. -/
+def diff {A B : Obj} (R S : CRel A B) : CRel A B := guard (R.ok && S.ok) fun _ => let r := diffC R.rel S.rel; ⟨r.1, r.2⟩
 
 end CRel
 end LeetQ.Rel

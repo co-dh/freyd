@@ -34,16 +34,10 @@ theorem domC_oneFit (R : Rel A B) (hb : (domC R).2 = true) : oneFit(A, Rel.n R, 
   simp only [domC, distinctCoreflC, Bool.and_eq_true] at hb
   exact ⟨Obj.codesC_fits A _ hb.1, pickFits_of_fitsN A R.key _ hb.2 _ (by simp)⟩
 
-/-- `diffC`'s bit is `rep_diff`'s premises (`diffOK`), as `rep_interC`'s: the product codes' bit its `hc`
-    (`codesC_fits`, `codes_faithful_wf`, `pairs_eq_codes`), the `fitsN` bits its `hk`, `hv`. -/
-theorem diffC_ok (R S : Rel A B) (hb : (diffC R S).2 = true) : diffOK(A, B, R, S) := by
-  simp only [diffC, Bool.and_eq_true] at hb
-  obtain ⟨⟨hcb, hk⟩, hv⟩ := hb
-  have hc := (codes_faithful_wf (.prod A B) _ (Obj.codesC_fits (.prod A B) _ hcb)).1
-  have e : ∀ {α β : Type} (f : α → β) (a b : α), #v[a, b].map f = #v[f a, f b] := fun _ _ _ => by simp
-  have hp : pairsOK(R, S) := by rw [pairs_eq_codes, e]; exact hc
-  exact fun _ e' => by
-    subst e'; exact ⟨hp, pickFits_of_fitsN A R.key _ hk _ (by simp), pickFits_of_fitsN B R.val _ hv _ (by simp)⟩
+/-- `diffC`'s bit is `rep_diff`'s premises (`diffOK`): `diffC_bits`, the `fitsN` bits read as picks. -/
+theorem diffC_ok (R S : Rel A B) (hb : (diffC R S).2 = true) : diffOK(A, B, R, S) :=
+  let ⟨hp, hk, hv⟩ := diffC_bits R S hb
+  fun _ e' => by subst e'; exact ⟨hp, pickFits_range A _ hk, pickFits_range B _ hv⟩
 
 
 /-- `antiJoinC`'s bit is `rep_antiJoin`'s premises (`ajOK`), as `rep_antiJoinC`'s. -/
