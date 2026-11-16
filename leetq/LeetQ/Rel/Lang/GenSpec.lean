@@ -93,6 +93,15 @@ theorem val_sound {A B : Obj} (R : Rel A B × Bool) : Sound (val A B R) (rep R.1
 theorem uni_sound {A : Obj} {m : USize} (U : Vals A m × Bool) : Sound (uni A m U) (rep (idU U.1)) :=
   fun _ _ _ _ _ _ => Iff.rfl
 
+/-- `succ`, `arith`, `≤`, `<` on a declared object's universe `uni` read its literal `U` directly: the one
+    definition of each is also the literal form, so no second copy can drift from it. -/
+theorem uni_lits {m : USize} (U : Vals .long m × Bool) (k : UInt8) :
+    succ (uni .long m U) = (fun D => also U.2 (CRel.comp ⟨D, true⟩ (CRel.succ U.1))) ∧
+    arith k (uni .long m U) = (fun D => CRel.comp ⟨Alg.arith k D.val, true⟩ ⟨idU U.1, U.2⟩) ∧
+    leq (uni .long m U) = (fun _ => also U.2 (CRel.leq U.1)) ∧
+    lt (uni .long m U) = (fun _ => also U.2 (CRel.lt U.1)) :=
+  ⟨rfl, rfl, rfl, rfl⟩
+
 theorem zero_sound {A B : Obj} : Sound (zero A B) 𝟘 := fun _ _ _ x y _ => by
   show rep (Alg.zero : Rel A B) x y ↔ _; rw [rep_zero]
 

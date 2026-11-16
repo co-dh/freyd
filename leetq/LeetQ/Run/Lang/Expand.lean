@@ -598,12 +598,6 @@ def liftE {α : Type} (x : Except String α) : RM α := match x with
   | .ok a => pure a
   | .error e => throwError "rel_program expansion: {e}"
 
-/-- A declared object's universe, the literal `U` is (under its number); none for an object variable's. -/
-def litU : Tm .long .long false → Option ((m : USize) × Vals .long m)
-  | .uni (m := m) U => some ⟨m, U⟩
-  | .share _ R => litU R
-  | _ => none
-
 /-- Row `r`'s constant at `A`, `B`, under the wrapper whose argument it fits: its last explicit argument is that
     argument's, every other is solved by unifying the constant's type with the wrapper's. -/
 def primE (r : Prim) (A B : Obj) : MetaM Lean.Expr := do
@@ -735,19 +729,10 @@ partial def node (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bo
   | .arr B, _, _, .thinL Q => return g ``Gen.thinL #[oE B, ← c Q]
   | _, .arr B, _, .merge Q => return g ``Gen.merge #[oE B, ← c Q]
   | .prod X (.arr Y), _, _, .loop (d := d) F => return g ``Gen.loop #[oE X, oE Y, bE d, ← c F]
-  -- a declared universe is a literal; an object variable's is the constant's argument
-  | _, _, _, .succ U => match litU U with
-    | some ⟨m, U⟩ => return g ``Gen.succ #[uE m, ← liftE (valsE .long m U)]
-    | none => return g ``Gen.succF #[← c U]
-  | _, _, _, .arith k U => match litU U with
-    | some ⟨m, U⟩ => return g ``Gen.arith #[toExpr k, uE m, ← liftE (valsE .long m U)]
-    | none => return g ``Gen.arithF #[toExpr k, ← c U]
-  | _, _, _, .leq U => match litU U with
-    | some ⟨m, U⟩ => return g ``Gen.leq #[uE m, ← liftE (valsE .long m U)]
-    | none => return g ``Gen.leqF #[← c U]
-  | _, _, _, .lt U => match litU U with
-    | some ⟨m, U⟩ => return g ``Gen.lt #[uE m, ← liftE (valsE .long m U)]
-    | none => return g ``Gen.ltF #[← c U]
+  | _, _, _, .succ U => return g ``Gen.succ #[← c U]
+  | _, _, _, .arith k U => return g ``Gen.arith #[toExpr k, ← c U]
+  | _, _, _, .leq U => return g ``Gen.leq #[← c U]
+  | _, _, _, .lt U => return g ``Gen.lt #[← c U]
   | .arr E, V, _, .fold (d := d) e S => return g ``Gen.fold #[oE E, oE V, bE d, ← c e, ← c S]
   | _, _, _, .share _ R => c R
   | .prod I (.arr E), V, _, .foldI (d := d) (d' := d') e S =>

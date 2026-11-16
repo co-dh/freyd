@@ -145,14 +145,15 @@ def junc (A B C : Obj) (R : Fn false A C) (S : Fn false B C) : Fn false (.sum A 
   CRel.junc (R ()) (S ())
 /-- `Λ(R)` total on the keys `D`: `[]` at a key `R` relates to nothing (`CRel.lamOn`, `rep_lamOn`). -/
 def lam (A B : Obj) (d : Bool) (R : Fn d A B) : Fn true A (.arr B) := fun D => CRel.lamOn (R (Dem.of d D)) D.val
-def E (A B : Obj) (d : Bool) (R : Fn d A B) : Fn true (.arr A) (.arr B) := fun D =>
-  let k := CRel.ran (CRel.mem D.val); also k.ok (CRel.E (R (Dem.of d k.rel)) D.val)
-def filter (B : Obj) (d : Bool) (R : Fn d B B) : Fn true (.arr B) (.arr B) := fun D =>
-  let k := CRel.ran (CRel.mem D.val); also k.ok (CRel.filter (R (Dem.of d k.rel)) D.val)
-def takewhile (B : Obj) (d : Bool) (R : Fn d B B) : Fn true (.arr B) (.arr B) := fun D =>
-  let k := CRel.ran (CRel.mem D.val); also k.ok (CRel.takewhile (R (Dem.of d k.rel)) D.val)
-def map (A B : Obj) (d : Bool) (R : Fn d A B) : Fn true (.arr A) (.arr B) := fun D =>
-  let k := CRel.ran (CRel.mem D.val); also k.ok (CRel.map (R (Dem.of d k.rel)) D.val)
+/-- `op` on `R` read at the elements of `D`'s arrays, `ran(∋)` at `D`: the one form of `E`, `filter`, `takewhile`,
+    `map`. -/
+def elems (A B : Obj) (d : Bool) (op : {n : USize} → CRel A B → Vals (.arr A) n → CRel (.arr A) (.arr B))
+    (R : Fn d A B) : Fn true (.arr A) (.arr B) := fun D =>
+  let k := CRel.ran (CRel.mem D.val); also k.ok (op (R (Dem.of d k.rel)) D.val)
+def E (A B : Obj) (d : Bool) (R : Fn d A B) : Fn true (.arr A) (.arr B) := elems A B d CRel.E R
+def filter (B : Obj) (d : Bool) (R : Fn d B B) : Fn true (.arr B) (.arr B) := elems B B d CRel.filter R
+def takewhile (B : Obj) (d : Bool) (R : Fn d B B) : Fn true (.arr B) (.arr B) := elems B B d CRel.takewhile R
+def map (A B : Obj) (d : Bool) (R : Fn d A B) : Fn true (.arr A) (.arr B) := elems A B d CRel.map R
 
 /-- An order held as its pair test, run on the pairs the operator compares. -/
 def est (B : Obj) (Q : Fn true (.prod B B) (.prod B B)) : Fn true (.arr B) B := fun D =>
@@ -179,20 +180,14 @@ def onKeys {A B : Obj} (d : Bool) (F : Fn d A B) (P : CRel A A) : CRel A B :=
 
 def loop (X Y : Obj) (d : Bool) (F : Fn d (.prod X Y) X) : Fn true (.prod X (.arr Y)) X := fun D =>
   CRel.loopOn (onKeys d F) ⟨D, true⟩
-def succ (m : USize) (U : Arr .long m × Bool) : Fn true .long .long := fun D =>
-  also U.2 (CRel.comp ⟨D, true⟩ (CRel.succ U.1))
-/-- A result outside the declared object has no row, as `succ` at its top. -/
-def arith (k : UInt8) (m : USize) (U : Arr .long m × Bool) : Fn true (.prod .long .long) .long := fun D =>
-  CRel.comp ⟨Alg.arith k D.val, true⟩ ⟨idU U.1, U.2⟩
-def leq (m : USize) (U : Arr .long m × Bool) : Fn false .long .long := fun _ => also U.2 (CRel.leq U.1)
-def lt (m : USize) (U : Arr .long m × Bool) : Fn false .long .long := fun _ => also U.2 (CRel.lt U.1)
-/-- `succ`, a value verb, `≤`, `<` on the universe `U` a constant is given for an object variable: its keys. -/
-def succF (U : Fn false .long .long) : Fn true .long .long := fun D =>
+/-- `succ`, a value verb, `≤`, `<` on the universe `U`: its keys. A declared object's universe is `uni` of its
+    literal (`uni_lits`), an object variable's the constant's argument. A result outside `U` has no row. -/
+def succ (U : Fn false .long .long) : Fn true .long .long := fun D =>
   let u := U (); also u.ok (CRel.comp ⟨D, true⟩ (CRel.succ u.rel.key))
-def arithF (k : UInt8) (U : Fn false .long .long) : Fn true (.prod .long .long) .long := fun D =>
+def arith (k : UInt8) (U : Fn false .long .long) : Fn true (.prod .long .long) .long := fun D =>
   CRel.comp ⟨Alg.arith k D.val, true⟩ (U ())
-def leqF (U : Fn false .long .long) : Fn false .long .long := fun _ => let u := U (); also u.ok (CRel.leq u.rel.key)
-def ltF (U : Fn false .long .long) : Fn false .long .long := fun _ => let u := U (); also u.ok (CRel.lt u.rel.key)
+def leq (U : Fn false .long .long) : Fn false .long .long := fun _ => let u := U (); also u.ok (CRel.leq u.rel.key)
+def lt (U : Fn false .long .long) : Fn false .long .long := fun _ => let u := U (); also u.ok (CRel.lt u.rel.key)
 def fold (E V : Obj) (d : Bool) (e : Fn false V V) (S : Fn d (.prod E V) V) : Fn true (.arr E) V := fun D =>
   let v := e (); also v.ok (CRel.foldOn v.rel.val (onKeys d S) D.val)
 
