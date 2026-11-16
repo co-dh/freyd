@@ -18,7 +18,7 @@ import LeetQ.Rel.Programs.Quicksort
 import LeetQ.Rel.Programs.SudokuPC
 import LeetQ.Rel.Programs.SudokuPC9
 
-/-! The representation theorems `n.rep_x` (`rel_rep`) of every program the modules above define, in the order
+/-! The representation theorems `n.rep_x` (`Expand.rep`) of every program the modules above define, in the order
     they were defined: the registry lists them, so a program is checked here as soon as its module is imported. -/
 
 open Lean Elab Command in

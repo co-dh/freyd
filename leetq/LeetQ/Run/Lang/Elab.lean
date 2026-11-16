@@ -625,8 +625,8 @@ def lProd : Pre × OTy × OTy → Pre × OTy × OTy → Pre × OTy × OTy
 def lJunc : Pre × OTy × OTy → Pre × OTy × OTy → M (Pre × OTy × OTy)
   | (R, a, c), (S, b, c') => do
     unify p "the target of the case's second part" c' c
-    pure (join (comp R (pair (comp (outl a c) (inl a b)) (outr a c)))
-      (comp S (pair (comp (outl b c) (inr a b)) (outr b c))), .sum a b, c)
+    pure (join (comp R (pair (comp (outl a c) (Pre.prim inlRow [] a (.sum a b))) (outr a c)))
+      (comp S (pair (comp (outl b c) (Pre.prim inrRow [] b (.sum a b))) (outr b c))), .sum a b, c)
 
 /-- `Λ(R)` lifted on the sources `S : I ⟶ a` of each key, `Rπ₁` (`dom`) when none: `⟨𝟙,S⟩⟨π₂,Λ(Rᴵ)⟩`. `Λ` takes
     `S = ⊤` onto `a`'s universe, being total; `E` and `thin` take `dom`, as their `a = [x]` has no universe. -/

@@ -1,10 +1,10 @@
 import LeetQ.Run.Lang.Embed
 import LeetQ.Rel.Lang.GenSpec
 
-/-! `rel_rep n`: the proof that the code of the program `n` computes its terms. `rel_program n` emits only the
+/-! `Expand.rep n`: the proof that the code of the program `n` computes its terms. `rel_program n` emits only the
     program and records each definition's numbered term with the expansion's constants (`RegEntry.rep`); this
-    command reads them back and assembles `n.rep_x : (n.x).ok = true → rep (n.x).rel = ⟦x⟧` from `GenSpec`'s
-    lemmas, so a program's module imports no proof and only a module that wants the theorems imports this one. -/
+    function reads them back and assembles `n.rep_x : (n.x).ok = true → rep (n.x).rel = ⟦x⟧` from `GenSpec`'s
+    lemmas, so a program's module imports no proof; `TestRep` runs it on every program the registry lists. -/
 
 namespace LeetQ.Rel.Lang
 
@@ -39,7 +39,7 @@ partial def prf (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Boo
   let some p ← (match t with | .share _ R => prfNode pre ρ R | t => prfNode pre ρ t) | return none
   -- `const_sound` at `c` itself, so the kernel meets `c =?= node(t) ()` and unfolds `c`, never the data
   let T := (← inferType p).appArg!
-  let some (.defnInfo ci) := (← getEnv).find? c | throwError "rel_rep: internal: no definition `{c}`"
+  let some (.defnInfo ci) := (← getEnv).find? c | throwError "Expand.rep: internal: no definition `{c}`"
   let hb := g ``Gen.Sound.eq #[oE A, oE B, ci.value.appFn!, T, p]
   let ty := g ``Gen.Sound #[bE false, oE A, oE B, cd, T]
   addDecl (.thmDecl { name := h, levelParams := [], type := ty, value := g ``Gen.const_sound #[oE A, oE B, mkConst c, T, hb] })
@@ -103,7 +103,7 @@ partial def prfNode (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d :
         let e ← node pre ρ t
         let some v ← fitConst s (fun t => pure (t.isAppOf ``Gen.Sound)) (← hs.mapM fun h => return (h, ← inferType h))
             fun _ ty => match ty.getAppArgs[3]? with | some c => isDefEq c e | none => pure false
-          | throwError "rel_rep: `{s}` given {hs.size} `Sound` proofs is no lemma at the node `{e}`"
+          | throwError "Expand.rep: `{s}` given {hs.size} `Sound` proofs is no lemma at the node `{e}`"
         pure (some v)
       | none => modify (fun (m, g) => (m, g <|> some r.sig.1)); pure none
     | none =>
@@ -124,7 +124,7 @@ run_cmd do
     the definitions with none, each with the first combinator `GenSpec` has no lemma for. -/
 def rep (n : Name) : MetaM Unit := do
   let some (ds, shared, codes) := (relRegistry.getState (← getEnv)).reps[n]?
-    | throwError "rel_rep: `{n}` is no rel_program"
+    | throwError "Expand.rep: `{n}` is no rel_program"
   -- `emit`'s constants by value and by number, so `code` finds each one and adds none
   let st : Std.HashMap Lean.Expr Name × Std.HashMap Nat Lean.Expr := (.ofList shared.toList, .ofList codes.toList)
   let unproved ← (do
@@ -147,13 +147,6 @@ def rep (n : Name) : MetaM Unit := do
   let sty := pairT (mkConst ``String) (mkConst ``String)
   addConst (n ++ `unproved) (listT sty) (← mkListLit sty (unproved.map fun (x, c) =>
     mkApp4 (mkConst ``Prod.mk [0, 0]) (mkConst ``String) (mkConst ``String) (toExpr x) (toExpr c)))
-
-/-- `rel_rep n`: `n.rep_x` for each definition `x` of the program `n` the proofs reach, and `n.unproved` (`rep`). -/
-syntax (name := relRep) "rel_rep " ident : command
-
-@[command_elab relRep] def elabRelRep : CommandElab := fun stx => do
-  let n ← liftCoreM (realizeGlobalConstNoOverloadWithInfo stx[1])
-  liftTermElabM (rep n)
 
 end Expand
 

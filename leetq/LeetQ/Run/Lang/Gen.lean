@@ -142,8 +142,8 @@ def junc (A B C : Obj) (R : Fn false A C) (S : Fn false B C) : Fn false (.sum A 
   CRel.junc (R ()) (S ())
 /-- `Λ(R)` total on the keys `D`: `[]` at a key `R` relates to nothing (`CRel.lamOn`, `rep_lamOn`). -/
 def lam (A B : Obj) (d : Bool) (R : Fn d A B) : Fn true A (.arr B) := fun D => CRel.lamOn (R (Dem.of d D)) D.val
-/-- `f` on `R` read at the elements of `D`'s arrays, `ran(∋)` at `D`: the one form of `E`, `map` and the rows
-    given a relation on elements (`filter`, `takewhile`). -/
+/-- `f` on `R` read at the elements of `D`'s arrays, `ran(∋)` at `D`: the one form of `E` and the rows
+    given a relation on elements (`F`, `filter`, `takewhile`). -/
 def elems (A B C : Obj) (d : Bool) (R : Fn d A B) (f : {n : USize} → CRel A B → Vals (.arr A) n → CRel (.arr A) C) :
     Fn true (.arr A) C := fun D =>
   let k := CRel.ran (CRel.mem D.val); also k.ok (f (R (Dem.of d k.rel)) D.val)
