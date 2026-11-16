@@ -775,125 +775,23 @@ partial def node (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bo
 
 end
 
-/-! ### The proof that the code computes the term (`GenSpec`) -/
-
-/-- The theorem of each shared constant (`n.c.c<i>.rep`), and the first combinator met with no lemma. -/
-abbrev PM := StateT (Std.HashMap Name Name × Option Name) RM
-
-/-- The constant `n`, which the proofs cite by name: the expander runs as native code, so it does not import the
-    proof modules (`GenSpec`); the module running `rel_program` does, through `Programs.Prelude`. -/
-def need (n : Name) : MetaM Name := do
-  unless (← getEnv).contains n do
-    throwError "rel_program expansion: `{n}` is not in scope; import `LeetQ.Rel.Lang.GenSpec`, which brings it"
-  pure n
-
-/-- The `GenSpec` lemma `Gen.s` (`need`). -/
-def gs (s : Name) : MetaM Name := need (`LeetQ.Rel.Lang.Gen ++ s)
-
-/-- The lemma `Gen.n` at the proofs `hs` of its parts, its objects inferred from them; none where a part has none. -/
-def lem (n : Name) (hs : List (Option Lean.Expr)) : PM (Option Lean.Expr) := do
-  let some as := hs.mapM id | return none
-  some <$> mkAppM (← gs n) as.toArray
-
-/-- A leaf lemma `Gen.n` whose objects only the term gives. -/
-def lemO (n : Name) (as : Array (Option Lean.Expr)) : PM (Option Lean.Expr) := do some <$> mkAppOptM (← gs n) as
-
-mutual
-
-/-- A proof of `Gen.Sound (code t) T`, `T` the allegory's term; a closed `t` cites its constant's theorem. -/
-partial def prf (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bool} (t : Tm A B d) :
-    PM (Option Lean.Expr) := do
-  if !closed t then return ← prfNode pre ρ t
-  let cd ← code pre ρ t
-  let c := cd.appArg!.constName!
-  if let some h := (← get).1[c]? then return some (mkConst h)
-  let h := c ++ `rep
-  -- under its number, `t`'s node: proving `.share k R` by `R`'s own `prf` would add `h` twice
-  let some p ← (match t with | .share _ R => prfNode pre ρ R | t => prfNode pre ρ t) | return none
-  -- `const_sound` at `c` itself, so the kernel meets `c =?= node(t) ()` and unfolds `c`, never the data
-  let T := (← inferType p).appArg!
-  let some (.defnInfo ci) := (← getEnv).find? c | throwError "rel_program expansion: internal: no definition `{c}`"
-  let hb := g (← gs `Sound.eq) #[oE A, oE B, ci.value.appFn!, T, p]
-  let ty := g (← gs `Sound) #[bE false, oE A, oE B, cd, T]
-  addDecl (.thmDecl { name := h, levelParams := [], type := ty, value := g (← gs `const_sound) #[oE A, oE B, mkConst c, T, hb] })
-  modify fun (m, g) => (m.insert c h, g)
-  pure (some (mkConst h))
-
-/-- A proof of `Gen.PSound (planOr t) T`, following `planOr`. -/
-partial def pprf (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bool} (t : Tm A B d) :
-    PM (Option Lean.Expr) := do
-  let p {X Y : Obj} {e : Bool} (u : Tm X Y e) := prf pre ρ u
-  let q {X Y : Obj} {e : Bool} (u : Tm X Y e) := pprf pre ρ u
-  if closed t then return ← lem `pleaf_sound [← p t]
-  match A, B, d, t with
-  | _, _, _, .val _ | _, _, _, .uni _ | _, _, _, .var _ => lem `pleaf_sound [← prfNode pre ρ t]
-  | _, _, _, .share _ R | _, _, _, .own R => q R
-  | _, _, _, .comp R S => lem `pcomp_sound [← q R, ← q S]
-  | _, _, _, .conv R => lem `pconv_sound [← q R]
-  | _, _, _, .meet R S => lem `pmeet_sound [← q R, ← q S]
-  | _, _, _, .join R S => lem `pjoin_sound [← q R, ← q S]
-  | _, _, _, .diff R S => lem `pdiff_sound [← q R, ← q S]
-  | _, _, _, .ldiv R S UB UC => lem `pldiv_sound [← q R, ← q S, ← p UB, ← p UC]
-  | _, _, _, _ => lem `pleaf_sound [← p t]
-
-/-- A proof of `Gen.Sound (node t) T`, one `GenSpec` lemma per node, following `node`. -/
-partial def prfNode (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bool} (t : Tm A B d) :
-    PM (Option Lean.Expr) := do
-  let p {X Y : Obj} {e : Bool} (u : Tm X Y e) := prf pre ρ u
-  let q {X Y : Obj} {e : Bool} (u : Tm X Y e) := pprf pre ρ u
-  match A, B, d, t with
-  | _, _, _, .val R => lem `val_sound [some (← liftE (relE R))]
-  | A, _, _, .uni (m := m) U => lemO `uni_sound #[oE A, uE m, ← liftE (valsE A m U)]
-  | A, B, _, .zero => lemO `zero_sound #[oE A, oE B]
-  | A, _, _, .id => lemO `id_sound #[oE A]
-  | A, _, _, .top V => match ← p V with
-    | some h => lemO `top_sound #[oE A, none, none, none, h]
-    | none => pure none
-  | _, B, _, .mem => lemO `mem_sound #[oE B]
-  | .prod A B, _, _, .outl => lemO `outl_sound #[oE A, oE B]
-  | .prod A B, _, _, .outr => lemO `outr_sound #[oE A, oE B]
-  | A, .sum _ B, _, .inl => lemO `inl_sound #[oE A, oE B]
-  | B, .sum A _, _, .inr => lemO `inr_sound #[oE A, oE B]
-  | _, _, true, .comp R S => lem `comp_sound [← p R, ← p S]
-  | _, _, false, .comp R S => lem `compB_sound [← q R, ← q S]
-  | _, _, _, .conv R => lem `conv_sound [← p R]
-  | _, _, _, .meet (d := false) (e := false) R S => lem `meetB_sound [← q R, ← q S]
-  | _, _, _, .diff (d := false) (e := false) R S => lem `diffB_sound [← q R, ← q S]
-  | _, _, _, .meet R S => lem `meet_sound [← p R, ← p S]
-  | _, _, _, .join R S => lem `join_sound [← p R, ← p S]
-  | _, _, _, .diff R S => lem `diff_sound [← p R, ← p S]
-  | _, _, _, .dom R => lem `dom_sound [← p R]
-  | _, _, _, .ran R => lem `ran_sound [← p R]
-  | _, _, _, .ldiv R S UB UC => lem `ldivB_sound [← q R, ← q S, ← p UB, ← p UC]
-  | _, _, _, .rdiv R S UA UB => lem `rdiv_sound [← p R, ← p S, ← p UA, ← p UB]
-  | _, _, _, .pair R S => lem `pair_sound [← p R, ← p S]
-  | _, _, _, .prod R S => lem `prod_sound [← p R, ← p S]
-  | _, _, _, .junc R S => lem `junc_sound [← p R, ← p S]
-  | _, _, _, .own R | _, _, _, .share _ R => p R
-  | _, _, _, .prim r => modify (fun (m, g) => (m, g <|> some r.sig.1)); pure none
-  | _, _, _, _ =>
-    -- a call is named by its constant, not by the `Gen.ofPl` that runs its plan
-    let e ← node pre ρ t
-    let f := (if e.isAppOf ``Gen.ofPl then e.appArg! else e).getAppFn.constName?
-    modify fun (m, g) => (m, g <|> f); pure none
-
-end
-
 /-- `k` under one local of each type `tys`, closed over them: `(∀ xs, ty, fun xs => v)` of `k`'s `(ty, v)`. -/
-def lams (tys : List Lean.Expr) (k : Array Lean.Expr → PM (Lean.Expr × Lean.Expr)) (xs : Array Lean.Expr := #[]) :
-    PM (Lean.Expr × Lean.Expr) :=
+def lams (tys : List Lean.Expr) (k : Array Lean.Expr → RM (Lean.Expr × Lean.Expr)) (xs : Array Lean.Expr := #[]) :
+    RM (Lean.Expr × Lean.Expr) :=
   match tys with
   | [] => do let (t, v) ← k xs; pure (← mkForallFVars xs t, ← mkLambdaFVars xs v)
   | ty :: tys => withLocalDeclD `x ty fun x => lams tys k (xs.push x)
 
 /-- An entry of the registry (module design §2.3): a definition elaborated once, its constant (`once`); a program's
     homes, the programs its names reach, in the order they are read (`read`); a program's scope, its namespace and
-    `open`s, which its names resolve in; a definition or object of the program `home`. -/
+    `open`s, which its names resolve in; a definition or object of the program `home`; a program's numbered closed
+    definitions with the constants `code` gave them by value and by number, which `rel_rep` proves from. -/
 inductive RegEntry
   | call (c : Name) (s : Sig)
   | chain (n : Name) (ns : List Name)
   | prog (n : Name) (ns : Name) (opens : List OpenDecl)
   | ext (e : Ext) (home : Name)
+  | rep (n : Name) (ds : List (String × Res)) (shared : Array (Lean.Expr × Name)) (codes : Array (Nat × Lean.Expr))
   deriving Inhabited
 
 /-- The registry, written only by `rel_program`: the constants a use may call (`walk`), each program's homes,
@@ -904,6 +802,7 @@ structure Registry where
   chains : List (Name × List Name) := []
   progs : Array (Name × Name × List OpenDecl) := #[]
   exts : Std.HashMap Name (Ext × Name) := {}
+  reps : Std.HashMap Name (List (String × Res) × Array (Lean.Expr × Name) × Array (Nat × Lean.Expr)) := {}
 
 instance : Inhabited Registry := ⟨{}⟩
 
@@ -912,6 +811,7 @@ def Registry.add (r : Registry) : RegEntry → Registry
   | .chain n ns => { r with chains := (n, ns) :: r.chains }
   | .prog n ns os => { r with progs := r.progs.push (n, ns, os) }
   | .ext e h => { r with exts := r.exts.insert e.const (e, h) }
+  | .rep n ds sh cs => { r with reps := r.reps.insert n (ds, sh, cs) }
 
 initialize relRegistry : SimplePersistentEnvExtension RegEntry Registry ←
   registerSimplePersistentEnvExtension {
@@ -946,7 +846,7 @@ def emit (n : Name) (r : Read) : MetaM Unit := do
   addConst (n ++ `objs) (mkConst ``Objs) (← objsE objs)
   let os := mkConst (n ++ `objs)
   let app (t : Lean.Expr) := mkApp t (mkConst ``Unit.unit)
-  let (entries, printed, checked, unproved) ← (do
+  let ((entries, printed, checked), st) ← (do
     -- each definition elaborated once: `n.x : (A₁ … : Obj) → Pl U₁ → … → Pl R₁ → … → Pl d A B`, generic over the
     -- objects of its generic variables, then plans in and out, the universes it reads then its parameters, so a
     -- caller's plan runs through the call; `n.x.conv` its converse, when its body has one (`convTm`)
@@ -957,7 +857,7 @@ def emit (n : Name) (r : Read) : MetaM Unit := do
       let vo (k : Nat) : Obj := if gen.getD k false then (varObj k).getD .long else .long
       let rk := (List.range nv).filter (reads.getD · false)
       let gk := (List.range nv).filter (gen.getD · false)
-      let mk (k : Name) (X Y : Obj) (e : Bool) (u : Tm X Y e) : PM Unit := do
+      let mk (k : Name) (X Y : Obj) (e : Bool) (u : Tm X Y e) : RM Unit := do
         let (ty, v) ← lams (gk.map fun _ => mkConst ``Obj) fun xs => do
           -- each placeholder `varObj k` becomes its binder
           let sub (z : Lean.Expr) := z.replace fun s =>
@@ -969,39 +869,21 @@ def emit (n : Name) (r : Read) : MetaM Unit := do
       if let some ⟨e, u⟩ := cv then mk (c ++ `conv) B A e u
       mk c A B d t
       modifyEnv (relRegistry.addEntry · (.call key (sigOf o)))
-    let mut gaps : List (String × String) := []
     let mut es := []
     for (x, ⟨A, B, d, t⟩) in ds do
       let v ← code n [] t
       let k := Parse.constOf n x
       unless !d do throwError "rel_program expansion: internal: `{x}` needs keys"
       addConst k (mkApp2 (mkConst ``CRel) (oE A) (oE B)) (app v)
-      -- `n.rep_x : (n.x).ok = true → rep (n.x).rel = ⟦x⟧`, assembled from `GenSpec`'s lemmas
-      modify fun (m, _) => (m, none)
-      let body : PM (Option String) := do
-        match ← prf n [] t with
-        | some p =>
-          let kc := mkConst k
-          let ty ← mkArrow (← mkEq (← mkAppM ``CRel.ok #[kc]) (toExpr true))
-            (← mkEq (← mkAppM (← need `LeetQ.Rel.Rep.rep) #[← mkAppM ``CRel.rel #[kc]]) (← inferType p).appArg!)
-          let pv ← mkAppM (← gs `Sound.eq) #[p]
-          addDecl (.thmDecl { name := n ++ Name.mkSimple s!"rep_{x}", levelParams := [], type := ty, value := pv })
-          pure none
-        | none => pure (((← get).2.map toString).getD "?")
-      -- a fresh heartbeat count per theorem, since the expansion has spent the command's
-      if let some c ← withCurrHeartbeats body then gaps := gaps ++ [(x, c)]
       es := es ++ [g ``Gen.entry #[toExpr x, oE A, oE B, mkConst k]]
     let ps ← ps.mapM fun (x, ⟨A, B, t⟩, s, u) => do
       pure (g ``printText #[oE A, oE B, os, toExpr x, toExpr s, toExpr u, app (← code n [] t)])
     let cs ← cs.mapM fun (p, x, y, eq, s, u, ⟨A, B, R, S⟩) => do
       pure (g ``checkErr #[oE A, oE B, os, toExpr p, toExpr x, toExpr y, toExpr eq, toExpr s, toExpr u,
         app (← code n [] R), app (← code n [] S)])
-    pure (es, ps, cs, gaps) : PM (List Lean.Expr × List Lean.Expr × List Lean.Expr × List (String × String))).run'
-      ({}, none) |>.run' ({}, {})
-  -- the definitions with no `rep_x` yet, each with the first combinator `GenSpec` has no lemma for
-  let sty := pairT (mkConst ``String) (mkConst ``String)
-  addConst (n ++ `unproved) (listT sty) (← mkListLit sty (unproved.map fun (x, c) =>
-    mkApp4 (mkConst ``Prod.mk [0, 0]) (mkConst ``String) (mkConst ``String) (toExpr x) (toExpr c)))
+    pure (es, ps, cs) : RM (List Lean.Expr × List Lean.Expr × List Lean.Expr)).run ({}, {})
+  -- what `rel_rep` proves from: the numbered definitions, and `code`'s constants so it adds none of them again
+  modifyEnv (relRegistry.addEntry · (.rep n ds st.1.toArray st.2.toArray))
   let ety := pairT (mkConst ``String) (mkConst ``Gen.Gv)
   addConst (n ++ `expanded) (listT ety) (← mkListLit ety entries)
   let pty := pairT (mkConst ``String) (mkConst ``Bool)
