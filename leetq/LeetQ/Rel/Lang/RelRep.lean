@@ -78,8 +78,6 @@ partial def prfNode (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d :
     | none => pure none
   | .prod A B, _, _, .outl => lemO ``Gen.outl_sound #[oE A, oE B]
   | .prod A B, _, _, .outr => lemO ``Gen.outr_sound #[oE A, oE B]
-  | A, .sum _ B, _, .inl => lemO ``Gen.inl_sound #[oE A, oE B]
-  | B, .sum A _, _, .inr => lemO ``Gen.inr_sound #[oE A, oE B]
   | _, _, true, .comp R S => lem ``Gen.comp_sound [← p R, ← p S]
   | _, _, false, .comp R S => lem ``Gen.compB_sound [← q R, ← q S]
   | _, _, _, .conv R => lem ``Gen.conv_sound [← p R]

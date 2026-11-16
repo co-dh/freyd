@@ -116,15 +116,15 @@ theorem outr_sound {A B : Obj} : Sound (outr A B) (graph Prod.snd) := fun D hD _
   show rep (Alg.outr D) x y ↔ _; rw [rep_outr]
   exact ⟨fun ⟨z, h, e⟩ => (hD x z h) ▸ e, fun e => ⟨x, hx, e⟩⟩
 
-theorem inl_sound {A B : Obj} : Sound (inl A B) (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩).u₁ := fun D _ hb x y hx => by
+theorem inl_sound {A B : Obj} : Sound (ofVals A (.sum A B) CRel.inl) (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩).u₁ := fun D _ hb x y hx => by
   show rep (CRel.inl (B := B) D.val).rel x y ↔ _; rw [CRel.rep_inl _ hb]
   exact ⟨fun ⟨z, ⟨e, _⟩, h⟩ => e ▸ h, fun h => ⟨x, ⟨rfl, keyRow hx⟩, h⟩⟩
 
-theorem inr_sound {A B : Obj} : Sound (inr A B) (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩).u₂ := fun D _ hb x y hx => by
+theorem inr_sound {A B : Obj} : Sound (ofVals B (.sum A B) CRel.inr) (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩).u₂ := fun D _ hb x y hx => by
   show rep (CRel.inr (A := A) D.val).rel x y ↔ _; rw [CRel.rep_inr _ hb]
   exact ⟨fun ⟨z, ⟨e, _⟩, h⟩ => e ▸ h, fun h => ⟨x, ⟨rfl, keyRow hx⟩, h⟩⟩
 
-theorem mem_sound {B : Obj} : Sound (mem B) (fun xs x => x ∈ xs) := fun D _ hb xs x hx => by
+theorem mem_sound {B : Obj} : Sound (ofVals (.arr B) B CRel.mem) (fun xs x => x ∈ xs) := fun D _ hb xs x hx => by
   show rep (CRel.mem D.val).rel xs x ↔ _; rw [CRel.rep_mem _ hb]
   exact ⟨fun h => h.2, fun h => ⟨keyRow hx, h⟩⟩
 

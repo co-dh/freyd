@@ -11,7 +11,8 @@ import LeetQ.Run.CRelLoopDef
 /-! The Rel language's surface syntax (`doc/rel-lang-design.md` §c, §h): objects, terms, declarations, each node
     with its source line and column. The builtin operators are one table, `Op.table`, read by the parser (symbol,
     arity), the elaborator (typing, lifted row) and the expander (the `Gen` op), each by the `Op` constructor; a
-    builtin that takes no relation is a row of `prims`, its type read off its `CRel` constant (`prim%`). -/
+    builtin run as one `CRel` kernel, given relations or none, is a row of `prims`, its type and relation
+    parameters read off that constant (`prim%`). -/
 
 namespace LeetQ.Rel.Lang
 
@@ -67,7 +68,7 @@ inductive OExp
   | list (a : OExp)
   deriving Repr, Inhabited
 
-/-! ### The builtins that take no relation: one row each, typed by their `CRel` constant -/
+/-! ### The builtins run as one kernel: one row each, typed by their `CRel` constant -/
 
 section Prim
 open Lean Elab Term Meta LeetQ.Rel.Alg
@@ -126,17 +127,19 @@ elab "prim% " i:ident : term => do
 
 end Prim
 
-/-- A builtin run on the keys in demand: `sym` as written (`written`), or the prelude's definition `sym` run as it
-    (`prelude`, `Expand.useDef`), or neither (a converse only, `convTm`); `sig` its `CRel` constant, that constant's
-    relation parameters and type (`prim%`), which the elaborator instantiates and the expander applies; `conv` the
-    row of its converse; `aop` its AOP reading (`Calc.builtins`) or why it has none; `mono`: it reads its parameters
-    monotonically (§e's fixed points); `sound` its `GenSpec` lemma, named unchecked as `aop` is (`RelRep` checks). -/
+/-- A builtin run on the keys in demand: `sym` as written (`written`), or the prelude's definition, the constant
+    `prelude`, run as it (`Expand.useDef`), or neither: a converse only (`convTm`), or an `Op` of its own that
+    `Calc.toTerm` reads over any allegory (`Op.row`); `sig` its `CRel` constant, that constant's relation parameters
+    and type (`prim%`), which the elaborator instantiates and the expander applies; `conv` the row of its converse;
+    `aop` its AOP reading (`Calc.builtins`) or why it has none; `mono`: it reads its parameters monotonically (§e's
+    fixed points); `sound` its `GenSpec` lemma; `prelude`, `sound` and `aop` named unchecked (`Test`, `RelRep`,
+    `Calc` check them, where they resolve). -/
 structure Prim where
   sym : String
   sig : Lean.Name × List ((OExp × OExp) × Option Bool) × OExp × OExp
   conv : Option String := none
   written : Bool := true
-  prelude : Bool := false
+  prelude : Option Lean.Name := none
   aop : Except String Lean.Name := .error "it is not written"
   mono : Bool := true
   sound : Option Lean.Name := none
@@ -148,12 +151,17 @@ def consRow : Prim :=
 def memRow : Prim :=
   { sym := "∋", sig := prim% CRel.mem, aop := .ok `Freyd.Alg.PowerAllegory.eps, sound := `LeetQ.Rel.Lang.Gen.mem_sound }
 
+-- `inl`, `inr`, `F(R)` are written as their `Op`s, which `Calc.toTerm` reads as a coproduct's injections and a relator
+def inlRow : Prim := { sym := "inl", sig := prim% CRel.inl, written := false, sound := `LeetQ.Rel.Lang.Gen.inl_sound }
+def inrRow : Prim := { sym := "inr", sig := prim% CRel.inr, written := false, sound := `LeetQ.Rel.Lang.Gen.inr_sound }
+def mapRow : Prim := { sym := "F", sig := prim% CRel.map, written := false }
+
 /-- Every builtin run as a kernel on the keys in demand: adding one is adding its row. -/
 def prims : List Prim :=
-  [{ sym := "τ", sig := prim% CRel.τ, aop := .ok `Freyd.Alg.singletonMap }, consRow, memRow,
+  [{ sym := "τ", sig := prim% CRel.τ, aop := .ok `Freyd.Alg.singletonMap }, consRow, memRow, inlRow, inrRow, mapRow,
    -- `filter(p)`, `takewhile(p)` given one relation run as their mask forms (`rep_filterC`, `rep_takewhileC`)
-   { sym := "filter", sig := prim% CRel.filter, prelude := true },
-   { sym := "takewhile", sig := prim% CRel.takewhile, prelude := true },
+   { sym := "filter", sig := prim% CRel.filter, prelude := `LeetQ.Rel.Programs.prelude.filter },
+   { sym := "takewhile", sig := prim% CRel.takewhile, prelude := `LeetQ.Rel.Programs.prelude.takewhile },
    { sym := "thinL", sig := prim% CRel.thinLOn, mono := false, aop := .ok `Freyd.Alg.RelSet.ListRel.thinL },
    { sym := "merge", sig := prim% CRel.mergeOn, mono := false, aop := .ok `Freyd.Alg.RelSet.ListRel.merge },
    { sym := "loop", sig := prim% CRel.loopOn, aop := .error "AOP declares no iteration to a fixed point from the left" },
@@ -162,10 +170,10 @@ def prims : List Prim :=
    { sym := "sum", sig := prim% CRel.Arr.sum, aop := .ok `Freyd.Alg.RelSet.ListRel.sum },
    { sym := "inits", sig := prim% CRel.inits, aop := .ok `Freyd.Alg.RelSet.ListRel.initsR },
    -- the prelude's folds run as their slice forms (`rep_tailsC`, `rep_prefixC`, `rep_suffixC`, `rep_concatC`)
-   { sym := "tails", sig := prim% CRel.tails, prelude := true },
-   { sym := "prefix", sig := prim% CRel.prefix, prelude := true },
-   { sym := "suffix", sig := prim% CRel.suffix, prelude := true },
-   { sym := "concat", sig := prim% CRel.concat, prelude := true },
+   { sym := "tails", sig := prim% CRel.tails, prelude := `LeetQ.Rel.Programs.prelude.tails },
+   { sym := "prefix", sig := prim% CRel.prefix, prelude := `LeetQ.Rel.Programs.prelude.prefix },
+   { sym := "suffix", sig := prim% CRel.suffix, prelude := `LeetQ.Rel.Programs.prelude.suffix },
+   { sym := "concat", sig := prim% CRel.concat, prelude := `LeetQ.Rel.Programs.prelude.concat },
    { sym := "cat", sig := prim% CRel.cat, conv := "uncat", aop := .ok `Freyd.Alg.RelSet.ListRel.cat },
    { sym := "uncat", sig := prim% CRel.uncat, conv := "cat", written := false },
    { sym := "zip", sig := prim% CRel.zip, aop := .ok `Freyd.Alg.RelSet.Pointfree.zip },
@@ -184,7 +192,9 @@ def Prim.find? (s : String) : Option Prim := prims.find? (·.sym == s)
 
 /-- The builtin operators of §b. A constant (arity 0) may take its objects, `⊤(A,B)`; the others take relations.
     `arith k` is the qlean kernel's integral value verb `k` on pairs of numbers (`Alg.arith`): one constructor, so
-    every verb is typed, lifted and run by one path; `prim s` the row `s` of `prims`. -/
+    every verb is typed, lifted and run by one path; `prim s` the row `s` of `prims`. `inl`, `inr`, `map` run as
+    their rows too (`Op.row`), kept as constructors for `Calc.toTerm`'s readings over any allegory; `P` is read
+    only there, a program refusing it (`applied`: it has no universe on its target). -/
 inductive Op
   | id | zero | top | outl | outr | inl | inr | leq | lt | succ | arith (k : UInt8)
   | nil | alpha | prim (s : String)
@@ -209,7 +219,7 @@ def Op.table : List (String × Op × Nat) :=
    ("P", .P, 1), ("est", .est, 1), ("thin", .thin, 1), ("F", .map, 1),
    ("refold", .refold, 2),
    ("at", .index 0, 0)] ++
-  (prims.filter fun r => r.written && !r.prelude).map fun r => (r.sym, .prim r.sym, r.sig.2.1.length)
+  (prims.filter fun r => r.written && r.prelude.isNone).map fun r => (r.sym, .prim r.sym, r.sig.2.1.length)
 
 -- `at(i)` prints with its position, which no table row holds
 def Op.sym : Op → String
