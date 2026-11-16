@@ -93,6 +93,16 @@ partial def prfNode (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d :
   | _, _, _, .pair R S => lem ``Gen.pair_sound [← p R, ← p S]
   | _, _, _, .prod R S => lem ``Gen.prod_sound [← p R, ← p S]
   | _, _, _, .junc R S => lem ``Gen.junc_sound [← p R, ← p S]
+  | A, .arr B, _, .nil => lemO ``Gen.nil_sound #[oE A, oE B]
+  | .arr B, _, _, .atPos k => lemO ``Gen.atPos_sound #[oE B, toExpr k]
+  | _, _, _, .est Q => lem ``Gen.est_sound [← p Q]
+  | _, _, _, .succ U => lem ``Gen.succ_sound [← p U]
+  | _, _, _, .leq U => lem ``Gen.leq_sound [← p U]
+  | _, _, _, .lt U => lem ``Gen.lt_sound [← p U]
+  | _, _, _, .arith k U => match ← p U with
+    | some h => lemO ``Gen.arith_sound #[toExpr k, none, none, h]
+    | none => pure none
+  | _, _, _, .fold e S => lem ``Gen.fold_sound [← p e, ← p S]
   | _, _, _, .own R | _, _, _, .share _ R => p R
   | _, _, _, _ => match primOf t with
     -- a row by its lemma, its relations' proofs its `Sound` hypotheses; with none, the gap is its constant
