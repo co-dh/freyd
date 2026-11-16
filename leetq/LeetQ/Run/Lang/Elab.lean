@@ -178,49 +178,6 @@ inductive Pre
 
 instance : Inhabited Pre := ⟨.id (.base "")⟩
 
-/-- `x` with every position `p`: a prelude body at its use, so an error `build` raises in it is at the use (§c). -/
-def Pre.at (p : Pos) : Pre → Pre
-  | .top _ a b t => .top p a b (t.attach.map fun ⟨x, _⟩ => x.at p)
-  | .comp x y => .comp (x.at p) (y.at p)
-  | .conv x => .conv (x.at p)
-  | .meet x y => .meet (x.at p) (y.at p)
-  | .join x y => .join (x.at p) (y.at p)
-  | .diff x y => .diff (x.at p) (y.at p)
-  | .dom x => .dom (x.at p)
-  | .ran x => .ran (x.at p)
-  | .ldiv _ x y b c => .ldiv p (x.at p) (y.at p) b c
-  | .rdiv _ x y a b => .rdiv p (x.at p) (y.at p) a b
-  | .pair x y => .pair (x.at p) (y.at p)
-  | .prod x y => .prod (x.at p) (y.at p)
-  | .junc x y => .junc (x.at p) (y.at p)
-  | .lam x => .lam (x.at p)
-  | .E x => .E (x.at p)
-  | .map x => .map (x.at p)
-  | .filter x => .filter (x.at p)
-  | .takewhile x => .takewhile (x.at p)
-  | .est x => .est (x.at p)
-  | .thin x => .thin (x.at p)
-  | .own x => .own (x.at p)
-  | .thinL x => .thinL (x.at p)
-  | .merge x => .merge (x.at p)
-  | .loop x => .loop (x.at p)
-  | .succ _ n => .succ p n
-  | .arith _ k n => .arith p k n
-  | .leq _ n => .leq p n
-  | .lt _ n => .lt p n
-  | .fold e s => .fold (e.at p) (s.at p)
-  | .foldI e s => .foldI (e.at p) (s.at p)
-  | .flat x => .flat (x.at p)
-  | .lit _ a b ps => .lit p a b ps
-  | .close _ x a why => .close p (x.at p) a why
-  | .var _ k a b t => .var p k a b t
-  | .fix _ l k S x a b => .fix p l k (S.attach.map fun ⟨y, _⟩ => y.at p) (x.at p) a b
-  | .refold _ k ch x a b => .refold p k (ch.at p) (x.at p) a b
-  | .call _ c us xs ts alt a b d cv tst => .call p c us (xs.attach.map fun ⟨y, _⟩ => y.at p) ts (alt.at p) a b d cv tst
-  -- no position and no part
-  | x@(.tm _) | x@(.zero ..) | x@(.id _) | x@(.mem _) | x@(.outl ..) | x@(.outr ..) | x@(.inl ..) | x@(.inr ..)
-  | x@(.nil ..) | x@(.prim ..) | x@(.atPos ..) => x
-
 /-- The `why` of a top-level term's `close`. -/
 def noLeft : String := "the term here needs keys and has no left context"
 
@@ -307,24 +264,6 @@ def save : M (St × Lean.Meta.SavedState) := return (← get, ← Lean.Meta.save
 
 def restore (s : St × Lean.Meta.SavedState) : M Unit := do set s.1; s.2.restore
 
-/-- The source of each `nil` in `x`, a definition's body at its use included. -/
-def Pre.nilSrcs : Pre → List OTy
-  | .nil a _ => [a]
-  | .top _ _ _ t => (t.attach.map fun ⟨x, _⟩ => x.nilSrcs).getD []
-  | .comp x y | .meet x y | .join x y | .diff x y | .ldiv _ x y _ _ | .rdiv _ x y _ _ | .pair x y | .prod x y
-  | .junc x y | .fold x y | .foldI x y => x.nilSrcs ++ y.nilSrcs
-  | .conv x | .dom x | .ran x | .lam x | .E x | .map x | .filter x | .takewhile x | .est x | .thin x | .own x | .thinL x | .merge x
-  | .loop x | .flat x | .close _ x _ _ | .fix _ _ _ _ x _ _ | .call _ _ _ _ _ x _ _ _ _ _ => x.nilSrcs
-  | .refold _ _ ch x _ _ => ch.nilSrcs ++ x.nilSrcs
-  | .var .. | .tm _| .zero .. | .id _ | .mem _ | .outl .. | .outr .. | .inl .. | .inr .. | .prim ..
-  | .atPos .. | .succ .. | .arith .. | .leq .. | .lt .. | .lit .. => []
-
-/-- A `nil` whose source no context fixed, once the whole term is elaborated, starts at `1`: B&dM's
-    `nil : 1 ⟶ [A]`, `one` the object `1` in scope (`Env.one`). A fold's seed `ran(nil)` drops that source, so only
-    this rule gives it (§e). -/
-def settleNil (one : OTy) (p : Pos) (x : Pre) : M Unit := x.nilSrcs.forM fun a => do
-  if let .mv _ := zonk (← Lean.getMCtx) a then unify p "nil's source" a one
-
 /-! ### Fixed points: where the variable occurs -/
 
 /-- How a term reads one of its parts: monotonically, antitonically (`what` names the place), or neither (`op`,
@@ -334,25 +273,72 @@ inductive Pol
   | anti (what : String)
   | not (op : String)
 
+/-- `x` with its positions through `fp` and its parts through `f`, one level down, `f` told how `x` reads each
+    part, or `none` for a copy of a part `x` reads elsewhere: a call's arguments (in `alt`), a `ν`'s start (the
+    conjuncts of its body). Every walk over `Pre` is an instance (`parts`, `at`, `nilSrcs`). -/
+def Pre.traverse {m : Type → Type} [Monad m] (fp : Pos → m Pos) (f : Option Pol → Pre → m Pre) (x : Pre) :
+    m Pre :=
+  let mo := f (some .mono)
+  match x with
+  | .top q a b t => return .top (← fp q) a b (← t.mapM mo)
+  | .comp x y => return .comp (← mo x) (← mo y)
+  | .conv x => return .conv (← mo x)
+  | .meet x y => return .meet (← mo x) (← mo y)
+  | .join x y => return .join (← mo x) (← mo y)
+  | .diff x y => return .diff (← mo x) (← f (some (.anti "the right operand of −")) y)
+  | .dom x => return .dom (← mo x)
+  | .ran x => return .ran (← mo x)
+  | .ldiv q x y b c => return .ldiv (← fp q) (← f (some (.anti "the left operand of \\")) x) (← mo y) b c
+  | .rdiv q x y a b => return .rdiv (← fp q) (← mo x) (← f (some (.anti "the right operand of /")) y) a b
+  | .pair x y => return .pair (← mo x) (← mo y)
+  | .prod x y => return .prod (← mo x) (← mo y)
+  | .junc x y => return .junc (← mo x) (← mo y)
+  | .lam x => return .lam (← f (some (.not "Λ")) x)
+  | .E x => return .E (← f (some (.not "E")) x)
+  | .map x => return .map (← mo x)
+  | .filter x => return .filter (← mo x)
+  | .takewhile x => return .takewhile (← mo x)
+  | .est x => return .est (← mo x)
+  | .thin x => return .thin (← f (some (.not "thin")) x)
+  | .own x => return .own (← mo x)
+  | .thinL x => return .thinL (← f (some (.not "thinL")) x)
+  | .merge x => return .merge (← f (some (.not "merge")) x)
+  | .loop x => return .loop (← mo x)
+  | .succ q n => return .succ (← fp q) n
+  | .arith q k n => return .arith (← fp q) k n
+  | .leq q n => return .leq (← fp q) n
+  | .lt q n => return .lt (← fp q) n
+  | .fold e s => return .fold (← mo e) (← mo s)
+  | .foldI e s => return .foldI (← mo e) (← mo s)
+  | .flat x => return .flat (← mo x)
+  | .lit q a b ps => return .lit (← fp q) a b ps
+  | .close q x a why => return .close (← fp q) (← mo x) a why
+  | .var q k a b t => return .var (← fp q) k a b t
+  | .fix q l k S x a b => return .fix (← fp q) l k (← S.mapM (f none)) (← mo x) a b
+  | .refold q k ch x a b => return .refold (← fp q) k (← mo ch) (← mo x) a b
+  | .call q c us xs ts alt a b d cv tst => return .call (← fp q) c us (← xs.mapM (f none)) ts (← mo alt) a b d cv tst
+  | x => pure x
+
 /-- The parts of `x`, each with how `x` reads it. A definition's body is expanded at its use, so the prelude's
     and the program's definitions need no rule of their own. -/
-def Pre.parts : Pre → List (Pre × Pol)
-  | .top _ _ _ t => (t.map fun y => [(y, .mono)]).getD []
-  | .ldiv _ x y _ _ => [(x, .anti "the left operand of \\"), (y, .mono)]
-  | .rdiv _ x y _ _ => [(x, .mono), (y, .anti "the right operand of /")]
-  | .diff x y => [(x, .mono), (y, .anti "the right operand of −")]
-  | .comp x y | .meet x y | .join x y | .pair x y | .prod x y | .junc x y | .fold x y | .foldI x y =>
-    [(x, .mono), (y, .mono)]
-  | .conv x | .dom x | .ran x | .map x | .filter x | .takewhile x | .est x | .own x | .loop x | .flat x | .close _ x _ _
-  | .fix _ _ _ _ x _ _ | .call _ _ _ _ _ x _ _ _ _ _ => [(x, .mono)]
-  | .refold _ _ ch x _ _ => [(ch, .mono), (x, .mono)]
-  | .lam x => [(x, .not "Λ")]
-  | .E x => [(x, .not "E")]
-  | .thin x => [(x, .not "thin")]
-  | .thinL x => [(x, .not "thinL")]
-  | .merge x => [(x, .not "merge")]
-  | .var .. | .tm _ | .zero .. | .id _ | .mem _ | .outl .. | .outr .. | .inl .. | .inr .. | .nil .. | .prim ..
-  | .atPos .. | .succ .. | .arith .. | .leq .. | .lt .. | .lit .. => []
+def Pre.parts (x : Pre) : List (Pre × Pol) :=
+  (Id.run ((x.traverse (m := StateM (List (Pre × Pol))) pure fun pol y => do
+    if let some pol := pol then modify (· ++ [(y, pol)])
+    pure y).run [])).2
+
+/-- `x` with every position `p`: a prelude body at its use, so an error `build` raises in it is at the use (§c). -/
+partial def Pre.at (p : Pos) (x : Pre) : Pre := Id.run (x.traverse (fun _ => pure p) fun _ y => pure (y.at p))
+
+/-- The source of each `nil` in `x`, a definition's body at its use included. -/
+partial def Pre.nilSrcs : Pre → List OTy
+  | .nil a _ => [a]
+  | x => x.parts.flatMap (·.1.nilSrcs)
+
+/-- A `nil` whose source no context fixed, once the whole term is elaborated, starts at `1`: B&dM's
+    `nil : 1 ⟶ [A]`, `one` the object `1` in scope (`Env.one`). A fold's seed `ran(nil)` drops that source, so only
+    this rule gives it (§e). -/
+def settleNil (one : OTy) (p : Pos) (x : Pre) : M Unit := x.nilSrcs.forM fun a => do
+  if let .mv _ := zonk (← Lean.getMCtx) a then unify p "nil's source" a one
 
 /-- Where the variable `k` first occurs in `x`. -/
 partial def Pre.occ (k : Nat) : Pre → Option Pos
@@ -1177,6 +1163,15 @@ def inferSig (env : Env) (n : String) (ps : List Param) (b : Body) : M String :=
   pure (sigText n ((ps.zip bs).map fun (P, q, s, t) => (q, some ((P.ty.map OExp.arrow).getD (arr s t))))
     (r.map fun (s, t) => arr s t))
 
+/-- The class of a family argument's index `j?` among the distinct indices `ix` so far, by first occurrence, and
+    `ix` with it (§e); `none` for a relation. A definition (`mkDef`) and a call of it (`Expand.callDef`) both number
+    by it, so the call lines up with the definition. -/
+def idxClass (ix : Array OTy) : Option OTy → M (Array OTy × Option Nat)
+  | none => pure (ix, none)
+  | some j => do match ← ix.toList.zipIdx.findM? (fun (i, _) => defEq j i) with
+    | some (_, k) => pure (ix, some k)
+    | none => pure (ix.push j, some ix.size)
+
 /-- A definition with parameters: its body elaborated at each use, lifted when a declared parameter is given
     a family, its result checked against the declared type `ty`; a test `e ⊑ f` is the coreflexive
     `D − dom(R − S)` of the keys whose fibres pass. -/
@@ -1191,19 +1186,8 @@ def mkDef (env : Env) (n : String) (dp : Pos) (ps : List Param) (body : Body) (t
       | some ty => declared env p n vs ty s t
       | none => pure ()
     -- the distinct indices `I₀ … Iₙ` of the family arguments, and each family's place among them (§e, mixed terms)
-    let mut ix : Array OTy := #[]
-    let mut pl : List (Option Nat) := []
-    for (_, j?) in bs do
-      match j? with
-      | none => pl := pl ++ [none]
-      | some j =>
-        let mut k? : Option Nat := none
-        for (i, k) in ix.toList.zipIdx do
-          if k?.isNone then
-            if ← defEq j i then k? := some k
-        match k? with
-        | some k => pl := pl ++ [some k]
-        | none => pl := pl ++ [some ix.size]; ix := ix.push j
+    let (ix, pl) ← bs.foldlM (fun (ix, pl) (_, j?) => do
+      let (ix, k?) ← idxClass ix j?; pure (ix, pl ++ [k?])) (#[], ([] : List (Option Nat)))
     -- several indices: the body runs at `(I₀×I₁)×…`, each family re-keyed by its projection
     let idx := ix.toList.head?.map fun i => ix.toList.tail.foldl .prod i
     let bound := (bs.zip pl).map fun (((n, a), _), k?) => match a, k?, idx with

@@ -104,4 +104,52 @@ inductive Tm : Obj → Obj → Bool → Type where
 /-- A built term with its objects. -/
 abbrev Res := (A : Obj) × (B : Obj) × (d : Bool) × Tm A B d
 
+instance {A B : Obj} {d : Bool} : Inhabited (Tm A B d) := ⟨.var 0⟩
+
+/-- `t` with each of its parts through `f`, one level down; every walk over `Tm` is an instance (`Tm.parts`,
+    `Expand.fv`, `Expand.mus`, `Expand.number`). A `share` is closed and numbered, so no walk enters it. -/
+def Tm.mapM {m : Type → Type} [Monad m] (f : {A B : Obj} → {d : Bool} → Tm A B d → m (Tm A B d)) :
+    {A B : Obj} → {d : Bool} → Tm A B d → m (Tm A B d)
+  | _, _, _, .top V => return .top (← f V)
+  | _, _, _, .comp R S => return .comp (← f R) (← f S)
+  | _, _, _, .conv R => return .conv (← f R)
+  | _, _, _, .meet R S => return .meet (← f R) (← f S)
+  | _, _, _, .join R S => return .join (← f R) (← f S)
+  | _, _, _, .diff R S => return .diff (← f R) (← f S)
+  | _, _, _, .dom R => return .dom (← f R)
+  | _, _, _, .ran R => return .ran (← f R)
+  | _, _, _, .ldiv R S U V => return .ldiv (← f R) (← f S) (← f U) (← f V)
+  | _, _, _, .rdiv R S U V => return .rdiv (← f R) (← f S) (← f U) (← f V)
+  | _, _, _, .pair R S => return .pair (← f R) (← f S)
+  | _, _, _, .prod R S => return .prod (← f R) (← f S)
+  | _, _, _, .junc R S => return .junc (← f R) (← f S)
+  | _, _, _, .juncD R S => return .juncD (← f R) (← f S)
+  | _, _, _, .lam R => return .lam (← f R)
+  | _, _, _, .E R => return .E (← f R)
+  | _, _, _, .map R => return .map (← f R)
+  | _, _, _, .filter R => return .filter (← f R)
+  | _, _, _, .takewhile R => return .takewhile (← f R)
+  | _, _, _, .est Q => return .est (← f Q)
+  | _, _, _, .thin Q => return .thin (← f Q)
+  | _, _, _, .own R => return .own (← f R)
+  | _, _, _, .thinL Q => return .thinL (← f Q)
+  | _, _, _, .merge Q => return .merge (← f Q)
+  | _, _, _, .loop F => return .loop (← f F)
+  | _, _, _, .succ U => return .succ (← f U)
+  | _, _, _, .arith k U => return .arith k (← f U)
+  | _, _, _, .leq U => return .leq (← f U)
+  | _, _, _, .lt U => return .lt (← f U)
+  | _, _, _, .fold e S => return .fold (← f e) (← f S)
+  | _, _, _, .foldI e S => return .foldI (← f e) (← f S)
+  | _, _, _, .flat R => return .flat (← f R)
+  | _, _, _, .arg g x => return .arg (← f g) (← f x)
+  | _, _, _, .nu k S b => return .nu k (← f S) (← f b)
+  | _, _, _, .mu k w n b => return .mu k w n (← f b)
+  | _, _, _, .refold k w ch b => return .refold k w (← f ch) (← f b)
+  | _, _, _, t => pure t
+
+/-- The parts of `t`, in `Tm.mapM`'s order. -/
+def Tm.parts {A B : Obj} {d : Bool} (t : Tm A B d) : List Res :=
+  (Id.run ((t.mapM (m := StateM (List Res)) fun c => do modify (· ++ [⟨_, _, _, c⟩]); pure c).run [])).2
+
 end LeetQ.Rel.Lang

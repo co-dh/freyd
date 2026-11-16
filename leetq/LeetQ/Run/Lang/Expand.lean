@@ -126,23 +126,12 @@ abbrev Top := ((A : Obj) × (B : Obj) × Tm A B false) × OTy × OTy
 abbrev Chk := Pos × String × String × Bool × OTy × OTy × ((A : Obj) × (B : Obj) × Tm A B false × Tm A B false)
 
 /-- The fixed-point variables `t` reads unbound. -/
-def fv : {A B : Obj} → {d : Bool} → Tm A B d → List Nat
-  | _, _, _, .top V => fv V
-  | _, _, _, .comp R S | _, _, _, .meet R S | _, _, _, .join R S | _, _, _, .diff R S => fv R ++ fv S
-  | _, _, _, .pair R S | _, _, _, .prod R S | _, _, _, .junc R S | _, _, _, .arg R S => fv R ++ fv S
-  | _, _, _, .conv R | _, _, _, .dom R | _, _, _, .ran R | _, _, _, .lam R | _, _, _, .E R | _, _, _, .map R => fv R
-  | _, _, _, .filter R | _, _, _, .takewhile R => fv R
-  | _, _, _, .est R | _, _, _, .thin R | _, _, _, .own R | _, _, _, .thinL R | _, _, _, .merge R => fv R
-  | _, _, _, .loop R | _, _, _, .flat R => fv R
-  | _, _, _, .ldiv R S U V | _, _, _, .rdiv R S U V => fv R ++ fv S ++ fv U ++ fv V
-  | _, _, _, .fold e S | _, _, _, .foldI e S => fv e ++ fv S
+partial def fv : {A B : Obj} → {d : Bool} → Tm A B d → List Nat
   | _, _, _, .var k => [k]
   | _, _, _, .nu k S b => fv S ++ (fv b).filter (· != k)
   | _, _, _, .mu k _ _ b => (fv b).filter (· != k)
   | _, _, _, .refold k _ ch b => fv ch ++ (fv b).filter (· != k)
-  | _, _, _, .juncD R S => fv R ++ fv S
-  | _, _, _, .succ U | _, _, _, .arith _ U | _, _, _, .leq U | _, _, _, .lt U => fv U
-  | _, _, _, _ => []
+  | _, _, _, t => t.parts.flatMap fun ⟨_, _, _, c⟩ => fv c
 
 /-- The object variable of the family index class `i` at a call (§e): a name no declaration can write. -/
 def idxVar (i : Nat) : String := s!"ι#{i}"
@@ -258,7 +247,6 @@ def callDef (env : Env) (dp : Pos) (n : String) (qs : List Param) (e : Expr) (ty
       let m ← vs.foldlM (fun m v => do if (m.lookup v).isSome then pure m else return (v, ← fresh) :: m) m
       let (s, t) := match r with | .rel _ s t => (s, t) | .fam _ _ a b => (a, b)
       unify p "" s (← oty env m ty.1); unify p "" t (← oty env m ty.2)
-      -- each family's index class, by first occurrence, as `mkDef` numbers them
       let mut ix : Array OTy := #[]
       let mut fs : List Form := []
       let mut xs : List (Pre × Bool) := []
@@ -268,12 +256,7 @@ def callDef (env : Env) (dp : Pos) (n : String) (qs : List Param) (e : Expr) (ty
         -- use is the expansion, which reads the arguments where `build` has every object solved
         let mc ← Lean.getMCtx
         if [zonk mc a, zonk mc a'].any (!·.mvs.isEmpty) then return r
-        let mut k? : Option Nat := none
-        if let some j := j? then
-          for (i, k) in ix.toList.zipIdx do
-            if k?.isNone then
-              if ← defEq j i then k? := some k
-          if k?.isNone then k? := some ix.size; ix := ix.push j
+        let (ix', k?) ← idxClass ix j?; ix := ix'
         -- the first form the argument (a family: its relation from the index) builds in: closed, run on demand,
         -- tested on pairs; else closed, whose build reports why
         let st ← get; let mc ← Lean.getMCtx
@@ -469,62 +452,20 @@ deriving instance ToExpr for MVarId
 deriving instance ToExpr for OTy
 
 /-- The `μ`s in `t`, each as the failure it reports when its rounds reach the cap. -/
-def mus : {A B : Obj} → {d : Bool} → Tm A B d → List String
-  | _, _, _, .top V => mus V
-  | _, _, _, .comp R S | _, _, _, .meet R S | _, _, _, .join R S | _, _, _, .diff R S => mus R ++ mus S
-  | _, _, _, .pair R S | _, _, _, .prod R S | _, _, _, .junc R S | _, _, _, .arg R S => mus R ++ mus S
-  | _, _, _, .conv R | _, _, _, .dom R | _, _, _, .ran R | _, _, _, .lam R | _, _, _, .E R | _, _, _, .map R => mus R
-  | _, _, _, .est R | _, _, _, .thin R | _, _, _, .own R | _, _, _, .thinL R | _, _, _, .merge R => mus R
-  | _, _, _, .loop R | _, _, _, .flat R => mus R
-  | _, _, _, .ldiv R S U V | _, _, _, .rdiv R S U V => mus R ++ mus S ++ mus U ++ mus V
-  | _, _, _, .fold e S | _, _, _, .foldI e S => mus e ++ mus S
-  | _, _, _, .nu _ S b => mus S ++ mus b
+partial def mus : {A B : Obj} → {d : Bool} → Tm A B d → List String
   | _, _, _, .mu _ w n b => s!"{w} ran its cap of {n} rounds without reaching a fixed point" :: mus b
   | _, _, _, .refold _ w ch b =>
     s!"{w} reaches a node from itself, so it is not well-founded there" :: mus ch ++ mus b
-  | _, _, _, .juncD R S => mus R ++ mus S
-  | _, _, _, _ => []
+  | _, _, _, t => t.parts.flatMap fun ⟨_, _, _, c⟩ => mus c
 
 /-- A term that needs no keys and reads no fixed-point variable: computed once, its own constant (`share`). -/
 def closed {A B : Obj} {d : Bool} (t : Tm A B d) : Bool := !d && (fv t).isEmpty
 
 /-- `t` with each closed sub-term `R` wrapped as `.share k R`, `k` the next number: `code` keeps each number's
     code and `fv` stops there (a share is closed), so building and proving a closed sub-term never rebuilds it. -/
-def number : {A B : Obj} → {d : Bool} → Tm A B d → StateM Nat (Tm A B d)
-  | _, _, _, .top V => do w (.top (← number V))
-  | _, _, _, .comp R S => do w (.comp (← number R) (← number S))
-  | _, _, _, .conv R => do w (.conv (← number R))
-  | _, _, _, .meet R S => do w (.meet (← number R) (← number S))
-  | _, _, _, .join R S => do w (.join (← number R) (← number S))
-  | _, _, _, .diff R S => do w (.diff (← number R) (← number S))
-  | _, _, _, .dom R => do w (.dom (← number R))
-  | _, _, _, .ran R => do w (.ran (← number R))
-  | _, _, _, .ldiv R S U V => do w (.ldiv (← number R) (← number S) (← number U) (← number V))
-  | _, _, _, .rdiv R S U V => do w (.rdiv (← number R) (← number S) (← number U) (← number V))
-  | _, _, _, .pair R S => do w (.pair (← number R) (← number S))
-  | _, _, _, .prod R S => do w (.prod (← number R) (← number S))
-  | _, _, _, .junc R S => do w (.junc (← number R) (← number S))
-  | _, _, _, .lam R => do w (.lam (← number R))
-  | _, _, _, .E R => do w (.E (← number R))
-  | _, _, _, .map R => do w (.map (← number R))
-  | _, _, _, .filter R => do w (.filter (← number R))
-  | _, _, _, .takewhile R => do w (.takewhile (← number R))
-  | _, _, _, .est Q => do w (.est (← number Q))
-  | _, _, _, .thin Q => do w (.thin (← number Q))
-  | _, _, _, .own R => do w (.own (← number R))
-  | _, _, _, .thinL Q => do w (.thinL (← number Q))
-  | _, _, _, .merge Q => do w (.merge (← number Q))
-  | _, _, _, .loop F => do w (.loop (← number F))
-  | _, _, _, .fold e S => do w (.fold (← number e) (← number S))
+partial def number : {A B : Obj} → {d : Bool} → Tm A B d → StateM Nat (Tm A B d)
   | _, _, _, .share _ R => number R
-  | _, _, _, .foldI e S => do w (.foldI (← number e) (← number S))
-  | _, _, _, .flat R => do w (.flat (← number R))
-  | _, _, _, .nu k S b => do w (.nu k (← number S) (← number b))
-  | _, _, _, .mu k s n b => do w (.mu k s n (← number b))
-  | _, _, _, .refold k s ch b => do w (.refold k s (← number ch) (← number b))
-  | _, _, _, .juncD R S => do w (.juncD (← number R) (← number S))
-  | _, _, _, .arg f x => do w (.arg (← number f) (← number x))
-  | _, _, _, t => w t
+  | _, _, _, t => do w (← t.mapM fun c => number c)
 where w {A B : Obj} {d : Bool} (t : Tm A B d) : StateM Nat (Tm A B d) :=
   if closed t then modifyGet fun k => (.share k t, k + 1) else pure t
 
