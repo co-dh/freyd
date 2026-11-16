@@ -269,27 +269,27 @@ variable {A B : Obj}
 
 theorem rep_τ {n : USize} (X : Vals A n) (hb : (τ X).ok = true) :
     (∀ a Y, rep (τ X).rel a Y → ∀ x, x ∈ Y ↔ x = a) ∧ (∀ a, (∃ Y, rep (τ X).rel a Y) ↔ ∃ i, Vals.row X i = a) :=
-  rep_τC X hb
+  by unfold CRel.τ at hb ⊢; rw [rep_ofC hb]; exact rep_τC X (ofC_ok hb).1
 
 theorem rep_lamOn {m : USize} (R : CRel A B) (U : Vals A m) (hb : (R.lamOn U).ok = true) :
     (∀ a Y, rep (R.lamOn U).rel a Y → ∀ y, y ∈ Y ↔ rep R.rel a y) ∧
       (∀ a, (∃ Y, rep (R.lamOn U).rel a Y) ↔ (∃ b, rep R.rel a b) ∨ ∃ i, Vals.row U i = a) := by
-  have e : R.lamOn U = _ := guard_eq ok hb; rw [e] at hb ⊢; exact (rep_lamOnByC valSortC valSortC_perm R.rel U hb).imp id And.left
+  have e : R.lamOn U = _ := guard_eq ok hb; rw [e] at hb ⊢; rw [rep_ofC hb]; replace hb := (ofC_ok hb).1; exact (rep_lamOnByC valSortC valSortC_perm R.rel U hb).imp id And.left
 
 theorem rep_setify {n : USize} (X : Vals (.arr B) n) (hb : (setify X).ok = true) :
     (∀ xs Y, rep (setify X).rel xs Y → (∃ i, Vals.row X i = xs) ∧ ∀ y, y ∈ Y ↔ y ∈ xs) ∧
       (∀ xs, (∃ Y, rep (setify X).rel xs Y) ↔ ∃ i, Vals.row X i = xs) :=
-  rep_setifyC X hb
+  by unfold CRel.setify at hb ⊢; rw [rep_ofC hb]; exact rep_setifyC X (ofC_ok hb).1
 
 theorem rep_distinct [DecidableEq B.El] {n : USize} (X : Vals (.arr B) n) (hb : (distinct X).ok = true) :
     (∀ xs Y, rep (distinct X).rel xs Y → (∃ i, Vals.row X i = xs) ∧ Y = xs.eraseDups) ∧
       (∀ xs, (∃ Y, rep (distinct X).rel xs Y) ↔ ∃ i, Vals.row X i = xs) :=
-  rep_distinctC X hb
+  by unfold CRel.distinct at hb ⊢; rw [rep_ofC hb]; exact rep_distinctC X (ofC_ok hb).1
 
 theorem rep_E {n : USize} (R : CRel A B) (X : Vals (.arr A) n) (hb : (R.E X).ok = true) :
     (∀ xs Y, rep (R.E X).rel xs Y → (∃ i, Vals.row X i = xs) ∧ ∀ y, y ∈ Y ↔ ∃ x ∈ xs, rep R.rel x y) ∧
       (∀ xs, (∃ Y, rep (R.E X).rel xs Y) ↔ ∃ i, Vals.row X i = xs) := by
-  have e : R.E X = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_EC R.rel X hb
+  have e : R.E X = _ := guard_eq ok hb; rw [e] at hb ⊢; rw [rep_ofC hb]; replace hb := (ofC_ok hb).1; exact rep_EC R.rel X hb
 
 end CRel
 

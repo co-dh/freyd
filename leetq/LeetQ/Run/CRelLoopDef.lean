@@ -20,32 +20,32 @@ namespace CRel
 variable {K X Y B : Obj}
 
 /-- `tic`, ok where `P` is and `ticC` ran within capacity. -/
-def tic (P : CRel K (.prod B (.arr B))) : CRel K (.arr (.arr B)) := guard P.ok fun _ => let r := ticC P.rel; ⟨r.1, r.2⟩
+def tic (P : CRel K (.prod B (.arr B))) : CRel K (.arr (.arr B)) := guard P.ok fun _ => ofC (ticC P.rel)
 
 
 /-- `loopOn` on a step over `CRel`s, ok where `P` is, every round's step was and `loopOnC` ran within capacity. The
     step sees its input as ok: its bit is already in the loop's. -/
 def loopOn (F : CRel (.prod X Y) (.prod X Y) → CRel (.prod X Y) X) (P : CRel K (.prod X (.arr Y))) : CRel K X :=
-  guard P.ok fun _ => let r := loopOnC (fun D => let s := F ⟨D, true⟩; (s.rel, s.ok)) P.rel; ⟨r.1, r.2⟩
+  guard P.ok fun _ => ofC (loopOnC (fun D => let s := F ⟨D, true⟩; (s.rel, s.ok)) P.rel)
 
 /-- `loop(F)`, ok where `F` and `P` are and `loopC` ran within capacity. -/
 def loop (F : CRel (.prod X Y) X) (P : CRel K (.prod X (.arr Y))) : CRel K X :=
-  guard (F.ok && P.ok) fun _ => let r := loopC F.rel P.rel; ⟨r.1, r.2⟩
+  guard (F.ok && P.ok) fun _ => ofC (loopC F.rel P.rel)
 
 /-- `mergeOn` on a test over `CRel`s, ok where `P` is, every round's test was and `mergeOnC` ran within capacity.
     The test sees its input as ok: its bit is already in the merge's. -/
 def mergeOn (q : CRel (.prod B B) (.prod B B) → CRel (.prod B B) (.prod B B)) (P : CRel K (.prod (.arr B) (.arr B))) :
     CRel K (.arr B) :=
-  guard P.ok fun _ => let r := mergeOnC (fun D => let s := q ⟨D, true⟩; (s.rel, s.ok)) P.rel; ⟨r.1, r.2⟩
+  guard P.ok fun _ => ofC (mergeOnC (fun D => let s := q ⟨D, true⟩; (s.rel, s.ok)) P.rel)
 
 /-- `merge(Q)`, ok where `Q` and `P` are and `mergeC` ran within capacity. -/
 def merge (Q : CRel B B) (P : CRel K (.prod (.arr B) (.arr B))) : CRel K (.arr B) :=
-  guard (Q.ok && P.ok) fun _ => let r := mergeC Q.rel P.rel; ⟨r.1, r.2⟩
+  guard (Q.ok && P.ok) fun _ => ofC (mergeC Q.rel P.rel)
 
 /-- `fixOn` on a step over `CRel`s, with the rounds run: ok where `X₀` is, every round's step was and `fixOnC` ran
     within capacity. The step sees its input as ok: its bit is already in the loop's. -/
 def fixOn {A : Obj} (n : Nat) (φ : CRel A B → CRel A B) (X₀ : CRel A B) : CRel A B × Nat :=
-  guard X₀.ok fun _ => let r := fixOnC n (fun D => let s := φ ⟨D, true⟩; (s.rel, s.ok)) X₀.rel; (⟨r.1.1, r.2⟩, r.1.2)
+  guard X₀.ok fun _ => let r := fixOnC n (fun D => let s := φ ⟨D, true⟩; (s.rel, s.ok)) X₀.rel; (ofC (r.1.1, r.2), r.1.2)
 
 end CRel
 end LeetQ.Rel

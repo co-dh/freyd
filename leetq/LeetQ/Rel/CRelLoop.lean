@@ -246,7 +246,7 @@ variable {K X Y B : Obj}
 theorem rep_tic (P : CRel K (.prod B (.arr B))) (hb : (tic P).ok = true) :
     ∀ k zss, rep (tic P).rel k zss ↔ ∃ b bs, rep P.rel k (b, bs) ∧
       zss = (List.range (bs.length + 1)).map fun j => (b :: bs).take (j + 1) := by
-  have e : tic P = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_ticC P.rel hb
+  have e : tic P = _ := guard_eq ok hb; rw [e] at hb ⊢; rw [rep_ofC hb]; replace hb := (ofC_ok hb).1; exact rep_ticC P.rel hb
 
 /-- `hS`: the step's spec on a coreflexive where the step was ok, at the pairs of that coreflexive. -/
 theorem rep_loopOn (F : CRel (.prod X Y) (.prod X Y) → CRel (.prod X Y) X) (P : CRel K (.prod X (.arr Y)))
@@ -256,12 +256,12 @@ theorem rep_loopOn (F : CRel (.prod X Y) (.prod X Y) → CRel (.prod X Y) X) (P 
       ∀ cy c', S cy → (Fr cy c' ↔ rep (F ⟨D, true⟩).rel cy c')) :
     ∀ k c, rep (loopOn F P).rel k c ↔ ∃ c₀ xs, rep P.rel k (c₀, xs) ∧ ∃ g : Nat → X.El, g 0 = c₀ ∧
       (∀ t (ht : t < xs.length), Fr (g t, xs[t]'ht) (g (t + 1))) ∧ c = g xs.length := by
-  have e : loopOn F P = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_loopOnC _ P.rel hb Fr hS
+  have e : loopOn F P = _ := guard_eq ok hb; rw [e] at hb ⊢; rw [rep_ofC hb]; replace hb := (ofC_ok hb).1; exact rep_loopOnC _ P.rel hb Fr hS
 
 theorem rep_loop (F : CRel (.prod X Y) X) (P : CRel K (.prod X (.arr Y))) (hb : (loop F P).ok = true) :
     ∀ k c, rep (loop F P).rel k c ↔ ∃ c₀ xs, rep P.rel k (c₀, xs) ∧ ∃ g : Nat → X.El, g 0 = c₀ ∧
       (∀ t (ht : t < xs.length), rep F.rel (g t, xs[t]'ht) (g (t + 1))) ∧ c = g xs.length := by
-  have e : loop F P = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_loopC F.rel P.rel hb
+  have e : loop F P = _ := guard_eq ok hb; rw [e] at hb ⊢; rw [rep_ofC hb]; replace hb := (ofC_ok hb).1; exact rep_loopC F.rel P.rel hb
 
 /-- `hq`: the test's spec on a coreflexive where the test was ok. -/
 theorem rep_mergeOn (q : CRel (.prod B B) (.prod B B) → CRel (.prod B B) (.prod B B))
@@ -271,13 +271,13 @@ theorem rep_mergeOn (q : CRel (.prod B B) (.prod B B) → CRel (.prod B B) (.pro
       ∀ a b, S (a, b) → ((∃ c, rep (q ⟨D, true⟩).rel (a, b) c) ↔ le a b = true))
     (hb : (mergeOn q P).ok = true) :
     ∀ k zs, rep (mergeOn q P).rel k zs ↔ ∃ xs ys, rep P.rel k (xs, ys) ∧ zs = List.merge xs ys le := by
-  have e : mergeOn q P = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_mergeOnC _ P.rel le hq hb
+  have e : mergeOn q P = _ := guard_eq ok hb; rw [e] at hb ⊢; rw [rep_ofC hb]; replace hb := (ofC_ok hb).1; exact rep_mergeOnC _ P.rel le hq hb
 
 /-- `hle`:`le` decides `Q`. -/
 theorem rep_merge (Q : CRel B B) (P : CRel K (.prod (.arr B) (.arr B))) (le : B.El → B.El → Bool)
     (hle : ∀ a b, le a b = true ↔ rep Q.rel a b) (hb : (merge Q P).ok = true) :
     ∀ k zs, rep (merge Q P).rel k zs ↔ ∃ xs ys, rep P.rel k (xs, ys) ∧ zs = List.merge xs ys le := by
-  have e : merge Q P = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_mergeC Q.rel P.rel le hle hb
+  have e : merge Q P = _ := guard_eq ok hb; rw [e] at hb ⊢; rw [rep_ofC hb]; replace hb := (ofC_ok hb).1; exact rep_mergeC Q.rel P.rel le hle hb
 
 /-- `hφ` the step's spec where its bit is set; `hm`, `hch` the chain (`rep_fixOn`'s). -/
 theorem rep_fixOn {A : Obj} (n : Nat) (φ : CRel A B → CRel A B) (X₀ : CRel A B)
@@ -292,7 +292,7 @@ theorem rep_fixOn {A : Obj} (n : Nat) (φ : CRel A B → CRel A B) (X₀ : CRel 
   have e : fixOn n φ X₀ = _ := guard_eq (·.1.ok) hb
   -- reduced first: the conclusion's `.2` against `fixOnC`'s otherwise sends `whnf` into `iter`'s recursion
   rw [e] at hb ⊢; dsimp only at hb ⊢
-  exact rep_fixOnC n _ X₀.rel Φ hb hφ hm hch
+  rw [rep_ofC hb]; exact rep_fixOnC n _ X₀.rel Φ (ofC_ok hb).1 hφ hm hch
 
 #print axioms rep_fixOn
 

@@ -91,7 +91,7 @@ theorem const_sound {A B : Obj} {c : CRel A B} {T : Den A B} (h : c.ok = true �
     Sound (const A B c) T := fun ⟨⟩ _ hb x y _ => by rw [show (const A B c ()) = c from rfl, h hb] at *
 
 theorem val_sound {A B : Obj} (R : Rel A B × Bool) : Sound (val A B R) (rep R.1) :=
-  fun _ _ _ _ _ _ => Iff.rfl
+  fun _ _ hb _ _ _ => by simp only [Gen.val] at hb ⊢; rw [CRel.rep_ofC hb]
 
 theorem uni_sound {A : Obj} {m : USize} (U : Vals A m × Bool) : Sound (uni A m U) (rep (idU U.1)) :=
   fun _ _ _ _ _ _ => Iff.rfl
@@ -108,15 +108,15 @@ theorem uni_lits {m : USize} (U : Vals .long m × Bool) (k : UInt8) :
 theorem zero_sound {A B : Obj} : Sound (zero A B) 𝟘 := fun _ _ _ x y _ => by
   show rep (Alg.zero : Rel A B) x y ↔ _; rw [rep_zero]
 
-theorem id_sound {A : Obj} : Sound (id A) (𝟙 _) := fun D hD _ x y hx =>
-  ⟨fun h => hD x y h, fun e => e ▸ hx⟩
+theorem id_sound {A : Obj} : Sound (id A) (𝟙 _) := fun D hD hb x y hx =>
+  by simp only [Gen.id] at hb ⊢; rw [CRel.rep_ofC hb]; exact ⟨fun h => hD x y h, fun e => e ▸ hx⟩
 
-theorem outl_sound {A B : Obj} : Sound (outl A B) (graph Prod.fst) := fun D hD _ x y hx => by
-  show rep (Alg.outl D) x y ↔ _; rw [rep_outl]
+theorem outl_sound {A B : Obj} : Sound (outl A B) (graph Prod.fst) := fun D hD hb x y hx => by
+  simp only [Gen.outl] at hb ⊢; rw [CRel.rep_ofC hb, rep_outl]
   exact ⟨fun ⟨z, h, e⟩ => (hD x z h) ▸ e, fun e => ⟨x, hx, e⟩⟩
 
-theorem outr_sound {A B : Obj} : Sound (outr A B) (graph Prod.snd) := fun D hD _ x y hx => by
-  show rep (Alg.outr D) x y ↔ _; rw [rep_outr]
+theorem outr_sound {A B : Obj} : Sound (outr A B) (graph Prod.snd) := fun D hD hb x y hx => by
+  simp only [Gen.outr] at hb ⊢; rw [CRel.rep_ofC hb, rep_outr]
   exact ⟨fun ⟨z, h, e⟩ => (hD x z h) ▸ e, fun e => ⟨x, hx, e⟩⟩
 
 theorem inl_sound {A B : Obj} : Sound (ofVals A (.sum A B) CRel.inl) (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩).u₁ := fun D _ hb x y hx => by
@@ -146,7 +146,8 @@ theorem after_sound {A B : Obj} {f : {K : Obj} → CRel K A → CRel K B} {T : D
 
 theorem τ_sound {A : Obj} : Sound (ofVals A (.arr A) fun X => CRel.τ X) (fun a Y => Y = [a]) :=
   ofVals_sound fun X hb => by
-    obtain ⟨hX, -, hx, -, hWk, hW, h63⟩ := transposeC_ok (idU X) hb
+    unfold CRel.τ at hb ⊢; rw [CRel.rep_ofC hb]
+    obtain ⟨hX, -, hx, -, hWk, hW, h63⟩ := transposeC_ok (idU X) (CRel.ofC_ok hb).1
     exact rep_tau_list X hX hx hWk hW h63
 
 theorem uncons_sound {B : Obj} :
@@ -344,7 +345,7 @@ theorem comp_sound {A B C : Obj} {e : Bool} {R : Fn true A B} {S : Fn e B C} {TR
 
 theorem conv_sound {A B : Obj} {R : Fn false A B} {T : Den A B} (hR : Sound R T) : Sound (conv A B R) T° :=
   fun ⟨⟩ _ hb y x _ => by
-    show rep ((R ()).rel°) y x ↔ _; rw [rep_conv]; exact hR () trivial hb x y rfl
+    simp only [Gen.conv] at hb ⊢; rw [CRel.rep_ofC hb, rep_conv]; exact hR () trivial (CRel.ofC_ok hb).1 x y rfl
 
 theorem meet_sound {A B : Obj} {d e : Bool} {R : Fn d A B} {S : Fn e A B} {TR TS : Den A B}
     (hR : Sound R TR) (hS : Sound S TS) : Sound (meet A B d e R S) (TR ∩ TS) := fun D hD hb x y hx => by
@@ -421,7 +422,7 @@ theorem keyRowRep {A B : Obj} (U : Rel A B) (a : A.El) : (∃ p, U.key.row p = a
   ⟨fun ⟨p, e⟩ => ⟨U.val.row p, p, e, rfl⟩, fun ⟨_, p, e, _⟩ => ⟨p, e⟩⟩
 
 theorem nil_sound {A B : Obj} : Sound (nil A B) (fun _ Y => Y = []) := fun D _ hb x Y hx => by
-  show rep (topC D.val (nilVal B)).1 x Y ↔ _
+  simp only [Gen.nil] at hb ⊢; rw [CRel.rep_ofC hb]; replace hb := (CRel.ofC_ok hb).1
   rw [rep_topC _ _ hb]
   refine ⟨fun ⟨_, _, _, _, e, j, hj⟩ => by subst e; rw [← hj, nilVal_row], fun e => ?_⟩
   exact ⟨x, ⟨rfl, keyRow hx⟩, Y, trivial, rfl, ⟨0, by simp⟩, by rw [e, nilVal_row]⟩
@@ -506,7 +507,7 @@ theorem est_sound {B : Obj} {Q : Fn true (.prod B B) (.prod B B)} {TQ : Den (.pr
   have hG : (CRel.mem D.val).ok = true := ok_and hb'
   obtain ⟨hq, h⟩ := CRel.rep_estOn _ _ hb'
   have e : CRel.estOn (fun P => Q P.rel) (CRel.mem D.val) = _ := CRel.guard_eq CRel.ok hb'
-  rw [e] at hb'
+  rw [e] at hb'; replace hb' := (CRel.ofC_ok hb').1
   obtain ⟨-, ⟨hPf, hP'⟩, ⟨hDf, hDp⟩, -⟩ := estOnC_ok _ _ hb' _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
   obtain ⟨p1, p2, p3, p4, p5⟩ := hP' _ rfl
   have eD : ∀ x x', rep (Alg.ran (Alg.pair (CRel.mem D.val).rel (CRel.mem D.val).rel)) x x' ↔
@@ -526,7 +527,7 @@ theorem est_sound {B : Obj} {Q : Fn true (.prod B B) (.prod B B)} {TQ : Den (.pr
 
 theorem top_sound {A B : Obj} {V : Fn false B B} {TV : Den B B} (hV : Sound V TV) :
     Sound (top A B V) (relTop ≫ TV) := fun D _ hb x y hx => by
-  simp only [top, also, ofC, Bool.and_eq_true] at hb ⊢
+  simp only [top, also, Bool.and_eq_true] at hb ⊢; rw [CRel.rep_ofC hb.2]; replace hb := And.intro hb.1 (CRel.ofC_ok hb.2).1
   rw [rep_topC _ _ hb.2, ← hV.eq hb.1]
   exact ⟨fun ⟨_, _, _, _, e, hq⟩ => let ⟨a, h⟩ := (valRow _ _).1 hq; ⟨a, trivial, e ▸ h⟩,
     fun ⟨a, _, hy⟩ => ⟨x, ⟨rfl, keyRow hx⟩, y, trivial, rfl, (valRow _ _).2 ⟨a, hy⟩⟩⟩
@@ -625,25 +626,25 @@ theorem pldiv_sound {A B C : Obj} {R : Pl false A B} {S : Pl false A C} {UB : Fn
 
 /-- A closed plan run as bits (`Bits.runC`), its leaves' bits kept: the plan's relation. -/
 theorem runP_sound {A B : Obj} {p : Pl false A B} {T : Den A B} (hp : PSound p T) :
-    Sound (fun _ => also (p ()).2 (ofC (Bits.runC (p ()).1)) : Fn false A B) T := fun ⟨⟩ _ hb x y _ => by
-  simp only [also, ofC, Bool.and_eq_true] at hb ⊢
+    Sound (fun _ => also (p ()).2 (CRel.ofC (Bits.runC (p ()).1)) : Fn false A B) T := fun ⟨⟩ _ hb x y _ => by
+  simp only [also, Bool.and_eq_true] at hb ⊢; rw [CRel.rep_ofC hb.2]; replace hb := And.intro hb.1 (CRel.ofC_ok hb.2).1
   exact (rep_runC _ hb.2 x y).trans (hp () trivial hb.1 x y rfl)
 
 theorem compB_sound {A B C : Obj} {e : Bool} {R : Pl false A B} {S : Pl e B C} {TR : Den A B} {TS : Den B C}
     (hR : PSound R TR) (hS : PSound S TS) : Sound (compB A B C e R S) (TR ≫ TS) :=
-  runP_sound (pcomp_sound hR hS)
+  by have h := runP_sound (pcomp_sound hR hS); exact h
 
 theorem meetB_sound {A B : Obj} {R S : Pl false A B} {TR TS : Den A B} (hR : PSound R TR) (hS : PSound S TS) :
     Sound (meetB A B R S) (TR ∩ TS) :=
-  runP_sound (pmeet_sound (d := false) (e := false) hR hS)
+  by have h := runP_sound (pmeet_sound (d := false) (e := false) hR hS); exact h
 
 theorem diffB_sound {A B : Obj} {R S : Pl false A B} {TR TS : Den A B} (hR : PSound R TR) (hS : PSound S TS) :
     Sound (diffB A B R S) (fun x y => TR x y ∧ ¬ TS x y) :=
-  runP_sound (pdiff_sound (d := false) (e := false) hR hS)
+  by have h := runP_sound (pdiff_sound (d := false) (e := false) hR hS); exact h
 
 theorem ldivB_sound {A B C : Obj} {R : Pl false A B} {S : Pl false A C} {UB : Fn false B B} {UC : Fn false C C}
     {TR : Den A B} {TS : Den A C} {TB : Den B B} {TC : Den C C} (hR : PSound R TR) (hS : PSound S TS)
     (hB : Sound UB TB) (hC : Sound UC TC) : Sound (ldivB A B C R S UB UC) (ldivDen TR TS TB TC) :=
-  runP_sound (pldiv_sound hR hS hB hC)
+  by have h := runP_sound (pldiv_sound hR hS hB hC); exact h
 
 end LeetQ.Rel.Lang.Gen

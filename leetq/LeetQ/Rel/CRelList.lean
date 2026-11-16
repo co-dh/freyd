@@ -742,72 +742,72 @@ variable {K A B : Obj} {n : USize}
 
 theorem rep_uncons (X : Vals (.arr B) n) (hb : (uncons X).ok = true) :
     ∀ (xs : List B.El) b bs, rep (uncons X).rel xs (b, bs) ↔ (∃ j, X.row j = xs) ∧ xs = b :: bs :=
-  rep_unconsC X hb
+  by unfold CRel.uncons at hb ⊢; rw [rep_ofC hb]; exact rep_unconsC X (ofC_ok hb).1
 
 theorem rep_tail (X : Vals (.arr B) n) (hb : (tail X).ok = true) :
     ∀ (xs bs : List B.El), rep (tail X).rel xs bs ↔ (∃ j, X.row j = xs) ∧ ∃ b, xs = b :: bs :=
-  rep_tailC X hb
+  by unfold CRel.tail at hb ⊢; rw [rep_ofC hb]; exact rep_tailC X (ofC_ok hb).1
 
 theorem rep_atPos (k : Nat) (X : Vals (.arr B) n) (hb : (atPos k X).ok = true) :
     ∀ (xs : List B.El) x, rep (atPos k X).rel xs x ↔ (∃ j, X.row j = xs) ∧ ∃ h : k < xs.length, x = xs[k]'h :=
-  rep_atPosC k X hb
+  by unfold CRel.atPos at hb ⊢; rw [rep_ofC hb]; exact rep_atPosC k X (ofC_ok hb).1
 
 theorem rep_unsnoc (X : Vals (.arr B) n) (hb : (unsnoc X).ok = true) :
     ∀ (xs : List B.El) bs b, rep (unsnoc X).rel xs (bs, b) ↔ (∃ j, X.row j = xs) ∧ xs = bs ++ [b] :=
-  rep_unsnocC X hb
+  by unfold CRel.unsnoc at hb ⊢; rw [rep_ofC hb]; exact rep_unsnocC X (ofC_ok hb).1
 
 theorem rep_inits (X : Vals (.arr B) n) (hb : (inits X).ok = true) :
     ∀ xs yss, rep (inits X).rel xs yss ↔ (∃ j, X.row j = xs) ∧
       yss = (List.range (xs.length + 1)).map fun k => xs.take k :=
-  rep_initsC X hb
+  by unfold CRel.inits at hb ⊢; rw [rep_ofC hb]; exact rep_initsC X (ofC_ok hb).1
 
 theorem rep_tails (X : Vals (.arr B) n) (hb : (tails X).ok = true) :
     ∀ xs yss, rep (tails X).rel xs yss ↔ (∃ j, X.row j = xs) ∧
       yss = (List.range (xs.length + 1)).map fun k => xs.drop k :=
-  rep_tailsC X hb
+  by unfold CRel.tails at hb ⊢; rw [rep_ofC hb]; exact rep_tailsC X (ofC_ok hb).1
 
 theorem rep_prefix (X : Vals (.arr B) n) (hb : («prefix» X).ok = true) :
     ∀ xs ys, rep («prefix» X).rel xs ys ↔ (∃ j, X.row j = xs) ∧ ys <+: xs :=
-  rep_prefixC X hb
+  by unfold CRel.prefix at hb ⊢; rw [rep_ofC hb]; exact rep_prefixC X (ofC_ok hb).1
 
 theorem rep_suffix (X : Vals (.arr B) n) (hb : (suffix X).ok = true) :
     ∀ xs ys, rep (suffix X).rel xs ys ↔ (∃ j, X.row j = xs) ∧ ys <:+ xs :=
-  rep_suffixC X hb
+  by unfold CRel.suffix at hb ⊢; rw [rep_ofC hb]; exact rep_suffixC X (ofC_ok hb).1
 
 theorem rep_concat (X : Vals (.arr (.arr B)) n) (hb : (concat X).ok = true) :
     ∀ xss ys, rep (concat X).rel xss ys ↔ (∃ j, X.row j = xss) ∧ ys = xss.flatten :=
-  rep_concatC X hb
+  by unfold CRel.concat at hb ⊢; rw [rep_ofC hb]; exact rep_concatC X (ofC_ok hb).1
 
 theorem rep_uncat (X : Vals (.arr B) n) (hb : (uncat X).ok = true) :
     ∀ xs ys zs, rep (uncat X).rel xs (ys, zs) ↔ (∃ j, X.row j = xs) ∧ xs = ys ++ zs :=
-  rep_uncatC X hb
+  by unfold CRel.uncat at hb ⊢; rw [rep_ofC hb]; exact rep_uncatC X (ofC_ok hb).1
 
 theorem rep_cons (P : CRel K (.prod B (.arr B))) (hb : (cons P).ok = true) :
     ∀ k ys, rep (cons P).rel k ys ↔ ∃ b bs, rep P.rel k (b, bs) ∧ ys = b :: bs := by
-  have e : cons P = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_consC P.rel hb
+  have e : cons P = _ := guard_eq ok hb; rw [e] at hb ⊢; rw [rep_ofC hb]; replace hb := (ofC_ok hb).1; exact rep_consC P.rel hb
 
 theorem rep_cat (P : CRel K (.prod (.arr B) (.arr B))) (hb : (cat P).ok = true) :
     ∀ k zs, rep (cat P).rel k zs ↔ ∃ xs ys, rep P.rel k (xs, ys) ∧ zs = xs ++ ys := by
-  have e : cat P = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_catC P.rel hb
+  have e : cat P = _ := guard_eq ok hb; rw [e] at hb ⊢; rw [rep_ofC hb]; replace hb := (ofC_ok hb).1; exact rep_catC P.rel hb
 
 theorem rep_snoc (P : CRel K (.prod (.arr B) B)) (hb : (snoc P).ok = true) :
     ∀ k ys, rep (snoc P).rel k ys ↔ ∃ bs b, rep P.rel k (bs, b) ∧ ys = bs ++ [b] := by
-  have e : snoc P = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_snocC P.rel hb
+  have e : snoc P = _ := guard_eq ok hb; rw [e] at hb ⊢; rw [rep_ofC hb]; replace hb := (ofC_ok hb).1; exact rep_snocC P.rel hb
 
 theorem rep_zip (P : CRel K (.prod (.arr A) (.arr B))) (hb : (zip P).ok = true) :
     ∀ k zs, rep (zip P).rel k zs ↔ ∃ xs ys, rep P.rel k (xs, ys) ∧ zs = List.zip xs ys := by
-  have e : zip P = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_zipC P.rel hb
+  have e : zip P = _ := guard_eq ok hb; rw [e] at hb ⊢; rw [rep_ofC hb]; replace hb := (ofC_ok hb).1; exact rep_zipC P.rel hb
 
 open Classical in
 theorem rep_filter (P : CRel B B) (X : Vals (.arr B) n) (hb : (filter P X).ok = true) :
     ∀ xs ys, rep (filter P X).rel xs ys ↔ (∃ j, X.row j = xs) ∧ ys = xs.filter fun x => decide (∃ y, rep P.rel x y) := by
-  have e : filter P X = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_filterC P.rel X hb
+  have e : filter P X = _ := guard_eq ok hb; rw [e] at hb ⊢; rw [rep_ofC hb]; replace hb := (ofC_ok hb).1; exact rep_filterC P.rel X hb
 
 open Classical in
 theorem rep_takewhile (P : CRel B B) (X : Vals (.arr B) n) (hb : (takewhile P X).ok = true) :
     ∀ xs ys, rep (takewhile P X).rel xs ys ↔
       (∃ j, X.row j = xs) ∧ ys = xs.takeWhile fun x => decide (∃ y, rep P.rel x y) := by
-  have e : takewhile P X = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_takewhileC P.rel X hb
+  have e : takewhile P X = _ := guard_eq ok hb; rw [e] at hb ⊢; rw [rep_ofC hb]; replace hb := (ofC_ok hb).1; exact rep_takewhileC P.rel X hb
 
 open Freyd Freyd.Alg Freyd.Alg.RelSet in
 theorem rep_alpha (I : Vals K 1) (P : Vals (.prod B (.arr B)) n) (hb : (alpha I P).ok = true) :
@@ -816,7 +816,7 @@ theorem rep_alpha (I : Vals K 1) (P : Vals (.prod B (.arr B)) n) (hb : (alpha I 
         (graph (fun _ => []) :(⟨K.El⟩ : RelSet.{0}) ⟶ ⟨List B.El⟩))
       (corefl (A := (⟨B.El × List B.El⟩ : RelSet.{0})) (fun p => ∃ i, P.row i = p) ≫
         (graph (fun p => p.1 :: p.2) :(⟨B.El × List B.El⟩ : RelSet.{0}) ⟶ ⟨List B.El⟩)) :=
-  rep_alphaC I P hb
+  by unfold CRel.alpha at hb ⊢; rw [rep_ofC hb]; exact rep_alphaC I P (ofC_ok hb).1
 
 end CRel
 

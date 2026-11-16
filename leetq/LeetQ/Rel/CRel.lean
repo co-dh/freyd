@@ -6,6 +6,8 @@
 -/
 import LeetQ.Rel.KernelWF.CodesAll
 import LeetQ.Rel.KernelWF.RazeFoR
+import LeetQ.Rel.KernelWF.AscSpec
+import LeetQ.Rel.KernelWF.NubSpec
 import LeetQ.Rel.OkBit
 import LeetQ.Run.CRelDef
 
@@ -105,6 +107,164 @@ theorem rep_unionC (R S : Rel A B) (hb : (unionC R S).2 = true) : rep (unionC R 
 
 #print axioms rep_unionC
 
+/-- **`rep (nub R) = rep R` under `nubC`'s bit**: the codes' bits give `rep_nub`'s `hK`, `hV` (`oneOK_of_codesC`),
+    the `fitsN` bits its picks. -/
+theorem rep_nubC {k v : Obj} (R : Rel k v) (hb : (nubC R).2 = true) : rep (nubC R).1 = rep R := by
+  simp only [nubC, Bool.and_eq_true] at hb
+  obtain ⟨⟨⟨hK, hV⟩, hk⟩, hv⟩ := hb
+  rw [nubC_fst]
+  exact rep_nub R (oneOK_of_codesC k R.key hK) (oneOK_of_codesC v R.val hV) (pickFits_of_fitsN k R.key _ hk _ (by simp))
+    (pickFits_of_fitsN v R.val _ hv _ (by simp))
+
+/-! ## Canonical form: rows strictly ascending by `Obj.lt` on `(key, val)` -/
+
+/-- `A`'s key tells its elements apart: no `.general` atom and no float, whose keys merge NaNs and `±0`. -/
+def _root_.LeetQ.Rel.Obj.KeyInj (A : Obj) : Prop := ∀ x y : A.El, A.key x = A.key y → x = y
+
+/-- `R`'s rows strictly ascending by `Obj.lt` on `(key, val)`: sorted, and no row twice. -/
+def _root_.LeetQ.Rel.Rel.Canon {k v : Obj} (R : Rel k v) : Prop := R.toList.Pairwise (Obj.prod k v).lt
+
+theorem keyInj_prod {a b : Obj} (ha : a.KeyInj) (hb : b.KeyInj) : (Obj.prod a b).KeyInj := by
+  rintro ⟨x, y⟩ ⟨x', y'⟩ h
+  change a.key x ++ b.key y = a.key x' ++ b.key y' at h
+  have e := Obj.key_prefix a x x' _ _ h
+  rw [e, List.append_cancel_left_eq] at h
+  rw [ha x x' e, hb y y' h]
+
+/-- Two lists strictly ascending in one strict order, with the same members, are one list. -/
+theorem eq_of_pairwise {α : Type} {r : α → α → Prop} (irr : ∀ a, ¬ r a a) (tr : ∀ {a b c}, r a b → r b c → r a c) :
+    ∀ {l m : List α}, l.Pairwise r → m.Pairwise r → (∀ x, x ∈ l ↔ x ∈ m) → l = m
+  | [], [], _, _, _ => rfl
+  | [], b :: _, _, _, h => absurd ((h b).2 List.mem_cons_self) List.not_mem_nil
+  | a :: _, [], _, _, h => absurd ((h a).1 List.mem_cons_self) List.not_mem_nil
+  | a :: l, b :: m, hl, hm, h => by
+    rw [List.pairwise_cons] at hl hm
+    have hab : a = b := by
+      rcases List.mem_cons.1 ((h a).1 List.mem_cons_self) with e | ha
+      · exact e
+      rcases List.mem_cons.1 ((h b).2 List.mem_cons_self) with e | hb
+      · exact e.symm
+      exact absurd (tr (hm.1 a ha) (hl.1 b hb)) (irr b)
+    subst hab
+    have hlm : ∀ x, x ∈ l ↔ x ∈ m := fun x => by
+      constructor <;> intro hx
+      · rcases List.mem_cons.1 ((h x).1 (List.mem_cons_of_mem _ hx)) with e | hx'
+        · subst e; exact absurd (hl.1 _ hx) (irr _)
+        · exact hx'
+      · rcases List.mem_cons.1 ((h x).2 (List.mem_cons_of_mem _ hx)) with e | hx'
+        · subst e; exact absurd (hm.1 _ hx) (irr _)
+        · exact hx'
+    rw [eq_of_pairwise irr tr hl.2 hm.2 hlm]
+
+/-- **Canonical tables of one `rep` are one table**: the data a canonical relation holds is fixed by what it denotes. -/
+theorem canon_eq {k v : Obj} {R S : Rel k v} (hR : R.Canon) (hS : S.Canon) (h : rep R = rep S) :
+    R.toList = S.toList :=
+  eq_of_pairwise (Obj.lt_irrefl _) (Obj.lt_trans _) hR hS fun ⟨x, y⟩ => by
+    rw [← Rel.holds_iff_mem_toList, ← Rel.holds_iff_mem_toList, ← rep_apply, ← rep_apply, h]
+
+/-- Row `t` of `R` as a pair, the default pair past its count: what `rows_spec` reads a pick as. -/
+def rowAt {k v : Obj} (R : Rel k v) (t : Nat) : k.El × v.El :=
+  if h : t < R.n.toNat then (R.key.row ⟨t, h⟩, R.val.row ⟨t, h⟩) else (k.dflt, v.dflt)
+
+theorem toList_rowAt {k v : Obj} (R : Rel k v) : R.toList = (List.range R.n.toNat).map (rowAt R) :=
+  List.ext_getElem (by simp [Rel.toList]) fun q h1 h2 => by
+    simp only [Rel.toList, List.getElem_ofFn, List.getElem_map, List.getElem_range, rowAt]
+    rw [dif_pos (by simpa [Rel.toList] using h1)]
+
+/-- **`rows R i` as a list is `R`'s rows at the positions `i` names** (`rows_spec`). -/
+theorem rows_toList {k v : Obj} (R : Rel k v) (i : ByteArray) (hl : len i < USize.size)
+    (hk : Vals.PickFits k R.key (ids i)) (hv : Vals.PickFits v R.val (ids i)) :
+    (R.rows i).toList = (ids i).map (rowAt R) := by
+  obtain ⟨hn, hrow⟩ := rows_spec R i hl hk hv
+  refine List.ext_getElem (by simp [Rel.toList, hn, len_eq_ids]) fun q h1 h2 => ?_
+  simp only [Rel.toList, List.getElem_ofFn, List.getElem_map, ids_getElem, rowAt]
+  exact hrow q _
+
+/-- `canonC`'s bit, taken apart: the sort's, the two `fitsN` bits, `nubC`'s. -/
+theorem canonC_bits {k v : Obj} (R : Rel k v) (hb : (canonC R).2 = true) :
+    ((Obj.prod k v).sortByC (pairPart R).2 (tilLongs R.n)).2 = true ∧ Vals.fitsN k R.key R.n.toNat = true ∧
+      Vals.fitsN v R.val R.n.toNat = true ∧
+      (nubC (R.rows ((Obj.prod k v).sortByC (pairPart R).2 (tilLongs R.n)).1)).2 = true := by
+  simp only [canonC, Bool.and_eq_true] at hb; exact ⟨hb.1.1.1, hb.1.1.2, hb.1.2, hb.2⟩
+
+/-- The sorted rows `canonC` reads: `R`'s rows in the sort's order, a permutation of them. -/
+theorem canonC_sorted {k v : Obj} (R : Rel k v) (hb : (canonC R).2 = true) :
+    let s := ((Obj.prod k v).sortByC (pairPart R).2 (tilLongs R.n)).1
+    (ids s).Perm (List.range R.n.toNat) ∧ (R.rows s).toList = (ids s).map (rowAt R) := by
+  obtain ⟨hs, hfk, hfv, -⟩ := canonC_bits R hb
+  have hl : len (tilLongs R.n) < USize.size := by rw [len_tilLongs]; exact R.n.toNat_lt_size
+  have hp := sortByC_perm (Obj.prod k v) (pairPart R).2 (tilLongs R.n) hs hl
+    (fun t ht => by rw [ids_tilLongs] at ht; exact List.mem_range.1 ht)
+  rw [ids_tilLongs] at hp
+  have hlen : (ids ((Obj.prod k v).sortByC (pairPart R).2 (tilLongs R.n)).1).length ≤ R.n.toNat := by
+    rw [hp.length_eq, List.length_range]; exact Nat.le_refl _
+  refine ⟨hp, rows_toList R _ ?_ (pickFits_of_fitsN k R.key _ hfk _ hlen) (pickFits_of_fitsN v R.val _ hfv _ hlen)⟩
+  rw [len_eq_ids]; exact Nat.lt_of_le_of_lt hlen R.n.toNat_lt_size
+
+/-- **`rep (canon R) = rep R` under `canonC`'s bit**: a permutation of the rows, then `nub`. -/
+theorem rep_canonC {k v : Obj} (R : Rel k v) (hb : (canonC R).2 = true) : rep (canonC R).1 = rep R := by
+  obtain ⟨hp, hS⟩ := canonC_sorted R hb
+  rw [show (canonC R).1 = (nubC (R.rows _)).1 from rfl, rep_nubC _ (canonC_bits R hb).2.2.2]
+  refine hom_ext fun x y => ?_
+  rw [rep_apply, rep_apply, Rel.holds_iff_mem_toList, Rel.holds_iff_mem_toList, hS, toList_rowAt]
+  exact (hp.map _).mem_iff
+
+/-- **`canonC`'s answer is canonical** on a side whose atoms the kernels order (`Ordered`) and whose key tells
+    elements apart (`KeyInj`): sorted by `sortBy_asc`, the first of each run of equal rows kept by `nub_mem`. -/
+theorem canon_canonC {k v : Obj} (R : Rel k v) (hb : (canonC R).2 = true) (ho : (Obj.prod k v).Ordered)
+    (hi : (Obj.prod k v).KeyInj) : (canonC R).1.Canon := by
+  obtain ⟨-, hfk, hfv, hN⟩ := canonC_bits R hb
+  obtain ⟨hp, hS⟩ := canonC_sorted R hb
+  generalize hs : ((Obj.prod k v).sortByC (pairPart R).2 (tilLongs R.n)).1 = s at hp hS hN
+  have hl : len (tilLongs R.n) < USize.size := by rw [len_tilLongs]; exact R.n.toNat_lt_size
+  have hrk := pickFits_range k R.key hfk; have hrv := pickFits_range v R.val hfv
+  -- the sorted rows ascend: no later row before an earlier one
+  have hasc := sortBy_asc (sortsAsc_all _ ho) (pairPart R).2 (small_of_pickFits (Obj.prod k v) _ _ ⟨hrk, hrv⟩)
+    (tilLongs R.n) hl (fun t ht => by rw [ids_tilLongs] at ht; exact List.mem_range.1 ht)
+  rw [show (Obj.prod k v).sortBy (pairPart R).2 (tilLongs R.n) = s from hs] at hasc
+  have hsort : (R.rows s).toList.Pairwise fun a b => ¬ (Obj.prod k v).lt b a := by
+    rw [hS, List.pairwise_map]
+    refine hasc.imp_of_mem fun {i j} hi' hj' h => ?_
+    have hi' := List.mem_range.1 (hp.mem_iff.1 hi'); have hj' := List.mem_range.1 (hp.mem_iff.1 hj')
+    simp only [rowAt, dif_pos hi', dif_pos hj']; exact h hi' hj'
+  -- `nub` of the sorted rows: its rows at the first positions, ascending positions, no row twice
+  simp only [nubC, Bool.and_eq_true] at hN
+  obtain ⟨⟨⟨hK, hV⟩, hk⟩, hv⟩ := hN
+  have hK := oneOK_of_codesC k _ hK; have hV := oneOK_of_codesC v _ hV
+  have hk := pickFits_range k _ hk; have hv := pickFits_range v _ hv
+  generalize hT : R.rows s = T at hsort hK hV hk hv
+  rw [show (canonC R).1 = (nubC (R.rows s)).1 by rw [← hs]; rfl, hT, nubC_fst]
+  have hsub : (ids (tuples.tupleIds (k.codes #v[⟨T.n, T.key⟩])[0] #[(v.codes #v[⟨T.n, T.val⟩])[0]]).2).Pairwise
+      (· < ·) := by rw [nub_ids T hK hV]; exact (List.pairwise_lt_range).filter _
+  have hlenN := (nub_row T hK hV hk hv).1
+  have hlN : len (tuples.tupleIds (k.codes #v[⟨T.n, T.key⟩])[0] #[(v.codes #v[⟨T.n, T.val⟩])[0]]).2 < USize.size := by
+    rw [len_eq_ids, ← hlenN]; exact T.nub.n.toNat_lt_size
+  have hmemN := fun p => nub_mem T hK hV (p := p)
+  have hlenS : ∀ p ∈ ids (tuples.tupleIds (k.codes #v[⟨T.n, T.key⟩])[0] #[(v.codes #v[⟨T.n, T.val⟩])[0]]).2,
+      p < T.n.toNat := fun p hp' => ((hmemN p).1 hp').1
+  have hle : (ids (tuples.tupleIds (k.codes #v[⟨T.n, T.key⟩])[0] #[(v.codes #v[⟨T.n, T.val⟩])[0]]).2).Sublist
+      (List.range T.n.toNat) := by
+    rw [nub_ids T hK hV]; exact List.filter_sublist
+  unfold Rel.Canon
+  rw [show T.nub = T.rows _ from rfl, rows_toList T _ hlN (pickFits_sublist hle hk) (pickFits_sublist hle hv),
+    List.pairwise_map]
+  rw [toList_rowAt, List.pairwise_map] at hsort
+  refine hsub.imp_of_mem fun {p p'} hp' hp'' hlt => ?_
+  have h1 := hlenS p hp'; have h2 := hlenS p' hp''
+  have hna : ¬ (Obj.prod k v).lt (rowAt T p') (rowAt T p) := by
+    have h := List.pairwise_iff_getElem.1 hsort p p' (by simpa using h1) (by simpa using h2) hlt
+    simp only [List.getElem_range] at h; exact h
+  have hne : rowAt T p ≠ rowAt T p' := by
+    obtain ⟨_, hq⟩ := (hmemN p').1 hp''
+    simp only [rowAt, dif_pos h1, dif_pos h2, ne_eq, Prod.mk.injEq]; exact hq p hlt
+  rcases (Obj.prod k v).lt_trichotomy (rowAt T p) (rowAt T p') with h | h | h
+  · exact h
+  · exact absurd (hi _ _ h) hne
+  · exact absurd h hna
+
+#print axioms canon_canonC
+#print axioms rep_canonC
+
 end Rep
 
 namespace CRel
@@ -123,15 +283,63 @@ theorem guard_eq {α : Type} [Inhabited α] {b : Bool} {k : Unit → α} (p : α
   · exact absurd (hd ▸ h) Bool.false_ne_true
   · rfl
 
+/-- `ofC`'s bit: the twin's and `canonC`'s. -/
+theorem ofC_ok {r : Rel A B × Bool} (hb : (ofC r).ok = true) : r.2 = true ∧ (canonC r.1).2 = true := by
+  simpa only [ofC, Bool.and_eq_true] using hb
+
+theorem rep_ofC {r : Rel A B × Bool} (hb : (ofC r).ok = true) : rep (ofC r).rel = rep r.1 :=
+  rep_canonC r.1 (ofC_ok hb).2
+
+/-- **Every op through `ofC` answers a canonical table** where it ran within capacity. -/
+theorem canon_ofC {r : Rel A B × Bool} (hb : (ofC r).ok = true) (ho : (Obj.prod A B).Ordered)
+    (hi : (Obj.prod A B).KeyInj) : (ofC r).rel.Canon :=
+  canon_canonC r.1 (ofC_ok hb).2 ho hi
+
+/-- A guarded op's inputs ran ok where it did. -/
+theorem guard_ok_left {b : Bool} {k : Unit → CRel A B} (h : (guard b k).ok = true) : b = true := by
+  cases b
+  · exact absurd h Bool.false_ne_true
+  · rfl
+
 theorem rep_comp (R : CRel A B) (S : CRel B C) (hb : (R.comp S).ok = true) :
     rep (R.comp S).rel = rep R.rel ≫ rep S.rel := by
-  have e : R.comp S = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_compC R.rel S.rel hb
+  have e : R.comp S = _ := guard_eq ok hb; rw [e] at hb ⊢; rw [rep_ofC hb]; replace hb := (ofC_ok hb).1; exact rep_compC R.rel S.rel hb
 
 theorem rep_inter (R S : CRel A B) (hb : (R.inter S).ok = true) : rep (R.inter S).rel = rep R.rel ∩ rep S.rel := by
-  have e : R.inter S = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_interC R.rel S.rel hb
+  have e : R.inter S = _ := guard_eq ok hb; rw [e] at hb ⊢; rw [rep_ofC hb]; replace hb := (ofC_ok hb).1; exact rep_interC R.rel S.rel hb
 
 theorem rep_union (R S : CRel A B) (hb : (R.union S).ok = true) : rep (R.union S).rel = rep R.rel ∪ rep S.rel := by
-  have e : R.union S = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_unionC R.rel S.rel hb
+  have e : R.union S = _ := guard_eq ok hb; rw [e] at hb ⊢; rw [rep_ofC hb]; replace hb := (ofC_ok hb).1; exact rep_unionC R.rel S.rel hb
+
+theorem canon_comp (R : CRel A B) (S : CRel B C) (hb : (R.comp S).ok = true) (ho : (Obj.prod A C).Ordered)
+    (hi : (Obj.prod A C).KeyInj) : (R.comp S).rel.Canon := by
+  have e : R.comp S = _ := guard_eq ok hb; rw [e] at hb ⊢; exact canon_ofC hb ho hi
+
+theorem canon_inter (R S : CRel A B) (hb : (R.inter S).ok = true) (ho : (Obj.prod A B).Ordered)
+    (hi : (Obj.prod A B).KeyInj) : (R.inter S).rel.Canon := by
+  have e : R.inter S = _ := guard_eq ok hb; rw [e] at hb ⊢; exact canon_ofC hb ho hi
+
+theorem canon_union (R S : CRel A B) (hb : (R.union S).ok = true) (ho : (Obj.prod A B).Ordered)
+    (hi : (Obj.prod A B).KeyInj) : (R.union S).rel.Canon := by
+  have e : R.union S = _ := guard_eq ok hb; rw [e] at hb ⊢; exact canon_ofC hb ho hi
+
+/-- **`comp` is associative on data**: both bracketings answer the same rows in the same order. -/
+theorem comp_assoc {D : Obj} (R : CRel A B) (S : CRel B C) (T : CRel C D) (h₁ : ((R.comp S).comp T).ok = true)
+    (h₂ : (R.comp (S.comp T)).ok = true) (ho : (Obj.prod A D).Ordered) (hi : (Obj.prod A D).KeyInj) :
+    ((R.comp S).comp T).rel.toList = (R.comp (S.comp T)).rel.toList := by
+  have hl := guard_ok_left h₁; have hr := guard_ok_left h₂; simp only [Bool.and_eq_true] at hl hr
+  refine canon_eq (canon_comp _ _ h₁ ho hi) (canon_comp _ _ h₂ ho hi) ?_
+  rw [rep_comp _ _ h₁, rep_comp _ _ hl.1, rep_comp _ _ h₂, rep_comp _ _ hr.2, Cat.assoc]
+
+/-- **`R ∩ R` is `R` on data**, for a canonical `R`. -/
+theorem inter_self (R : CRel A B) (hb : (R.inter R).ok = true) (hR : R.rel.Canon) (ho : (Obj.prod A B).Ordered)
+    (hi : (Obj.prod A B).KeyInj) : (R.inter R).rel.toList = R.rel.toList :=
+  canon_eq (canon_inter _ _ hb ho hi) hR (by rw [rep_inter _ _ hb, Freyd.Alg.Allegory.inter_idem])
+
+/-- **`R ∪ R` is `R` on data**, for a canonical `R`. -/
+theorem union_self (R : CRel A B) (hb : (R.union R).ok = true) (hR : R.rel.Canon) (ho : (Obj.prod A B).Ordered)
+    (hi : (Obj.prod A B).KeyInj) : (R.union R).rel.toList = R.rel.toList :=
+  canon_eq (canon_union _ _ hb ho hi) hR (by rw [rep_union _ _ hb, Freyd.Alg.DistributiveAllegory.union_idem])
 
 end CRel
 

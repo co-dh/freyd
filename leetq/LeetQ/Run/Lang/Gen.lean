@@ -40,6 +40,7 @@ def Dem.r {A : Obj} : (d e : Bool) → Dem (d || e) A → Dem e A
 namespace Gen
 
 open QLean QLean.Dep QLean.Kernel
+open LeetQ.Rel.CRel (ofC)
 
 /-- A term's code: its relation and ok bit on the keys it is given. -/
 abbrev Fn (d : Bool) (A B : Obj) := Dem d A → CRel A B
@@ -52,8 +53,6 @@ abbrev Gv := (A : Obj) × (B : Obj) × CRel A B
 
 def entry (n : String) (A B : Obj) (c : CRel A B) : String × Gv := (n, ⟨A, B, c⟩)
 
-/-- A twin's answer as a `CRel`. -/
-def ofC {A B : Obj} (r : Rel A B × Bool) : CRel A B := ⟨r.1, r.2⟩
 
 /-- `r` with the bits `b` of the ops that computed its inputs outside it. -/
 def also {A B : Obj} (b : Bool) (r : CRel A B) : CRel A B := ⟨r.rel, b && r.ok⟩
@@ -93,10 +92,10 @@ def const (A B : Obj) (c : CRel A B) : Fn false A B := fun _ => c
 def val (A B : Obj) (R : Rel A B × Bool) : Fn false A B := fun _ => ofC R
 def uni (A : Obj) (m : USize) (U : Vals A m × Bool) : Fn false A A := fun _ => ⟨idU U.1, U.2⟩
 def zero (A B : Obj) : Fn false A B := fun _ => ⟨Alg.zero, true⟩
-def id (A : Obj) : Fn true A A := fun D => ⟨D, true⟩
+def id (A : Obj) : Fn true A A := fun D => ofC (D, true)
 def top (A B : Obj) (V : Fn false B B) : Fn true A B := fun D => let v := V (); also v.ok (ofC (topC D.val v.rel.val))
-def outl (A B : Obj) : Fn true (.prod A B) A := fun D => ⟨Alg.outl D, true⟩
-def outr (A B : Obj) : Fn true (.prod A B) B := fun D => ⟨Alg.outr D, true⟩
+def outl (A B : Obj) : Fn true (.prod A B) A := fun D => ofC (Alg.outl D, true)
+def outr (A B : Obj) : Fn true (.prod A B) B := fun D => ofC (Alg.outr D, true)
 
 /-- The demand of `S` in `R S`: `ran(R)` where `S` takes one, `R`'s plan run for it, `ranC`'s bit kept so the
     demand is proved a coreflexive on `R`'s range (`GenSpec.demP_spec`). -/
@@ -122,7 +121,7 @@ def ldivB (A B C : Obj) (R : Pl false A B) (S : Pl false A C) (UB : Fn false B B
   let r := R (); let s := S (); let ub := UB (); let uc := UC ()
   also (r.2 && s.2 && ub.ok && uc.ok) (ofC (Bits.runC (.ldiv r.1 s.1 (.val ub.rel) (.val uc.rel))))
 
-def conv (A B : Obj) (R : Fn false A B) : Fn false B A := fun _ => let r := R (); ⟨r.rel°, r.ok⟩
+def conv (A B : Obj) (R : Fn false A B) : Fn false B A := fun _ => let r := R (); ofC (r.rel°, r.ok)
 def meet (A B : Obj) (d e : Bool) (R : Fn d A B) (S : Fn e A B) : Fn (d || e) A B := fun D =>
   CRel.inter (R (Dem.l d e D)) (S (Dem.r d e D))
 def join (A B : Obj) (d e : Bool) (R : Fn d A B) (S : Fn e A B) : Fn (d || e) A B := fun D =>

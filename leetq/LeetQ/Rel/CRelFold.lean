@@ -26,16 +26,6 @@ namespace Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF Freyd Freyd.Alg Freyd.Alg.RelSet
 open OpsN FoldN
-
-/-- **`rep (nub R) = rep R` under `nubC`'s bit**: the codes' bits give `rep_nub`'s `hK`, `hV` (`oneOK_of_codesC`),
-    the `fitsN` bits its picks. -/
-theorem rep_nubC {k v : Obj} (R : Rel k v) (hb : (nubC R).2 = true) : rep (nubC R).1 = rep R := by
-  simp only [nubC, Bool.and_eq_true] at hb
-  obtain ⟨⟨⟨hK, hV⟩, hk⟩, hv⟩ := hb
-  rw [nubC_fst]
-  exact rep_nub R (oneOK_of_codesC k R.key hK) (oneOK_of_codesC v R.val hV) (pickFits_of_fitsN k R.key _ hk _ (by simp))
-    (pickFits_of_fitsN v R.val _ hv _ (by simp))
-
 /-- **A round's bit**: its step's, `nubC`'s on the step's relation, `antiJoinC`'s on the pending rows, `unionC`'s on
     the leftovers, at the round's element `el`. -/
 theorem foldRound_snd {E V : Obj} (ids : Rel .long (.arr E)) (stepC : Rel .long E → Rel .long V → Rel .long V × Bool)
@@ -522,7 +512,7 @@ theorem rep_foldBy {E V : Obj} {m n : USize} (e : Vals V m) (X : Vals (.arr E) n
           (xs[t]'ht, ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm))
           (ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm))) ∧
         w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) :=
-  rep_foldByC e X _ hb T hT pend₀ hpend step hstep Sr elK hE f hf keep hS
+  by unfold CRel.foldBy at hb ⊢; rw [rep_ofC hb]; exact rep_foldByC e X _ (ofC_ok hb).1 T hT pend₀ hpend step hstep Sr elK hE f hf keep hS
 
 /-- **`CRel.foldOn` read back under its bit**: `rep_foldOnC`. -/
 theorem rep_foldOn {E V : Obj} {m n : USize} (e : Vals V m) (S : CRel (.prod E V) (.prod E V) → CRel (.prod E V) V)
@@ -548,7 +538,7 @@ theorem rep_foldOn {E V : Obj} {m n : USize} (e : Vals V m) (S : CRel (.prod E V
           (xs[t]'ht, ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm))
           (ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm))) ∧
         w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) :=
-  rep_foldOnC e _ X hb T hT pend₀ hpend step hstep elK hE f hf D hD Sr hSr
+  by unfold CRel.foldOn at hb ⊢; rw [rep_ofC hb]; exact rep_foldOnC e _ X (ofC_ok hb).1 T hT pend₀ hpend step hstep elK hE f hf D hD Sr hSr
 
 /-- **`CRel.fold` read back under its bit**: `rep_foldC`. -/
 theorem rep_fold {E V : Obj} {m n : USize} (e : Vals V m) (S : CRel (.prod E V) V) (X : Vals (.arr E) n)
@@ -559,7 +549,7 @@ theorem rep_fold {E V : Obj} {m n : USize} (e : Vals V m) (S : CRel (.prod E V) 
         (∀ t (ht : t < xs.length), rep S.rel (xs[t]'ht, ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm))
           (ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm))) ∧
         w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) := by
-  have e' : fold e S X = _ := guard_eq ok hb; rw [e'] at hb ⊢; exact rep_foldC e S.rel X hb
+  have e' : fold e S X = _ := guard_eq ok hb; rw [e'] at hb ⊢; rw [rep_ofC hb]; exact rep_foldC e S.rel X (ofC_ok hb).1
 
 /-- **`CRel.Arr.sum` read back under its bit**: `Rep.Arr.rep_sumC`. -/
 theorem Arr.rep_sum {n : USize} (X : Vals (.arr .long) n)
@@ -568,32 +558,32 @@ theorem Arr.rep_sum {n : USize} (X : Vals (.arr .long) n)
       (∀ t, t ≤ xs.length → -2 ^ 63 < List.sum (List.map Int64.toInt (List.drop t xs)) ∧
         List.sum (List.map Int64.toInt (List.drop t xs)) < 2 ^ 63) ∧ (∀ x ∈ xs, x ≠ nul) ∧
       w = xs.foldr (· + ·) 0 :=
-  Rep.Arr.rep_sumC X hb
+  by unfold CRel.Arr.sum at hb ⊢; rw [rep_ofC hb]; exact Rep.Arr.rep_sumC X (ofC_ok hb).1
 
 /-- **`CRel.length` read back under its bit**: `rep_lengthC`. -/
 theorem rep_length {E : Obj} {n : USize} (X : Vals (.arr E) n)
     (hb : (length X).ok = true) :
     ∀ (xs : List E.El) (w : Int64), rep (length X).rel xs w ↔ (∃ i, X.row i = xs) ∧ w = Int64.ofNat xs.length :=
-  rep_lengthC X hb
+  by unfold CRel.length at hb ⊢; rw [rep_ofC hb]; exact rep_lengthC X (ofC_ok hb).1
 
 /-- **`CRel.map` read back under its bit**: `rep_mapC`. -/
 theorem rep_map {A B : Obj} {n : USize} (R : CRel A B) (X : Vals (.arr A) n)
     (hb : (map R X).ok = true) :
     ∀ (xs : List A.El) ys, rep (map R X).rel xs ys ↔ (∃ i, X.row i = xs) ∧ ys.length = xs.length ∧
       ∀ t (ht : t < xs.length) (ht' : t < ys.length), rep R.rel (xs[t]'ht) (ys[t]'ht') :=
-  by have e : map R X = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_mapC R.rel X hb
+  by have e : map R X = _ := guard_eq ok hb; rw [e] at hb ⊢; rw [rep_ofC hb]; replace hb := (ofC_ok hb).1; exact rep_mapC R.rel X hb
 
 /-- **`CRel.perm` read back under its bit**: `rep_permC`. -/
 theorem rep_perm {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (hb : (perm X).ok = true) :
     ∀ (xs : List B.El) ys, rep (perm X).rel xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Perm xs :=
-  rep_permC X hb
+  by unfold CRel.perm at hb ⊢; rw [rep_ofC hb]; exact rep_permC X (ofC_ok hb).1
 
 /-- **`CRel.subseq` read back under its bit**: `rep_subseqC`. -/
 theorem rep_subseq {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (hb : (subseq X).ok = true) :
     ∀ (xs : List B.El) ys, rep (subseq X).rel xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Sublist xs :=
-  rep_subseqC X hb
+  by unfold CRel.subseq at hb ⊢; rw [rep_ofC hb]; exact rep_subseqC X (ofC_ok hb).1
 
 /-- **`CRel.thinLOn` read back under its bit**: `rep_thinLOnC`. -/
 theorem rep_thinLOn {B : Obj} {n : USize} (q : CRel (.prod B B) (.prod B B) → CRel (.prod B B) (.prod B B))
@@ -603,7 +593,7 @@ theorem rep_thinLOn {B : Obj} {n : USize} (q : CRel (.prod B B) (.prod B B) → 
       ∀ a b, S (a, b) → ((∃ c, rep (q ⟨D, true⟩).rel (a, b) c) ↔ le a b = true))
     (hb : (thinLOn q X).ok = true) :
     ∀ (xs : List B.El) w, rep (thinLOn q X).rel xs w ↔ (∃ i, X.row i = xs) ∧ thinLDen le xs w :=
-  rep_thinLOnC _ le X hq hb
+  by unfold CRel.thinLOn at hb ⊢; rw [rep_ofC hb]; exact rep_thinLOnC _ le X hq (ofC_ok hb).1
 
 #print axioms Arr.rep_sum
 #print axioms rep_length
@@ -615,7 +605,7 @@ theorem rep_thinLOn {B : Obj} {n : USize} (q : CRel (.prod B B) (.prod B B) → 
 /-- **`CRel.diff` read back under its bit**: `rep_diffC`. -/
 theorem rep_diff {A B : Obj} (R S : CRel A B) (hb : (diff R S).ok = true) (a : A.El) (b : B.El) :
     rep (diff R S).rel a b ↔ rep R.rel a b ∧ ¬ rep S.rel a b := by
-  have e : diff R S = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_diffC R.rel S.rel hb a b
+  have e : diff R S = _ := guard_eq ok hb; rw [e] at hb ⊢; rw [rep_ofC hb]; replace hb := (ofC_ok hb).1; exact rep_diffC R.rel S.rel hb a b
 
 end CRel
 

@@ -2,7 +2,7 @@
   Guards of the relation algebra: every operator against its `toList` spec on small literal relations.
   Nothing imports this file; it is built so a guard that fails fails the build.
 -/
-import LeetQ.Run.Alg
+import LeetQ.Run.CRelDef
 
 namespace LeetQ.Rel.Alg
 
@@ -152,10 +152,10 @@ private def estSpec {A B : Obj} [BEq A.El] [BEq B.El] (Q : Rel B B) (G : Rel A B
 #guard seteq (est LE° R).toList [(1, 20), (2, 10), (3, 30)] && est LT° R == est LE° R && thin LE° R == est LE° R
 #guard seteq (est LE S).toList (estSpec LE S) && seteq (est LT° S).toList (estSpec LT° S) &&
   seteq (thin LE S).toList (thinSpec LE S) && seteq (thin LT° S).toList (thinSpec LT° S)
--- ties: the preorder by tens, `10` and `15` tied; `(2, 20)` twice, kept twice
+-- ties: the preorder by tens, `10` and `15` tied; `(2, 20)` given twice, which canonical `ofPairs` keeps once
 private def Rt : LL := ofPairs [(1, 10), (1, 15), (1, 20), (2, 20), (2, 20)]
 private def tens := ordOn fun a b => a / 10 ≤ b / 10
-#guard seteq (est tens Rt).toList [(1, 10), (1, 15), (2, 20)] && (est tens Rt).n == 4 &&
+#guard seteq (est tens Rt).toList [(1, 10), (1, 15), (2, 20)] && (est tens Rt).n == 3 &&
   seteq (est tens Rt).toList (estSpec tens Rt) && seteq (thin tens Rt).toList (thinSpec tens Rt) && thin tens Rt == est tens Rt
 -- empty: no rows; no order: `thin` drops nothing, `est` keeps the one-value sets alone
 #guard (est LE (zero (A := L) (B := L))).n == 0 && (thin LE (zero (A := L) (B := L))).n == 0

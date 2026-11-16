@@ -181,43 +181,43 @@ variable {A B C D : Obj}
 theorem rep_inl {n : USize} (X : Vals A n) (hb : (inl (B := B) X).ok = true) :
     rep (inl (B := B) X).rel = corefl (A := (⟨A.El⟩ : RelSet.{0})) (fun x => ∃ i, X.row i = x) ≫
       (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩).u₁ :=
-  rep_inlC X hb
+  by unfold CRel.inl at hb ⊢; rw [rep_ofC hb]; exact rep_inlC X (ofC_ok hb).1
 
 theorem rep_inr {n : USize} (Y : Vals B n) (hb : (inr (A := A) Y).ok = true) :
     rep (inr (A := A) Y).rel = corefl (A := (⟨B.El⟩ : RelSet.{0})) (fun y => ∃ i, Y.row i = y) ≫
       (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩).u₂ :=
-  rep_inrC Y hb
+  by unfold CRel.inr at hb ⊢; rw [rep_ofC hb]; exact rep_inrC Y (ofC_ok hb).1
 
 theorem rep_junc (R : CRel A C) (S : CRel B C) (hb : (R.junc S).ok = true) :
     rep (R.junc S).rel = Freyd.Alg.junc (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩) (rep R.rel) (rep S.rel) := by
-  have e : R.junc S = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_juncC R.rel S.rel hb
+  have e : R.junc S = _ := guard_eq ok hb; rw [e] at hb ⊢; rw [rep_ofC hb]; replace hb := (ofC_ok hb).1; exact rep_juncC R.rel S.rel hb
 
 theorem rep_sum (R : CRel A C) (S : CRel B D) (hb : (R.sum S).ok = true) :
     rep (R.sum S).rel =
       ((sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩).u₁° ≫ rep R.rel ≫ (sumCop (⟨C.El⟩ : RelSet.{0}) ⟨D.El⟩).u₁) ∪
       ((sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩).u₂° ≫ rep S.rel ≫ (sumCop (⟨C.El⟩ : RelSet.{0}) ⟨D.El⟩).u₂) := by
-  have e : R.sum S = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_sumC R.rel S.rel hb
+  have e : R.sum S = _ := guard_eq ok hb; rw [e] at hb ⊢; rw [rep_ofC hb]; replace hb := (ofC_ok hb).1; exact rep_sumC R.rel S.rel hb
 
 theorem rep_lt {n : USize} (U : Vals (.atom .long) n) (h : QAtomicType.long ≠ .general) (hb : (lt U h).ok = true)
     (a b : Int64) : rep (lt U h).rel a b ↔ (∃ i, U.row i = a) ∧ (∃ j, U.row j = b) ∧ a < b :=
-  rep_ltC U h hb a b
+  by unfold CRel.lt at hb ⊢; rw [rep_ofC hb]; exact rep_ltC U h (ofC_ok hb).1 a b
 
 theorem rep_leq {n : USize} (U : Vals (.atom .long) n) (h : QAtomicType.long ≠ .general) (hb : (leq U h).ok = true)
     (a b : Int64) : rep (leq U h).rel a b ↔ (∃ i, U.row i = a) ∧ (∃ j, U.row j = b) ∧ a ≤ b :=
-  rep_leqC U h hb a b
+  by unfold CRel.leq at hb ⊢; rw [rep_ofC hb]; exact rep_leqC U h (ofC_ok hb).1 a b
 
 theorem rep_succ {n : USize} (U : Vals (.atom .long) n) (hb : (succ U).ok = true) (u w : Int64) :
     rep (succ U).rel u w ↔ (∃ i, U.row i = u) ∧ w = Ew.intStep Ew.add nul u 1 ∧ ∃ j, U.row j = w :=
-  rep_succC U hb u w
+  by unfold CRel.succ at hb ⊢; rw [rep_ofC hb]; exact rep_succC U (ofC_ok hb).1 u w
 
 theorem rep_asc_long {n : USize} (X : Vals (.arr (.atom .long)) n) (hb : (asc X).ok = true) :
     ∀ xs ys, rep (asc X).rel xs ys ↔ (∃ j, X.row j = xs) ∧ ys.Perm xs ∧ ys.Pairwise (· ≤ ·) :=
-  rep_ascC_long X hb
+  by unfold CRel.asc at hb ⊢; rw [rep_ofC hb]; exact rep_ascC_long X (ofC_ok hb).1
 
 theorem rep_asc {n : USize} (X : Vals (.arr B) n) (hB : B.Ordered) (hb : (asc X).ok = true) :
     (∀ xs ys, rep (asc X).rel xs ys → (∃ j, X.row j = xs) ∧ ys.Perm xs ∧ ys.Pairwise fun x y => ¬ B.lt y x) ∧
       ∀ xs, (∃ j, X.row j = xs) → ∃ ys, rep (asc X).rel xs ys :=
-  rep_ascC X hB hb
+  by unfold CRel.asc at hb ⊢; rw [rep_ofC hb]; exact rep_ascC X hB (ofC_ok hb).1
 
 #print axioms rep_asc
 

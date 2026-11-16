@@ -44,10 +44,6 @@ def col (xs : List Int64) : Arr .long xs.length.toUSize :=
   Arr.mk (.bytes (packLongs xs)) (show (packLongs xs).size = xs.length.toUSize.toNat * 8 by
     rw [packLongs_size, Nat.mul_comm, USize.toNat_ofNat_of_lt' h])
 
-/-- A relation from its pairs of longs. -/
-def ofPairs (ps : List (Int64 × Int64)) : Rel .long .long :=
-  ⟨ps.length.toUSize, List.length_map _ ▸ col (ps.map (·.1)), List.length_map _ ▸ col (ps.map (·.2))⟩
-
 def nul : Int64 := Int64.minValue
 
 -- The long helpers run at the count `n` their caller holds in a type (a `Vals A n`, a `longCount`), never at
