@@ -21,7 +21,7 @@ deriving instance DecidableEq for LeetQ.Rel.Obj
 structure Pos where
   line : Nat := 0
   col : Nat := 0
-  deriving Repr, BEq, Inhabited
+  deriving Repr, BEq, Inhabited, Lean.ToExpr
 
 instance : ToString Pos := ⟨fun p => s!"line {p.line}, col {p.col}"⟩
 

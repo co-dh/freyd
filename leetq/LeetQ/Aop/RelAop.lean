@@ -1,4 +1,5 @@
 import LeetQ.Aop.Calc
+import LeetQ.Run.Lang.Embed
 import AOP.A6_ConsList
 
 /-! `rel_aop n model … proof …` (`doc/rel-mss-proof-design.md` §4, stage S5): the program `n` (a `rel_program`

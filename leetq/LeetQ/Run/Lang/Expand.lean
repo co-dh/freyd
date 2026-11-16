@@ -462,7 +462,6 @@ open Lean Meta
 
 deriving instance ToExpr for QLean.QAtomicType
 deriving instance ToExpr for LeetQ.Rel.Obj
-deriving instance ToExpr for Lang.Pos
 deriving instance ToExpr for MVarId
 deriving instance ToExpr for OTy
 
