@@ -164,10 +164,11 @@ def prims : List Prim :=
    -- `filter(p)`, `takewhile(p)` given one relation run as their mask forms (`rep_filterC`, `rep_takewhileC`)
    { sym := "filter", sig := prim% CRel.filter, prelude := `LeetQ.Rel.Programs.prelude.filter },
    { sym := "takewhile", sig := prim% CRel.takewhile, prelude := `LeetQ.Rel.Programs.prelude.takewhile },
-   { sym := "thinL", sig := prim% CRel.thinLOn, mono := false, aop := .ok `Freyd.Alg.RelSet.ListRel.thinL },
+   { sym := "thinL", sig := prim% CRel.thinLOn, sound := `LeetQ.Rel.Lang.Gen.thinL_sound,
+     mono := false, aop := .ok `Freyd.Alg.RelSet.ListRel.thinL },
    { sym := "merge", sig := prim% CRel.mergeOn, sound := `LeetQ.Rel.Lang.Gen.merge_sound,
      mono := false, aop := .ok `Freyd.Alg.RelSet.ListRel.merge },
-   { sym := "loop", sig := prim% CRel.loopOn, aop := .error "AOP declares no iteration to a fixed point from the left" },
+   { sym := "loop", sig := prim% CRel.loopOn, sound := `LeetQ.Rel.Lang.Gen.loop_sound, aop := .error "AOP declares no iteration to a fixed point from the left" },
    { sym := "uncons", sig := prim% CRel.uncons, sound := `LeetQ.Rel.Lang.Gen.uncons_sound,
      conv := "cons", written := false },
    { sym := "length", sig := prim% CRel.length, sound := `LeetQ.Rel.Lang.Gen.length_sound,

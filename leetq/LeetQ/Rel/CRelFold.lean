@@ -412,11 +412,13 @@ theorem rep_subseqC {B : Obj} {n : USize} (X : Vals (.arr B) n)
     ⟨fun ⟨_, h⟩ => h.symm, fun h => ⟨⟨0, by simp⟩, h.symm⟩⟩ Iff.rfl).trans (subseq_chain xs ys))
 
 /-- **`thinBodyC`'s body on a coreflexive `D`, read back under its bit**: `thin_body_set` with each piece read
-    back by its twin's lemma, `swapInC`'s pieces by theirs. `hq` is the test's own spec: where `q`'s bit is set, `q` on any coreflexive keeps the
-    pairs `le` holds of. -/
+    back by its twin's lemma, `swapInC`'s pieces by theirs. `hq` is the test's own spec: where `q`'s bit is set, `q` on a
+    coreflexive keeps the pairs of it `le` holds of. -/
 theorem thinBodyC_rep {B : Obj}
     (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B) × Bool) (le : B.El → B.El → Bool)
-    (hq : ∀ D, (q D).2 = true → ∀ a b, rep D (a, b) (a, b) → ((∃ c, rep (q D).1 (a, b) c) ↔ le a b = true))
+    (hq : ∀ (D : Rel (.prod B B) (.prod B B)) (S : (Obj.prod B B).El → Prop),
+      rep D = corefl (A := (⟨(Obj.prod B B).El⟩ : RelSet.{0})) S → (q D).2 = true →
+      ∀ a b, S (a, b) → ((∃ c, rep (q D).1 (a, b) c) ↔ le a b = true))
     (D : Rel (.prod B (.arr B)) (.prod B (.arr B))) (hD : ∀ s s', rep D s s' → s = s')
     (hb : (thinBodyC q D).2 = true) :
     ∀ a (y v : List B.El), rep (thinBodyC q D).1 (a, y) v ↔ rep D (a, y) (a, y) ∧ ((y = [] ∧ v = [a]) ∨
@@ -430,23 +432,20 @@ theorem thinBodyC_rep {B : Obj}
   obtain ⟨⟨⟨⟨hss, hrs⟩, hG2⟩, hq2⟩, hsw⟩ := hsw
   have eD : rep D = corefl (A := (⟨(Obj.prod B (.arr B)).El⟩ : RelSet.{0})) fun s => rep D s s :=
     hom_ext fun s s' => ⟨fun h => ⟨hD s s' h, by obtain rfl := hD s s' h; exact h⟩, fun ⟨e, h⟩ => e ▸ h⟩
+  have eab := (rep_ranC _ hrab).trans (dom_corefl _); have ers := (rep_ranC _ hrs).trans (dom_corefl _)
   exact thin_body_set le D _ eD _ rfl _ rfl _ (rep_unconsC _ hun) (rep_compC _ _ hu) _ (rep_pairC _ _ hab)
-    _ ((rep_ranC _ hrab).trans (dom_corefl _)) _ (hq _ hG1) _ (rep_compC _ _ hq1)
-    _ ((rep_domC _ hup).trans (dom_corefl _)) _ (rep_pairC _ _ hss) _ ((rep_ranC _ hrs).trans (dom_corefl _))
-    _ (fun a b => hq _ hG2 b a) _ (rep_compC _ _ hq2) _ ((rep_domC _ hsw).trans (dom_corefl _))
+    _ eab _ (fun a b h => hq _ _ eab hG1 a b (by rw [eab] at h; exact h.2)) _ (rep_compC _ _ hq1)
+    _ ((rep_domC _ hup).trans (dom_corefl _)) _ (rep_pairC _ _ hss) _ ers
+    _ (fun a b h => hq _ _ ers hG2 b a (by rw [ers] at h; exact h.2)) _ (rep_compC _ _ hq2) _ ((rep_domC _ hsw).trans (dom_corefl _))
     _ (rep_compC _ _ hq3) _ ((rep_domC _ hdown).trans (dom_corefl _)) _ ((rep_domC _ hdu).trans (dom_corefl _))
     _ (rep_diffC _ _ hl1) _ (rep_diffC _ _ hl2) _ (rep_diffC _ _ hl3) _ (rep_unionC _ _ hlone)
     _ (rep_consC _ hc1) _ (rep_compC _ _ hua) _ (rep_compC _ _ huu) _ ((rep_ranC _ hru).trans (dom_corefl _))
     _ (rep_compC _ _ hut) _ (rep_pairC _ _ hpu) _ (rep_consC _ hc2) _ (rep_compC _ _ hdy)
     _ (rep_unionC _ _ hb1) _ (rep_unionC _ _ hbody)
 
-/-- **`thinLOn` under `thinLOnC`'s bit**: `rep_foldOnC` at `thinBodyC q`, each round's body read back on its pairs
-    by `thinBodyC_rep`. What stays: `hq`, the test's own spec. -/
-theorem rep_thinLOnC {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B) × Bool)
-    (le : B.El → B.El → Bool) (X : Vals (.arr B) n)
-    (hq : ∀ D, (q D).2 = true → ∀ a b, rep D (a, b) (a, b) → ((∃ c, rep (q D).1 (a, b) c) ↔ le a b = true))
-    (hb : (thinLOnC q X).2 = true) :
-    ∀ (xs : List B.El) w, rep (thinLOnC q X).1 xs w ↔ (∃ i, X.row i = xs) ∧
+/-- What `thinLOn` computes from one array `xs`, `le` its test read as an order: the chain `ys` from `[]`, each
+    `ys[t]` the element `xs[t]` bumped into `ys[t+1]` (`thinBodyC_rep`), `w` its head. -/
+def thinLDen {B : Obj} (le : B.El → B.El → Bool) (xs w : List B.El) : Prop :=
       ∃ ys : List (Obj.arr B).El, ∃ hy : ys.length = xs.length + 1,
         (∃ p, (nilVal B).row p = ys[xs.length]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_self _) hy.symm)) ∧
         (∀ t (ht : t < xs.length),
@@ -459,7 +458,17 @@ theorem rep_thinLOnC {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) → 
                (le (xs[t]'ht) b = false ∧ le b (xs[t]'ht) = false ∧
                 ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm) =
                   xs[t]'ht :: ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm)))) ∧
-        w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) :=
+        w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm)
+
+/-- **`thinLOn` under `thinLOnC`'s bit**: `rep_foldOnC` at `thinBodyC q`, each round's body read back on its pairs
+    by `thinBodyC_rep`. What stays: `hq`, the test's own spec on the coreflexives it is run on. -/
+theorem rep_thinLOnC {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B) × Bool)
+    (le : B.El → B.El → Bool) (X : Vals (.arr B) n)
+    (hq : ∀ (D : Rel (.prod B B) (.prod B B)) (S : (Obj.prod B B).El → Prop),
+      rep D = corefl (A := (⟨(Obj.prod B B).El⟩ : RelSet.{0})) S → (q D).2 = true →
+      ∀ a b, S (a, b) → ((∃ c, rep (q D).1 (a, b) c) ↔ le a b = true))
+    (hb : (thinLOnC q X).2 = true) :
+    ∀ (xs : List B.El) w, rep (thinLOnC q X).1 xs w ↔ (∃ i, X.row i = xs) ∧ thinLDen le xs w :=
   rep_foldOnC (E := B) (V := .arr B) (m := 1) (nilVal B) (thinBodyC q) X hb _ rfl _ rfl _ (fun _ _ => rfl)
     _ (fun _ => rfl) _ (fun _ => rfl) _ (fun _ => rfl)
     (fun _ (p : B.El × List B.El) v => (p.2 = [] ∧ v = [p.1]) ∨ ∃ b bs, p.2 = b :: bs ∧
@@ -589,23 +598,11 @@ theorem rep_subseq {B : Obj} {n : USize} (X : Vals (.arr B) n)
 /-- **`CRel.thinLOn` read back under its bit**: `rep_thinLOnC`. -/
 theorem rep_thinLOn {B : Obj} {n : USize} (q : CRel (.prod B B) (.prod B B) → CRel (.prod B B) (.prod B B))
     (le : B.El → B.El → Bool) (X : Vals (.arr B) n)
-    (hq : ∀ D, (q ⟨D, true⟩).ok = true → ∀ a b, rep D (a, b) (a, b) →
-      ((∃ c, rep (q ⟨D, true⟩).rel (a, b) c) ↔ le a b = true))
+    (hq : ∀ (D : Rel (.prod B B) (.prod B B)) (S : (Obj.prod B B).El → Prop),
+      rep D = corefl (A := (⟨(Obj.prod B B).El⟩ : RelSet.{0})) S → (q ⟨D, true⟩).ok = true →
+      ∀ a b, S (a, b) → ((∃ c, rep (q ⟨D, true⟩).rel (a, b) c) ↔ le a b = true))
     (hb : (thinLOn q X).ok = true) :
-    ∀ (xs : List B.El) w, rep (thinLOn q X).rel xs w ↔ (∃ i, X.row i = xs) ∧
-      ∃ ys : List (Obj.arr B).El, ∃ hy : ys.length = xs.length + 1,
-        (∃ p, (nilVal B).row p = ys[xs.length]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_self _) hy.symm)) ∧
-        (∀ t (ht : t < xs.length),
-          (ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm) = [] ∧
-              ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm) = [xs[t]'ht]) ∨
-            ∃ b bs, ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm) = b :: bs ∧
-              ((le (xs[t]'ht) b = true ∧ ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm) = xs[t]'ht :: bs) ∨
-               (le b (xs[t]'ht) = true ∧ ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm) =
-                 ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm)) ∨
-               (le (xs[t]'ht) b = false ∧ le b (xs[t]'ht) = false ∧
-                ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm) =
-                  xs[t]'ht :: ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm)))) ∧
-        w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) :=
+    ∀ (xs : List B.El) w, rep (thinLOn q X).rel xs w ↔ (∃ i, X.row i = xs) ∧ thinLDen le xs w :=
   rep_thinLOnC _ le X hq hb
 
 #print axioms Arr.rep_sum
