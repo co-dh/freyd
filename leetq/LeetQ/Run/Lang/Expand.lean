@@ -28,10 +28,8 @@ def objInfo (env : Env) (n : String) : ObjDef → EM ObjInfo
 
 /-- The definition `d` whose constant is `c`, as a use sees it. `prelude.perm` is its own converse, the one converse
     rule kept for a definition (`Tm.own`): `perm° = perm` is a theorem the language cannot derive from the fold
-    `perm` is. `prelude.tails`, `prefix`, `suffix`, `concat` run as their slice forms, each read back against
-    the list function the prelude's fold is (`rep_tailsC`, `rep_prefixC`, `rep_suffixC`, `rep_concatC`); `filter(p)`, `takewhile(p)` (given
-    one relation, not a family) as their mask forms, whose read-back theorems (`rep_filterC`, `rep_takewhileC`) are
-    not proved yet. `imported`: `d` is another program's, so an error its body raises at a use names `c` and its
+    `perm` is: it has no kernel, so it is no row. A prelude definition with a row of `prims` (`Prim.prelude`), given
+    relations and not families, runs as that row's kernel. `imported`: `d` is another program's, so an error its body raises at a use names `c` and its
     line there, at the use; one about the arguments (at the use) passes as it is. -/
 def useDef (c : Lean.Name) (imported : Bool) (d : Def) : Def :=
   { d with apply := fun p as => do
@@ -40,14 +38,15 @@ def useDef (c : Lean.Name) (imported : Bool) (d : Def) : Def :=
       let r ← if imported then tryCatch (d.apply p as) reword else d.apply p as
       -- the body's positions are its program's: at the use, so what `build` raises later is at the use
       -- a prelude definition with a row of its own runs as that row's constant
+      -- given relations, not families, as its parameters are
       let row := prims.find? fun x => x.prelude && c == `LeetQ.Rel.Programs.prelude ++ .mkSimple x.sym
+      let rels := as.filterMap fun | .rel a s _ => some (a, s) | _ => none
       match c, r, row with
-      | _, .rel _ s t, some x => pure (.rel (.prim x s t) s t)
+      | _, .rel q s t, some x =>
+        if rels.length == as.length && as.length == x.sig.2.1.length then
+          pure (.rel (.prim x ((x.sig.2.1.zip rels).map fun ((_, f), (a, s')) => x.pass p f a s') s t) s t)
+        else pure (.rel (if imported then q.at p else q) s t)
       | `LeetQ.Rel.Programs.prelude.perm, .rel q s t, _ => pure (.rel (.own (q.at p)) s t)
-      | `LeetQ.Rel.Programs.prelude.filter, .rel q s t, _ =>
-        pure (.rel (match as with | [.rel a _ _] => .filter a | _ => if imported then q.at p else q) s t)
-      | `LeetQ.Rel.Programs.prelude.takewhile, .rel q s t, _ =>
-        pure (.rel (match as with | [.rel a _ _] => .takewhile a | _ => if imported then q.at p else q) s t)
       | _, .rel q s t, _ => pure (.rel (if imported then q.at p else q) s t)
       | _, .fam q i a b, _ => pure (.fam (if imported then q.at p else q) i a b) }
 
@@ -539,22 +538,48 @@ def liftE {α : Type} (x : Except String α) : RM α := match x with
   | .ok a => pure a
   | .error e => throwError "rel_program expansion: {e}"
 
-/-- Row `r`'s constant at `A`, `B`, under the wrapper whose argument it fits: its last explicit argument is that
-    argument's, every other is solved by unifying the constant's type with the wrapper's. -/
-def primE (r : Prim) (A B : Obj) : MetaM Lean.Expr := do
-  let c := r.sig.1
-  for w in [``Gen.ofVals, ``Gen.after] do
-    let .forallE _ T _ _ ← whnf (← inferType (g w #[oE A, oE B])) | throwError "internal: `{w}` takes no function"
-    let f? ← forallTelescope T fun ys body => do
-      let k ← mkConstWithFreshMVarLevels c
+/-- The row a spine of `arg`s is headed by. -/
+def primOf : {A B : Obj} → {d : Bool} → Tm A B d → Option Prim
+  | _, _, _, .prim r => some r
+  | _, _, _, .arg f _ => primOf f
+  | _, _, _, _ => none
+
+/-- The wrappers a row's constant runs under (`Gen.ofVals` …), tried in order. -/
+def primWrappers : List Name :=
+  [``Gen.ofVals, ``Gen.after, ``Gen.elems, ``Gen.testVals, ``Gen.testAfter, ``Gen.stepAfter]
+
+/-- Row `r`'s constant at `A ⟶ B` given the codes `xs` of its relations, under the first wrapper it fits: the
+    wrapper's `Fn` parts are `xs`, its function's explicit binders the constant's binders that are not objects or
+    sizes (as `prim%` reads them), every other solved by unifying the types. -/
+def primE (r : Prim) (A B : Obj) (xs : Array Lean.Expr) : MetaM Lean.Expr := do
+  for w in primWrappers do
+    if let some e ← withoutModifyingState (fit w) then return e
+  throwError "rel_program expansion: `{r.sig.1}` at {oE A} → {oE B} given {xs.size} relations fits none of {primWrappers}"
+where
+  fit (w : Name) : MetaM (Option Lean.Expr) := do
+    let (ws, _, wty) ← forallMetaTelescope (← inferType (mkConst w))
+    let some f := ws.back? | return none
+    let parts ← ws.pop.filterM fun m => return (← inferType m).isAppOf ``Gen.Fn
+    unless parts.size == xs.size && (← isDefEq wty (g ``Gen.Fn #[bE true, oE A, oE B])) do return none
+    for (m, x) in parts.zip xs do
+      unless ← isDefEq (← inferType m) (← inferType x) <&&> isDefEq m x do return none
+    let v? ← forallTelescope (← instantiateMVars (← inferType f)) fun ys body => do
+      let es ← ys.filterM fun y => return (← getFVarLocalDecl y).binderInfo.isExplicit
+      let k ← mkConstWithFreshMVarLevels r.sig.1
       let (ms, _, ty) ← forallMetaTelescope (← inferType k)
-      let (some m, some y) := (ms.back?, ys.back?) | return none
-      unless ← isDefEq (← inferType m) (← inferType y) <&&> isDefEq m y <&&> isDefEq ty body do return none
+      let rs ← ms.filterM fun m => do
+        let t ← whnfR (← inferType m); return !(t.isConstOf ``Obj || t.isConstOf ``USize)
+      unless rs.size == es.size do return none
+      for (m, y) in rs.zip es do
+        unless ← isDefEq (← inferType m) (← inferType y) <&&> isDefEq m y do return none
+      unless ← isDefEq ty body do return none
       let v ← instantiateMVars (mkAppN k ms)
       if v.hasMVar then return none
       return some (← mkLambdaFVars ys v)
-    if let some f := f? then return g w #[oE A, oE B, f]
-  throwError "rel_program expansion: `{c}` at {oE A} → {oE B} fits neither `Gen.ofVals` nor `Gen.after`"
+    let some v := v? | return none
+    unless ← isDefEq f v do return none
+    let e ← instantiateMVars (mkAppN (mkConst w) ws)
+    return if e.hasMVar then none else some e
 
 mutual
 
@@ -590,7 +615,9 @@ partial def plan? (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : B
     | some x => if (← inferType x).isAppOf ``Gen.Pl then return some x
                 else return some (g ``Gen.pleaf #[oE A, oE B, bE d, ← node pre ρ t])
     | none => return some (g ``Gen.pleaf #[oE A, oE B, bE d, ← node pre ρ t])
-  | _, _, _, .call .. | _, _, _, .arg .. => return some (← spine pre ρ t)
+  | _, _, _, .call .. => return some (← spine pre ρ t)
+  -- a row's spine is its kernel's node, a call's its constant's plan
+  | _, _, _, .arg .. => if (primOf t).isSome then return none else return some (← spine pre ρ t)
   | A, B, _, .val _ => return some (g ``Gen.pleaf #[oE A, oE B, bE false, ← node pre ρ t])
   | A, _, _, .uni _ => return some (g ``Gen.pleaf #[oE A, oE A, bE false, ← node pre ρ t])
   | _, _, _, .share _ R | _, _, _, .own R => plan? pre ρ R
@@ -620,6 +647,11 @@ partial def spine (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : B
   | .call _ c os _ => return mkAppN (mkConst c) (os.map oE).toArray
   | _ => throwError "rel_program expansion: internal: a call's head is not a constant"
 
+/-- The codes of a row's relations, in order (`Tm.arg`). -/
+partial def primArgs (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bool} : Tm A B d → RM (Array Lean.Expr)
+  | .arg f x => return (← primArgs pre ρ f).push (← code pre ρ x)
+  | _ => pure #[]
+
 /-- `φ`'s body as `fun X : CRel A B => …`, the variable `k` read as `X`. -/
 partial def body (pre : Name) (ρ : List (Nat × Lean.Expr)) (A B : Obj) (k : Nat) {d : Bool} (b : Tm A B d) :
     RM Lean.Expr :=
@@ -636,7 +668,6 @@ partial def node (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bo
   | A, B, _, .zero => return g ``Gen.zero #[oE A, oE B]
   | A, _, _, .id => return g ``Gen.id #[oE A]
   | A, B, _, .top V => return g ``Gen.top #[oE A, oE B, ← c V]
-  | _, B, _, .mem => return g ``Gen.mem #[oE B]
   | .prod A B, _, _, .outl => return g ``Gen.outl #[oE A, oE B]
   | .prod A B, _, _, .outr => return g ``Gen.outr #[oE A, oE B]
   | A, .sum _ B, _, .inl => return g ``Gen.inl #[oE A, oE B]
@@ -659,17 +690,12 @@ partial def node (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bo
   | A, .arr B, _, .lam (d := d) R => return g ``Gen.lam #[oE A, oE B, bE d, ← c R]
   | .arr A, .arr B, _, .E (d := d) R => return g ``Gen.E #[oE A, oE B, bE d, ← c R]
   | .arr A, .arr B, _, .map (d := d) R => return g ``Gen.map #[oE A, oE B, bE d, ← c R]
-  | .arr B, _, _, .filter (d := d) R => return g ``Gen.filter #[oE B, bE d, ← c R]
-  | .arr B, _, _, .takewhile (d := d) R => return g ``Gen.takewhile #[oE B, bE d, ← c R]
   | _, B, _, .est Q => return g ``Gen.est #[oE B, ← c Q]
   | _, .arr B, _, .thin Q => return g ``Gen.thin #[oE B, ← c Q]
   | A, .arr B, _, .nil => return g ``Gen.nil #[oE A, oE B]
-  | A, B, _, .prim r => primE r A B
+  | A, B, _, .prim r => primE r A B #[]
   | .arr B, _, _, .atPos k => return g ``Gen.atPos #[oE B, toExpr k]
   | _, _, _, .own R => c R
-  | .arr B, _, _, .thinL Q => return g ``Gen.thinL #[oE B, ← c Q]
-  | _, .arr B, _, .merge Q => return g ``Gen.merge #[oE B, ← c Q]
-  | .prod X (.arr Y), _, _, .loop (d := d) F => return g ``Gen.loop #[oE X, oE Y, bE d, ← c F]
   | _, _, _, .succ U => return g ``Gen.succ #[← c U]
   | _, _, _, .arith k U => return g ``Gen.arith #[toExpr k, ← c U]
   | _, _, _, .leq U => return g ``Gen.leq #[← c U]
@@ -699,7 +725,10 @@ partial def node (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bo
   | A, B, _, .refold (d := d) (e := e) k _ ch b =>
     return g ``Gen.refold #[oE A, oE B, bE d, bE e, ← c ch, ← body pre ρ A B k b]
   | .sum A B, C, _, .juncD (d := d) (e := e) R S => return g ``Gen.juncD #[oE A, oE B, oE C, bE d, bE e, ← c R, ← c S]
-  | A, B, d, t@(.call ..) | A, B, d, t@(.arg ..) => return g ``Gen.ofPl #[oE A, oE B, bE d, ← spine pre ρ t]
+  | A, B, d, t@(.arg ..) => match primOf t with
+    | some r => do primE r A B (← primArgs pre ρ t)
+    | none => return g ``Gen.ofPl #[oE A, oE B, bE d, ← spine pre ρ t]
+  | A, B, d, t@(.call ..) => return g ``Gen.ofPl #[oE A, oE B, bE d, ← spine pre ρ t]
 
 end
 

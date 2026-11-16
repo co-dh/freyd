@@ -145,15 +145,13 @@ def junc (A B C : Obj) (R : Fn false A C) (S : Fn false B C) : Fn false (.sum A 
   CRel.junc (R ()) (S ())
 /-- `Λ(R)` total on the keys `D`: `[]` at a key `R` relates to nothing (`CRel.lamOn`, `rep_lamOn`). -/
 def lam (A B : Obj) (d : Bool) (R : Fn d A B) : Fn true A (.arr B) := fun D => CRel.lamOn (R (Dem.of d D)) D.val
-/-- `op` on `R` read at the elements of `D`'s arrays, `ran(∋)` at `D`: the one form of `E`, `filter`, `takewhile`,
-    `map`. -/
-def elems (A B : Obj) (d : Bool) (op : {n : USize} → CRel A B → Vals (.arr A) n → CRel (.arr A) (.arr B))
-    (R : Fn d A B) : Fn true (.arr A) (.arr B) := fun D =>
-  let k := CRel.ran (CRel.mem D.val); also k.ok (op (R (Dem.of d k.rel)) D.val)
-def E (A B : Obj) (d : Bool) (R : Fn d A B) : Fn true (.arr A) (.arr B) := elems A B d CRel.E R
-def filter (B : Obj) (d : Bool) (R : Fn d B B) : Fn true (.arr B) (.arr B) := elems B B d CRel.filter R
-def takewhile (B : Obj) (d : Bool) (R : Fn d B B) : Fn true (.arr B) (.arr B) := elems B B d CRel.takewhile R
-def map (A B : Obj) (d : Bool) (R : Fn d A B) : Fn true (.arr A) (.arr B) := elems A B d CRel.map R
+/-- `f` on `R` read at the elements of `D`'s arrays, `ran(∋)` at `D`: the one form of `E`, `map` and the rows
+    given a relation on elements (`filter`, `takewhile`). -/
+def elems (A B C : Obj) (d : Bool) (R : Fn d A B) (f : {n : USize} → CRel A B → Vals (.arr A) n → CRel (.arr A) C) :
+    Fn true (.arr A) C := fun D =>
+  let k := CRel.ran (CRel.mem D.val); also k.ok (f (R (Dem.of d k.rel)) D.val)
+def E (A B : Obj) (d : Bool) (R : Fn d A B) : Fn true (.arr A) (.arr B) := elems A B (.arr B) d R CRel.E
+def map (A B : Obj) (d : Bool) (R : Fn d A B) : Fn true (.arr A) (.arr B) := elems A B (.arr B) d R CRel.map
 
 /-- An order held as its pair test, run on the pairs the operator compares. -/
 def est (B : Obj) (Q : Fn true (.prod B B) (.prod B B)) : Fn true (.arr B) B := fun D =>
@@ -163,23 +161,27 @@ def thin (B : Obj) (Q : Fn true (.prod B B) (.prod B B)) : Fn true (.arr B) (.ar
   let df := CRel.diff ⟨D, true⟩ (CRel.dom T)
   CRel.union (CRel.transpose T) (also df.ok (ofC (topC df.rel.key (nilVal _))))
 def nil (A B : Obj) : Fn true A (.arr B) := fun D => ofC (topC D.val (nilVal _))
-/-- A row of `prims` (`Tm.prim`) on the keys in demand: its constant `f` read on their values, or composed after
-    them; `Expand.primE` gives `f` the row's constant at the objects. -/
+/-- A row of `prims` (`Tm.prim`) on the keys in demand, `f` its constant at the objects (`Expand.primE`): read on
+    their values (`ofVals`) or composed after them (`after`); given a relation `R`, `R` run on the elements of the
+    arrays in demand (`elems`), as its pair test (`testVals`, `testAfter`), or on the keys each round meets
+    (`stepAfter`). -/
 def ofVals (A B : Obj) (f : {n : USize} → Vals A n → CRel A B) : Fn true A B := fun D => f D.val
 def after (A B : Obj) (f : {K : Obj} → CRel K A → CRel K B) : Fn true A B := fun D => f ⟨D, true⟩
+def testVals (B A C : Obj) (Q : Fn true (.prod B B) (.prod B B))
+    (f : {n : USize} → (CRel (.prod B B) (.prod B B) → CRel (.prod B B) (.prod B B)) → Vals A n → CRel A C) :
+    Fn true A C := fun D => f (fun P => Q P.rel) D.val
+def testAfter (B A C : Obj) (Q : Fn true (.prod B B) (.prod B B))
+    (f : {K : Obj} → (CRel (.prod B B) (.prod B B) → CRel (.prod B B) (.prod B B)) → CRel K A → CRel K C) :
+    Fn true A C := fun D => f (fun P => Q P.rel) ⟨D, true⟩
 def atPos (B : Obj) (k : Nat) : Fn true (.arr B) B := fun D => CRel.atPos k D.val
-def thinL (B : Obj) (Q : Fn true (.prod B B) (.prod B B)) : Fn true (.arr B) (.arr B) := fun D =>
-  CRel.thinLOn (fun P => Q P.rel) D.val
-def merge (B : Obj) (Q : Fn true (.prod B B) (.prod B B)) : Fn true (.prod (.arr B) (.arr B)) (.arr B) := fun D =>
-  CRel.mergeOn (fun P => Q P.rel) ⟨D, true⟩
 
 /-- A step run on a round's pairs `P`, where its value is read only composed after rows into `P`: with no key,
     nothing reads it, so it is not run — the last round of a fold or loop meets no pair. -/
 def onKeys {A B : Obj} (d : Bool) (F : Fn d A B) (P : CRel A A) : CRel A B :=
   if P.rel.n == 0 then ⟨Alg.zero, true⟩ else F (Dem.of d P.rel)
 
-def loop (X Y : Obj) (d : Bool) (F : Fn d (.prod X Y) X) : Fn true (.prod X (.arr Y)) X := fun D =>
-  CRel.loopOn (onKeys d F) ⟨D, true⟩
+def stepAfter (S T A C : Obj) (d : Bool) (F : Fn d S T) (f : {K : Obj} → (CRel S S → CRel S T) → CRel K A → CRel K C) :
+    Fn true A C := fun D => f (onKeys d F) ⟨D, true⟩
 /-- `succ`, a value verb, `≤`, `<` on the universe `U`: its keys. A declared object's universe is `uni` of its
     literal (`uni_lits`), an object variable's the constant's argument. A result outside `U` has no row. -/
 def succ (U : Fn false .long .long) : Fn true .long .long := fun D =>

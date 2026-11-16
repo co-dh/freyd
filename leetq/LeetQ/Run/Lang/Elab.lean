@@ -116,7 +116,6 @@ inductive Pre
   | zero (a b : OTy)
   | id (a : OTy)
   | top (p : Pos) (a b : OTy) (tgt : Option Pre)
-  | mem (b : OTy)
   | outl (a b : OTy)
   | outr (a b : OTy)
   | inl (a b : OTy)
@@ -136,18 +135,13 @@ inductive Pre
   | lam (p : Pre)
   | E (p : Pre)
   | map (p : Pre)
-  | filter (p : Pre)
-  | takewhile (p : Pre)
   | est (p : Pre)
   | thin (p : Pre)
   | nil (a b : OTy)
-  /-- The row `r` of `prims` at `s ⟶ t`, an instance of its type. -/
-  | prim (r : Prim) (s t : OTy)
+  /-- The row `r` of `prims` at `s ⟶ t`, an instance of its type, given the relations `args` (`Prim.inst`). -/
+  | prim (r : Prim) (args : List Pre) (s t : OTy)
   | atPos (k : Nat) (b : OTy)
   | own (p : Pre)
-  | thinL (p : Pre)
-  | merge (p : Pre)
-  | loop (p : Pre)
   | succ (pos : Pos) (n : OTy)
   | arith (pos : Pos) (k : UInt8) (n : OTy)
   | leq (pos : Pos) (n : OTy)
@@ -296,14 +290,10 @@ def Pre.traverse {m : Type → Type} [Monad m] (fp : Pos → m Pos) (f : Option 
   | .lam x => return .lam (← f (some (.not "Λ")) x)
   | .E x => return .E (← f (some (.not "E")) x)
   | .map x => return .map (← mo x)
-  | .filter x => return .filter (← mo x)
-  | .takewhile x => return .takewhile (← mo x)
   | .est x => return .est (← mo x)
   | .thin x => return .thin (← f (some (.not "thin")) x)
   | .own x => return .own (← mo x)
-  | .thinL x => return .thinL (← f (some (.not "thinL")) x)
-  | .merge x => return .merge (← f (some (.not "merge")) x)
-  | .loop x => return .loop (← mo x)
+  | .prim r xs s t => return .prim r (← xs.mapM (f (some (if r.mono then .mono else .not r.sym)))) s t
   | .succ q n => return .succ (← fp q) n
   | .arith q k n => return .arith (← fp q) k n
   | .leq q n => return .leq (← fp q) n
@@ -676,25 +666,30 @@ def Arg.isFam : Arg → Bool
   | .fam .. => true
   | _ => false
 
-/-- The row `r` at fresh objects for its constant's object variables. -/
-def Prim.inst (env : Env) (r : Prim) : M (Pre × OTy × OTy) := do
+/-- The row `r` at fresh objects for its constant's object variables: its parameters' types and forms, and its
+    type. -/
+def Prim.inst (env : Env) (r : Prim) : M (List ((OTy × OTy) × Option Bool) × OTy × OTy) := do
   let vs ← r.vars.mapM fun v => return (v, ← fresh)
-  let s ← oty env vs r.sig.2.1; let t ← oty env vs r.sig.2.2
-  pure (.prim r s t, s, t)
+  let ps ← r.sig.2.1.mapM fun ((x, y), f) => return ((← oty env vs x, ← oty env vs y), f)
+  pure (ps, ← oty env vs r.sig.2.2.1, ← oty env vs r.sig.2.2.2)
+
+def Prim.row (p : Pos) (s : String) : M Prim := match Prim.find? s with
+  | some r => pure r
+  | none => throw ⟨p, s!"internal: no row `{s}` in `prims`"⟩
 
 /-- A constant: fresh objects for its type, the explicit ones `(A,B)` unified with source and target. -/
 def constant (env : Env) (p : Pos) (o : Op) (objs : List OExp) : M Arg := do
   let a ← fresh; let b ← fresh
   let row ← match o with
-    | .prim s => match Prim.find? s with
-      | some r => some <$> r.inst env
-      | none => throw ⟨p, s!"internal: no row `{s}` in `prims`"⟩
+    | .prim s => do
+      let r ← Prim.row p s; let (ps, s, t) ← r.inst env
+      unless ps.isEmpty do throw ⟨p, s!"{r.sym} takes {ps.length} arguments, found 0"⟩
+      pure (some (Pre.prim r [] s t, s, t))
     | _ => pure none
   let (q, s, t) : Pre × OTy × OTy := row.getD <| match o with
     | .id => (.id a, a, a)
     | .zero => (.zero a b, a, b)
     | .top => (.top p a b none, a, b)
-    | .mem => (.mem b, .arr b, b)
     | .outl => (.outl a b, .prod a b, a)
     | .outr => (.outr a b, .prod a b, b)
     | .inl => (.inl a b, a, .sum a b)
@@ -704,7 +699,7 @@ def constant (env : Env) (p : Pos) (o : Op) (objs : List OExp) : M Arg := do
     | .succ => (.succ p a, a, a)
     | .arith k => (.arith p k a, .prod a a, a)
     | .nil => (.nil a b, a, .arr b)
-    | .alpha => (.junc (.close p (.nil a b) a "α") (.close p (.prim consRow (.prod b (.arr b)) (.arr b)) (.prod b (.arr b)) "α"),
+    | .alpha => (.junc (.close p (.nil a b) a "α") (.close p (.prim consRow [] (.prod b (.arr b)) (.arr b)) (.prod b (.arr b)) "α"),
         .sum a (.prod b (.arr b)), .arr b)
     | .index k => (.atPos k b, .arr b, b)
     | _ => (.id a, a, a)
@@ -750,8 +745,27 @@ partial def litTy (objs : Objs) (p : Pos) (ts : List Tup) : M OTy := do
       (← litTy objs p (ts.map fun | .pair _ b => b | r => r)))
   | _, .arr _ => pure (.arr (← litTy objs p (ts.flatMap fun | .arr es => es | _ => [])))
 
+/-- The argument `q : s ⟶ _` of row `r` in the form `f` its parameter takes it: a pair test is tested on the pairs
+    the row compares (`build`, `param`), not read whole. -/
+def Prim.pass (r : Prim) (p : Pos) (f : Option Bool) (q : Pre) (s : OTy) : Pre := match f with
+  | some true => .close p q s s!"{r.sym}( )"
+  | some false => q
+  | none => .close p q s s!"{r.sym}( ) reads its argument whole"
+
+/-- A row applied to relations: each unified with its parameter's type and passed in its form (`Form`): a pair
+    test, run on demand, or read whole. -/
+def appliedRow (env : Env) (p : Pos) (r : Prim) (qs : List (Pre × OTy × OTy)) : M Arg := do
+  let (ps, s, t) ← r.inst env
+  unless ps.length == qs.length do throw ⟨p, s!"{r.sym}: wrong number of arguments, found {qs.length}"⟩
+  let xs ← (ps.zip qs).mapM fun (((x, y), f), (q, s', t')) => do
+    unify p s!"the source of {r.sym}'s argument" s' x; unify p s!"the target of {r.sym}'s argument" t' y
+    pure (r.pass p f q s')
+  pure (.rel (.prim r xs s t) s t)
+
 /-- A builtin applied to relations, every argument one relation. -/
-def applied (p : Pos) (o : Op) : List (Pre × OTy × OTy) → M Arg
+def applied (env : Env) (p : Pos) (o : Op) (as : List (Pre × OTy × OTy)) : M Arg :=
+  if let .prim s := o then do appliedRow env p (← Prim.row p s) as else
+  match as with
   | [(q, s, t)] => do
     match o with
     | .dom => pure (.rel (.dom q) s s)
@@ -760,19 +774,11 @@ def applied (p : Pos) (o : Op) : List (Pre × OTy × OTy) → M Arg
     | .E => pure (.rel (.E q) (.arr s) (.arr t))
     | .map => pure (.rel (.map q) (.arr s) (.arr t))
     | .P => throw ⟨p, s!"P(R) : 𝒫{s} ⟶ 𝒫{t} has no universe on its target and no demand there (§a)"⟩
-    | .est | .thin | .thinL | .merge => do
+    | .est | .thin => do
       unify p s!"the target of {o.sym}'s argument" t s
       -- the order is tested on the pairs the operator compares (`build`, `param`), not read whole
       let c := Pre.close p q s s!"{o.sym}( )"
-      let a := OTy.arr s
-      let (r, x, y) : Pre × OTy × OTy := match o with
-        | .est => (.est c, a, s) | .thin => (.thin c, a, a) | .thinL => (.thinL c, a, a)
-        | _ => (.merge c, .prod a a, a)
-      pure (.rel r x y)
-    | .loop => do
-      let x ← fresh; let y ← fresh
-      unify p "the source of loop's argument" s (.prod x y); unify p "the target of loop's argument" t x
-      pure (.rel (.loop q) (.prod x (.arr y)) x)
+      pure (if o == .est then .rel (.est c) (.arr s) s else .rel (.thin c) (.arr s) (.arr s))
     | _ => throw ⟨p, s!"{o.sym} takes {(Op.table.find? (·.2.1 == o)).map (·.2.2) |>.getD 0} arguments, found 1"⟩
   | as => throw ⟨p, s!"{o.sym}: wrong number of arguments, found {as.length}"⟩
 
@@ -783,7 +789,7 @@ def appliedL (I : OTy) (p : Pos) (o : Op) (as : List Arg) : M Arg := do
     | .dom, [R] => pure (lDom R)
     | .ran, [R] => pure (lRan R)
     | .lam, [R] => pure (lLam I (some (.top p I R.2.1 none)) R)
-    | .E, [R] => do let b ← fresh; pure (lLam I none (← lComp I p (liftConst I p (.mem b) (.arr b) b) R))
+    | .E, [R] => do let b ← fresh; pure (lLam I none (← lComp I p (liftConst I p (.prim memRow [] (.arr b) b) (.arr b) b) R))
     | .P, _ => notLiftable p "P(R)"
     | o, _ => notLiftable p s!"{o.sym}( )"
   pure (.fam r.1 I r.2.1 r.2.2)
@@ -856,7 +862,7 @@ partial def refoldG (p : Pos) (k : Nat) (a b : OTy) (t s : OTy) : M (Pre × OTy 
   | .arr t₁, .arr s₁ | .arr t₁, s₁@(.mv _) =>
     let (g₁, u₁, m₁) ← refoldG p k a b t₁ s₁
     if m₁.isNone then return (.id t, t, none)
-    return (.map g₁, .arr u₁, m₁.map (.comp (.mem t₁)))
+    return (.map g₁, .arr u₁, m₁.map (.comp (.prim memRow [] (.arr t₁) t₁)))
   | _, _ =>
     if t == s || any then return (.id t, t, none)
     throw ⟨p, s!"refold(c, S): c's target and S's source differ at {t} against {s}, which is neither {a} against {b} \
@@ -889,8 +895,8 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
     let as ← elabArgs env m args
     if args.isEmpty then constant env p o objs
     else match m with
-      | some I => if as.any Arg.isFam then appliedL I p o as else applied p o (as.map Arg.plain)
-      | none => applied p o (as.map Arg.plain)
+      | some I => if as.any Arg.isFam then appliedL I p o as else applied env p o (as.map Arg.plain)
+      | none => applied env p o (as.map Arg.plain)
   | .app p n args => do
     let as ← elabArgs env m args
     match env.def? n with
@@ -926,7 +932,7 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
     match m, q? with
     | some I, some q => do
       let e ← fresh
-      let G ← lThen p (← famOf I p x) (.mem e, .arr e, e)
+      let G ← lThen p (← famOf I p x) (.prim memRow [] (.arr e) e, .arr e, e)
       let Q ← famOf I p q
       let r ← if est then do lSame p Pre.meet G (← lLdiv I p (lConv G) (lConv Q))
         else do pure (lLam I none (← lSame p Pre.diff G (← lComp I p G (← lSame p Pre.diff Q (lConv Q)))))
@@ -1294,7 +1300,7 @@ def convTm {A B : Obj} {d : Bool} (t : Tm A B d) : Except String ((e : Bool) × 
   -- a row by its converse's row (`cons° = uncons`)
   | .prim r => match r.conv.bind Prim.find? with
     | some r' => pure ⟨_, .prim r'⟩
-    | none => throw r.sym
+    | none => throw r.leaf
   -- the number verbs are closed on their universe: their converse is read whole there
   | .succ U => pure ⟨false, .conv (.comp U (.succ U))⟩
   | .arith k U => pure ⟨false, .conv (.comp (.prod U U) (.arith k U))⟩
@@ -1305,7 +1311,6 @@ def convTm {A B : Obj} {d : Bool} (t : Tm A B d) : Except String ((e : Bool) × 
     | none => throw s!"`{c}`"
   | .arg f x => do let ⟨_, f⟩ ← convTm f; pure ⟨_, .arg f x⟩
   | .top _ => throw "⊤"
-  | .mem => throw "∋"
   | .outl => throw "π₁"
   | .outr => throw "π₂"
   | .inl => throw "inl"
@@ -1313,17 +1318,12 @@ def convTm {A B : Obj} {d : Bool} (t : Tm A B d) : Except String ((e : Bool) × 
   | .lam _ => throw "Λ( )"
   | .E _ => throw "E( )"
   | .map _ => throw "F( )"
-  | .filter _ => throw "filter( )"
-  | .takewhile _ => throw "takewhile( )"
   | .est _ => throw "est( )"
   | .thin _ => throw "thin( )"
   | .nil => throw "nil"
   | .refold .. => throw "refold( )"
   | .juncD .. => throw "[R,S]"
   | .atPos k => throw s!"at({k})"
-  | .thinL _ => throw "thinL( )"
-  | .merge _ => throw "merge( )"
-  | .loop _ => throw "loop( )"
   | .fold .. => throw "⦇e,S⦈"
   | .foldI .. => throw "a lifted fold"
   | .flat _ => throw "a lifted family"
@@ -1491,7 +1491,6 @@ def build : Pre → Except Err Res
       | none => uniTm objs mc dp p b B "⊤'s target"
       | some q => do closed? dp (← build q)
     pure ⟨A, B, true, .top V⟩
-  | .mem b => return ⟨_, _, true, .mem (B := ← toObj objs mc dp b)⟩
   | .outl a b => return ⟨_, _, true, .outl (A := ← toObj objs mc dp a) (B := ← toObj objs mc dp b)⟩
   | .outr a b => return ⟨_, _, true, .outr (A := ← toObj objs mc dp a) (B := ← toObj objs mc dp b)⟩
   | .inl a b => return ⟨_, _, true, .inl (A := ← toObj objs mc dp a) (B := ← toObj objs mc dp b)⟩
@@ -1568,28 +1567,20 @@ def build : Pre → Except Err Res
   | .lam p => do let ⟨_, _, _, t⟩ ← build p; pure ⟨_, _, _, .lam t⟩
   | .E p => do let ⟨_, _, _, t⟩ ← build p; pure ⟨_, _, _, .E t⟩
   | .map p => do let ⟨_, _, _, t⟩ ← build p; pure ⟨_, _, _, .map t⟩
-  | .filter p => do
-    let ⟨A, B, d, t⟩ ← build p
-    if h : B = A then pure ⟨_, _, _, .filter (h ▸ t)⟩ else internal dp "filter's predicate is not on one object"
-  | .takewhile p => do
-    let ⟨A, B, d, t⟩ ← build p
-    if h : B = A then pure ⟨_, _, _, .takewhile (h ▸ t)⟩ else internal dp "takewhile's predicate is not on one object"
   | .est p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .est c⟩
   | .thin p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .thin c⟩
   | .nil a b => return ⟨_, _, true, .nil (A := ← toObj objs mc dp a) (B := ← toObj objs mc dp b)⟩
-  | .prim r s t => do
+  -- the row's objects are checked once, where `Expand.primE` fits its constant at them
+  | .prim r xs s t => do
     let A ← toObj objs mc dp s; let B ← toObj objs mc dp t
-    if r.fits A B then pure ⟨A, B, true, .prim r⟩ else internal dp s!"{r.sym}'s objects"
+    (r.sig.2.1.zip xs.attach).foldlM (init := (⟨A, B, true, .prim r⟩ : Res)) fun ⟨A, B, d, f⟩ ((_, form), ⟨x, h⟩) => do
+      have := List.sizeOf_lt_of_mem h
+      if form == some true then let ⟨_, c⟩ ← param x; pure ⟨A, B, d, .arg f c⟩
+      else let ⟨_, _, _, u⟩ ← build x; pure ⟨A, B, d, .arg f u⟩
   | .own p => do
     let ⟨A, B, d, t⟩ ← build p
     if h : B = A then pure ⟨A, A, d, .own (h ▸ t)⟩ else internal dp "perm's objects"
   | .atPos k b => return ⟨_, _, true, .atPos k (B := ← toObj objs mc dp b)⟩
-  | .thinL p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .thinL c⟩
-  | .merge p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .merge c⟩
-  | .loop p => do
-    match ← build p with
-    | r@⟨.prod X Y, _, _, _⟩ => do let ⟨_, F⟩ ← at? dp (A := .prod X Y) (B := X) r; pure ⟨_, _, true, .loop F⟩
-    | _ => internal dp "loop's argument"
   | .succ p n => return ⟨_, _, true, .succ (← numU objs mc p n "succ")⟩
   | .arith p k n => return ⟨_, _, true, .arith k (← numU objs mc p n (Op.arith k).sym)⟩
   | .leq p n => return ⟨_, _, false, .leq (← numU objs mc p n "≤")⟩
