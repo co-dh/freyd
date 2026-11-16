@@ -65,7 +65,7 @@ NOTETITLE := $(shell ./scripts/note-files --title)
 # wrapped around `make` holds the file on another descriptor and the two wait on each other forever.
 LOCK := flock $(if $(strip $(CH)),-s,-x) $(HOME)/.cache/freyd-note.lock
 
-.PHONY: p c w labels links cite binders panels cd-check cover books v exe ref-ids section-fit
+.PHONY: pdf p c w labels links cite binders panels cd-check cover books v exe ref-ids section-fit
 
 # ONE link of the exe before the gates fan out.  Under `-j` the stamp, `panels` and `$(DB)` each ran
 # their own `lake build`, and two of them linking `diag-export` at once left one reading the binary
@@ -125,6 +125,11 @@ links: $(NOTEPDF)
 $(NOTEPDF): FORCE | panels ref-ids section-fit
 	$(LOCK) ./scripts/typst-compile $(NOTESRC) $@ --input title="$(NOTETITLE)" --input refs=/$(REFIDS)
 FORCE:
+
+# THE WHOLE NOTE'S PDF in one typst run, no gates: `make pdf NOTE=aop` is the whole companion, so its
+# section page breaks (`section-breaks`) are laid out once over the book instead of per joined chapter pdf.
+pdf: $(NOTEPDF)
+	@test -z "$(strip $(CH))" || { echo "make pdf is the whole note; one chapter is 'make c CH=$(CH)'"; exit 1; }
 
 # The notes' `lean:<decl>@<key>` markers against the statements they cite.  BEFORE the typst compile:
 # a note whose display has drifted from its Lean proof should not produce a PDF that looks fine.
@@ -202,8 +207,9 @@ ref-ids: | exe
 # (same page size, so the same verdict); entries are merged, keyed by the section's source, under a lock
 # of their own so parallel chapter gates do not lose each other's.  One file for every note: a compile
 # reads it by a path inside diag/, which every root reaches.
+# `| panels`: the query compiles the note, and a picture not drawn yet is a missing include (a parallel make raced it).
 SECFIT := diag/generated/section-fit.json
-section-fit: | ref-ids
+section-fit: | ref-ids panels
 	$(LOCK) ./scripts/typst-run .lake/build/section-fit-$(NOTE)-$(CH).log query --root . --input section-fit=list --input title="$(NOTETITLE)" --input refs=/$(REFIDS) $(NOTESRC) '<section-fit>' --field value > .lake/build/section-fit-$(NOTE)-$(CH).json
 	flock -x .lake/build/section-fit.lock sh -c 'test -f $(SECFIT) || echo "{}" > $(SECFIT); jq -e --slurpfile q .lake/build/section-fit-$(NOTE)-$(CH).json ". + (\$$q[0] | group_by(.[0]) | if any(length != 2) then error(\"section-fit: a section key without exactly one start and one end marker\") else map({key: .[0][0], value: (.[0][1] == .[1][1])}) | from_entries end)" $(SECFIT) > $(SECFIT).new && if cmp -s $(SECFIT).new $(SECFIT); then rm $(SECFIT).new; else mv $(SECFIT).new $(SECFIT); fi'
 
