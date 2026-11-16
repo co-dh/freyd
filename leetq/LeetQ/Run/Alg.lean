@@ -1509,7 +1509,9 @@ def loopRound {K X Y : Obj} (F : Rel (.prod X Y) (.prod X Y) → Rel (.prod X Y)
   let c := unconsC W.1.val
   let u := compC (outr D.1) c.1
   let p := pairC (outl D.1) (outl u.1)
-  let G := F (ran p.1)
+  -- `ranC`, not `ran`: its bit makes the step's input the coreflexive on the pairs, the keys `F` is read on
+  let rp := ranC p.1
+  let G := F rp.1
   let Q := compC p.1 G.1
   let R := pairC Q.1 (outr u.1)
   let T := compC st.2 R.1
@@ -1518,7 +1520,7 @@ def loopRound {K X Y : Obj} (F : Rel (.prod X Y) (.prod X Y) → Rel (.prod X Y)
   let A := antiJoinC D.1 du.1
   let O := compC st.2 (outl A.1)
   let U := unionC st.1 O.1
-  ((U.1, N.1), D.2 && W.2 && c.2 && u.2 && p.2 && G.2 && Q.2 && R.2 && T.2 && N.2 && du.2 && A.2 && O.2 && U.2)
+  ((U.1, N.1), D.2 && W.2 && c.2 && u.2 && p.2 && rp.2 && G.2 && Q.2 && R.2 && T.2 && N.2 && du.2 && A.2 && O.2 && U.2)
 
 /-- `loopOn` on a step answering a bit, and whether it ran within capacity: the `&&` of the bits of the rounds it
     ran (`iterC`), each round's the step's and its primitives' (`loopRound`). -/

@@ -225,19 +225,56 @@ theorem tic_sound {B : Obj} : Sound (after (.prod B (.arr B)) (.arr (.arr B)) fu
     ⟨fun ⟨_, _, h, e⟩ => ⟨_, h, e⟩, fun ⟨_, h, e⟩ => ⟨_, _, h, e⟩⟩
 
 open Classical in
-/-- `merge(Q)` merges by the test `Q` read as an order: `a` goes first where `Q` relates `(a, b)` to something. -/
+/-- A test `Q` read as an order on the coreflexives a kernel runs it on: `a` before `b` where `Q` relates `(a, b)` to
+    something. -/
+theorem test_le {B : Obj} {Q : Fn true (.prod B B) (.prod B B)} {TQ : Den (.prod B B) (.prod B B)} (hQ : Sound Q TQ) :
+    ∀ (E : Rel (.prod B B) (.prod B B)) (S : (Obj.prod B B).El → Prop),
+      rep E = corefl (A := (⟨(Obj.prod B B).El⟩ : RelSet.{0})) S → (Q E).ok = true →
+      ∀ a b, S (a, b) → ((∃ c, rep (Q E).rel (a, b) c) ↔ decide (∃ c, TQ (a, b) c) = true) := fun E S hE hb a b hS => by
+  have hC : Cor (d := true) E := fun u v h => (show corefl S u v by rw [← hE]; exact h).1
+  have hk : rep E (a, b) (a, b) := by rw [hE]; exact ⟨rfl, hS⟩
+  rw [decide_eq_true_iff]; exact exists_congr fun c => hQ E hC hb _ c hk
+
+open Classical in
+/-- `merge(Q)` merges by the test `Q` read as an order (`test_le`). -/
 theorem merge_sound {B : Obj} {Q : Fn true (.prod B B) (.prod B B)} {TQ : Den (.prod B B) (.prod B B)}
     (hQ : Sound Q TQ) : Sound (testAfter B (.prod (.arr B) (.arr B)) (.arr B) Q fun q P => CRel.mergeOn q P)
       (fun p zs => zs = List.merge p.1 p.2 fun a b => decide (∃ c, TQ (a, b) c)) := fun D hD hb x zs hx => by
-  have hq : ∀ (E : Rel (.prod B B) (.prod B B)) (S : (Obj.prod B B).El → Prop),
-      rep E = corefl (A := (⟨(Obj.prod B B).El⟩ : RelSet.{0})) S → (Q E).ok = true →
-      ∀ a b, S (a, b) → ((∃ c, rep (Q E).rel (a, b) c) ↔ decide (∃ c, TQ (a, b) c) = true) := fun E S hE hb a b hS => by
-    have hC : Cor (d := true) E := fun u v h => (show corefl S u v by rw [← hE]; exact h).1
-    have hk : rep E (a, b) (a, b) := by rw [hE]; exact ⟨rfl, hS⟩
-    rw [decide_eq_true_iff]; exact exists_congr fun c => hQ E hC hb _ c hk
   have hb' : (CRel.mergeOn (fun P => Q P.rel) ⟨D, true⟩).ok = true := hb
-  exact (CRel.rep_mergeOn (fun P => Q P.rel) ⟨D, true⟩ (fun a b => decide (∃ c, TQ (a, b) c)) hq hb' x zs).trans
-    ⟨fun ⟨_, _, h, e⟩ => hD x _ h ▸ e, fun e => ⟨x.1, x.2, hx, e⟩⟩
+  exact (CRel.rep_mergeOn (fun P => Q P.rel) ⟨D, true⟩ (fun a b => decide (∃ c, TQ (a, b) c)) (test_le hQ) hb' x
+    zs).trans ⟨fun ⟨_, _, h, e⟩ => hD x _ h ▸ e, fun e => ⟨x.1, x.2, hx, e⟩⟩
+
+open Classical in
+/-- `thinL(Q)` bumps each element into the thinned rest by the test `Q` read as an order (`test_le`). -/
+theorem thinL_sound {B : Obj} {Q : Fn true (.prod B B) (.prod B B)} {TQ : Den (.prod B B) (.prod B B)}
+    (hQ : Sound Q TQ) : Sound (testVals B (.arr B) (.arr B) Q fun q X => CRel.thinLOn q X)
+      (thinLDen fun a b => decide (∃ c, TQ (a, b) c)) :=
+  ofVals_sound (f := @fun _ X => CRel.thinLOn (fun P => Q P.rel) X) fun X hb =>
+    CRel.rep_thinLOn _ _ X (test_le hQ) hb
+
+/-- A step run on a round's coreflexive `D` of the pairs `S` (`onKeys`) computes `T` at those pairs: `D` has a
+    row, so the step ran. -/
+theorem onKeys_sound {A B : Obj} {d : Bool} {F : Fn d A B} {T : Den A B} (hF : Sound F T) (D : Rel A A)
+    (S : A.El → Prop) (hD : rep D = corefl (A := (⟨A.El⟩ : RelSet.{0})) S) (hb : (onKeys d F ⟨D, true⟩).ok = true) :
+    ∀ x y, S x → (rep (onKeys d F ⟨D, true⟩).rel x y ↔ T x y) := fun x y hx => by
+  have hk : rep D x x := by rw [hD]; exact ⟨rfl, hx⟩
+  unfold onKeys at hb ⊢; dsimp only at hb ⊢
+  split
+  · rename_i h0
+    obtain ⟨i, -⟩ := keyRow hk
+    have : D.n.toNat = 0 := by simp [beq_iff_eq.1 h0]
+    exact absurd i.2 (by omega)
+  · rename_i h0; rw [if_neg h0] at hb
+    exact atKeys hF D (fun a b h => (show corefl S a b by rw [← hD]; exact h).1) hb x y hk
+
+/-- `loop(F)` folds the step `F` along each array from the left, from the seed. -/
+theorem loop_sound {X Y : Obj} {d : Bool} {F : Fn d (.prod X Y) X} {TF : Den (.prod X Y) X} (hF : Sound F TF) :
+    Sound (stepAfter (.prod X Y) X (.prod X (.arr Y)) X d F fun G P => CRel.loopOn G P)
+      (fun p c => ∃ g : Nat → X.El, g 0 = p.1 ∧ (∀ t (ht : t < p.2.length), TF (g t, p.2[t]'ht) (g (t + 1))) ∧
+        c = g p.2.length) :=
+  after_sound (f := @fun _ P => CRel.loopOn (onKeys d F) P) fun P hb k c =>
+    (CRel.rep_loopOn _ P hb TF (fun D S hD hb' cy c' hS => (onKeys_sound hF D S hD hb' cy c' hS).symm) k c).trans
+      ⟨fun ⟨c₀, xs, h, g⟩ => ⟨(c₀, xs), h, g⟩, fun ⟨⟨c₀, xs⟩, h, g⟩ => ⟨c₀, xs, h, g⟩⟩
 
 /-! ### The allegory's operations -/
 

@@ -171,13 +171,15 @@ theorem loop_round_set {K X Y : Obj} (out : Rel K X) (St : Rel K (.prod X (.arr 
     (hUn : ∀ (xs : List Y.El) b bs, rep (uncons (ran (outr D)).val) xs (b, bs) ↔
       (∃ j, (ran (outr D)).val.row j = xs) ∧ xs = b :: bs)
     (hu : rep u = rep (outr D) ≫ rep (uncons (ran (outr D)).val))
-    (hp : rep p = rpair (rep (outl D)) (rep (outl u))) (hQ : rep Q = rep p ≫ rep G)
+    (hp : rep p = rpair (rep (outl D)) (rep (outl u)))
+    (Gr : X.El × Y.El → X.El → Prop) (hG : ∀ cy c', (∃ s, rep p s cy) → (rep G cy c' ↔ Gr cy c'))
+    (hQ : rep Q = rep p ≫ rep G)
     (hR : rep R = rpair (rep Q) (rep (outr u))) (hT : rep T = rep St ≫ rep R) (hN : rep (Rel.nub T) = rep T)
     (hdu : rep (dom u) = corefl (A := (⟨(Obj.prod X (.arr Y)).El⟩ : RelSet.{0})) fun s => ∃ b, rep u s b)
     (hA : rep A = rep D ≫ corefl (A := (⟨(Obj.prod X (.arr Y)).El⟩ : RelSet.{0})) fun s => ¬ ∃ y, rep (dom u) y s)
     (hO : rep O = rep St ≫ rep (outl A)) (hU : rep (out ∪ O) = rep out ∪ rep O) :
     (∀ k (c' : X.El) (ys : List Y.El), rep (Rel.nub T) k (c', ys) ↔
-      ∃ c y, rep St k (c, y :: ys) ∧ rep G (c, y) c') ∧
+      ∃ c y, rep St k (c, y :: ys) ∧ Gr (c, y) c') ∧
     ∀ k (c : X.El), rep (out ∪ O) k c ↔ rep out k c ∨ rep St k (c, []) := by
   have eD : ∀ s s' : X.El × List Y.El, rep D s s' ↔ s = s' ∧ ∃ k, rep St k s := by
     intro s s'; rw [hD]; exact Iff.rfl
@@ -217,6 +219,7 @@ theorem loop_round_set {K X Y : Obj} (out : Rel K X) (St : Rel K (.prod X (.arr 
       obtain ⟨hq, hru⟩ := hr
       rw [hQ, comp_apply] at hq
       obtain ⟨⟨c, y⟩, hpp, hg⟩ := hq
+      replace hg := (hG _ _ ⟨s, hpp⟩).1 hg
       rw [hp] at hpp
       obtain ⟨h1, h2⟩ := hpp
       obtain ⟨-, rfl⟩ := (eLD s _).1 h1
@@ -227,13 +230,12 @@ theorem loop_round_set {K X Y : Obj} (out : Rel K X) (St : Rel K (.prod X (.arr 
       rw [← e1]; exact hs
     · rintro ⟨c, y, hs, hg⟩
       have hk : ∃ k, rep St k (c, y :: ys) := ⟨k, hs⟩
+      have hpp : rep p (c, y :: ys) (c, y) := by rw [hp]; exact ⟨(eLD _ _).2 ⟨hk, rfl⟩, (eLu _ _).2 ⟨hk, ys, rfl⟩⟩
       refine ⟨(c, y :: ys), hs, ?_⟩
       rw [hR]
       refine ⟨?_, (eRu _ _).2 ⟨hk, y, rfl⟩⟩
       rw [hQ, comp_apply]
-      refine ⟨(c, y), ?_, hg⟩
-      rw [hp]
-      exact ⟨(eLD _ _).2 ⟨hk, rfl⟩, (eLu _ _).2 ⟨hk, ys, rfl⟩⟩
+      exact ⟨(c, y), hpp, (hG _ _ ⟨_, hpp⟩).2 hg⟩
   · rw [hU, union_apply, hO, comp_apply]
     refine or_congr Iff.rfl ⟨?_, ?_⟩
     · rintro ⟨s, hs, ho⟩

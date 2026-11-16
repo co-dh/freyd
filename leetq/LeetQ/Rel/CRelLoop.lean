@@ -33,15 +33,16 @@ theorem rep_ticC {K B : Obj} (P : Rel K (.prod B (.arr B))) (hb : (ticC P).2 = t
 
 /-- **`loopOn` under `loopOnC`'s bit**: `loopOn_rounds`, each round `iter` ran read back by `loop_round_set` at its
     bit (`iterC_run`): `ranC`'s and `domC`'s codes and `fitsN` bits, `rep_unconsC`, `rep_compC`, `rep_pairC`,
-    `rep_nubC`, `rep_antiJoinC`, `rep_unionC`. What stays: the step's spec `hS` at the rounds whose step bit is
-    set. -/
+    `rep_nubC`, `rep_antiJoinC`, `rep_unionC`. What stays: the step's spec `hS` on the coreflexive of the pairs a
+    round meets, at those pairs, where its bit is set. -/
 theorem rep_loopOnC {K X Y : Obj} (F : Rel (.prod X Y) (.prod X Y) → Rel (.prod X Y) X × Bool)
     (P : Rel K (.prod X (.arr Y))) (hb : (loopOnC F P).2 = true)
-    (Fr : Nat → X.El × Y.El → X.El → Prop)
-    (hS : ∀ i, (F (ran (loopPairs ((fun s => (loopRound F s).1)^[i] (Alg.zero, P)).2))).2 = true →
-      ∀ cy c', Fr i cy c' ↔ rep (F (ran (loopPairs ((fun s => (loopRound F s).1)^[i] (Alg.zero, P)).2))).1 cy c') :
+    (Fr : X.El × Y.El → X.El → Prop)
+    (hS : ∀ (D : Rel (.prod X Y) (.prod X Y)) (S : (Obj.prod X Y).El → Prop),
+      rep D = corefl (A := (⟨(Obj.prod X Y).El⟩ : RelSet.{0})) S → (F D).2 = true →
+      ∀ cy c', S cy → (Fr cy c' ↔ rep (F D).1 cy c')) :
     ∀ k c, rep (loopOnC F P).1 k c ↔ ∃ c₀ xs, rep P k (c₀, xs) ∧ ∃ g : Nat → X.El, g 0 = c₀ ∧
-      (∀ t (ht : t < xs.length), Fr t (g t, xs[t]'ht) (g (t + 1))) ∧ c = g xs.length := by
+      (∀ t (ht : t < xs.length), Fr (g t, xs[t]'ht) (g (t + 1))) ∧ c = g xs.length := by
   have e : (loopOnC F P).1 = loopOn (fun D => (F D).1) P := by
     simp only [loopOnC, loopOn, iterC_fst]; rfl
   have hf : ∀ (out : Rel K X) (St : Rel K (.prod X (.arr Y))) D u p, D = ran St → u = outr D ≫ uncons (ran (outr D)).val → p = pair (outl D) (outl u) →
@@ -51,41 +52,41 @@ theorem rep_loopOnC {K X Y : Obj} (F : Rel (.prod X Y) (.prod X Y) → Rel (.pro
   have one : ∀ i, i ≤ (Rel.val P).2.1.toNat →
       (∀ i' ≤ i, (((fun s => (loopRound F s).1)^[i'] (Alg.zero, P)).2.n == 0) = false) →
       (∀ k (c' : X.El) (ys : List Y.El), rep ((fun s => (loopRound F s).1)^[i + 1] (Alg.zero, P)).2 k (c', ys) ↔
-        ∃ c y, rep ((fun s => (loopRound F s).1)^[i] (Alg.zero, P)).2 k (c, y :: ys) ∧ Fr i (c, y) c') ∧
+        ∃ c y, rep ((fun s => (loopRound F s).1)^[i] (Alg.zero, P)).2 k (c, y :: ys) ∧ Fr (c, y) c') ∧
       ∀ k (c : X.El), rep ((fun s => (loopRound F s).1)^[i + 1] (Alg.zero, P)).1 k c ↔
         rep ((fun s => (loopRound F s).1)^[i] (Alg.zero, P)).1 k c ∨
           rep ((fun s => (loopRound F s).1)^[i] (Alg.zero, P)).2 k (c, []) := by
     intro i hi hne
     have h := iterC_run ((Rel.val P).2.1.toNat + 1) (fun s : Rel K X × Rel K (.prod X (.arr Y)) => s.2.n == 0)
       (loopRound F) (Alg.zero, P) hb i (by omega) hne
-    have hSi := hS i
     rw [show (fun s => (loopRound F s).1)^[i + 1] (Alg.zero, P) =
       (loopRound F ((fun s => (loopRound F s).1)^[i] (Alg.zero, P))).1 from rfl]
-    generalize (fun s => (loopRound F s).1)^[i] (Alg.zero, P) = st at h hSi ⊢
+    generalize (fun s => (loopRound F s).1)^[i] (Alg.zero, P) = st at h ⊢
     obtain ⟨out, St⟩ := st
     simp only [loopRound, Bool.and_eq_true] at h
-    obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨hD, hW⟩, hc⟩, hu⟩, hp⟩, hG⟩, hQ⟩, hR⟩, hT⟩, hN⟩, hdu⟩, hA⟩, hO⟩, hU⟩ := h
-    simp only [ranC, domC, distinctCoreflC, Bool.and_eq_true] at hD hW hdu
+    obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨hD, hW⟩, hc⟩, hu⟩, hp⟩, hrp⟩, hG⟩, hQ⟩, hR⟩, hT⟩, hN⟩, hdu⟩, hA⟩, hO⟩, hU⟩ := h
+    simp only [ranC, domC, distinctCoreflC, Bool.and_eq_true] at hD hW hdu hrp
+    have eP := rep_ran_corefl _ (one_ok _ (Obj.codesC_fits _ _ hrp.1))
+      (pickFits_of_fitsN _ _ _ hrp.2 _ (by simp <;> exact Nat.le_refl _))
     have hr := loop_round_set out St _ _ _ _ _ _ _ _ _
       (rep_ran_corefl St (one_ok _ (Obj.codesC_fits _ _ hD.1)) (pickFits_of_fitsN _ _ _ hD.2 _ (by simp)))
       (rep_ran_corefl _ (one_ok _ (Obj.codesC_fits _ _ hW.1)) (pickFits_of_fitsN _ _ _ hW.2 _ (by simp <;> exact Nat.le_refl _)))
-      (rep_unconsC _ hc) (rep_compC _ _ hu) (rep_pairC _ _ hp) (rep_compC _ _ hQ) (rep_pairC _ _ hR)
+      (rep_unconsC _ hc) (rep_compC _ _ hu) (rep_pairC _ _ hp) Fr
+      (fun cy c' hcy => (hS _ _ eP hG cy c' hcy).symm) (rep_compC _ _ hQ) (rep_pairC _ _ hR)
       (rep_compC _ _ hT) (by rw [← nubC_fst]; exact rep_nubC _ hN)
       (rep_dom_corefl _ (one_ok _ (Obj.codesC_fits _ _ hdu.1)) (pickFits_of_fitsN _ _ _ hdu.2 _ (by simp <;> exact Nat.le_refl _)))
       (rep_antiJoinC _ _ hA) (rep_compC _ _ hO) (rep_unionC _ _ hU)
-    have hFr := hSi hG
     simp only [loopRound, nubC_fst]
-    exact ⟨fun k c' ys => (hr.1 k c' ys).trans
-      (exists_congr fun c => exists_congr fun y => and_congr Iff.rfl (hFr _ _).symm), hr.2⟩
+    exact hr
   rw [e]
-  exact loopOn_rounds (fun D => (F D).1) P (fun s => (loopRound F s).1) hf Fr (fun i hi hne => (one i hi hne).1)
+  exact loopOn_rounds (fun D => (F D).1) P (fun s => (loopRound F s).1) hf (fun _ => Fr) (fun i hi hne => (one i hi hne).1)
     (fun i hi hne => (one i hi hne).2)
 
 /-- **`loop` under `loopC`'s bit**: `rep_loopOnC` at the step `F` with no bit of its own, its spec `rep F`. -/
 theorem rep_loopC {K X Y : Obj} (F : Rel (.prod X Y) X) (P : Rel K (.prod X (.arr Y))) (hb : (loopC F P).2 = true) :
     ∀ k c, rep (loopC F P).1 k c ↔ ∃ c₀ xs, rep P k (c₀, xs) ∧ ∃ g : Nat → X.El, g 0 = c₀ ∧
       (∀ t (ht : t < xs.length), rep F (g t, xs[t]'ht) (g (t + 1))) ∧ c = g xs.length :=
-  rep_loopOnC (fun _ => (F, true)) P hb (fun _ => rep F) fun _ _ _ _ => Iff.rfl
+  rep_loopOnC (fun _ => (F, true)) P hb (rep F) fun _ _ _ _ _ _ _ => Iff.rfl
 
 -- `merge`'s test `q` read back as `le`: on a coreflexive `D` of the pairs `S`, where its bit is set, a pair of `S`
 -- passes exactly when `le` holds; the spec of the test, not a size bound
@@ -247,15 +248,14 @@ theorem rep_tic (P : CRel K (.prod B (.arr B))) (hb : (tic P).ok = true) :
       zss = (List.range (bs.length + 1)).map fun j => (b :: bs).take (j + 1) := by
   have e : tic P = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_ticC P.rel hb
 
-/-- `hS`: the step's spec at each round whose step was ok. -/
+/-- `hS`: the step's spec on a coreflexive where the step was ok, at the pairs of that coreflexive. -/
 theorem rep_loopOn (F : CRel (.prod X Y) (.prod X Y) → CRel (.prod X Y) X) (P : CRel K (.prod X (.arr Y)))
-    (hb : (loopOn F P).ok = true) (Fr : Nat → X.El × Y.El → X.El → Prop)
-    (hS : ∀ i, (F ⟨Alg.ran (loopPairs ((fun s => (loopRound (fun D => let s := F ⟨D, true⟩; (s.rel, s.ok)) s).1)^[i]
-        (Alg.zero, P.rel)).2), true⟩).ok = true →
-      ∀ cy c', Fr i cy c' ↔ rep (F ⟨Alg.ran (loopPairs ((fun s => (loopRound (fun D => let s := F ⟨D, true⟩;
-        (s.rel, s.ok)) s).1)^[i] (Alg.zero, P.rel)).2), true⟩).rel cy c') :
+    (hb : (loopOn F P).ok = true) (Fr : X.El × Y.El → X.El → Prop)
+    (hS : ∀ (D : Rel (.prod X Y) (.prod X Y)) (S : (Obj.prod X Y).El → Prop),
+      rep D = corefl (A := (⟨(Obj.prod X Y).El⟩ : RelSet.{0})) S → (F ⟨D, true⟩).ok = true →
+      ∀ cy c', S cy → (Fr cy c' ↔ rep (F ⟨D, true⟩).rel cy c')) :
     ∀ k c, rep (loopOn F P).rel k c ↔ ∃ c₀ xs, rep P.rel k (c₀, xs) ∧ ∃ g : Nat → X.El, g 0 = c₀ ∧
-      (∀ t (ht : t < xs.length), Fr t (g t, xs[t]'ht) (g (t + 1))) ∧ c = g xs.length := by
+      (∀ t (ht : t < xs.length), Fr (g t, xs[t]'ht) (g (t + 1))) ∧ c = g xs.length := by
   have e : loopOn F P = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_loopOnC _ P.rel hb Fr hS
 
 theorem rep_loop (F : CRel (.prod X Y) X) (P : CRel K (.prod X (.arr Y))) (hb : (loop F P).ok = true) :
