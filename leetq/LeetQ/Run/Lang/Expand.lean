@@ -28,7 +28,7 @@ def objInfo (env : Env) (n : String) : ObjDef → EM ObjInfo
 
 /-- The definition `d` whose constant is `c`, as a use sees it. `prelude.perm` is its own converse, the one converse
     rule kept for a definition (`Tm.own`): `perm° = perm` is a theorem the language cannot derive from the fold
-    `perm` is: it has no kernel, so it is no row. A prelude definition with a row of `prims` (`Prim.prelude`), given
+    `perm` is: it has no kernel, so it is no row. A prelude definition that is a row's constant `Prim.prelude`, given
     relations and not families, runs as that row's kernel. `imported`: `d` is another program's, so an error its body raises at a use names `c` and its
     line there, at the use; one about the arguments (at the use) passes as it is. -/
 def useDef (c : Lean.Name) (imported : Bool) (d : Def) : Def :=
@@ -39,7 +39,7 @@ def useDef (c : Lean.Name) (imported : Bool) (d : Def) : Def :=
       -- the body's positions are its program's: at the use, so what `build` raises later is at the use
       -- a prelude definition with a row of its own runs as that row's constant
       -- given relations, not families, as its parameters are
-      let row := prims.find? fun x => x.prelude && c == `LeetQ.Rel.Programs.prelude ++ .mkSimple x.sym
+      let row := prims.find? (·.prelude == some c)
       let rels := as.filterMap fun | .rel a s _ => some (a, s) | _ => none
       match c, r, row with
       | _, .rel q s t, some x =>
@@ -692,8 +692,6 @@ partial def node (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bo
   | A, B, _, .top V => return g ``Gen.top #[oE A, oE B, ← c V]
   | .prod A B, _, _, .outl => return g ``Gen.outl #[oE A, oE B]
   | .prod A B, _, _, .outr => return g ``Gen.outr #[oE A, oE B]
-  | A, .sum _ B, _, .inl => return g ``Gen.inl #[oE A, oE B]
-  | B, .sum A _, _, .inr => return g ``Gen.inr #[oE A, oE B]
   | A, C, true, .comp (B := B) (e := e) R S => return g ``Gen.comp #[oE A, oE B, oE C, bE e, ← c R, ← c S]
   | A, C, false, .comp (B := B) (e := e) R S => return g ``Gen.compB #[oE A, oE B, oE C, bE e, ← p R, ← p S]
   | B, A, _, .conv R => return g ``Gen.conv #[oE A, oE B, ← c R]
@@ -711,7 +709,6 @@ partial def node (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bo
   | .sum A B, C, _, .junc R S => return g ``Gen.junc #[oE A, oE B, oE C, ← c R, ← c S]
   | A, .arr B, _, .lam (d := d) R => return g ``Gen.lam #[oE A, oE B, bE d, ← c R]
   | .arr A, .arr B, _, .E (d := d) R => return g ``Gen.E #[oE A, oE B, bE d, ← c R]
-  | .arr A, .arr B, _, .map (d := d) R => return g ``Gen.map #[oE A, oE B, bE d, ← c R]
   | _, B, _, .est Q => return g ``Gen.est #[oE B, ← c Q]
   | _, .arr B, _, .thin Q => return g ``Gen.thin #[oE B, ← c Q]
   | A, .arr B, _, .nil => return g ``Gen.nil #[oE A, oE B]
@@ -768,7 +765,7 @@ def lams (tys : List Lean.Expr) (k : Array Lean.Expr → RM (Lean.Expr × Lean.E
 /-- An entry of the registry (module design §2.3): a definition elaborated once, its constant (`once`); a program's
     homes, the programs its names reach, in the order they are read (`read`); a program's scope, its namespace and
     `open`s, which its names resolve in; a definition or object of the program `home`; a program's numbered closed
-    definitions with the constants `code` gave them by value and by number, which `rel_rep` proves from. -/
+    definitions with the constants `code` gave them by value and by number, which `Expand.rep` proves from. -/
 inductive RegEntry
   | call (c : Name) (s : Sig)
   | chain (n : Name) (ns : List Name)
@@ -865,7 +862,7 @@ def emit (n : Name) (r : Read) : MetaM Unit := do
       pure (g ``checkErr #[oE A, oE B, os, toExpr p, toExpr x, toExpr y, toExpr eq, toExpr s, toExpr u,
         app (← code n [] R), app (← code n [] S)])
     pure (es, ps, cs) : RM (List Lean.Expr × List Lean.Expr × List Lean.Expr)).run ({}, {})
-  -- what `rel_rep` proves from: the numbered definitions, and `code`'s constants so it adds none of them again
+  -- what `Expand.rep` proves from: the numbered definitions, and `code`'s constants so it adds none of them again
   modifyEnv (relRegistry.addEntry · (.rep n ds st.1.toArray st.2.toArray))
   let ety := pairT (mkConst ``String) (mkConst ``Gen.Gv)
   addConst (n ++ `expanded) (listT ety) (← mkListLit ety entries)

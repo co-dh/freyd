@@ -113,7 +113,7 @@ def builtins : List (Op × Except String (Option Name)) :=
    (.refold, none' "AOP's unfold-then-fold is `(relCata c°)° ≫ relCata S` over an initial algebra of G, \
     which rel(…) never writes"),
    (.index 0, none' "AOP declares no element at a position")] ++
-  (prims.filter fun r => r.written && !r.prelude).map fun r => (.prim r.sym, r.aop.map some)
+  (prims.filter fun r => r.written && r.prelude.isNone).map fun r => (.prim r.sym, r.aop.map some)
 
 -- `prims` names its AOP readings unchecked (Syntax cannot import AOP), so every row's is checked here, where they resolve
 run_cmd do

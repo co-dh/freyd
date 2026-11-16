@@ -21,8 +21,6 @@ inductive Tm : Obj → Obj → Bool → Type where
   | top {A B : Obj} (V : Tm B B false) : Tm A B true
   | outl {A B : Obj} : Tm (.prod A B) A true
   | outr {A B : Obj} : Tm (.prod A B) B true
-  | inl {A B : Obj} : Tm A (.sum A B) true
-  | inr {A B : Obj} : Tm B (.sum A B) true
   | comp {A B C : Obj} {d e : Bool} (R : Tm A B d) (S : Tm B C e) : Tm A C d
   | conv {A B : Obj} (R : Tm A B false) : Tm B A false
   | meet {A B : Obj} {d e : Bool} (R : Tm A B d) (S : Tm A B e) : Tm A B (d || e)
@@ -42,7 +40,6 @@ inductive Tm : Obj → Obj → Bool → Type where
       closed use reads its source's universe (`closeRes`). -/
   | lam {A B : Obj} {d : Bool} (R : Tm A B d) : Tm A (.arr B) true
   | E {A B : Obj} {d : Bool} (R : Tm A B d) : Tm (.arr A) (.arr B) true
-  | map {A B : Obj} {d : Bool} (R : Tm A B d) : Tm (.arr A) (.arr B) true
   /-- An operator that takes an order `Q : B ⟶ B` (or a coreflexive `p`) holds it as its pair test
       `τ(Q) : B×B ⟶ B×B` (§a), run on demand on the pairs the operator compares. -/
   | est {B : Obj} (Q : Tm (.prod B B) (.prod B B) true) : Tm (.arr B) B true
@@ -118,7 +115,6 @@ def Tm.mapM {m : Type → Type} [Monad m] (f : {A B : Obj} → {d : Bool} → Tm
   | _, _, _, .juncD R S => return .juncD (← f R) (← f S)
   | _, _, _, .lam R => return .lam (← f R)
   | _, _, _, .E R => return .E (← f R)
-  | _, _, _, .map R => return .map (← f R)
   | _, _, _, .est Q => return .est (← f Q)
   | _, _, _, .thin Q => return .thin (← f Q)
   | _, _, _, .own R => return .own (← f R)

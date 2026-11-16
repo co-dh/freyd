@@ -118,8 +118,6 @@ inductive Pre
   | top (p : Pos) (a b : OTy) (tgt : Option Pre)
   | outl (a b : OTy)
   | outr (a b : OTy)
-  | inl (a b : OTy)
-  | inr (a b : OTy)
   | comp (p q : Pre)
   | conv (p : Pre)
   | meet (p q : Pre)
@@ -134,7 +132,6 @@ inductive Pre
   | junc (p q : Pre)
   | lam (p : Pre)
   | E (p : Pre)
-  | map (p : Pre)
   | est (p : Pre)
   | thin (p : Pre)
   | nil (a b : OTy)
@@ -289,7 +286,6 @@ def Pre.traverse {m : Type → Type} [Monad m] (fp : Pos → m Pos) (f : Option 
   | .junc x y => return .junc (← mo x) (← mo y)
   | .lam x => return .lam (← f (some (.not "Λ")) x)
   | .E x => return .E (← f (some (.not "E")) x)
-  | .map x => return .map (← mo x)
   | .est x => return .est (← mo x)
   | .thin x => return .thin (← f (some (.not "thin")) x)
   | .own x => return .own (← mo x)
@@ -629,8 +625,8 @@ def lProd : Pre × OTy × OTy → Pre × OTy × OTy → Pre × OTy × OTy
 def lJunc : Pre × OTy × OTy → Pre × OTy × OTy → M (Pre × OTy × OTy)
   | (R, a, c), (S, b, c') => do
     unify p "the target of the case's second part" c' c
-    pure (join (comp R (pair (comp (outl a c) (inl a b)) (outr a c)))
-      (comp S (pair (comp (outl b c) (inr a b)) (outr b c))), .sum a b, c)
+    pure (join (comp R (pair (comp (outl a c) (Pre.prim inlRow [] a (.sum a b))) (outr a c)))
+      (comp S (pair (comp (outl b c) (Pre.prim inrRow [] b (.sum a b))) (outr b c))), .sum a b, c)
 
 /-- `Λ(R)` lifted on the sources `S : I ⟶ a` of each key, `Rπ₁` (`dom`) when none: `⟨𝟙,S⟩⟨π₂,Λ(Rᴵ)⟩`. `Λ` takes
     `S = ⊤` onto `a`'s universe, being total; `E` and `thin` take `dom`, as their `a = [x]` has no universe. -/
@@ -673,27 +669,32 @@ def Prim.inst (env : Env) (r : Prim) : M (List ((OTy × OTy) × Option Bool) × 
   let ps ← r.sig.2.1.mapM fun ((x, y), f) => return ((← oty env vs x, ← oty env vs y), f)
   pure (ps, ← oty env vs r.sig.2.2.1, ← oty env vs r.sig.2.2.2)
 
-def Prim.row (p : Pos) (s : String) : M Prim := match Prim.find? s with
-  | some r => pure r
-  | none => throw ⟨p, s!"internal: no row `{s}` in `prims`"⟩
+/-- The row `o` runs as: `prim s` the row `s`, `inl`, `inr`, `map` theirs (`Prim.written`); none for an operator
+    with a term of its own. -/
+def Op.row (p : Pos) : Op → M (Option Prim)
+  | .prim s => match Prim.find? s with
+    | some r => pure (some r)
+    | none => throw ⟨p, s!"internal: no row `{s}` in `prims`"⟩
+  | .inl => pure (some inlRow)
+  | .inr => pure (some inrRow)
+  | .map => pure (some mapRow)
+  | _ => pure none
 
 /-- A constant: fresh objects for its type, the explicit ones `(A,B)` unified with source and target. -/
 def constant (env : Env) (p : Pos) (o : Op) (objs : List OExp) : M Arg := do
   let a ← fresh; let b ← fresh
-  let row ← match o with
-    | .prim s => do
-      let r ← Prim.row p s; let (ps, s, t) ← r.inst env
+  let row ← match ← o.row p with
+    | some r => do
+      let (ps, s, t) ← r.inst env
       unless ps.isEmpty do throw ⟨p, s!"{r.sym} takes {ps.length} arguments, found 0"⟩
       pure (some (Pre.prim r [] s t, s, t))
-    | _ => pure none
+    | none => pure none
   let (q, s, t) : Pre × OTy × OTy := row.getD <| match o with
     | .id => (.id a, a, a)
     | .zero => (.zero a b, a, b)
     | .top => (.top p a b none, a, b)
     | .outl => (.outl a b, .prod a b, a)
     | .outr => (.outr a b, .prod a b, b)
-    | .inl => (.inl a b, a, .sum a b)
-    | .inr => (.inr a b, b, .sum a b)
     | .leq => (.leq p a, a, a)
     | .lt => (.lt p a, a, a)
     | .succ => (.succ p a, a, a)
@@ -763,8 +764,8 @@ def appliedRow (env : Env) (p : Pos) (r : Prim) (qs : List (Pre × OTy × OTy)) 
   pure (.rel (.prim r xs s t) s t)
 
 /-- A builtin applied to relations, every argument one relation. -/
-def applied (env : Env) (p : Pos) (o : Op) (as : List (Pre × OTy × OTy)) : M Arg :=
-  if let .prim s := o then do appliedRow env p (← Prim.row p s) as else
+def applied (env : Env) (p : Pos) (o : Op) (as : List (Pre × OTy × OTy)) : M Arg := do
+  if let some r ← o.row p then return ← appliedRow env p r as
   match as with
   | [(q, s, t)] => do
     match o with
@@ -772,7 +773,6 @@ def applied (env : Env) (p : Pos) (o : Op) (as : List (Pre × OTy × OTy)) : M A
     | .ran => pure (.rel (.ran (.close p q s "ran( ) reads its argument whole")) t t)
     | .lam => pure (.rel (.lam q) s (.arr t))
     | .E => pure (.rel (.E q) (.arr s) (.arr t))
-    | .map => pure (.rel (.map q) (.arr s) (.arr t))
     | .P => throw ⟨p, s!"P(R) : 𝒫{s} ⟶ 𝒫{t} has no universe on its target and no demand there (§a)"⟩
     | .est | .thin => do
       unify p s!"the target of {o.sym}'s argument" t s
@@ -857,12 +857,12 @@ partial def refoldG (p : Pos) (k : Nat) (a b : OTy) (t s : OTy) : M (Pre × OTy 
     let (g₁, u₁, m₁) ← refoldG p k a b t₁ s₁; let (g₂, u₂, m₂) ← refoldG p k a b t₂ s₂
     if m₁.isNone && m₂.isNone then return (.id t, t, none)
     let junc (l r : Pre) : Pre := .junc (.close p l t₁ w) (.close p r t₂ w)
-    return (junc (.comp g₁ (.inl u₁ u₂)) (.comp g₂ (.inr u₁ u₂)), .sum u₁ u₂,
+    return (junc (.comp g₁ (.prim inlRow [] u₁ (.sum u₁ u₂))) (.comp g₂ (.prim inrRow [] u₂ (.sum u₁ u₂))), .sum u₁ u₂,
       some (junc (m₁.getD (.zero t₁ a)) (m₂.getD (.zero t₂ a))))
   | .arr t₁, .arr s₁ | .arr t₁, s₁@(.mv _) =>
     let (g₁, u₁, m₁) ← refoldG p k a b t₁ s₁
     if m₁.isNone then return (.id t, t, none)
-    return (.map g₁, .arr u₁, m₁.map (.comp (.prim memRow [] (.arr t₁) t₁)))
+    return (.prim mapRow [g₁] (.arr t₁) (.arr u₁), .arr u₁, m₁.map (.comp (.prim memRow [] (.arr t₁) t₁)))
   | _, _ =>
     if t == s || any then return (.id t, t, none)
     throw ⟨p, s!"refold(c, S): c's target and S's source differ at {t} against {s}, which is neither {a} against {b} \
@@ -1313,11 +1313,8 @@ def convTm {A B : Obj} {d : Bool} (t : Tm A B d) : Except String ((e : Bool) × 
   | .top _ => throw "⊤"
   | .outl => throw "π₁"
   | .outr => throw "π₂"
-  | .inl => throw "inl"
-  | .inr => throw "inr"
   | .lam _ => throw "Λ( )"
   | .E _ => throw "E( )"
-  | .map _ => throw "F( )"
   | .est _ => throw "est( )"
   | .thin _ => throw "thin( )"
   | .nil => throw "nil"
@@ -1396,7 +1393,7 @@ def uniPart (o : OTy) (A : Obj) : Except Err (Option (Tm A A false)) := do
     pure (some (.prod u v))
   | .sum a b, .sum A B => do
     let (some u, some v) := (← uniPart a A, ← uniPart b B) | pure none
-    pure (some (.junc (.comp u .inl) (.comp v .inr)))
+    pure (some (.junc (.comp u (.prim inlRow)) (.comp v (.prim inrRow))))
   | _, _ => pure none
 
 /-- `uniPart`, or the error naming the whole object `o` that has no universe. -/
@@ -1493,8 +1490,6 @@ def build : Pre → Except Err Res
     pure ⟨A, B, true, .top V⟩
   | .outl a b => return ⟨_, _, true, .outl (A := ← toObj objs mc dp a) (B := ← toObj objs mc dp b)⟩
   | .outr a b => return ⟨_, _, true, .outr (A := ← toObj objs mc dp a) (B := ← toObj objs mc dp b)⟩
-  | .inl a b => return ⟨_, _, true, .inl (A := ← toObj objs mc dp a) (B := ← toObj objs mc dp b)⟩
-  | .inr a b => return ⟨_, _, true, .inr (A := ← toObj objs mc dp a) (B := ← toObj objs mc dp b)⟩
   | .comp p q => do
     let ⟨A, B, d, t⟩ ← build p; let ⟨B', C, _, u⟩ ← build q
     if h : B' = B then pure ⟨A, C, d, .comp t (h ▸ u)⟩ else internal dp "composition objects disagree"
@@ -1566,7 +1561,6 @@ def build : Pre → Except Err Res
     pure ⟨_, _, false, .junc (← closed? dp (A := A) (B := C) r) (← closed? dp (A := B) (B := C) s)⟩
   | .lam p => do let ⟨_, _, _, t⟩ ← build p; pure ⟨_, _, _, .lam t⟩
   | .E p => do let ⟨_, _, _, t⟩ ← build p; pure ⟨_, _, _, .E t⟩
-  | .map p => do let ⟨_, _, _, t⟩ ← build p; pure ⟨_, _, _, .map t⟩
   | .est p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .est c⟩
   | .thin p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .thin c⟩
   | .nil a b => return ⟨_, _, true, .nil (A := ← toObj objs mc dp a) (B := ← toObj objs mc dp b)⟩

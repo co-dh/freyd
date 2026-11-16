@@ -95,11 +95,8 @@ def uni (A : Obj) (m : USize) (U : Vals A m × Bool) : Fn false A A := fun _ => 
 def zero (A B : Obj) : Fn false A B := fun _ => ⟨Alg.zero, true⟩
 def id (A : Obj) : Fn true A A := fun D => ⟨D, true⟩
 def top (A B : Obj) (V : Fn false B B) : Fn true A B := fun D => let v := V (); also v.ok (ofC (topC D.val v.rel.val))
-def mem (B : Obj) : Fn true (.arr B) B := fun D => CRel.mem D.val
 def outl (A B : Obj) : Fn true (.prod A B) A := fun D => ⟨Alg.outl D, true⟩
 def outr (A B : Obj) : Fn true (.prod A B) B := fun D => ⟨Alg.outr D, true⟩
-def inl (A B : Obj) : Fn true A (.sum A B) := fun D => CRel.inl D.val
-def inr (A B : Obj) : Fn true B (.sum A B) := fun D => CRel.inr D.val
 
 /-- The demand of `S` in `R S`: `ran(R)` where `S` takes one, `R`'s plan run for it, `ranC`'s bit kept so the
     demand is proved a coreflexive on `R`'s range (`GenSpec.demP_spec`). -/
@@ -145,13 +142,12 @@ def junc (A B C : Obj) (R : Fn false A C) (S : Fn false B C) : Fn false (.sum A 
   CRel.junc (R ()) (S ())
 /-- `Λ(R)` total on the keys `D`: `[]` at a key `R` relates to nothing (`CRel.lamOn`, `rep_lamOn`). -/
 def lam (A B : Obj) (d : Bool) (R : Fn d A B) : Fn true A (.arr B) := fun D => CRel.lamOn (R (Dem.of d D)) D.val
-/-- `f` on `R` read at the elements of `D`'s arrays, `ran(∋)` at `D`: the one form of `E`, `map` and the rows
-    given a relation on elements (`filter`, `takewhile`). -/
+/-- `f` on `R` read at the elements of `D`'s arrays, `ran(∋)` at `D`: the one form of `E` and the rows
+    given a relation on elements (`F`, `filter`, `takewhile`). -/
 def elems (A B C : Obj) (d : Bool) (R : Fn d A B) (f : {n : USize} → CRel A B → Vals (.arr A) n → CRel (.arr A) C) :
     Fn true (.arr A) C := fun D =>
   let k := CRel.ran (CRel.mem D.val); also k.ok (f (R (Dem.of d k.rel)) D.val)
 def E (A B : Obj) (d : Bool) (R : Fn d A B) : Fn true (.arr A) (.arr B) := elems A B (.arr B) d R CRel.E
-def map (A B : Obj) (d : Bool) (R : Fn d A B) : Fn true (.arr A) (.arr B) := elems A B (.arr B) d R CRel.map
 
 /-- An order held as its pair test, run on the pairs the operator compares. -/
 def est (B : Obj) (Q : Fn true (.prod B B) (.prod B B)) : Fn true (.arr B) B := fun D =>

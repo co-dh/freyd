@@ -15,6 +15,12 @@ open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Alg QLean
 #eval show Lean.Meta.MetaM Unit from do match ← (typesOf none).run with | .error e => throwError "{e}" | .ok _ => pure ()
 #guard Programs.prelude.ok
 
+-- `prims` names the prelude definitions its rows run unchecked (Syntax cannot import the prelude), so each is checked here
+run_cmd do
+  for r in prims do
+    if let some c := r.prelude then
+      unless (← Lean.getEnv).contains c do Lean.throwError "prims: the prelude definition of `{r.sym}` is `{c}`, which is not declared"
+
 abbrev CM := Lean.Elab.Command.CommandElabM
 
 /-- The scope of a text read after the prelude outside any Lean scope: its names unqualified (`Parse.openAll`). -/
