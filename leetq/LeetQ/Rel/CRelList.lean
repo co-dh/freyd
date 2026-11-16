@@ -540,16 +540,16 @@ theorem filter_range_le (m : Nat → Bool) {a b : Nat} (h : a ≤ b) :
     ((List.range a).filter m).length ≤ ((List.range b).filter m).length :=
   ((List.range_sublist.2 h).filter m).length_le
 
-/-- An array row read at its slice `[a, a + c)`: the payload's cells there, `g` reading the payload. -/
-theorem row_window {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 2 ^ 63) (i : Fin n.toNat) :
-    Vals.row X i = (List.range (Column.bitsAt (slicesOf X).2 (i.1 * 8) 8).toNat).map fun j =>
-      if h : (Column.bitsAt (slicesOf X).1 (i.1 * 8) 8).toNat + j < X.1.toNat then
+/-- An array row read at its slice `[a, a + c)`: the payload's cells there, a cell past the payload `dflt`. -/
+theorem row_window {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 2 ^ 63) {i : Nat}
+    (hi : i < n.toNat) :
+    Vals.row X ⟨i, hi⟩ = (List.range (Column.bitsAt (slicesOf X).2 (i * 8) 8).toNat).map fun j =>
+      if h : (Column.bitsAt (slicesOf X).1 (i * 8) 8).toNat + j < X.1.toNat then
         Vals.row X.2.2.2 ⟨_, h⟩ else B.dflt := by
-  obtain ⟨i, hi⟩ := i
   obtain ⟨hac, hlen, hel⟩ := slicesOf_row X hp hi
   apply List.ext_getElem (by rw [hlen]; simp)
   intro j h1 h2
-  rw [hel j h1 (by omega), List.getElem_map, List.getElem_range]
+  rw [hel j h1 (by omega), List.getElem_map, List.getElem_range, dif_pos (by omega)]
 
 /-- A relation keyed by the arrays `X`, row `i` valued `φ` of array `i`: each array of `X` goes to its `φ`. -/
 theorem rep_rowwise {B C : Obj} {n : USize} (X : Vals (.arr B) n) (V : Vals C n) (φ : List B.El → C.El)
@@ -583,10 +583,12 @@ theorem rep_filterC {B : Obj} {n : USize} (P : Rel B B) (X : Vals (.arr B) n) (h
     rw [← hids]; simp [ids, len]
   have hKs : (len (whereBits M (keyBitsC F P).1)).toUSize.toNat = len (whereBits M (keyBitsC F P).1) :=
     USize.toNat_ofNat_of_lt' hK
-  have hpick := pick_row B F _ _ (USize.toNat_ofNat_of_lt' hK).symm (Vals.pickC_fits B F _ _ _ hv)
+  have hpick := pick_row B F _ (len (whereBits M (keyBitsC F P).1)).toUSize hKs.symm (Vals.pickC_fits B F _ _ _ hv)
   simp only [filterC, need]; rw [dif_pos hK]
-  refine rep_rowwise _ _ _ fun i => ?_
-  · have hac := (slicesOf_row (⟨M, lo, hi, F⟩ : Vals (.arr B) n) hp i.2).1
+  dsimp only; intro xs ys
+  refine rep_rowwise (C := .arr B) _ _ (fun xs => xs.filter fun x => decide (∃ y, rep P x y)) ?_ xs ys
+  · intro i
+    have hac := (slicesOf_row (⟨M, lo, hi, F⟩ : Vals (.arr B) n) hp i.2).1
     have hsum := add_get (n := n) (a := (slicesOf (⟨M, lo, hi, F⟩ : Vals (.arr B) n)).1)
       (b := (slicesOf (⟨M, lo, hi, F⟩ : Vals (.arr B) n)).2) i.2 (by change _ ≤ M.toNat at hac; omega)
     have hlo := countBefore_get hp (keyBitsC F P).1 (slicesOf (⟨M, lo, hi, F⟩ : Vals (.arr B) n)).1 hlenK
@@ -595,7 +597,7 @@ theorem rep_filterC {B : Obj} {n : USize} (P : Rel B B) (X : Vals (.arr B) n) (h
       (slicesOf (⟨M, lo, hi, F⟩ : Vals (.arr B) n)).2) hlenK
       (Nat.lt_of_lt_of_le i.2 (Nat.le_of_eq (len_val ..).symm)) (by rw [hsum]; exact hac)
     rw [hsum] at hhi
-    rw [row_window (⟨M, lo, hi, F⟩ : Vals (.arr B) n) hp, arr_row]; dsimp only
+    rw [row_window (⟨M, lo, hi, F⟩ : Vals (.arr B) n) hp i.2, arr_row]; dsimp only
     rw [longsN_get, longsN_get]
     generalize (Column.bitsAt (slicesOf (⟨M, lo, hi, F⟩ : Vals (.arr B) n)).1 (i.1 * 8) 8).toNat = a at hac hlo hhi ⊢
     generalize (Column.bitsAt (slicesOf (⟨M, lo, hi, F⟩ : Vals (.arr B) n)).2 (i.1 * 8) 8).toNat = c at hac hhi ⊢
@@ -604,8 +606,9 @@ theorem rep_filterC {B : Obj} {n : USize} (P : Rel B B) (X : Vals (.arr B) n) (h
       Nat.le_trans (List.length_filter_le _ _) (by simp)
     have hAC := filter_range_le (Column.bitAt (keyBitsC F P).1) (Nat.le_add_right a c)
     have hCL := filter_range_le (Column.bitAt (keyBitsC F P).1) hac
-    rw [toInt64_toInt (by rw [hlo]; omega), toInt64_toInt (by rw [hhi];
-      omega), hlo, hhi,
+    have hC : ((List.range (a + c)).filter (Column.bitAt (keyBitsC F P).1)).length ≤ a + c :=
+      Nat.le_trans (List.length_filter_le _ _) (by simp)
+    rw [toInt64_toInt (by rw [hlo]; omega), toInt64_toInt (by rw [hhi]; omega), hlo, hhi,
       show min (max (((List.range a).filter (Column.bitAt (keyBitsC F P).1)).length : Int) 0).toNat
         (len (whereBits M (keyBitsC F P).1)).toUSize.toNat =
         ((List.range a).filter (Column.bitAt (keyBitsC F P).1)).length by rw [hKs]; omega,
@@ -615,8 +618,9 @@ theorem rep_filterC {B : Obj} {n : USize} (P : Rel B B) (X : Vals (.arr B) n) (h
     rw [show ((List.range c).map fun j => if h : a + j < M.toNat then F.row ⟨a + j, h⟩ else B.dflt) =
         ((List.range c).map (a + ·)).map fun k => if h : k < M.toNat then F.row ⟨k, h⟩ else B.dflt by
           rw [List.map_map]; rfl,
-      List.filter_map,
-      List.filter_congr (q := Column.bitAt (keyBitsC F P).1) fun k hk => by
+      List.filter_map, show ((List.range c).map (a + ·)).filter ((fun x => decide (∃ y, rep P x y)) ∘
+          fun k => if h : k < M.toNat then F.row ⟨k, h⟩ else B.dflt) =
+          ((List.range c).map (a + ·)).filter (Column.bitAt (keyBitsC F P).1) from List.filter_congr fun k hk => by
         obtain ⟨j, hj, rfl⟩ := List.mem_map.1 hk
         have h : a + j < M.toNat := by rw [List.mem_range] at hj; omega
         simp only [Function.comp_apply, dif_pos h]; exact (hbit _ h).symm,
@@ -625,11 +629,12 @@ theorem rep_filterC {B : Obj} {n : USize} (P : Rel B B) (X : Vals (.arr B) n) (h
     intro j hj
     rw [List.mem_range] at hj
     have hj' : ((List.range a).filter (Column.bitAt (keyBitsC F P).1)).length + j < ((List.range M.toNat).filter (Column.bitAt (keyBitsC F P).1)).length := by omega
-    rw [dif_pos (by rw [hKs, hlenK]; exact hj'), hpick, dif_pos (by rw [ids_get hids hj']; exact
+    rw [dif_pos (by rw [hKs, hlenK]; exact hj'), pickC_fst]
+    rw [hpick, dif_pos (by rw [ids_get hids hj']; exact
       (List.mem_range.1 (List.mem_filter.1 (List.getElem_mem hj')).1))]
     simp only [Function.comp_apply, List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hj', Option.getD_some]
     rw [dif_pos (List.mem_range.1 (List.mem_filter.1 (List.getElem_mem hj')).1)]
-    congr 2; exact ids_get hids hj'
+    exact congrArg F.row (Fin.ext (ids_get hids hj'))
 
 open Classical in
 /-- **`takewhile(p)` under `takewhileC`'s bit**: an array `xs` of `X` goes to its longest prefix of keys of `P`
@@ -652,8 +657,10 @@ theorem rep_takewhileC {B : Obj} {n : USize} (P : Rel B B) (X : Vals (.arr B) n)
       ((List.range M.toNat).filter (Column.bitAt (Ew.notBits M (keyBitsC F P).1))).length := by
     rw [← hids]; simp [ids, len]
   simp only [takewhileC]
-  refine rep_rowwise _ _ _ fun i => ?_
-  · have hac := (slicesOf_row (⟨M, lo, hi, F⟩ : Vals (.arr B) n) hp i.2).1
+  intro xs ys
+  refine rep_rowwise (C := .arr B) _ _ (fun xs => xs.takeWhile fun x => decide (∃ y, rep P x y)) ?_ xs ys
+  · intro i
+    have hac := (slicesOf_row (⟨M, lo, hi, F⟩ : Vals (.arr B) n) hp i.2).1
     have hsum := add_get (n := n) (a := (slicesOf (⟨M, lo, hi, F⟩ : Vals (.arr B) n)).1)
       (b := (slicesOf (⟨M, lo, hi, F⟩ : Vals (.arr B) n)).2) i.2 (by change _ ≤ M.toNat at hac; omega)
     have hs1 : i.1 < len (slicesOf (⟨M, lo, hi, F⟩ : Vals (.arr B) n)).1 :=
@@ -664,7 +671,7 @@ theorem rep_takewhileC {B : Obj} {n : USize} (P : Rel B B) (X : Vals (.arr B) n)
       unfold countBefore; dsimp only; rw [len_gatherT]; exact hs1
     have he := gatherT_get (t := M.toNat) (src := whereBits M (Ew.notBits M (keyBitsC F P).1)) (by omega) hcb
     rw [hlo] at he
-    rw [row_window (⟨M, lo, hi, F⟩ : Vals (.arr B) n) hp, arr_row]; dsimp only
+    rw [row_window (⟨M, lo, hi, F⟩ : Vals (.arr B) n) hp i.2, arr_row]; dsimp only
     rw [longsN_get, longsN_get, toInt64_toInt (x := Column.bitsAt (slicesOf (⟨M, lo, hi, F⟩ : Vals (.arr B) n)).1
       (i.1 * 8) 8) (by change _ ≤ M.toNat at hac; omega)]
     generalize (Column.bitsAt (slicesOf (⟨M, lo, hi, F⟩ : Vals (.arr B) n)).1 (i.1 * 8) 8).toNat = a at hac hlo he hsum ⊢
@@ -715,6 +722,8 @@ theorem rep_takewhileC {B : Obj} {n : USize} (P : Rel B B) (X : Vals (.arr B) n)
       List.map_map]
     rfl
 
+#print axioms rep_filterC
+#print axioms rep_takewhileC
 #print axioms rep_concatC
 #print axioms rep_consC
 #print axioms rep_catC
@@ -788,6 +797,17 @@ theorem rep_snoc (P : CRel K (.prod (.arr B) B)) (hb : (snoc P).ok = true) :
 theorem rep_zip (P : CRel K (.prod (.arr A) (.arr B))) (hb : (zip P).ok = true) :
     ∀ k zs, rep (zip P).rel k zs ↔ ∃ xs ys, rep P.rel k (xs, ys) ∧ zs = List.zip xs ys := by
   have e : zip P = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_zipC P.rel hb
+
+open Classical in
+theorem rep_filter (P : CRel B B) (X : Vals (.arr B) n) (hb : (filter P X).ok = true) :
+    ∀ xs ys, rep (filter P X).rel xs ys ↔ (∃ j, X.row j = xs) ∧ ys = xs.filter fun x => decide (∃ y, rep P.rel x y) := by
+  have e : filter P X = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_filterC P.rel X hb
+
+open Classical in
+theorem rep_takewhile (P : CRel B B) (X : Vals (.arr B) n) (hb : (takewhile P X).ok = true) :
+    ∀ xs ys, rep (takewhile P X).rel xs ys ↔
+      (∃ j, X.row j = xs) ∧ ys = xs.takeWhile fun x => decide (∃ y, rep P.rel x y) := by
+  have e : takewhile P X = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_takewhileC P.rel X hb
 
 open Freyd Freyd.Alg Freyd.Alg.RelSet in
 theorem rep_alpha (I : Vals K 1) (P : Vals (.prod B (.arr B)) n) (hb : (alpha I P).ok = true) :

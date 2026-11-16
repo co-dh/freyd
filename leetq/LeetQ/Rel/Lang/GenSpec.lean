@@ -199,6 +199,43 @@ theorem distinct_sound {B : Obj} :
     obtain ⟨Y, hY⟩ := (h2 xs).2 hx
     rwa [e, ← (h1 xs Y hY).2]
 
+open Classical in
+/-- `elems`' relation run on the elements of the arrays in demand: at every element of a key `xs`, its test (some
+    `y` related) is `TR`'s. -/
+theorem elems_test {B C : Obj} {d : Bool} {R : Fn d B C} {TR : Den B C} (hR : Sound R TR) (D : Rel (.arr B) (.arr B))
+    (hk : (CRel.ran (CRel.mem D.val)).ok = true) (hr : (R (Dem.of d (CRel.ran (CRel.mem D.val)).rel)).ok = true)
+    {xs : (Obj.arr B).El} (hx : rep D xs xs) : ∀ x ∈ xs,
+      decide (∃ y, rep (R (Dem.of d (CRel.ran (CRel.mem D.val)).rel)).rel x y) = decide (∃ y, TR x y) :=
+  fun x hin => by
+    have hK := CRel.rep_ran _ hk
+    have h1 : rep (CRel.mem D.val).rel xs x := (CRel.rep_mem _ (ok_and hk) xs x).2 ⟨keyRow hx, hin⟩
+    have hs := atKeys hR _ (fun a b h => ((ran_iff _ a b).1 (hK ▸ h)).1) hr
+    exact decide_eq_decide.2 (exists_congr fun y => hs x y (hK ▸ (ran_iff _ x x).2 ⟨rfl, xs, h1, h1⟩))
+
+open Classical in
+/-- `filter(R)` keeps the elements `TR` relates to something. -/
+theorem filter_sound {B : Obj} {d : Bool} {R : Fn d B B} {TR : Den B B} (hR : Sound R TR) :
+    Sound (elems B B (.arr B) d R CRel.filter) (fun xs ys => ys = xs.filter fun x => decide (∃ y, TR x y)) :=
+  fun D _ hb xs ys hx => by
+    simp only [elems, also] at hb ⊢; have hb' := Bool.and_eq_true_iff.1 hb
+    rw [CRel.rep_filter _ _ hb'.2, List.filter_congr (elems_test hR D hb'.1 (ok_and hb'.2) hx)]
+    exact ⟨And.right, fun t => ⟨keyRow hx, t⟩⟩
+
+open Classical in
+/-- `takewhile(R)` keeps the longest prefix of elements `TR` relates to something. -/
+theorem takewhile_sound {B : Obj} {d : Bool} {R : Fn d B B} {TR : Den B B} (hR : Sound R TR) :
+    Sound (elems B B (.arr B) d R CRel.takewhile) (fun xs ys => ys = xs.takeWhile fun x => decide (∃ y, TR x y)) :=
+  fun D _ hb xs ys hx => by
+    simp only [elems, also] at hb ⊢; have hb' := Bool.and_eq_true_iff.1 hb
+    have hc := elems_test hR D hb'.1 (ok_and hb'.2) hx
+    rw [CRel.rep_takewhile _ _ hb'.2]
+    suffices e : ∀ {p q : B.El → Bool} (l : List B.El), (∀ x ∈ l, p x = q x) → l.takeWhile p = l.takeWhile q by
+      rw [e xs hc]; exact ⟨And.right, fun t => ⟨keyRow hx, t⟩⟩
+    intro p q l; induction l with
+    | nil => intro _; rfl
+    | cons a l ih => intro h; simp only [List.takeWhile_cons, h a List.mem_cons_self,
+        ih fun x hx => h x (List.mem_cons_of_mem _ hx)]
+
 theorem cons_sound {B : Obj} :
     Sound (after (.prod B (.arr B)) (.arr B) fun P => CRel.cons P) (fun p ys => ys = p.1 :: p.2) :=
   after_sound fun P hb k ys => (CRel.rep_cons P hb k ys).trans
