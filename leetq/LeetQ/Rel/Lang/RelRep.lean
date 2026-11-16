@@ -46,21 +46,6 @@ partial def prf (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Boo
   modify fun (m, g) => (m.insert c h, g)
   pure (some (mkConst h))
 
-/-- The `Gen.Sound` lemma `s` at the node `e`: its code unified with `e`, its `Sound` hypotheses the proofs `hs`. -/
-def lemFit (s : Name) (e : Lean.Expr) (hs : Array Lean.Expr) : MetaM Lean.Expr := do
-  let k ← mkConstWithFreshMVarLevels s
-  let (ms, _, ty) ← forallMetaTelescope (← inferType k)
-  let some c := ty.getAppArgs[3]? | throwError "rel_rep: `{s}` is `{ty}`, not a `Gen.Sound`"
-  unless ← isDefEq c e do throwError "rel_rep: the code of `{s}` is not the node `{e}`"
-  let hms ← ms.filterM fun m => return (← inferType m).isAppOf ``Gen.Sound
-  unless hms.size == hs.size do throwError "rel_rep: `{s}` takes {hms.size} `Sound` hypotheses, given {hs.size}"
-  for (m, h) in hms.zip hs do
-    unless ← isDefEq (← inferType m) (← inferType h) <&&> isDefEq m h do
-      throwError "rel_rep: `{s}`'s hypothesis `{← inferType m}` is not `{← inferType h}`"
-  let v ← instantiateMVars (mkAppN k ms)
-  if v.hasMVar then throwError "rel_rep: `{s}` at `{e}` leaves `{v}` unsolved"
-  pure v
-
 /-- A proof of `Gen.PSound (planOr t) T`, following `planOr`. -/
 partial def pprf (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bool} (t : Tm A B d) :
     PM (Option Lean.Expr) := do
@@ -113,23 +98,21 @@ partial def prfNode (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d :
   | _, _, _, .own R | _, _, _, .share _ R => p R
   | _, _, _, _ => match primOf t with
     -- a row by its lemma, its relations' proofs its `Sound` hypotheses; with none, the gap is its constant
-    | some r => match r.sound with
+    | some (r, as) => match r.sound with
       | some s => do
-        let hs ← primPrfs pre ρ t
-        if hs.any Option.isNone then return none
-        some <$> lemFit s (← node pre ρ t) (hs.filterMap id)
+        let some hs := (← as.toArray.mapM fun ⟨_, _, _, x⟩ => prf pre ρ x).mapM id | return none
+        -- the lemma's code unified with the node, its `Sound` hypotheses the proofs `hs`
+        let e ← node pre ρ t
+        let some v ← fitConst s (fun t => pure (t.isAppOf ``Gen.Sound)) (← hs.mapM fun h => return (h, ← inferType h))
+            fun _ ty => match ty.getAppArgs[3]? with | some c => isDefEq c e | none => pure false
+          | throwError "rel_rep: `{s}` given {hs.size} `Sound` proofs is no lemma at the node `{e}`"
+        pure (some v)
       | none => modify (fun (m, g) => (m, g <|> some r.sig.1)); pure none
     | none =>
       -- a call is named by its constant, not by the `Gen.ofPl` that runs its plan
       let e ← node pre ρ t
       let f := (if e.isAppOf ``Gen.ofPl then e.appArg! else e).getAppFn.constName?
       modify fun (m, g) => (m, g <|> f); pure none
-
-/-- The proofs of a row's relations, in order (`primArgs`). -/
-partial def primPrfs (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bool} :
-    Tm A B d → PM (Array (Option Lean.Expr))
-  | .arg f x => return (← primPrfs pre ρ f).push (← prf pre ρ x)
-  | _ => pure #[]
 
 end
 

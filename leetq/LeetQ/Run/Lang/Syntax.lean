@@ -86,6 +86,9 @@ partial def objSyn (c : Name) (e : Lean.Expr) : MetaM Term := do
     else throwError "prim%: `{c}` names the atom `{t}`, which no declared object is stored as"
   | _, _ => throwError "prim%: `{c}` has the object `{e}`, not built by `Obj`'s constructors"
 
+/-- A binder of a `CRel` constant that is no relation: an object or a size, solved by unification (`Expand.primE`). -/
+def objOrSize (t : Lean.Expr) : MetaM Bool := return (← whnfR t).isConstOf ``Obj || (← whnfR t).isConstOf ``USize
+
 /-- A binder of a `CRel` constant as a relation parameter `X ⟶ Y` and its form (`Form`'s first part): `CRel X Y` a
     relation run on the keys in demand; `CRel S S → CRel S T` one run on the keys `S` a round gives it, except that
     with `S = T = B×B` it is the pair test `τ(Q)` of an order `Q : B ⟶ B`, as every kernel taking an order takes it
@@ -109,8 +112,8 @@ elab "prim% " i:ident : term => do
     let some x := xs.back? | throwError "prim%: `{c}` takes no argument"
     let mut ps : Array Term := #[]
     for y in xs.pop do
-      let t ← whnfR (← inferType y)
-      if t.isConstOf ``Obj || t.isConstOf ``USize then continue
+      let t ← inferType y
+      if ← objOrSize t then continue
       let some p ← paramSyn c t
         | throwError "prim%: `{c}` has the parameter `{y} : {t}`; a builtin's binders are objects, sizes and relations"
       ps := ps.push p

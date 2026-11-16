@@ -189,6 +189,76 @@ def elabOnce (env : Env) (p : Pos) (n : String) (qs : List Param) (e : Expr) (ty
     pure (r, os) : M (Arg × List (Obj × Obj × Bool))).run { fixes := nv + qs.length, specs, objs }
   pure (os, r, st)
 
+/-! ### A row of `prims` at its objects -/
+
+open Lean in deriving instance ToExpr for QLean.QAtomicType
+open Lean in deriving instance ToExpr for LeetQ.Rel.Obj
+open Lean in deriving instance ToExpr for MVarId
+open Lean in deriving instance ToExpr for OTy
+
+open Lean in def oE (A : Obj) : Lean.Expr := toExpr A
+open Lean in def uE (n : USize) : Lean.Expr := mkApp (mkConst ``USize.ofNat) (toExpr n.toNat)
+open Lean in def bE (b : Bool) : Lean.Expr := toExpr b
+open Lean in def g (n : Lean.Name) (as : Array Lean.Expr) : Lean.Expr := mkAppN (mkConst n) as
+/-- The objects variables stand for (`varObj`), built once: `code` looks for them in every closed value. -/
+def placeholders : List Lean.Expr := varAtoms.map (oE <| .atom ·)
+
+/-- The row a spine of `arg`s is headed by, and its relations in order. -/
+def primOf : {A B : Obj} → {d : Bool} → Tm A B d → Option (Prim × List Res)
+  | _, _, _, .prim r => some (r, [])
+  | _, _, _, .arg f x => (primOf f).map fun (r, xs) => (r, xs ++ [⟨_, _, _, x⟩])
+  | _, _, _, _ => none
+
+/-- The type `Gen.Fn d A B` of a code of `t : Tm A B d`. -/
+def fnTy (t : Res) : Lean.Expr := g ``Gen.Fn #[bE t.2.2.1, oE t.1, oE t.2.1]
+
+/-- The wrappers a row's constant runs under (`Gen.ofVals` …), tried in order. -/
+def primWrappers : List Lean.Name :=
+  [``Gen.ofVals, ``Gen.after, ``Gen.elems, ``Gen.testVals, ``Gen.testAfter, ``Gen.stepAfter]
+
+open Lean Meta in
+/-- `c` at fresh metavariables: those whose type `sel` picks are `hs` in order (each given with its type), and `ok`
+    holds of all of them and the type; none when a type differs or one is left open. The one rule by which `primE`
+    fits a wrapper and a row's constant, and `RelRep.prfNode` a `Sound` lemma. -/
+def fitConst (c : Lean.Name) (sel : Lean.Expr → MetaM Bool) (hs : Array (Lean.Expr × Lean.Expr))
+    (ok : Array Lean.Expr → Lean.Expr → MetaM Bool) : MetaM (Option Lean.Expr) := withoutModifyingState do
+  let k ← mkConstWithFreshMVarLevels c
+  let (ms, _, ty) ← forallMetaTelescope (← inferType k)
+  let ps ← ms.filterM fun m => do sel (← inferType m)
+  unless ps.size == hs.size do return none
+  for (m, x, t) in ps.zip hs do
+    unless ← isDefEq (← inferType m) t do return none
+    m.mvarId!.assign x
+  unless ← ok ms ty do return none
+  let v ← instantiateMVars (mkAppN k ms)
+  return if v.hasMVar then none else some v
+
+open Lean Meta in
+/-- Row `r`'s constant at `A ⟶ B` given its relations `xs` (codes with their types), under the first wrapper it
+    fits: the wrapper's `Fn` parts are `xs`, its function's explicit binders the constant's that are relations (as
+    `prim%` reads them, `objOrSize`), every other solved by unifying the types. -/
+def primE (r : Prim) (A B : Obj) (xs : Array (Lean.Expr × Lean.Expr)) : MetaM (Option Lean.Expr) :=
+  primWrappers.findSomeM? fun w => fitConst w (fun t => pure (t.isAppOf ``Gen.Fn)) xs fun ws wty => do
+    let some f := ws.back? | return false
+    unless ← isDefEq wty (g ``Gen.Fn #[bE true, oE A, oE B]) do return false
+    let v? ← forallTelescope (← instantiateMVars (← inferType f)) fun ys body => do
+      let es ← ys.filterM fun y => return (← getFVarLocalDecl y).binderInfo.isExplicit
+      let some v ← fitConst r.sig.1 (fun t => return !(← objOrSize t)) (← es.mapM fun y => return (y, ← inferType y))
+          fun _ ty => isDefEq ty body | return none
+      some <$> mkLambdaFVars ys v
+    let some v := v? | return false
+    isDefEq f v
+
+open Lean Meta in
+/-- Each row in `t` fits its constant at its objects (`primE`), its relations variables of their types. A row at an
+    object variable's placeholder (`varObj`) that its constant reads at `.long` (`sum` at `[β]`) does not, and that
+    is how `once` finds the variable a number object. -/
+partial def primsFit {A B : Obj} {d : Bool} (t : Tm A B d) : MetaM Bool := do
+  let some (r, as) := primOf t | t.parts.allM fun ⟨_, _, _, c⟩ => primsFit c
+  let ts := as.toArray.map fnTy
+  withLocalDeclsDND (ts.map (`x, ·)) fun xs => do
+    pure (← primE r A B (xs.zip ts)).isSome <&&> as.allM fun ⟨_, _, _, c⟩ => primsFit c
+
 /-- `n(qs) ≜ e : ty` built once (`elabOnce`); a body that needs keys stays a plan on them, and one that builds no
     relation but tests on pairs is its pair test (`test`, §a). A variable is generic (`varObj`) when the body builds
     with it an object of its own, else `.long`, a number object (`succ`, `sum` …). A body that does not build so is
@@ -209,10 +279,17 @@ def once (env : Env) (p : Pos) (n : String) (qs : List Param) (e : Expr) (ty : O
     let kq := match r with | .fam q i a b => some (keyed i q a b) | .rel .. => none
     let mk (res : Res) (tst kf : Bool) : Once × List Once :=
       ({ key := k, const := c, gen, params := os, res, tst, kf }, st.specs)
-    let mc ← Lean.getMCtx; match build objs mc p q, kq.map (build objs mc p), test objs mc p q with
+    -- a term whose rows do not fit their objects (`primsFit`) does not build
+    let fits (x : Except Err Res) : EM (Except Err Res) := do
+      if let .ok ⟨A, B, _, t⟩ := x then unless ← primsFit t do
+        return .error ⟨p, s!"`{n}`: a row fits none of {primWrappers} at {oE A} → {oE B}"⟩
+      pure x
+    let mc ← Lean.getMCtx
+    let tst := (test objs mc p q).map fun ⟨A, B, t⟩ => (⟨.prod A B, .prod A B, true, t⟩ : Res)
+    match ← fits (build objs mc p q), ← (kq.map (build objs mc p)).mapM fits, ← fits tst with
     | .ok res, _, _ => pure (mk res false false)
     | .error _, some (.ok res), _ => pure (mk res false true)
-    | .error _, _, .ok ⟨A, B, t⟩ => pure (mk ⟨.prod A B, .prod A B, true, t⟩ true false)
+    | .error _, _, .ok res => pure (mk res true false)
     | .error err, _, .error _ => throw err
   let mut fl := vs.map fun _ => (false, true)
   let mut out ← run fl
@@ -445,10 +522,6 @@ def read (calls : Lean.Name → Option Sig) (homes : List (Lean.Name × Program)
 
 open Lean Meta
 
-deriving instance ToExpr for QLean.QAtomicType
-deriving instance ToExpr for LeetQ.Rel.Obj
-deriving instance ToExpr for MVarId
-deriving instance ToExpr for OTy
 
 /-- The `μ`s in `t`, each as the failure it reports when its rounds reach the cap. -/
 partial def mus : {A B : Obj} → {d : Bool} → Tm A B d → List String
@@ -501,10 +574,6 @@ def addConst (c : Name) (ty v : Lean.Expr) : MetaM Unit := withCurrHeartbeats do
   let hints := .regular (getMaxHeight (← getEnv) v + 1)
   addAndCompile (.defnDecl { name := c, levelParams := [], type := ty, value := v, hints, safety := .safe })
 
-def oE (A : Obj) : Lean.Expr := toExpr A
-def uE (n : USize) : Lean.Expr := mkApp (mkConst ``USize.ofNat) (toExpr n.toNat)
-def bE (b : Bool) : Lean.Expr := toExpr b
-def g (n : Name) (as : Array Lean.Expr) : Lean.Expr := mkAppN (mkConst n) as
 
 /-- The bytes `b` as hex text, two lowercase digits a byte (`Gen.unhex` reads it back). -/
 def hex (b : ByteArray) : String :=
@@ -538,48 +607,6 @@ def liftE {α : Type} (x : Except String α) : RM α := match x with
   | .ok a => pure a
   | .error e => throwError "rel_program expansion: {e}"
 
-/-- The row a spine of `arg`s is headed by. -/
-def primOf : {A B : Obj} → {d : Bool} → Tm A B d → Option Prim
-  | _, _, _, .prim r => some r
-  | _, _, _, .arg f _ => primOf f
-  | _, _, _, _ => none
-
-/-- The wrappers a row's constant runs under (`Gen.ofVals` …), tried in order. -/
-def primWrappers : List Name :=
-  [``Gen.ofVals, ``Gen.after, ``Gen.elems, ``Gen.testVals, ``Gen.testAfter, ``Gen.stepAfter]
-
-/-- Row `r`'s constant at `A ⟶ B` given the codes `xs` of its relations, under the first wrapper it fits: the
-    wrapper's `Fn` parts are `xs`, its function's explicit binders the constant's binders that are not objects or
-    sizes (as `prim%` reads them), every other solved by unifying the types. -/
-def primE (r : Prim) (A B : Obj) (xs : Array Lean.Expr) : MetaM Lean.Expr := do
-  for w in primWrappers do
-    if let some e ← withoutModifyingState (fit w) then return e
-  throwError "rel_program expansion: `{r.sig.1}` at {oE A} → {oE B} given {xs.size} relations fits none of {primWrappers}"
-where
-  fit (w : Name) : MetaM (Option Lean.Expr) := do
-    let (ws, _, wty) ← forallMetaTelescope (← inferType (mkConst w))
-    let some f := ws.back? | return none
-    let parts ← ws.pop.filterM fun m => return (← inferType m).isAppOf ``Gen.Fn
-    unless parts.size == xs.size && (← isDefEq wty (g ``Gen.Fn #[bE true, oE A, oE B])) do return none
-    for (m, x) in parts.zip xs do
-      unless ← isDefEq (← inferType m) (← inferType x) <&&> isDefEq m x do return none
-    let v? ← forallTelescope (← instantiateMVars (← inferType f)) fun ys body => do
-      let es ← ys.filterM fun y => return (← getFVarLocalDecl y).binderInfo.isExplicit
-      let k ← mkConstWithFreshMVarLevels r.sig.1
-      let (ms, _, ty) ← forallMetaTelescope (← inferType k)
-      let rs ← ms.filterM fun m => do
-        let t ← whnfR (← inferType m); return !(t.isConstOf ``Obj || t.isConstOf ``USize)
-      unless rs.size == es.size do return none
-      for (m, y) in rs.zip es do
-        unless ← isDefEq (← inferType m) (← inferType y) <&&> isDefEq m y do return none
-      unless ← isDefEq ty body do return none
-      let v ← instantiateMVars (mkAppN k ms)
-      if v.hasMVar then return none
-      return some (← mkLambdaFVars ys v)
-    let some v := v? | return none
-    unless ← isDefEq f v do return none
-    let e ← instantiateMVars (mkAppN (mkConst w) ws)
-    return if e.hasMVar then none else some e
 
 mutual
 
@@ -593,7 +620,7 @@ partial def code (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bo
   if closed t then
     let v ← node pre ρ t
     -- at an object variable's placeholder (`varObj`) the value lives under a generic constant's binders: not shared
-    if (v.find? fun s => varAtoms.any fun a => s == toExpr (Obj.atom a)).isSome then return v
+    if (v.find? placeholders.contains).isSome then return v
     let c ← share pre A B (mkApp v (mkConst ``Unit.unit))
     pure (g ``Gen.const #[oE A, oE B, mkConst c])
   else node pre ρ t
@@ -647,11 +674,6 @@ partial def spine (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : B
   | .call _ c os _ => return mkAppN (mkConst c) (os.map oE).toArray
   | _ => throwError "rel_program expansion: internal: a call's head is not a constant"
 
-/-- The codes of a row's relations, in order (`Tm.arg`). -/
-partial def primArgs (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bool} : Tm A B d → RM (Array Lean.Expr)
-  | .arg f x => return (← primArgs pre ρ f).push (← code pre ρ x)
-  | _ => pure #[]
-
 /-- `φ`'s body as `fun X : CRel A B => …`, the variable `k` read as `X`. -/
 partial def body (pre : Name) (ρ : List (Nat × Lean.Expr)) (A B : Obj) (k : Nat) {d : Bool} (b : Tm A B d) :
     RM Lean.Expr :=
@@ -693,7 +715,6 @@ partial def node (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bo
   | _, B, _, .est Q => return g ``Gen.est #[oE B, ← c Q]
   | _, .arr B, _, .thin Q => return g ``Gen.thin #[oE B, ← c Q]
   | A, .arr B, _, .nil => return g ``Gen.nil #[oE A, oE B]
-  | A, B, _, .prim r => primE r A B #[]
   | .arr B, _, _, .atPos k => return g ``Gen.atPos #[oE B, toExpr k]
   | _, _, _, .own R => c R
   | _, _, _, .succ U => return g ``Gen.succ #[← c U]
@@ -725,8 +746,13 @@ partial def node (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bo
   | A, B, _, .refold (d := d) (e := e) k _ ch b =>
     return g ``Gen.refold #[oE A, oE B, bE d, bE e, ← c ch, ← body pre ρ A B k b]
   | .sum A B, C, _, .juncD (d := d) (e := e) R S => return g ``Gen.juncD #[oE A, oE B, oE C, bE d, bE e, ← c R, ← c S]
-  | A, B, d, t@(.arg ..) => match primOf t with
-    | some r => do primE r A B (← primArgs pre ρ t)
+  -- `d` the outer one: `prim`'s is `true`, so the two alternatives cannot bind it alike
+  | A, B, _, t@(.prim _) | A, B, _, t@(.arg ..) => match primOf t with
+    | some (r, as) => do
+      let xs ← as.toArray.mapM fun x => return (← code pre ρ x.2.2.2, fnTy x)
+      let some e ← primE r A B xs
+        | throwError "rel_program expansion: `{r.sig.1}` at {oE A} → {oE B} given {xs.size} relations fits none of {primWrappers}"
+      pure e
     | none => return g ``Gen.ofPl #[oE A, oE B, bE d, ← spine pre ρ t]
   | A, B, d, t@(.call ..) => return g ``Gen.ofPl #[oE A, oE B, bE d, ← spine pre ρ t]
 

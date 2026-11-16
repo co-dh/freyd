@@ -1570,7 +1570,7 @@ def build : Pre → Except Err Res
   | .est p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .est c⟩
   | .thin p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .thin c⟩
   | .nil a b => return ⟨_, _, true, .nil (A := ← toObj objs mc dp a) (B := ← toObj objs mc dp b)⟩
-  -- the row's objects are checked once, where `Expand.primE` fits its constant at them
+  -- the row's objects are checked where `Expand.primE` fits its constant at them (`primsFit`, `node`)
   | .prim r xs s t => do
     let A ← toObj objs mc dp s; let B ← toObj objs mc dp t
     (r.sig.2.1.zip xs.attach).foldlM (init := (⟨A, B, true, .prim r⟩ : Res)) fun ⟨A, B, d, f⟩ ((_, form), ⟨x, h⟩) => do
