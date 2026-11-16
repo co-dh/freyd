@@ -144,15 +144,24 @@ info: (R mh.f)
 #guard_msgs in
 #rel_read "obj A = 0…2\npeer : A ⟶ A ≜ 𝟙\nR : A ⟶ A ≜ 𝟙\nprint mh.fpeer\nprint Rmh.f"
 
+/-! A keyed family-form constant: `kf.refl` given the family `m : [A×A] ⟶ A×A`, whose index has no universe, does
+    not build whole (the lifted `𝟙` is `⊤ : I ⟶ α` onto `⟨𝟙,𝟙⟩`), so it is built once keyed, `[A×A]×α ⟶ α`, run on
+    the (key, source) pairs in demand; its `Sig` says so, and the use keys it. -/
 rel_program kf where
-    twice(R : α ⟶ α) : α ⟶ α ≜ RR
+    refl(R : α ⟶ α) : α ⟶ α ≜ R ∪ 𝟙
 
 open LeetQ.Rel.Programs.prelude in
 rel_program kfUse where
     obj A = 0…2
-    print {(∗, (0,1) (1,2))} kf.twice(∋)
+    m : [A×A] ⟶ A×A ≜ ∋
+    print {(∗, (0,1) (1,2))} kf.refl(m)
+#guard kfUse.ok
+#guard kfUse.printed ==
+  [("{(∗, (0, 1) (1, 2))} kf.refl(m) = {(∗, (0, 0)), (∗, (0, 1)), (∗, (1, 1)), (∗, (1, 2)), (∗, (2, 2))}", true)]
 
-#eval kfUse.printed
-#eval kfUse.ok
+run_cmd do
+  let cs := (Expand.relRegistry.getState (← getEnv)).calls.filter (`LeetQ.Rel.Programs.kf.refl.form |>.isPrefixOf ·.1)
+  unless !cs.isEmpty && cs.all (·.2.2.2.2.2.2) do
+    throwError "`kf.refl` at a family has no keyed constant: {cs.map (·.1)}"
 
 end LeetQ.Rel.Programs
