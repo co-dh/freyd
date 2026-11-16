@@ -99,19 +99,17 @@ def builtins : List (Op × Except String (Option Name)) :=
   let none' (why : String) : Except String (Option Name) := .error why
   [(.id, .ok none), (.zero, .ok none), (.top, .ok none), (.outl, .ok none), (.outr, .ok none), (.inl, .ok none),
    (.inr, .ok none), (.alpha, .ok none), (.map, .ok none), (.dom, .ok none), (.ran, .ok none),
-   (.mem, .ok ``PowerAllegory.eps), (.lam, .ok ``Freyd.Alg.Λ), (.E, .ok ``existsImage), (.P, .ok ``powerRel),
+   (.lam, .ok ``Freyd.Alg.Λ), (.E, .ok ``existsImage), (.P, .ok ``powerRel),
    (.est, .ok ``est), (.thin, .ok ``thinRel),
    (.leq, .ok ``ListRel.leq), (.succ, .ok ``ListRel.succ), (.arith add, .ok ``ListRel.plus),
    (.arith idiv, .error "Rel's div is Int division and ListRel.div is Nat division; \
     the Int reading is added when a proof first needs it"),
    (.nil, .ok ``ListRel.nilAtUnit),
-   (.thinL, .ok ``ListRel.thinL), (.merge, .ok ``ListRel.merge),
    (.lt, none' "AOP declares no strict order on numbers"), (.arith mul, none' "AOP declares no product of numbers"),
    (.arith sub, none' "AOP declares no difference of numbers"),
    (.arith imod, none' "AOP declares no remainder of numbers"),
    (.arith greater, none' "AOP declares no maximum of two numbers"),
    (.arith lesser, none' "AOP declares no minimum of two numbers"),
-   (.loop, none' "AOP declares no iteration to a fixed point from the left"),
    (.refold, none' "AOP's unfold-then-fold is `(relCata c°)° ≫ relCata S` over an initial algebra of G, \
     which rel(…) never writes"),
    (.index 0, none' "AOP declares no element at a position")] ++
@@ -125,7 +123,7 @@ run_cmd do
 
 /-- The prelude's names with a fixed AOP counterpart, each its prelude body in the fragment: `rel(…)` has no
     prelude, and AOP writes `∈` as `∋°`. -/
-def prelude : List (String × (Lang.Pos → Lang.Expr)) := [("∈", fun p => .conv p (.op p .mem [] []))]
+def prelude : List (String × (Lang.Pos → Lang.Expr)) := [("∈", fun p => .conv p (.op p (.prim memRow.sym) [] []))]
 
 /-- The one allegory the statement's arrows `A ⟶ B` live in, if they agree on one. -/
 def allegory : TermElabM (Option Lean.Expr) := do

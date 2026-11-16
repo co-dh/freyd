@@ -46,6 +46,21 @@ partial def prf (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Boo
   modify fun (m, g) => (m.insert c h, g)
   pure (some (mkConst h))
 
+/-- The `Gen.Sound` lemma `s` at the node `e`: its code unified with `e`, its `Sound` hypotheses the proofs `hs`. -/
+def lemFit (s : Name) (e : Lean.Expr) (hs : Array Lean.Expr) : MetaM Lean.Expr := do
+  let k ← mkConstWithFreshMVarLevels s
+  let (ms, _, ty) ← forallMetaTelescope (← inferType k)
+  let some c := ty.getAppArgs[3]? | throwError "rel_rep: `{s}` is `{ty}`, not a `Gen.Sound`"
+  unless ← isDefEq c e do throwError "rel_rep: the code of `{s}` is not the node `{e}`"
+  let hms ← ms.filterM fun m => return (← inferType m).isAppOf ``Gen.Sound
+  unless hms.size == hs.size do throwError "rel_rep: `{s}` takes {hms.size} `Sound` hypotheses, given {hs.size}"
+  for (m, h) in hms.zip hs do
+    unless ← isDefEq (← inferType m) (← inferType h) <&&> isDefEq m h do
+      throwError "rel_rep: `{s}`'s hypothesis `{← inferType m}` is not `{← inferType h}`"
+  let v ← instantiateMVars (mkAppN k ms)
+  if v.hasMVar then throwError "rel_rep: `{s}` at `{e}` leaves `{v}` unsolved"
+  pure v
+
 /-- A proof of `Gen.PSound (planOr t) T`, following `planOr`. -/
 partial def pprf (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bool} (t : Tm A B d) :
     PM (Option Lean.Expr) := do
@@ -76,7 +91,6 @@ partial def prfNode (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d :
   | A, _, _, .top V => match ← p V with
     | some h => lemO ``Gen.top_sound #[oE A, none, none, none, h]
     | none => pure none
-  | _, B, _, .mem => lemO ``Gen.mem_sound #[oE B]
   | .prod A B, _, _, .outl => lemO ``Gen.outl_sound #[oE A, oE B]
   | .prod A B, _, _, .outr => lemO ``Gen.outr_sound #[oE A, oE B]
   | A, .sum _ B, _, .inl => lemO ``Gen.inl_sound #[oE A, oE B]
@@ -97,14 +111,33 @@ partial def prfNode (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d :
   | _, _, _, .prod R S => lem ``Gen.prod_sound [← p R, ← p S]
   | _, _, _, .junc R S => lem ``Gen.junc_sound [← p R, ← p S]
   | _, _, _, .own R | _, _, _, .share _ R => p R
-  | _, _, _, .prim r => modify (fun (m, g) => (m, g <|> some r.sig.1)); pure none
-  | _, _, _, _ =>
-    -- a call is named by its constant, not by the `Gen.ofPl` that runs its plan
-    let e ← node pre ρ t
-    let f := (if e.isAppOf ``Gen.ofPl then e.appArg! else e).getAppFn.constName?
-    modify fun (m, g) => (m, g <|> f); pure none
+  | _, _, _, _ => match primOf t with
+    -- a row by its lemma, its relations' proofs its `Sound` hypotheses; with none, the gap is its constant
+    | some r => match r.sound with
+      | some s => do
+        let hs ← primPrfs pre ρ t
+        if hs.any Option.isNone then return none
+        some <$> lemFit s (← node pre ρ t) (hs.filterMap id)
+      | none => modify (fun (m, g) => (m, g <|> some r.sig.1)); pure none
+    | none =>
+      -- a call is named by its constant, not by the `Gen.ofPl` that runs its plan
+      let e ← node pre ρ t
+      let f := (if e.isAppOf ``Gen.ofPl then e.appArg! else e).getAppFn.constName?
+      modify fun (m, g) => (m, g <|> f); pure none
+
+/-- The proofs of a row's relations, in order (`primArgs`). -/
+partial def primPrfs (pre : Name) (ρ : List (Nat × Lean.Expr)) {A B : Obj} {d : Bool} :
+    Tm A B d → PM (Array (Option Lean.Expr))
+  | .arg f x => return (← primPrfs pre ρ f).push (← prf pre ρ x)
+  | _ => pure #[]
 
 end
+
+-- `prims` names its soundness lemmas unchecked (Syntax cannot import `GenSpec`), so each is checked here
+run_cmd do
+  for r in prims do
+    if let some s := r.sound then
+      unless (← getEnv).contains s do throwError "prims: the soundness lemma of `{r.sym}` is `{s}`, which is not declared"
 
 /-- The theorems `n.rep_x` of the program `n`, from the terms and constants `emit` recorded, and `n.unproved`:
     the definitions with none, each with the first combinator `GenSpec` has no lemma for. -/

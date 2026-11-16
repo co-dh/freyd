@@ -19,7 +19,6 @@ inductive Tm : Obj → Obj → Bool → Type where
   | id {A : Obj} : Tm A A true
   /-- `⊤` onto the values of the closed coreflexive `V`. -/
   | top {A B : Obj} (V : Tm B B false) : Tm A B true
-  | mem {B : Obj} : Tm (.arr B) B true
   | outl {A B : Obj} : Tm (.prod A B) A true
   | outr {A B : Obj} : Tm (.prod A B) B true
   | inl {A B : Obj} : Tm A (.sum A B) true
@@ -44,25 +43,18 @@ inductive Tm : Obj → Obj → Bool → Type where
   | lam {A B : Obj} {d : Bool} (R : Tm A B d) : Tm A (.arr B) true
   | E {A B : Obj} {d : Bool} (R : Tm A B d) : Tm (.arr A) (.arr B) true
   | map {A B : Obj} {d : Bool} (R : Tm A B d) : Tm (.arr A) (.arr B) true
-  /-- The prelude's folds `filter(p)`, `takewhile(p)`, run as their mask forms (`Expand.preludeDef`). -/
-  | filter {B : Obj} {d : Bool} (R : Tm B B d) : Tm (.arr B) (.arr B) true
-  | takewhile {B : Obj} {d : Bool} (R : Tm B B d) : Tm (.arr B) (.arr B) true
   /-- An operator that takes an order `Q : B ⟶ B` (or a coreflexive `p`) holds it as its pair test
       `τ(Q) : B×B ⟶ B×B` (§a), run on demand on the pairs the operator compares. -/
   | est {B : Obj} (Q : Tm (.prod B B) (.prod B B) true) : Tm (.arr B) B true
   | thin {B : Obj} (Q : Tm (.prod B B) (.prod B B) true) : Tm (.arr B) (.arr B) true
   | nil {A B : Obj} : Tm A (.arr B) true
-  /-- The row `r` of `prims` at `A ⟶ B`, an instance of its constant's type (`build` checks `Prim.fits`). -/
+  /-- The row `r` of `prims` at `A ⟶ B`, an instance of its constant's type; its relations given by `arg`. -/
   | prim {A B : Obj} (r : Prim) : Tm A B true
   /-- `at(k)`, the element at position `k` from `0`, on the arrays in demand. -/
   | atPos {B : Obj} (k : Nat) : Tm (.arr B) B true
   /-- The prelude's `perm`, kept as its own converse (`convTm`): the one converse rule the language has for a
       definition, because `perm° = perm` is a theorem it cannot derive from the fold `perm` is. -/
   | own {A : Obj} {d : Bool} (R : Tm A A d) : Tm A A d
-  | thinL {B : Obj} (Q : Tm (.prod B B) (.prod B B) true) : Tm (.arr B) (.arr B) true
-  | merge {B : Obj} (Q : Tm (.prod B B) (.prod B B) true) : Tm (.prod (.arr B) (.arr B)) (.arr B) true
-  /-- `loop(F)` on the pairs (state, array) in demand, `F` run on the pairs (state, element) each round meets. -/
-  | loop {X Y : Obj} {d : Bool} (F : Tm (.prod X Y) X d) : Tm (.prod X (.arr Y)) X true
   /-- `succ`, the kernel's value verb `k` (`plus`, `times`, …), `≤`, `<` on the number universe `U`: a declared
       object's (`uni`), or the one a constant is given for an object variable (`var`). -/
   | succ (U : Tm .long .long false) : Tm .long .long true
