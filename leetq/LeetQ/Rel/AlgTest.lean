@@ -479,15 +479,6 @@ private def selfU {A : Obj} (R : Rel A A) : Nat → Rel A A | 0 => R | k + 1 => 
 #guard let b := selfU (idU XX) 4; b == idU XX && (b.val.1, b.val.2.2.2.1) == (4, 5)
 #guard let b := selfU (idU Xa) 4; b == idU Xa && (b.val.1, b.val.2.2.2.1, b.val.2.2.2.2.1) == (5, 2, 3)
 #guard let b := selfU (idU Xo) 4; b == idU Xo && (b.val.1, b.val.2.1) == (2, 2)
--- `P(R)`, Egli–Milner, `R` not a function, into the arrays `[10] [11 20] [] [10 20] [10 20 11 7]`
-private def Yp : Vals (.arr L) 5 := ⟨7, col [0, 1, 0, 3, 3], col [1, 3, 0, 5, 7], col [10, 11, 20, 10, 20, 11, 7]⟩
-private def pSpec {n m : USize} (R : LL) (X : Vals (.arr L) n) (Y : Vals (.arr L) m) : List (List Int64 × List Int64) :=
-  (arrs X).flatMap fun xs => ((arrs Y).filter fun ys => xs.all (fun x => ys.any fun y => R.toList.contains (x, y)) &&
-    ys.all fun y => xs.any fun x => R.toList.contains (x, y)).map (xs, ·)
-#guard seteq ((P two Xc Yp).toList : List (List Int64 × List Int64)) (pSpec two Xc Yp) && (P two Xc Yp).n > 0
-#guard seteq ((P two Xs Yp).toList : List (List Int64 × List Int64)) (pSpec two Xs Yp)
--- on a map `P(f) = E(f)` into `E(f)`'s own arrays
-#guard P neg Xl (E neg Xl).val == E neg Xl
 -- `nil`, `α = [nil, cons]`
 #guard ((nil (B := L) zero1).toList : List (Int64 × List Int64)) == [(0, [])]
 #guard alpha zero1 XP == junc nilR (cons (idU XP))

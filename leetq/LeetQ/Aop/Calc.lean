@@ -22,7 +22,7 @@ import AOP.A1_7_Pointfree
     `R°`, `R ∩ S`, `R ∪ S`, `R / S`, `R \ S`, `𝟙`, `𝟘`, `⊤`, `dom(R)`, `ran(R)`; `⟨R,S⟩`, `R × S`, `π₁`, `π₂` over
     a `RelProd` instance; `[R,S]`, `inl`, `inr` over a `Coproduct` hypothesis; `∼R`, `R − S` in a
     `BooleanAllegory`; the book's fold `⦇R⦈` and `α` over an `InitialAlgebra` instance, `F(R)` over a `Relator`
-    hypothesis; the power group `∋`, `∈`, `Λ(R)`, `E(R)`, `P(R)`, `est(R)`, `thin(Q)`, `τ` as the book's
+    hypothesis; the power group `∋`, `∈`, `Λ(R)`, `E(R)`, `est(R)`, `thin(Q)`, `τ` as the book's
     power-object operators, each over the class AOP defines it in; the list and number builtins as their `Rel(Set)`
     declarations; the program fold `⦇e,S⦈` as the book's `⦇[e',S]⦈` (`toTerm`). `builtins` holds every builtin's
     reading or why it has none. `⊑` and `=` are Lean's, between `rel(…)` terms. Every other construct is an error
@@ -99,7 +99,7 @@ def builtins : List (Op × Except String (Option Name)) :=
   let none' (why : String) : Except String (Option Name) := .error why
   [(.id, .ok none), (.zero, .ok none), (.top, .ok none), (.outl, .ok none), (.outr, .ok none), (.inl, .ok none),
    (.inr, .ok none), (.alpha, .ok none), (.map, .ok none), (.dom, .ok none), (.ran, .ok none),
-   (.lam, .ok ``Freyd.Alg.Λ), (.E, .ok ``existsImage), (.P, .ok ``powerRel),
+   (.lam, .ok ``Freyd.Alg.Λ), (.E, .ok ``existsImage),
    (.est, .ok ``est), (.thin, .ok ``thinRel),
    (.leq, .ok ``ListRel.leq), (.succ, .ok ``ListRel.succ), (.arith add, .ok ``ListRel.plus),
    (.arith idiv, .error "Rel's div is Int division and ListRel.div is Nat division; \
@@ -285,13 +285,12 @@ def elabExpr (vars : List String) (folds : List (String × Lang.Expr)) (e : Lang
   for h in todo do h
   pure r
 
-/-- AOP's delimited notations make `est(`, `thin(`, `P(` one Lean token where `rel` reads a name then `(`: each is
+/-- AOP's delimited notations make `est(`, `thin(` one Lean token where `rel` reads a name then `(`: each is
     a production here, read back (`lift`) as the builtin it spells. -/
 syntax:max (name := rEst) "est(" rel ")" : rel
 syntax:max (name := rThin) "thin(" rel ")" : rel
-syntax:max (name := rPow) "P(" rel ")" : rel
 
-def delimited : List (SyntaxNodeKind × Op) := [(``rEst, .est), (``rThin, .thin), (``rPow, .P)]
+def delimited : List (SyntaxNodeKind × Op) := [(``rEst, .est), (``rThin, .thin)]
 
 /-- `s` with each delimited notation read back and each one-argument fold `⦇R⦈` replaced by a fresh name not in `taken`, and `R` under that name: `Lang`
     has the program fold only, so the book's fold is read here, by syntax kind, before `Embed.expr` sees the term. -/

@@ -930,23 +930,6 @@ def EC {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) : Rel (.arr A
 /-- `E(R)` on the arrays `X`: `EC`'s relation. -/
 def E {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) : Rel (.arr A) (.arr B) := (EC R X).1
 
-/-- `P(R) : arr A ⟶ arr B` from the arrays `X` to the arrays `Y`, the power relator (`powerRel`,
-    AOP/A5_4_PowerRel.lean:34): `((∋)° \ (R ≫ (∋)°)) ∩ ((∋ ≫ R) / ∋)`, every element of `xs` `R`-reaches into `ys`
-    and every element of `ys` is reached from `xs`. A relation, not a map, so both ends range over a
-    universe: `X` the inputs, `Y` the outputs. Whether it ran within capacity: the bits of the twins it runs
-    (`memC`, `compC`, `leftDivC`, `rightDivC`, `interC`). -/
-def PC {A B : Obj} {n m : USize} (R : Rel A B) (X : Vals (.arr A) n) (Y : Vals (.arr B) m) :
-    Rel (.arr A) (.arr B) × Bool :=
-  let mx := memC X; let my := memC Y
-  let ry := compC R (my.1)°; let xr := compC mx.1 R
-  let l := leftDivC (mx.1)° ry.1 X Y; let d := rightDivC xr.1 my.1 X Y
-  let i := interC l.1 d.1
-  (i.1, mx.2 && my.2 && ry.2 && xr.2 && l.2 && d.2 && i.2)
-
-/-- `P(R)` from `X` to `Y`: `PC`'s relation. -/
-def P {A B : Obj} {n m : USize} (R : Rel A B) (X : Vals (.arr A) n) (Y : Vals (.arr B) m) : Rel (.arr A) (.arr B) :=
-  (PC R X Y).1
-
 /-- `tail ≜ cons° π₂` on the arrays `X` (diag/aop/05-datatypes.typ:561). -/
 def tail {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) := outr (uncons X)
 

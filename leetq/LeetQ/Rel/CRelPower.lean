@@ -211,47 +211,6 @@ theorem rep_distinctC [DecidableEq B.El] {n : USize} (X : Vals (.arr B) n) (hb :
     | nil => rfl
     | cons x _ => exact absurd ((hY x).2 (by simp)) (by simp)
 
-/-- **`rep (P R X Y)` under `PC`'s bit**: `rep_interC` of `rep_leftDivC` and `rep_rightDivC`, at `rep_compC`'s and
-    `rep_memC`'s read-backs of the composites. -/
-theorem rep_PC {n m : USize} (R : Rel A B) (X : Vals (.arr A) n) (Y : Vals (.arr B) m) (hb : (PC R X Y).2 = true)
-    (xs : (Obj.arr A).El) (ys : (Obj.arr B).El) :
-    rep (PC R X Y).1 xs ys ↔ (∃ i, X.row i = xs) ∧ (∃ j, Y.row j = ys) ∧
-      (∀ a ∈ xs, ∃ b ∈ ys, rep R a b) ∧ (∀ b ∈ ys, ∃ a ∈ xs, rep R a b) := by
-  simp only [PC, Bool.and_eq_true] at hb
-  obtain ⟨⟨⟨⟨⟨⟨hx, hy⟩, hry⟩, hxr⟩, hl⟩, hd⟩, hi⟩ := hb
-  have eX : ∀ a xs, rep ((memC X).1)° a xs ↔ (∃ i, X.row i = xs) ∧ a ∈ xs := fun a xs => by
-    rw [rep_conv]; exact rep_memC X hx xs a
-  have eY : ∀ ys b, rep (memC Y).1 ys b ↔ (∃ j, Y.row j = ys) ∧ b ∈ ys := rep_memC Y hy
-  have eRY : ∀ a ys, rep (compC R ((memC Y).1)°).1 a ys ↔ ∃ b, rep R a b ∧ (∃ j, Y.row j = ys) ∧ b ∈ ys :=
-    fun a ys => by
-      rw [rep_compC _ _ hry, Freyd.Alg.RelSet.comp_apply]
-      exact exists_congr fun b => and_congr Iff.rfl (by rw [rep_conv]; exact eY ys b)
-  have eXR : ∀ xs b, rep (compC (memC X).1 R).1 xs b ↔ ∃ a, ((∃ i, X.row i = xs) ∧ a ∈ xs) ∧ rep R a b :=
-    fun xs b => by
-      rw [rep_compC _ _ hxr, Freyd.Alg.RelSet.comp_apply]
-      exact exists_congr fun a => and_congr (rep_memC X hx xs a) Iff.rfl
-  show rep (interC (A := .arr A) (B := .arr B) _ _).1 xs ys ↔ _
-  rw [rep_interC _ _ hi]
-  show rep (leftDivC (A := A) (B := .arr A) (C := .arr B) _ _ X Y).1 xs ys ∧
-    rep (rightDivC (A := .arr A) (B := .arr B) (C := B) _ _ X Y).1 xs ys ↔ _
-  rw [rep_leftDivC _ _ X Y hl xs ys, rep_rightDivC _ _ X Y hd xs ys]
-  simp only [eX, eRY, eY, eXR]
-  constructor
-  · rintro ⟨⟨hl, hl'⟩, ⟨hr, hr'⟩⟩
-    have hx : ∃ i, X.row i = xs := by rcases hl' with ⟨_, h, _⟩ | ⟨h, _⟩ <;> exact h
-    have hy : ∃ j, Y.row j = ys := by rcases hr' with ⟨_, h, _⟩ | ⟨_, h⟩ <;> exact h
-    refine ⟨hx, hy, fun a ha => ?_, fun b hb => ?_⟩
-    · obtain ⟨b, hR, -, hb⟩ := hl a ⟨hx, ha⟩
-      exact ⟨b, hb, hR⟩
-    · obtain ⟨a, ⟨-, ha⟩, hR⟩ := hr b ⟨hy, hb⟩
-      exact ⟨a, ha, hR⟩
-  · rintro ⟨hx, hy, hl, hr⟩
-    refine ⟨⟨fun a ⟨_, ha⟩ => ?_, Or.inr ⟨hx, hy⟩⟩, ⟨fun b ⟨_, hb⟩ => ?_, Or.inr ⟨hx, hy⟩⟩⟩
-    · obtain ⟨b, hb, hR⟩ := hl a ha
-      exact ⟨b, hR, hy, hb⟩
-    · obtain ⟨a, ha, hR⟩ := hr b hb
-      exact ⟨a, ⟨hx, ha⟩, hR⟩
-
 /-- **`setify` is `distinct` then `asc`**, `B` ordered with an injective key: both sides relate `xs` to the arrays
     holding `xs`'s elements once each, ascending, and two such are equal (`List.Perm.eq_of_pairwise`, its
     antisymmetry `Obj.eq_of_not_lt`). `setify`'s from `rep_setifyC`, `setifyC_asc`; `distinct`'s `xs.eraseDups`
@@ -292,7 +251,6 @@ theorem setifyC_eq_distinct_asc [DecidableEq B.El] {n : USize} (X : Vals (.arr B
     exact (hu Z₀ Z ((hse Z₀ h₀).trans hP.symm) (setifyC_asc X hB hs xs Z₀ h₀).2 hA) ▸ h₀
 
 #print axioms setifyC_eq_distinct_asc
-#print axioms rep_PC
 #print axioms setifyC_asc
 #print axioms unionC_ok
 #print axioms rep_τC
@@ -308,12 +266,6 @@ namespace CRel
 open QLean QLean.Kernel LeetQ.Rel.Alg Freyd Freyd.Alg Freyd.Alg.RelSet LeetQ.Rel.Rep
 
 variable {A B : Obj}
-
-theorem rep_P {n m : USize} (R : CRel A B) (X : Vals (.arr A) n) (Y : Vals (.arr B) m) (hb : (R.P X Y).ok = true)
-    (xs : (Obj.arr A).El) (ys : (Obj.arr B).El) :
-    rep (R.P X Y).rel xs ys ↔ (∃ i, X.row i = xs) ∧ (∃ j, Y.row j = ys) ∧
-      (∀ a ∈ xs, ∃ b ∈ ys, rep R.rel a b) ∧ (∀ b ∈ ys, ∃ a ∈ xs, rep R.rel a b) := by
-  have e : R.P X Y = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_PC R.rel X Y hb xs ys
 
 theorem rep_τ {n : USize} (X : Vals A n) (hb : (τ X).ok = true) :
     (∀ a Y, rep (τ X).rel a Y → ∀ x, x ∈ Y ↔ x = a) ∧ (∀ a, (∃ Y, rep (τ X).rel a Y) ↔ ∃ i, Vals.row X i = a) :=

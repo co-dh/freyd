@@ -212,12 +212,11 @@ def Prim.find? (s : String) : Option Prim := prims.find? (·.sym == s)
 /-- The builtin operators of §b. A constant (arity 0) may take its objects, `⊤(A,B)`; the others take relations.
     `arith k` is the qlean kernel's integral value verb `k` on pairs of numbers (`Alg.arith`): one constructor, so
     every verb is typed, lifted and run by one path; `prim s` the row `s` of `prims`. `inl`, `inr`, `map` run as
-    their rows too (`Op.row`), kept as constructors for `Calc.toTerm`'s readings over any allegory; `P` is read
-    only there, a program refusing it (`applied`: it has no universe on its target). -/
+    their rows too (`Op.row`), kept as constructors for `Calc.toTerm`'s readings over any allegory. -/
 inductive Op
   | id | zero | top | outl | outr | inl | inr | leq | lt | succ | arith (k : UInt8)
   | nil | alpha | prim (s : String)
-  | dom | ran | lam | E | P | est | thin | map
+  | dom | ran | lam | E | est | thin | map
   /-- `refold(c, S)`: an unfold by `c : A ⟶ G(A)` then a fold by `S : G(B) ⟶ B`, `μX : c G(X) S`; `fold` is a
       name programs define (Party), so the builtin is `refold`. -/
   | refold
@@ -235,7 +234,7 @@ def Op.table : List (String × Op × Nat) :=
    ("mod", .arith QLean.Kernel.Ew.imod, 0), ("max", .arith QLean.Kernel.Ew.greater, 0),
    ("min", .arith QLean.Kernel.Ew.lesser, 0), ("nil", .nil, 0), ("α", .alpha, 0),
    ("dom", .dom, 1), ("ran", .ran, 1), ("Λ", .lam, 1), ("E", .E, 1),
-   ("P", .P, 1), ("est", .est, 1), ("thin", .thin, 1), ("F", .map, 1),
+   ("est", .est, 1), ("thin", .thin, 1), ("F", .map, 1),
    ("refold", .refold, 2),
    ("at", .index 0, 0)] ++
   (prims.filter fun r => r.written && r.prelude.isNone).map fun r => (r.sym, .prim r.sym, r.sig.2.1.length)

@@ -773,7 +773,6 @@ def applied (env : Env) (p : Pos) (o : Op) (as : List (Pre × OTy × OTy)) : M A
     | .ran => pure (.rel (.ran (.close p q s "ran( ) reads its argument whole")) t t)
     | .lam => pure (.rel (.lam q) s (.arr t))
     | .E => pure (.rel (.E q) (.arr s) (.arr t))
-    | .P => throw ⟨p, s!"P(R) : 𝒫{s} ⟶ 𝒫{t} has no universe on its target and no demand there (§a)"⟩
     | .est | .thin => do
       unify p s!"the target of {o.sym}'s argument" t s
       -- the order is tested on the pairs the operator compares (`build`, `param`), not read whole
@@ -790,7 +789,6 @@ def appliedL (I : OTy) (p : Pos) (o : Op) (as : List Arg) : M Arg := do
     | .ran, [R] => pure (lRan R)
     | .lam, [R] => pure (lLam I (some (.top p I R.2.1 none)) R)
     | .E, [R] => do let b ← fresh; pure (lLam I none (← lComp I p (liftConst I p (.prim memRow [] (.arr b) b) (.arr b) b) R))
-    | .P, _ => notLiftable p "P(R)"
     | o, _ => notLiftable p s!"{o.sym}( )"
   pure (.fam r.1 I r.2.1 r.2.2)
 
