@@ -507,6 +507,119 @@ def oty (env : Env) (vs : List (String × OTy) := []) : OExp → M OTy
   | .sum a b => return .sum (← oty env vs a) (← oty env vs b)
   | .pow a | .list a => return .arr (← oty env vs a)
 
+/-! ### The lifted rows of §e, each shape stated once -/
+
+/-- The operators a lifted row is written in: at `Pre` a shape builds the row, at `Pat` it recognises one (`keyed`).
+    `Pre`'s own constructors are not enough: a `match` pattern cannot repeat an object, and a row's objects repeat.
+    `ω`, `π` are what an object and a place are at `τ`. -/
+class Shape (τ : Type) where
+  ω : Type
+  π : Type
+  comp : τ → τ → τ
+  pair : τ → τ → τ
+  meet : τ → τ → τ
+  join : τ → τ → τ
+  diff : τ → τ → τ
+  dom : τ → τ
+  id : ω → τ
+  outl : ω → ω → τ
+  outr : ω → ω → τ
+  prod : ω → ω → ω
+  top : π → ω → ω → Option τ → τ
+  close : π → τ → ω → String → τ
+
+instance : Shape Pre := ⟨OTy, Pos, .comp, .pair, .meet, .join, .diff, .dom, .id, .outl, .outr, .prod, .top, .close⟩
+
+/-- What recognising a row binds, each at its first occurrence: the place `q`, the parts `R`, `S`, the objects
+    `a`–`d`. A row that does not mention a hole leaves it unbound. -/
+structure Holes where
+  q : Option Pos := none
+  R : Option Pre := none
+  S : Option Pre := none
+  a : Option OTy := none
+  b : Option OTy := none
+  c : Option OTy := none
+  d : Option OTy := none
+
+abbrev Pat := StateT Holes Option Unit
+
+/-- A shape as a recogniser. An object a row writes as `a×b` binds `a`, `b` when the term's is a product and is not
+    checked otherwise, as a place the row reads its objects from elsewhere. -/
+instance : Shape (Pre → Pat) where
+  ω := OTy → Pat
+  π := Pos → Pat
+  comp f g := fun | .comp x y => do f x; g y | _ => failure
+  pair f g := fun | .pair x y => do f x; g y | _ => failure
+  meet f g := fun | .meet x y => do f x; g y | _ => failure
+  join f g := fun | .join x y => do f x; g y | _ => failure
+  diff f g := fun | .diff x y => do f x; g y | _ => failure
+  dom f := fun | .dom x => f x | _ => failure
+  id o := fun | .id x => o x | _ => failure
+  outl o o' := fun | .outl x y => do o x; o' y | _ => failure
+  outr o o' := fun | .outr x y => do o x; o' y | _ => failure
+  prod o o' := fun | .prod x y => do o x; o' y | _ => pure ()
+  top q o o' t := fun
+    | .top q' x y t' => do q q'; o x; o' y; match t, t' with | none, none => pure () | some f, some z => f z | _, _ => failure
+    | _ => failure
+  close q f o _ := fun | .close q' x y _ => do q q'; f x; o y | _ => failure
+
+section Shapes
+
+open Shape
+
+variable {τ : Type} [Shape τ]
+
+/-- `RS` lifted, `R : I ⟶ a×b`, `S` keyed: `⟨𝟙,R⟩⟨π₂π₁,⟨π₁,π₂π₂⟩S⟩`, each row `(a,b)` of `R` at its key `i` joined
+    with `S` on `(i,b)`. Not `⟨R,S⟩` cut to the agreeing middles, which pairs every row of `R` with every row of `S`
+    at a key. -/
+def compSh (I a b : ω τ) (R S : τ) : τ :=
+  let ab := prod a b
+  comp (pair (Shape.id I) R) (pair (comp (outr I ab) (outl a b)) (comp (pair (outl I ab) (comp (outr I ab) (outr a b))) S))
+
+/-- `⟨R,S⟩` lifted: `⟨R,S⟩dom(π₁π₁ ∩ π₂π₁)⟨π₁π₁,⟨π₁π₂,π₂π₂⟩⟩`, pairs of rows of one source. -/
+def pairSh (a b c : ω τ) (R S : τ) : τ :=
+  let ab := prod a b; let ac := prod a c
+  comp (comp (pair R S) (dom (meet (comp (outl ab ac) (outl a b)) (comp (outr ab ac) (outl a c)))))
+    (pair (comp (outl ab ac) (outl a b)) (pair (comp (outl ab ac) (outr a b)) (comp (outr ab ac) (outr a c))))
+
+/-- `R×S` lifted: `⟨R,S⟩⟨⟨π₁π₁,π₂π₁⟩,⟨π₁π₂,π₂π₂⟩⟩`. -/
+def prodSh (a b a' b' : ω τ) (R S : τ) : τ :=
+  let ab := prod a b; let ab' := prod a' b'
+  comp (pair R S) (pair (pair (comp (outl ab ab') (outl a b)) (comp (outr ab ab') (outl a' b')))
+    (pair (comp (outl ab ab') (outr a b)) (comp (outr ab ab') (outr a' b'))))
+
+/-- A family then a closed `C`: `F⟨π₁,π₂C⟩`, each row's value carried by `C`. -/
+def thenSh (a b : ω τ) (F C : τ) : τ := comp F (pair (outl a b) (comp (outr a b) C))
+
+/-- `dom(F)` lifted: `F⟨π₁,π₁⟩`. -/
+def domSh (a b : ω τ) (F : τ) : τ := comp F (pair (outl a b) (outl a b))
+
+/-- `⊤` as a family: `D⊤`, `⊤ : I ⟶ a×b`. -/
+def topSh (q : π τ) (I a b : ω τ) : τ := top q I (prod a b) none
+
+/-- A closed `C : a ⟶ b` as a family, `D⊤⟨𝟙,C⟩`, `⊤ : I ⟶ a` onto `V`. -/
+def constSh (q : π τ) (I a : ω τ) (V : Option τ) (C : τ) : τ := comp (top q I a V) (pair (Shape.id a) C)
+
+/-- `constSh` onto `dom(C')`, `C` read whole there. -/
+def closedSh (q : π τ) (I a : ω τ) (C' C : τ) : τ := constSh q I a (some (close q (dom C') a "a closed term in a lifted body")) C
+
+end Shapes
+
+/-- A row of §e: its shape at the index `I`, the place `q`, the parts `R S` and the objects `a b c d`, and its keyed
+    form from the holes recognising it binds, `K` keying a part at its objects, `a b` the family's. -/
+structure Row where
+  shape : {τ : Type} → [S : Shape τ] → S.ω → S.π → τ → τ → S.ω → S.ω → S.ω → S.ω → τ
+  keyed : (Pre → OTy → OTy → Pre) → OTy → OTy → Holes → Option Pre
+
+/-- The holes `x` binds when it has `r`'s shape. -/
+def Row.match? (r : Row) (x : Pre) : Option Holes :=
+  (r.shape (τ := Pre → Pat) (fun _ => pure ())
+    (fun v => modify fun h => { h with q := h.q <|> some v })
+    (fun v => modify fun h => { h with R := h.R <|> some v }) (fun v => modify fun h => { h with S := h.S <|> some v })
+    (fun v => modify fun h => { h with a := h.a <|> some v }) (fun v => modify fun h => { h with b := h.b <|> some v })
+    (fun v => modify fun h => { h with c := h.c <|> some v }) (fun v => modify fun h => { h with d := h.d <|> some v })
+    x).run {} |>.map (·.2)
+
 section Rows
 
 open Pre
@@ -517,77 +630,73 @@ variable (I : OTy) (p : Pos)
     `D⊤⟨𝟙,𝟙⟩` (§e). -/
 def liftConst (C : Pre) (a b : OTy) : Pre × OTy × OTy :=
   match C with
-  | .top _ _ _ none => (.top p I (.prod a b) none, a, b)
-  | .id _ => (.comp (.top p I a none) (.pair (.id a) (.id a)), a, b)
-  | C => (.comp (.top p I a (some (.close p (.dom C) a "a closed term in a lifted body"))) (.pair (.id a) C), a, b)
+  | .top _ _ _ none => (topSh p I a b, a, b)
+  | .id _ => (constSh p I a none (.id a), a, b)
+  | C => (closedSh p I a C C, a, b)
 
 /-- A result as a family over `I`. -/
 def famOf : Arg → M (Pre × OTy × OTy)
   | .fam q i a b => do unify p "the index of a family" i I; pure (q, a, b)
   | .rel q s t => pure (liftConst I p q s t)
 
+/-- The rows whose fibre at a source reads only that source, in the order `keyed` tries them. -/
+def rows : List Row := [
+  ⟨fun _ _ R S _ _ _ _ => Shape.join R S, fun K a b h => return join (K (← h.R) a b) (K (← h.S) a b)⟩,
+  ⟨fun _ _ R S _ _ _ _ => Shape.meet R S, fun K a b h => return meet (K (← h.R) a b) (K (← h.S) a b)⟩,
+  ⟨fun _ _ R S _ _ _ _ => Shape.diff R S, fun K a b h => return diff (K (← h.R) a b) (K (← h.S) a b)⟩,
+  -- `D⊤`, `⊤ : I ⟶ a×b`: `D⊤`, `⊤ : I×a ⟶ b`
+  ⟨fun I q _ _ a b _ _ => topSh q I a b, fun _ _ _ h => return top (← h.q) (.prod I (← h.a)) (← h.b) none⟩,
+  -- a closed `C` onto `V = dom(C')`: `dom(π₂C')π₂C`, so `C'` too runs on the sources in demand, not on its universe
+  ⟨fun I q R S a _ _ _ => closedSh q I a R S, fun _ a _ h => return comp (dom (comp (outr I a) (← h.R))) (comp (outr I a) (← h.S))⟩,
+  -- a closed `C` onto `V`: `π₂VC`, `C` run on the sources `π₂V` meets
+  ⟨fun I q R S a _ _ _ => constSh q I a (some R) S, fun _ a _ h => return comp (comp (outr I a) (← h.R)) (← h.S)⟩,
+  ⟨fun I q _ S a _ _ _ => constSh q I a none S, fun _ a _ h => return comp (outr I a) (← h.S)⟩,
+  -- `RS` lifted, and `X⦇e,S⦈` lifted, `G : I×b ⟶ c` keyed: `⟨π₁,Rᴵ⟩G`
+  ⟨fun I _ R S a b _ _ => compSh I a b R S, fun K _ _ h => do
+    let a ← h.a; return comp (pair (outl I a) (K (← h.R) a (← h.b))) (← h.S)⟩,
+  -- `⟨R,S⟩` lifted: `⟨Rᴵ,Sᴵ⟩`
+  ⟨fun _ _ R S a b c _ => pairSh a b c R S, fun K _ _ h => do
+    let a ← h.a; return pair (K (← h.R) a (← h.b)) (K (← h.S) a (← h.c))⟩,
+  -- `R×S` lifted: `⟨⟨π₁,π₂π₁⟩Rᴵ,⟨π₁,π₂π₂⟩Sᴵ⟩` on `I×(a×a')`
+  ⟨fun _ _ R S a b a' b' => prodSh a b a' b' R S, fun K _ _ h => do
+    let a ← h.a; let a' ← h.c; let s := OTy.prod a a'
+    return pair (comp (pair (outl I s) (comp (outr I s) (outl a a'))) (K (← h.R) a (← h.b)))
+      (comp (pair (outl I s) (comp (outr I s) (outr a a'))) (K (← h.S) a' (← h.d)))⟩,
+  -- `F` then `C`: `FᴵC`
+  ⟨fun _ _ F C a b _ _ => thenSh a b F C, fun K _ _ h => return comp (K (← h.R) (← h.a) (← h.b)) (← h.S)⟩,
+  -- `dom(F)` lifted: `dom(Fᴵ)π₂`
+  ⟨fun _ _ F _ a b _ _ => domSh a b F, fun K _ _ h => do let a ← h.a; return comp (dom (K (← h.R) a (← h.b))) (outr I a)⟩]
+
 /-- The family `R : I ⟶ a×b` as one relation of the key and the source, `Rᴵ : I×a ⟶ b`, run on the pairs
     (key, source) in demand (§e, cost of the keyed fold). A row whose fibre at a source reads only that source
     is keyed through its parts, so a closed part runs on the sources in demand, not on its domain at every key.
     Any other family is read whole at each key and cut to the source, `⟨π₁R,π₂⟩dom(π₁π₁ ∩ π₂)π₁π₂`: every part
     runs on the keys in demand, so `I` needs no universe (a converse or `ran` here would close over all of `I`). -/
-def keyed : Pre → OTy → OTy → Pre
-  | .join R S, a, b => join (keyed R a b) (keyed S a b)
-  | .meet R S, a, b => meet (keyed R a b) (keyed S a b)
-  | .diff R S, a, b => diff (keyed R a b) (keyed S a b)
-  -- `D⊤`, `⊤ : I ⟶ a×b`: `D⊤`, `⊤ : I×a ⟶ b`
-  | .top q _ (.prod _ _) none, a, b => top q (.prod I a) b none
-  -- a closed `C` as a family, `D⊤⟨𝟙,C⟩` with `⊤` onto `V`: `π₂VC`, `C` run on the sources `π₂V` meets; onto
-  -- `V = dom(C')`, `dom(π₂C')π₂C`, so `C'` too runs on the sources in demand, not on its universe
-  | .comp (.top _ _ _ (some (.close _ (.dom C') _ _))) (.pair (.id _) C), a, _ =>
-    comp (dom (comp (outr I a) C')) (comp (outr I a) C)
-  | .comp (.top _ _ _ V) (.pair (.id _) C), a, _ => comp (match V with | some V => comp (outr I a) V | none => outr I a) C
-  -- `RS` lifted, and `X⦇e,S⦈` lifted, `⟨𝟙,R⟩⟨π₂π₁,⟨π₁,π₂π₂⟩G⟩`, `G : I×m ⟶ c`: `⟨π₁,Rᴵ⟩G`
-  | .comp (.pair (.id _) R) (.pair (.comp (.outr _ _) (.outl a m)) (.comp (.pair (.outl _ _) (.comp (.outr _ _) (.outr _ _))) G)),
-      _, _ => comp (pair (outl I a) (keyed R a m)) G
-  -- `⟨R,S⟩` lifted: `⟨Rᴵ,Sᴵ⟩`
-  | .comp (.comp (.pair R S) (.dom (.meet (.comp (.outl _ _) (.outl a b)) (.comp (.outr _ _) (.outl _ c)))))
-      (.pair (.comp (.outl _ _) (.outl _ _)) (.pair (.comp (.outl _ _) (.outr _ _)) (.comp (.outr _ _) (.outr _ _)))),
-      _, _ => pair (keyed R a b) (keyed S a c)
-  -- `R×S` lifted: `⟨⟨π₁,π₂π₁⟩Rᴵ,⟨π₁,π₂π₂⟩Sᴵ⟩` on `I×(a×a')`
-  | .comp (.pair R S) (.pair (.pair (.comp (.outl _ _) (.outl a b)) (.comp (.outr _ _) (.outl a' b')))
-      (.pair (.comp (.outl _ _) (.outr _ _)) (.comp (.outr _ _) (.outr _ _)))), _, _ =>
-    let s := OTy.prod a a'
-    pair (comp (pair (outl I s) (comp (outr I s) (outl a a'))) (keyed R a b))
-      (comp (pair (outl I s) (comp (outr I s) (outr a a'))) (keyed S a' b'))
-  -- `F` then `C`, `F⟨π₁,π₂C⟩`: `FᴵC`
-  | .comp F (.pair (.outl a b) (.comp (.outr _ _) C)), _, _ => comp (keyed F a b) C
-  -- `dom(F)` lifted, `F⟨π₁,π₁⟩`: `dom(Fᴵ)π₂`
-  | .comp F (.pair (.outl a b) (.outl _ _)), _, _ => comp (dom (keyed F a b)) (outr I a)
-  | R, _, _ => flat R
+partial def keyed (R : Pre) (a b : OTy) : Pre :=
+  ((rows I).findSome? fun r => r.match? R >>= r.keyed (keyed · · ·) a b).getD (flat R)
 
-/-- `RS` lifted: `⟨𝟙,R⟩⟨π₂π₁,⟨π₁,π₂π₂⟩Sᴵ⟩`, each row `(a,b)` of `R` at its key `i` joined with `S` on `(i,b)`.
-    Not `⟨R,S⟩` cut to the agreeing middles, which pairs every row of `R` with every row of `S` at a key. -/
 def lComp : Pre × OTy × OTy → Pre × OTy × OTy → M (Pre × OTy × OTy)
   | (R, a, b), (S, b', c) => do
     unify p "the middle object of a composition" b' b
-    let ab := OTy.prod a b
-    pure (comp (pair (id I) R) (pair (comp (outr I ab) (outl a b))
-      (comp (pair (outl I ab) (comp (outr I ab) (outr a b))) (keyed I S b c))), a, c)
+    pure (compSh I a b R (keyed I S b c), a, c)
 
-/-- A family then a closed `C`: `F⟨π₁,π₂C⟩`, each row's value carried by `C`. -/
 def lThen : Pre × OTy × OTy → Pre × OTy × OTy → M (Pre × OTy × OTy)
   | (F, a, b), (C, s, t) => do
     unify p "the middle object of a composition" s b
-    pure (comp F (pair (outl a b) (comp (outr a b) C)), a, t)
+    pure (thenSh a b F C, a, t)
 
 def lConv : Pre × OTy × OTy → Pre × OTy × OTy
   | (R, a, b) => (comp R (pair (outr a b) (outl a b)), b, a)
 
 def lDom : Pre × OTy × OTy → Pre × OTy × OTy
-  | (R, a, b) => (comp R (pair (outl a b) (outl a b)), a, a)
+  | (R, a, b) => (domSh a b R, a, a)
 
 def lRan : Pre × OTy × OTy → Pre × OTy × OTy
   | (R, a, b) => (comp R (pair (outr a b) (outr a b)), b, b)
 
 /-- `∼R` lifted: `D⊤ − R`, `⊤ : I ⟶ a×b`. -/
 def lCompl : Pre × OTy × OTy → Pre × OTy × OTy
-  | (R, a, b) => (diff (top p I (.prod a b) none) R, a, b)
+  | (R, a, b) => (diff (topSh p I a b) R, a, b)
 
 /-- `∩ ∪ −` lifted: the same operator on the two families. -/
 def lSame (op : Pre → Pre → Pre) : Pre × OTy × OTy → Pre × OTy × OTy → M (Pre × OTy × OTy)
@@ -603,21 +712,13 @@ def lRdiv (R S : Pre × OTy × OTy) : M (Pre × OTy × OTy) := do
   unify p "the target of `/`'s right operand" S.2.2 R.2.2
   lComp I p (lCompl I p R) (lConv S)
 
-/-- `⟨R,S⟩` lifted: `⟨R,S⟩dom(π₁π₁ ∩ π₂π₁)⟨π₁π₁,⟨π₁π₂,π₂π₂⟩⟩`, pairs of rows of one source. -/
 def lPair : Pre × OTy × OTy → Pre × OTy × OTy → M (Pre × OTy × OTy)
   | (R, a, b), (S, a', c) => do
     unify p "the source of the pair's second part" a' a
-    let ab := OTy.prod a b; let ac := OTy.prod a c
-    let eq := dom (meet (comp (outl ab ac) (outl a b)) (comp (outr ab ac) (outl a c)))
-    pure (comp (comp (pair R S) eq) (pair (comp (outl ab ac) (outl a b))
-      (pair (comp (outl ab ac) (outr a b)) (comp (outr ab ac) (outr a c)))), a, .prod b c)
+    pure (pairSh a b c R S, a, .prod b c)
 
-/-- `R×S` lifted: `⟨R,S⟩⟨⟨π₁π₁,π₂π₁⟩,⟨π₁π₂,π₂π₂⟩⟩`. -/
 def lProd : Pre × OTy × OTy → Pre × OTy × OTy → Pre × OTy × OTy
-  | (R, a, b), (S, a', b') =>
-    let ab := OTy.prod a b; let ab' := OTy.prod a' b'
-    (comp (pair R S) (pair (pair (comp (outl ab ab') (outl a b)) (comp (outr ab ab') (outl a' b')))
-      (pair (comp (outl ab ab') (outr a b)) (comp (outr ab ab') (outr a' b')))), .prod a a', .prod b b')
+  | (R, a, b), (S, a', b') => (prodSh a b a' b' R S, .prod a a', .prod b b')
 
 /-- `[R,S]` lifted: `R⟨π₁inl,π₂⟩ ∪ S⟨π₁inr,π₂⟩`, the row `R(inl×𝟙) ∪ S(inr×𝟙)` with no universe. -/
 def lJunc : Pre × OTy × OTy → Pre × OTy × OTy → M (Pre × OTy × OTy)
@@ -640,12 +741,10 @@ def lFold : Pre × OTy × OTy → Pre × OTy × OTy → Pre × OTy × OTy → M 
     unify p "the source of the fold's step" xv (.prod x v)
     unify p "the target of the fold's step" w v
     unify p "the arrays a fold runs on" xs (.arr x)
-    let iv := OTy.prod I v; let xv := OTy.prod x v; let ax := OTy.prod a (.arr x)
+    let iv := OTy.prod I v; let xv := OTy.prod x v
     let S' := comp (pair (comp (outr x iv) (outl I v)) (pair (outl x iv) (comp (outr x iv) (outr I v))))
       (pair (outl I xv) (keyed I S xv v))
-    let f := foldI e S'
-    pure (comp (pair (id I) X) (pair (comp (outr I ax) (outl a (.arr x)))
-      (comp (pair (outl I ax) (comp (outr I ax) (outr a (.arr x)))) f)), a, v)
+    pure (compSh I a (.arr x) X (foldI e S'), a, v)
 
 end Rows
 
