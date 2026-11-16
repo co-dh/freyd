@@ -155,9 +155,9 @@ def formKey (c : Lean.Name) (fs : List Form) : Lean.Name :=
 
 /-- What a call reads of the constant `o` (`Sig`): the universes its body reads, its converse when it has one. -/
 def sigOf (o : Once) : Sig :=
-  let (_, k, gen, _, ⟨_, _, d, t⟩, tst) := o
+  let (_, k, gen, _, ⟨_, _, d, t⟩, tst, kf) := o
   let cv := if tst then none else (convTm t).toOption
-  (k, d, gen.zip ((List.range gen.length).map (fv t).contains), cv.map fun ⟨e, _⟩ => (k ++ `conv, e), tst)
+  (k, d, gen.zip ((List.range gen.length).map (fv t).contains), cv.map fun ⟨e, _⟩ => (k ++ `conv, e), tst, kf)
 
 /-- What a program reads: its closed definitions, its prints (text and term), its checks, its objects, and its
     definitions elaborated once. -/
@@ -216,10 +216,13 @@ def once (env : Env) (p : Pos) (n : String) (qs : List Param) (e : Expr) (ty : O
     let (os, r, st) ← elabOnce env p n qs e ty vs fs objs specs
     let (q, _, _) := r.plain
     let gen := fl.map (·.1)
-    let mc ← Lean.getMCtx; match build objs mc p q, test objs mc p q with
-    | .ok res, _ => pure ((k, c, gen, os, res, false), st.specs)
-    | .error _, .ok ⟨A, B, t⟩ => pure ((k, c, gen, os, ⟨.prod A B, .prod A B, true, t⟩, true), st.specs)
-    | .error err, .error _ => throw err
+    -- a family that does not build whole (its index has no universe) builds keyed, run on the (key, source) pairs
+    let kq := match r with | .fam q i a b => some (keyed i q a b) | .rel .. => none
+    let mc ← Lean.getMCtx; match build objs mc p q, kq.map (build objs mc p), test objs mc p q with
+    | .ok res, _, _ => pure ((k, c, gen, os, res, false, false), st.specs)
+    | .error _, some (.ok res), _ => pure ((k, c, gen, os, res, false, true), st.specs)
+    | .error _, _, .ok ⟨A, B, t⟩ => pure ((k, c, gen, os, ⟨.prod A B, .prod A B, true, t⟩, true, false), st.specs)
+    | .error err, _, .error _ => throw err
   let mut fl := vs.map fun _ => (false, true)
   let mut out ← run fl
   -- with every variable `.long` the body built above, so one whose own object fails the build is a number object;
@@ -228,7 +231,7 @@ def once (env : Env) (p : Pos) (n : String) (qs : List Param) (e : Expr) (ty : O
   for i in List.range (min vs.length varAtoms.length) do
     for b in [(true, false), (true, true)] do
       -- a body that built stays built: a pair test runs nowhere (`build`'s `.call`)
-      if let some o := (← tryCatch (some <$> run (fl.set i b)) fun _ => pure none) then if o.1.2.2.2.2.2 ≤ out.1.2.2.2.2.2 then fl := fl.set i b; out := o; break
+      if let some o := (← tryCatch (some <$> run (fl.set i b)) fun _ => pure none) then if o.1.2.2.2.2.2.1 ≤ out.1.2.2.2.2.2.1 then fl := fl.set i b; out := o; break
   pure out
 
 /-- `n(qs) ≜ e : ty`, defined at `dp` in `env`, `c` its constant, `vs` its object variables, `d` its expansion:
@@ -289,13 +292,20 @@ def callDef (env : Env) (dp : Pos) (n : String) (qs : List Param) (e : Expr) (ty
           match ← (once env dp n qs e ty vs key k fs (← get).specs).run with
           | .ok (o, specs) => modify (fun st => { st with specs := specs ++ [o] }); pure (some (sigOf o))
           | .error _ => pure none
-      let some (k, dm, fl, cv, tst) := sig? | return r
+      let some (k, dm, fl, cv, tst, kf) := sig? | return r
       let us := us ++ ix.toList
       unless us.length == fl.length do
         throw ⟨p, s!"internal: `{k}` has {fl.length} object variables in the registry, {us.length} here"⟩
       let (q, a, b) := r.plain
       let call := Pre.call p k (us.zip fl) (xs.map (·.1)) (xs.map (·.2)) q a b dm cv tst
-      pure (match r with | .rel .. => .rel call a b | .fam _ i x y => .fam call i x y) }
+      match r, kf with
+      | .rel .., _ => pure (.rel call a b)
+      | .fam _ i x y, false => pure (.fam call i x y)
+      -- the constant `K : I×x ⟶ y` as the family `I ⟶ x×y`: the identity family then `K` (`compSh`), which
+      -- `keyed` reads back as `⟨π₁,π₂𝟙⟩K`, so a use keys it as it keys any lifted composite
+      | .fam _ i x y, true =>
+        let call := Pre.call p k (us.zip fl) (xs.map (·.1)) (xs.map (·.2)) (keyed i q x y) (.prod i x) y dm cv tst
+        pure (.fam (compSh i x x (liftConst i p (.id x) x x).1 call) i x y) }
 
 /-- A top-level term, `r` its elaboration `e` with the objects `st`: closed on its source's universe when it needs
     keys, refused where that object has none. -/
@@ -940,7 +950,7 @@ def emit (n : Name) (r : Read) : MetaM Unit := do
     -- each definition elaborated once: `n.x : (A₁ … : Obj) → Pl U₁ → … → Pl R₁ → … → Pl d A B`, generic over the
     -- objects of its generic variables, then plans in and out, the universes it reads then its parameters, so a
     -- caller's plan runs through the call; `n.x.conv` its converse, when its body has one (`convTm`)
-    for o@(key, c, gen, qs, ⟨A, B, d, t⟩, tst) in fs do
+    for o@(key, c, gen, qs, ⟨A, B, d, t⟩, tst, _) in fs do
       let nv := gen.length
       let reads := (List.range nv).map (fv t).contains
       let pl (e : Bool) (X Y : Obj) := mkApp3 (mkConst ``Gen.Pl) (bE e) (oE X) (oE Y)

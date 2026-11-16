@@ -328,14 +328,14 @@ abbrev Form := Option Bool × Option Nat
 
 /-- What a call needs of a constant (the registry): the constant; its plan's demand bit; per object variable,
     whether it is generic over it and whether it reads its universe; its converse's constant and demand bit;
-    whether it is a pair test. -/
-abbrev Sig := Lean.Name × Bool × List (Bool × Bool) × Option (Lean.Name × Bool) × Bool
+    whether it is a pair test; whether a family result `I ⟶ a×b` is its keyed form `I×a ⟶ b` (`keyed`). -/
+abbrev Sig := Lean.Name × Bool × List (Bool × Bool) × Option (Lean.Name × Bool) × Bool × Bool
 
 /-- A definition elaborated once at its arguments' forms (`once`): its registry key (`formKey`), its constant, per
     object variable whether the constant is generic over it (the variables' universes are the term variables
     `0 … n-1`), its parameters' objects and demand bits as the constant takes them (the variables from `n` on), its
-    body, and whether that body is its pair test (it builds no relation, §a). -/
-abbrev Once := Lean.Name × Lean.Name × List Bool × List (Obj × Obj × Bool) × Res × Bool
+    body, whether that body is its pair test (it builds no relation, §a), and whether it is a family's keyed form. -/
+abbrev Once := Lean.Name × Lean.Name × List Bool × List (Obj × Obj × Bool) × Res × Bool × Bool
 
 structure St where
   /-- The fixed points so far: the next one's variable. -/
