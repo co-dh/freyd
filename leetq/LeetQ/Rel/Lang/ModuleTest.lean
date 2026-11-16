@@ -144,4 +144,15 @@ info: (R mh.f)
 #guard_msgs in
 #rel_read "obj A = 0…2\npeer : A ⟶ A ≜ 𝟙\nR : A ⟶ A ≜ 𝟙\nprint mh.fpeer\nprint Rmh.f"
 
+rel_program kf where
+    twice(R : α ⟶ α) : α ⟶ α ≜ RR
+
+open LeetQ.Rel.Programs.prelude in
+rel_program kfUse where
+    obj A = 0…2
+    print {(∗, (0,1) (1,2))} kf.twice(∋)
+
+#eval kfUse.printed
+#eval kfUse.ok
+
 end LeetQ.Rel.Programs
