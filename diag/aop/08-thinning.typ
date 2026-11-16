@@ -309,8 +309,8 @@ row((
 // lean:AOP.A8_2.cost@9727fbcf
 // lean:AOP.A8_2.costOf@5cd1d8d3
 // lean:AOP.A8_2.R@b8411391
-// lean:AOP.A8_2_Exec.relCata_F_eps_eq_nelist@a5626ada
-// lean:AOP.A8_2_Exec.minpath_spec@b3a1b035
+// lean:AOP.A8_2_Exec.relCata_F_eps_eq_nelist@ec4c1f90
+// lean:AOP.A8_2_Exec.minpath_spec@3a778a5e
 // lean:AOP.A8_2_Exec.minpath@f3dbb473
 // lean:AOP.A5_6_ListCombinators.RelSet.ListRel.nelist@6ec46793
 // lean:AOP.A8_2.sumCop_u₁_eq@77ceb1de
@@ -321,9 +321,9 @@ row((
 // lean:AOP.A5_6.cprMap@379d6c37
 // lean:AOP.A8_2.Q@7f3d1e91
 // lean:AOP.A8_2.head@017ceb2b
-// lean:AOP.A8_2.step@3d796bd0
-// lean:AOP.A8_2.Λ_F_map_eps_id@92f0e4cb
-// lean:AOP.A8_2.Λ_F_map_id_eps@56952273
+// lean:AOP.A8_2.step@79cc2b27
+// lean:AOP.A8_2.Λ_F_map_eps_id@d199d2cb
+// lean:AOP.A8_2.Λ_F_map_id_eps@fbebfefd
 )]<path-defn>
 
 #disp[#table(
@@ -350,7 +350,7 @@ row((
   Thm(cols: 1)[#leanf("Freyd.Alg.Paths.thinning_paths") \
     // layered-network row: B&dM §8.2, p. 198
     #src[a least-cost path in a layered network, as a fold over the layers]],
-     // lean:AOP.A8_2_Exec.thinning_paths@604898b9
+     // lean:AOP.A8_2_Exec.thinning_paths@44100ab8
   [- Why it is needed: `est(R)` keeps one cheapest `w` of the set `Λ(S)(x)`; `thin(Q)` needs every
      dropped `z` to be `Q`-beaten by a kept one. For `{w}` alone to be a thinning we need `w Q z` for
      every `z` in `Λ(S)(x)`.
@@ -371,8 +371,8 @@ row((
      // lean:AOP.A8_2.thinning_paths_alg@b81f936d
   lean-calc(calc-82d),
   [#EQ #leanf("Freyd.Alg.Paths.cpMap_comp_powerRel_alphaR_comp_est_eq_junc") \ #src[at the layered network (`F(A,X)=A+A×X`, `B` the paths `V⁺`, `α=[τ,cons]`): #frc([`F(𝟙,∋)`])` P(α) est(R)=[τ,step]` — @Freyd.Alg.Paths.step]],
-    // lean:AOP.A8_2.cpMap_comp_powerRel_alphaR_comp_est_eq_junc@70989486
-    // lean:AOP.A8_2.step@3d796bd0
+    // lean:AOP.A8_2.cpMap_comp_powerRel_alphaR_comp_est_eq_junc@74462681
+    // lean:AOP.A8_2.step@79cc2b27
   // No panel: `cpMap_sum_eq_junc` holds for EVERY pair of relators, and the exporter has no
   // naturality verdict for an `F` that is only a variable — it draws a red stub instead.
   [#EQ #src[#frc([`F(∋,𝟙)`])` =𝟙+cpl` — @Freyd.Alg.Paths.Λ_F_map_eps_id]],
@@ -451,18 +451,18 @@ row((
   [#rowkey("Freyd.Alg.RelSet.CL.minL")], [#leant("Freyd.Alg.RelSet.CL.minL")],
   "Freyd.Alg.RelSet.CL.minL",
   [a `Q`-least element of the list],
-// lean:AOP.A5_6_ListCombinators.RelSet.ListRel.setify@c31d6e6f
-// lean:AOP.A5_6_ListCombinators.RelSet.ListRel.setify_ni_iff@fefd0da3
+// lean:AOP.A5_6_ListCombinators.RelSet.ListRel.setify@b45c841e
+// lean:AOP.A5_6_ListCombinators.RelSet.ListRel.setify_ni_iff@6502da30
 // lean:AOP.A5_6.cup@99e76a1f
 // lean:AOP.A5_6.cpMap@636ea157
 // lean:AOP.A8_3.sortRel@0e1a3dba
 // lean:AOP.A8_3.RelSet.CL.bumpRel@415b7c12
 // lean:AOP.A8_3.RelSet.CL.bumpRel_wrap@993629d2
 // lean:AOP.A8_3.RelSet.CL.bumpRel_cons@a12aeb2f
-// lean:AOP.A8_3.RelSet.ListRel.thinL@91e5cf00
-// lean:AOP.A8_3.RelSet.ListRel.le_thinL_iff@ee5ca858
+// lean:AOP.A8_3.RelSet.ListRel.thinL@ed74ad2f
+// lean:AOP.A8_3.RelSet.ListRel.le_thinL_iff@ad97ed14
 // lean:AOP.A8_3.RelSet.ListRel.bumpFold_le_thinL@65734f87
-// lean:AOP.A8_3.RelSet.CL.minL@7684e8d6
+// lean:AOP.A8_3.RelSet.CL.minL@9711e0c3
 )]<thinL-defn>
 
 // B&dM's paragraph title "Sorting sets", p. 200: `sort(≼)`, its laws (8.6)–(8.11) and Lemma 8.1.
@@ -491,7 +491,7 @@ row((
   [`cpL` is the list implementation of the cartesian product `cp(F)`],
   [#leanf("Freyd.Alg.RelSet.Poly.Fmap_sort_comp_cpL_le") \ #src[(8.11), `F` polynomial and linear]],
   [the same for every linear polynomial `F`],
-  // lean:AOP.A8_3.RelSet.CL.bumpFold_eq_singleton_minL@8020c233 lean:AOP.A8_3.RelSet.ListRel.sort_comp_thinL_le@0c9e19d7 lean:AOP.A8_3.RelSet.ListRel.sort_comp_minL_le@d97ac79b lean:AOP.A8_3.RelSet.ListRel.sort_comp_list_le@e2552a3c lean:AOP.A8_3.sortRel_comp_filter_le@a19a57e0 lean:AOP.A8_3.RelSet.ListRel.prodMap_sort_comp_merge_le@c2de68cc lean:AOP.A8_3.RelSet.ListRel.prodMap_setify_recip_comp_merge_le@e29a3c9c lean:AOP.A8_3.map_sortRel_comp_cpL_le@7c091df5 lean:AOP.A8_3.ordered_comp_subseq_le@3d670f97 lean:AOP.A8_3.prodMap_ordered_comp_merge_le@9cd186c6 lean:AOP.A8_3.RelSet.ListRel.sort_comp_filter_le@293fdf1e lean:AOP.A8_3.RelSet.ListRel.Fmap_sort_comp_cpL_le@133b7a75
+  // lean:AOP.A8_3.RelSet.CL.bumpFold_eq_singleton_minL@8020c233 lean:AOP.A8_3.RelSet.ListRel.sort_comp_thinL_le@0c9e19d7 lean:AOP.A8_3.RelSet.ListRel.sort_comp_minL_le@d97ac79b lean:AOP.A8_3.RelSet.ListRel.sort_comp_list_le@8efa7450 lean:AOP.A8_3.sortRel_comp_filter_le@a19a57e0 lean:AOP.A8_3.RelSet.ListRel.prodMap_sort_comp_merge_le@87b152af lean:AOP.A8_3.RelSet.ListRel.prodMap_setify_recip_comp_merge_le@1943330e lean:AOP.A8_3.map_sortRel_comp_cpL_le@7c091df5 lean:AOP.A8_3.ordered_comp_subseq_le@3d670f97 lean:AOP.A8_3.prodMap_ordered_comp_merge_le@e6741061 lean:AOP.A8_3.RelSet.ListRel.sort_comp_filter_le@c0f3ddf2 lean:AOP.A8_3.RelSet.ListRel.Fmap_sort_comp_cpL_le@133b7a75
 )]<thinL-laws>
 
 // B&dM (8.6), p. 201, mirrored.  Row 3 is the content: `thinL(Q)` only drops elements, and a
@@ -522,7 +522,7 @@ row((
      argument sets.
      // map_sort row: Lemma 8.1, p. 202
  ]],
-     // lean:AOP.A8_3.RelSet.ListRel.Fmap_sort_comp_cpL_list_filter_le@48ad374c
+     // lean:AOP.A8_3.RelSet.ListRel.Fmap_sort_comp_cpL_list_filter_le@8aa22152
   // `filter(p) : [A]⟶[A]` — @thinL-defn's `gᵢ≜fᵢ′ filter(pᵢ)`.
   lean-calc(calc-l81),
 )]<thinL-lem81>
@@ -577,7 +577,7 @@ preorder.
     // thinningList row: Theorem 8.2, p. 203
     #src[a fold on sorted lists of partial solutions, thinned at every step, refines the thinning
  specification — at @binthin-data. ]],
-     // lean:AOP.A8_3.RelSet.ListRel.thinningList@610421b6
+     // lean:AOP.A8_3.RelSet.ListRel.thinningList@3e9d8d85
   lean-calc(calc-82),
 )]<thinL-thm82>
 
@@ -610,7 +610,7 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.ListRel.sortedAlg_fusion") \
     // sortedAlg-fusion row: B&dM p. 203
     #src[sorting the candidate set turns the thinning algebra into an algebra on sorted lists. ]],
-     // lean:AOP.A8_3.RelSet.ListRel.sortedAlg_fusion@5cc59a5d
+     // lean:AOP.A8_3.RelSet.ListRel.sortedAlg_fusion@48d781f4
   lean-calc(calc-82f),
 )]<thinL-fusion>
 
@@ -702,7 +702,7 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
   Thm[#leanf("Freyd.Alg.RelSet.Knapsack.knap_laws") \
     // knapsack row: B&dM §8.4, p. 206
     #src[the knapsack problem, as a fold that thins the packings kept at each item]],
-     // lean:AOP.A8_4_Knapsack.knap_laws@3054f895
+     // lean:AOP.A8_4_Knapsack.knap_laws@0af9ff13
   // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
   // law's own letters, so the column has no one pair of ports.
   table.header([*circuit*], [*Hinze–Marsden*]),
@@ -727,7 +727,7 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
     [#leanf("Freyd.Alg.RelSet.Knapsack.knap_fold.lhs") \
      #src[@knap-body-split under the fold; `minL(R)` is `head`, packings coming out in
       descending value]])],
-     // lean:AOP.A8_4_Knapsack.knap_fold@185b51be
+     // lean:AOP.A8_4_Knapsack.knap_fold@54153612
   [#lean("Freyd.Alg.RelSet.Knapsack.knap_fold.lhs")],
 )]<knap-laws>
 
@@ -739,7 +739,7 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Knapsack.knap_body") \
     #src[the fold's body splits into a base case `nil τ` and a step that extends each kept
  packing by the item or leaves it out]],
-     // lean:AOP.A8_4_Knapsack.knap_body@24dea291
+     // lean:AOP.A8_4_Knapsack.knap_body@d6274417
   lean-calc(calc-kbs),
 )]<knap-body-split>
 
@@ -856,11 +856,11 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
    // lean:AOP.A8_5_Paragraph.para_mono_glue@d5fe916f
   [both halves are monotonic on `Q` once ties in waste are broken by the first line],
   [#leanf("Freyd.Alg.RelSet.ListRel.merge_top")],
-  // lean:AOP.A8_3.merge_top@9e31b76a
+  // lean:AOP.A8_3.merge_top@8b684d98
   [`⊤` needs no sorting at all],
   [#leanf("Freyd.Alg.RelSet.Paragraph.para_sort_new") \ #leanf("Freyd.Alg.RelSet.Paragraph.para_sort_glue")],
-  // lean:AOP.A8_5_Paragraph.para_sort_new@d934a583
-  // lean:AOP.A8_5_Paragraph.para_sort_glue@aa99bf38
+  // lean:AOP.A8_5_Paragraph.para_sort_new@dc1782e6
+  // lean:AOP.A8_5_Paragraph.para_sort_glue@e7d48a51
   [both algebras are monotonic on `⊤`, so `⊤` is the sort order `P`],
 )]<para-mono>
 
@@ -873,7 +873,7 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
   Thm[#leanf("Freyd.Alg.RelSet.Paragraph.para_laws") \
     // paragraph row: B&dM §8.5, p. 210
     #src[a paragraph laid out as a fold that thins the layouts kept at each word]],
-     // lean:AOP.A8_5_Paragraph.para_laws@63c1d929
+     // lean:AOP.A8_5_Paragraph.para_laws@ae573b27
   // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
   // law's own letters, so the column has no one pair of ports.
   table.header([*circuit*], [*Hinze–Marsden*]),
@@ -917,7 +917,7 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
     // para-body-split row: B&dM pp. 210–211
     #src[the fold's body splits into a base case `start` for a single word and a step that extends
  each kept layout by `new` and by `glue`]],
-     // lean:AOP.A8_5_Paragraph.para_body_split@74469824
+     // lean:AOP.A8_5_Paragraph.para_body_split@77ed4be5
   lean-calc(calc-pbs),
 )]<para-body-split>
 
@@ -1055,8 +1055,8 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
   [both are, once ties in cost are broken by the two second cities — the heads already agree among
    tours of one input],
   [#leanf("Freyd.Alg.RelSet.Tour.tour_sort_dropl") \ #leanf("Freyd.Alg.RelSet.Tour.tour_sort_dropr")],
-  // lean:AOP.A8_6_Tour.tour_sort_dropl@2a2e451c
-  // lean:AOP.A8_6_Tour.tour_sort_dropr@cc84df43
+  // lean:AOP.A8_6_Tour.tour_sort_dropl@b85b1590
+  // lean:AOP.A8_6_Tour.tour_sort_dropr@6526e726
   [both algebras are monotonic on `⊤`, so `⊤` is the sort order `P`],
 )]<tour-mono>
 

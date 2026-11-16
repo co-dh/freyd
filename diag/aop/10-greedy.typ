@@ -28,7 +28,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   // since a step relates two sides of one generality.
   lean-chain(
     (none, "Freyd.Alg.RelSet.SL.est_arm₂_le.rhs", src[the body at `T` a coproduct of two arms]),
-    // lean:AOP.A9_1.est_summand_le@599fa245
+    // lean:AOP.A9_1.est_summand_le@92301813
     // The branch, not the conditional; nothing survives outside the set here, so `est(Qᵢ)` lands on
     // the object wire.
     (RQ, "Freyd.Alg.RelSet.SL.est_arm₂_le.lhs",
@@ -72,7 +72,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.greedy_disjoint_ranges") \
     #src[when `V₁` and `V₂` have disjoint ranges, the greedy step over `[V₁,V₂]` runs the `V₁` step
      on inputs `V₁` reaches and the `V₂` step on inputs `V₂` reaches]],
-     // lean:AOP.A10_1.greedy_disjoint_ranges@e60d7430
+     // lean:AOP.A10_1.greedy_disjoint_ranges@57ca9008
   lean-calc(calc-gd, breaks: (3, 5)),
 )]<greedy-disjoint>
 
@@ -128,7 +128,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Detab.expand_V") \
     #src[shortening the output of one `expand` step to a `V`-smaller string either keeps the whole
      step (`expand`) or drops its character and shortens its input string (`π₁V°`)]],
-     // lean:AOP.A10_2_Detab.expand_V@bbbb18ac
+     // lean:AOP.A10_2_Detab.expand_V@6a9b7747
   lean-calc(calc-ev, breaks: (3,)),
 )]<entab-expand-V>
 
@@ -173,7 +173,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
       // lean:Freyd.Alg.RelSet.Detab.detab_V@d64fef36 lean:AOP.A10_2_Detab.entab_V@0f631a23
       holds. `expand V°⊑expand ∪ (π₁V°)`
  #src[] — shortening the output either leaves the
-      // lean:AOP.A10_2_Detab.expand_V@bbbb18ac
+      // lean:AOP.A10_2_Detab.expand_V@6a9b7747
       last step alone or discards it]]),
     (RQ, "Freyd.Alg.RelSet.Detab.entab_branch.lhs",
       src[Proposition 10.1: `nil` and `expand` have disjoint ranges. The greedy step is to emit
@@ -258,7 +258,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Detab.entab_triple") \
     #src[`entab` is `triple` with the held blanks appended to its output]],
-    // lean:AOP.A10_2_Detab.entab_triple@413fca13
+    // lean:AOP.A10_2_Detab.entab_triple@675b68dc
   lean-chain(
     (none, "Freyd.Alg.RelSet.Detab.entab_triple.lhs", []),
     (EQ, "Freyd.Alg.RelSet.Detab.entab_triple.rhs", src[(10.1) — @entab-tbc]),
@@ -267,8 +267,8 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 
 // One run at tab width `4` on `ab`, a tab, `c d`; each value is a theorem of the `EntabRun` section
 // of A10_2_Detab, cited beside its row.  `estC` is `Λ(expand°) est(V×U)` (`rel_estC`).
-// lean:AOP.A10_2_Detab.rel_cands@6bd1930a lean:AOP.A10_2_Detab.rel_VUt@f740754c
-// lean:AOP.A10_2_Detab.rel_estC@40c6f6dd lean:AOP.A10_2_Detab.estC_snoc@025ca9ee
+// lean:AOP.A10_2_Detab.rel_cands@a54578fa lean:AOP.A10_2_Detab.rel_VUt@f43e81f6
+// lean:AOP.A10_2_Detab.rel_estC@ddc07770 lean:AOP.A10_2_Detab.estC_snoc@025ca9ee
 #ex-table(col: [*stage*],
   (sym: [input], type: leant("Freyd.Alg.RelSet.Detab.run_input.rhs"),
    value: leanf("Freyd.Alg.RelSet.Detab.run_input.rhs"),
@@ -344,7 +344,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   [#rowkey("Freyd.Alg.RelSet.Tardy.m")], [#leant("Freyd.Alg.RelSet.Tardy.m")],
   "Freyd.Alg.RelSet.Tardy.m",
   [(10.6), B&dM's `h` renamed as in @tardy-laws: the cost of the schedule before the last job],
-// lean:Freyd.Alg.RelSet.Tardy.g@4ab2f12a lean:AOP.A10_3_Tardy.m@895650fd lean:Freyd.Alg.RelSet.Tardy.k@7716dabf lean:AOP.A10_3_Tardy.add@a93c9066 lean:Freyd.Alg.RelSet.Tardy.cost@c55b3476 lean:Freyd.Alg.RelSet.Tardy.penalty@c9716100 lean:AOP.A7_5_Van.bmax@6afe4642 lean:AOP.A10_3_Tardy.R_eq@5ae7b2aa
+// lean:Freyd.Alg.RelSet.Tardy.g@4ab2f12a lean:AOP.A10_3_Tardy.m@e6082348 lean:Freyd.Alg.RelSet.Tardy.k@2bb36a09 lean:AOP.A10_3_Tardy.add@a93c9066 lean:Freyd.Alg.RelSet.Tardy.cost@c55b3476 lean:Freyd.Alg.RelSet.Tardy.penalty@c9716100 lean:AOP.A7_5_Van.bmax@6afe4642 lean:AOP.A10_3_Tardy.R_eq@5ae7b2aa
 )]<tardy-defn>
 
 // B&dM p.255: `cost` restated over the bag of the schedule, the form Proposition 9.3 asks for.
@@ -352,7 +352,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Tardy.cost_alg_k") \
     #src[the cost of a schedule is got from the cost and the bag of the schedule before its last
      job, and that job]],
-  // lean:AOP.A10_3_Tardy.cost_alg_k@e7a35e83
+  // lean:AOP.A10_3_Tardy.cost_alg_k@5a015830
   lean-chain(
     (none, "Freyd.Alg.RelSet.Tardy.cost_alg_k.lhs", []),
     (EQ, "Freyd.Alg.RelSet.Tardy.cost_alg_k.rhs",
@@ -366,7 +366,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 #disp(num: "Exercise 10.5")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Tardy.k_mono") \
     #src[a larger cost before the last job gives a larger cost after it]],
-  // lean:AOP.A10_3_Tardy.k_mono@9a19f3c6
+  // lean:AOP.A10_3_Tardy.k_mono@946bfa85
   lean-chain(
     (none, "Freyd.Alg.RelSet.Tardy.k_mono.lhs", []),
     (SQ, "Freyd.Alg.RelSet.Tardy.k_mono.rhs",
@@ -394,7 +394,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Tardy.cost_alg_bmax") \
     #src[the cost of a schedule is the larger of the penalty of its last job and the cost of the
      schedule before it]],
-  // lean:AOP.A10_3_Tardy.cost_alg_bmax@9df71c82
+  // lean:AOP.A10_3_Tardy.cost_alg_bmax@f80d1574
   lean-chain(
     (none, "Freyd.Alg.RelSet.Tardy.cost_alg_bmax.lhs", []),
     (EQ, "Freyd.Alg.RelSet.Tardy.cost_alg_bmax.rhs",
@@ -406,7 +406,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 #disp(num: "(10.7)")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Tardy.add_le") \
     #src[putting one more job anywhere into a schedule never lowers its cost]],
-  // lean:AOP.A10_3_Tardy.add_le@069fcc4b
+  // lean:AOP.A10_3_Tardy.add_le@236d7cf8
   lean-chain(
     (none, "Freyd.Alg.RelSet.Tardy.add_le.lhs", []),
     (SQ, "Freyd.Alg.RelSet.Tardy.add_le.rhs",
@@ -452,7 +452,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Tardy.tardy_tail") \
     #src[a job whose penalty is at most the last penalty, put after a schedule costing at most
      the cost before the last job, gives a schedule costing at most the whole]],
-  // lean:AOP.A10_3_Tardy.tardy_tail@b72f576a
+  // lean:AOP.A10_3_Tardy.tardy_tail@804b1397
   lean-calc(calc-tt, breaks: (3,)),
 )]<tardy-tail>
 
@@ -463,7 +463,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   Thm(cols: 1)[`schedule=(null→nil,pick (schedule×𝟙) snoc)`, #h(6pt) #leanf("Freyd.Alg.RelSet.Tardy.tardy_laws") \
     #src[an ordering of the given bag with least maximum penalty is got by taking a job of least
      penalty out of the bag, putting it last, and scheduling what is left the same way]],
-  // lean:AOP.A10_3_Tardy.schedule_le@44177dc3 lean:AOP.A10_3_Tardy.schedule_unfold@d509c632
+  // lean:AOP.A10_3_Tardy.schedule_le@ad9d2a51 lean:AOP.A10_3_Tardy.schedule_unfold@d509c632
   lean-chain(
     (none, "Freyd.Alg.RelSet.Tardy.tardy_laws_prefixed.rhs", src[the specification — @Freyd.Alg.RelSet.Tardy.bagify]),
     // job-schedule row: Theorem 10.1
@@ -475,12 +475,12 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
        schedule of the whole]),
     (RQ, "Freyd.Alg.RelSet.Tardy.tardy_branch.lhs",
       src[Proposition 10.1: `nil` and `snag` have disjoint ranges]),
-    // lean:AOP.A10_3_Tardy.pick_branch_le@7525e408 lean:AOP.A10_3_Tardy.pick_branch_simple@43683444
+    // lean:AOP.A10_3_Tardy.pick_branch_le@2a67e9ce lean:AOP.A10_3_Tardy.pick_branch_simple@43683444
     // No `E` lane: `pick` does the transpose and the `est` in one function, so nothing is ever a set.
     (RQ, "Freyd.Alg.RelSet.Tardy.pick_branch_le.lhs",
       src[`pick⊑`#frc([`snag°`])` est(Q')`, a partial function, quadratic in the number of jobs]),
   ),
-  // lean:AOP.A10_3_Tardy.tardy_laws@3389e8bd lean:AOP.A10_3_Tardy.greedy_dp_context@da8a63ce lean:AOP.A10_3_Tardy.tardy_mono@cc03f5c8 lean:AOP.A10_3_Tardy.tardy_greedy@98404d8f
+  // lean:AOP.A10_3_Tardy.tardy_laws@8d6b9039 lean:AOP.A10_3_Tardy.greedy_dp_context@da8a63ce lean:AOP.A10_3_Tardy.tardy_mono@cc03f5c8 lean:AOP.A10_3_Tardy.tardy_greedy@98404d8f
 )]<tardy-laws>
 
 // One run of the program on the jobs `2 0 1` (unit weights): its input, then one row per stage of
@@ -492,7 +492,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   (sym: leann("Freyd.Alg.RelSet.Tardy.cands"), type: leant("Freyd.Alg.RelSet.Tardy.run_cands.rhs"),
    value: leanf("Freyd.Alg.RelSet.Tardy.run_cands.rhs"),
    meaning: [`([2,1],0)`: job `0` last, after `2` and `1`]),
-  // lean:AOP.A10_3_Tardy.run_cands@8ee01301 lean:AOP.A10_3_Tardy.rel_cands@c618f427
+  // lean:AOP.A10_3_Tardy.run_cands@8ee01301 lean:AOP.A10_3_Tardy.rel_cands@896aea7e
   (sym: leann("Freyd.Alg.RelSet.Tardy.bagPenalty"), type: leant("Freyd.Alg.RelSet.Tardy.run_pen.rhs"),
    value: leanf("Freyd.Alg.RelSet.Tardy.run_pen.rhs"),
    meaning: [job `0` last ends at `6`, `3` past its due date `3`]),
@@ -500,11 +500,11 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   (sym: leann("Freyd.Alg.RelSet.Tardy.chosen"), type: leant("Freyd.Alg.RelSet.Tardy.run_chosen.rhs"),
    value: leanf("Freyd.Alg.RelSet.Tardy.run_chosen.rhs"),
    meaning: [penalty `0`, the least of `0`, `3`, `2`]),
-  // lean:AOP.A10_3_Tardy.run_chosen@039abb17 lean:AOP.A10_3_Tardy.rel_chosen@058e37be
+  // lean:AOP.A10_3_Tardy.run_chosen@039abb17 lean:AOP.A10_3_Tardy.rel_chosen@7471b6f3
   (sym: leann("Freyd.Alg.RelSet.Tardy.sched"), type: leant("Freyd.Alg.RelSet.Tardy.run_sched.rhs"),
    value: leanf("Freyd.Alg.RelSet.Tardy.run_sched.rhs"),
    meaning: [of `[0,1]`, job `1` goes last: penalty `5−4=1` against `5−3=2`]),
-  // lean:AOP.A10_3_Tardy.run_sched@e121d0dd lean:AOP.A10_3_Tardy.tardy_le@547312ca lean:AOP.A10_3_Tardy.pickB_le@bafac3f7
+  // lean:AOP.A10_3_Tardy.run_sched@e121d0dd lean:AOP.A10_3_Tardy.tardy_le@3754b690 lean:AOP.A10_3_Tardy.pickB_le@894cfaf8
   (sym: leann("Freyd.Alg.RelSet.Tardy.Fn.cost"), type: leant("Freyd.Alg.RelSet.Tardy.run_cost.rhs"),
    value: leanf("Freyd.Alg.RelSet.Tardy.run_cost.rhs"),
    meaning: [job `1` ends at `5`, one past its due date `4`]),
@@ -609,7 +609,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
      emitting the one digit the interval of admissible reals allows, until that interval contains
      zero and the empty decimal will do]],
   lean-calc(calc-tl),
-  // lean:AOP.A10_4_Tex.tex_laws@9152d6ce lean:AOP.A10_4_Tex.tex_body_prefixed@765738e0
+  // lean:AOP.A10_4_Tex.tex_laws@5a998b41 lean:AOP.A10_4_Tex.tex_body_prefixed@0600718d
 )
 ]<tex-laws>
 
@@ -623,7 +623,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
     // lean:AOP.A10_4_Tex.f_eq@6a541def
   - #leanf("Freyd.Alg.RelSet.Tex.tex_f") \
     #src[the least solution of the greedy recursion of @tex-laws is `f`]
-    // lean:AOP.A10_4_Tex.tex_f@de95755e
+    // lean:AOP.A10_4_Tex.tex_f@9ab737ed
   - #leanf("Freyd.Alg.RelSet.Tex.digit_unique") \
     #src[Exercise 10.12: two digits `d` and `e` with `0<10b−d<1` and `0<10b−e<1` are equal]
     // lean:AOP.A10_4_Tex.digit_unique@4fd18062

@@ -151,7 +151,7 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
 
   [#leanf("Freyd.Alg.junc") \ #src[(5.9) The tape is the union — a particle entering at `A+B` takes exactly
    one branch — and the two mirrored boxes are what makes the branches disjoint.]],
-  // lean:AOP.A5_3.junc@da022f10
+  // lean:Freyd.Junc.junc@da022f10
   P(leanc("Freyd.Alg.junc"), s: 85%),
 
   [#leanf("Freyd.Alg.junc_eq_Λ_junc_eps") #src[]], P(leanc("Freyd.Alg.junc_eq_Λ_junc_eps"), s: 85%),
@@ -290,11 +290,11 @@ the fork above. The border spells `[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], 
     [`∀y. some xs R y` and \ `∀x. x R some ys`],
     [—],
     [every `x` and every `y` \ has a partner],
-  // lean:AOP.A7_2_RelSet.powrel_reading_reached@b6af65a3
-  // lean:AOP.A7_2_RelSet.powrel_reading_closed@acced2ef
-  // lean:AOP.A7_2_RelSet.existsImage_apply@df0c21b6
-  // lean:AOP.A7_2_RelSet.powrel_reading_reaches@267efedb
-  // lean:AOP.A7_2_RelSet.powerRel_reading@f245c42c
+  // lean:AOP.A7_2_RelSet.powrel_reading_reached@23e119d3
+  // lean:AOP.A7_2_RelSet.powrel_reading_closed@07f5f8a1
+  // lean:AOP.A7_2_RelSet.existsImage_apply@eadd0dd2
+  // lean:AOP.A7_2_RelSet.powrel_reading_reaches@f21954a1
+  // lean:AOP.A7_2_RelSet.powerRel_reading@f8a5c143
 ))]<powrel-readings>
 
 // `1,2,3` on the left, `a,b,c` on the right — and the `skel` pictures below are a DIFFERENT example,
@@ -320,8 +320,8 @@ the fork above. The border spells `[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], 
   [`{1,3}`],    [all 8 subsets of `abc`], [`abc`], [`abc`], [`ac`, `bc`, `abc`], [`ac`, `bc`, `abc`],
   [`{2,3}`],    [`∅`, `c`],               [`c`, `ac`, `bc`, `abc`], [`c`], [none], [none],
   [`{1,2,3}`],  [all 8 subsets of `abc`], [`abc`], [`abc`], [none], [none],
-  // lean:AOP.A5_4_ImageExample.E_column@fcf876cf
-  // lean:AOP.A5_4_ImageExample.P_column@7adea435
+  // lean:AOP.A5_4_ImageExample.E_column@4f00a5c1
+  // lean:AOP.A5_4_ImageExample.P_column@f97ea2d3
 ))
 
 ]]<powrel-vs-erel>
@@ -445,7 +445,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   [base functor `F`],
   [`F(X)=1+X`],
  [`F(X)=1+A×X` #src[]],
-  // lean:AOP.A6_ConsList.F_eq_sum_prod@cab297e7
+  // lean:AOP.A6_ConsList.F_eq_sum_prod@5e12f5f4
 
   [initial algebra `α`],
   [`α=[zero,succ]` \ `: 1+Nat⟶Nat`],
@@ -586,7 +586,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 
   [#leanf("Freyd.Alg.RelSet.ListRel.setify_cpp") \ #leanf("Freyd.Alg.RelSet.ListRel.setify_cpl") \
    #leanf("Freyd.Alg.RelSet.ListRel.setify_cpr") #src[]],
-  // lean:AOP.A5_6_ListCombinators.setify_cpp@1a28e284 lean:AOP.A5_6_ListCombinators.setify_cpl@a501aaa4 lean:AOP.A5_6_ListCombinators.setify_cpr@87353fd8
+  // lean:AOP.A5_6_ListCombinators.setify_cpp@6b07e8fc lean:AOP.A5_6_ListCombinators.setify_cpl@2df0932f lean:AOP.A5_6_ListCombinators.setify_cpr@b864a939
   [#leant("Freyd.Alg.RelSet.ListRel.setify_cpp")],
   [Forgetting the order with `setify`, `cpp` is the transpose of `∋×∋`.],
 
@@ -596,7 +596,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   [`cp(F)`, the transpose of a relator's action on `∋`; `cpp` implements it at `F(A)=A×A`.],
 
   [#leanf("Freyd.Alg.RelSet.ListRel.cp_list") \ #leanf("Freyd.Alg.RelSet.ListRel.cp_list_alg") #src[]],
-  // lean:AOP.A5_6_ListCombinators.cp_list@7209839e lean:AOP.A5_6_ListCombinators.cp_list_alg@4029f002
+  // lean:AOP.A5_6_ListCombinators.cp_list@18e614bb lean:AOP.A5_6_ListCombinators.cp_list_alg@1b635ce3
   [#leant("Freyd.Alg.RelSet.ListRel.cp_list")],
   [`cp(list)`: @cata-map-calc at `∋′=⦇[nil,(∋×𝟙)cons]⦈`, then the algebra expanded.],
 
@@ -662,7 +662,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
      of tails, every tail in the set with the head put on or left off — @cata-map-calc at
      `subseq=⦇[nil,cons ∪ π₂]⦈`, @Freyd.Alg.RelSet.ListRel.subseq_cata.
  ]],
-    // lean:AOP.A5_6_ListCombinators.subseq_alg_Λ@a7b0d98d lean:AOP.A5_6_ListCombinators.subseq_cata@399d49b3
+    // lean:AOP.A5_6_ListCombinators.subseq_alg_Λ@7f65b9b0 lean:AOP.A5_6_ListCombinators.subseq_cata@399d49b3
   table.header([*circuit* — the fork is `F([A])=𝟏+A×[A]`: `nil` above, the pair below],
     [*Hinze–Marsden*]),
 
@@ -678,7 +678,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   // The sum `𝟙+𝟙×∋` and the bracket after it fuse into the one tape, `(R+S)[f,g]=[Rf,Sg]`.
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_map.lhs"),
     [#frc(leanf("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_map.lhs")) \ #src[`F(X)=𝟏+A×X` — @comb-fns:1]])],
-    // lean:AOP.A5_6_ListCombinators.subseq_alg_sum_map@eda211f9 lean:AOP.A6_ConsList.F_eq_sum_prod@cab297e7
+    // lean:AOP.A5_6_ListCombinators.subseq_alg_sum_map@093db9f5 lean:AOP.A6_ConsList.F_eq_sum_prod@5e12f5f4
   [#lean("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.rhs", branch: "inr.inr") \ #src[the same operand under `𝟙+𝟙×∋`, whose `𝟙×∋` summand it sits in]],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.rhs"), [#frc(leanf("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.rhs")) \
@@ -692,7 +692,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_Λ_nil.rhs"), [#leanf("Freyd.Alg.RelSet.ListRel.subseq_alg_Λ_nil.rhs") \
     #src[@Freyd.Alg.Λ_of_map, #frc([`f`])` =f `#frc([`𝟙`]) for `f` a map, at `f:=nil`]])],
-    // lean:AOP.A5_6_ListCombinators.Λ_nil_singleton@ea5a21a2
+    // lean:AOP.A5_6_ListCombinators.Λ_nil_singleton@98d08f57
   [#sb-hm-p2 \ #src[the same operand; the two rows differ only in the `nil` arm]],
 )]<subseq-EW-case>
 
@@ -704,7 +704,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   Thm[#leanf("Freyd.Alg.RelSet.ListRel.subseq_alg_join") \
     #src[power transpose of join: the power transpose of the join of two relations is
      `⟨`#frc([`R`])`,`#frc([`S`])`⟩ cup`, where `cup` is the function that returns the union of two sets]],
-    // lean:AOP.A5_6_ListCombinators.subseq_alg_join@b7ae8680
+    // lean:AOP.A5_6_ListCombinators.subseq_alg_join@1e6968ed
   table.header([*circuit*],
     [*Hinze–Marsden*]),
 
@@ -719,7 +719,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.prod_ni_union_slide.rhs"),
     [#frc(leanf("Freyd.Alg.RelSet.ListRel.prod_ni_union_slide.rhs")) \
     #src[`(𝟙×∋)π₂=π₂∋` — @relprod-pic at `π₂`, an equality because `𝟙` is entire]])],
-    // lean:AOP.A5_6_ListCombinators.prod_ni_proj_slide@931da6a5
+    // lean:AOP.A5_6_ListCombinators.prod_ni_proj_slide@141c041f
   [#sb-hm-p2-slid \ #src[the `π₂` operand of `(𝟙×∋)cons ∪ π₂∋`]],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.Λ_prod_ni_union.rhs"), [#leanf("Freyd.Alg.RelSet.ListRel.Λ_prod_ni_union.rhs") \
@@ -859,7 +859,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   [`A=B≜{0,1}`, #h(4pt) `R≜{(0,0),(1,0)}`, #h(4pt) `φ≜π₁∩π₂ : Δ⇒Id` #h(4pt) #src[]],
    // lean:AOP.A6_1_OrdRelSet.laxNatural_inter_false@bcff53dc
 )#leank("Freyd.Alg.inter_not_laxNatural_square")]]<meet-counterex>
-// lean:AOP.A6_1_OrdRelSet.inter_not_laxNatural_square@7a6cbfea
+// lean:AOP.A6_1_OrdRelSet.inter_not_laxNatural_square@16f97a17
 
 === Two stacked towers
 

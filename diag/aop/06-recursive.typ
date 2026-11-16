@@ -156,7 +156,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.FastExp.convert_program") \
     #src[once `f` turns `shift` into `h`, the recursion that halves the
      argument at each step computes `f`]],
-  // lean:AOP.A6_4_FastExp.RelSet.FastExp.convert_program@c1787858
+  // lean:AOP.A6_4_FastExp.RelSet.FastExp.convert_program@4a7d2d0e
   lean-calc(calc-convert),
 )]<convert-program>
 
@@ -164,7 +164,7 @@
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.FastExp.exp_program") \
     #src[the recursion that halves the exponent at each step computes `a` to the power `b`]],
-  // lean:AOP.A6_4_FastExp.RelSet.FastExp.exp_program@08ea7ea9
+  // lean:AOP.A6_4_FastExp.RelSet.FastExp.exp_program@3072b02c
   [#leanf("Freyd.Alg.RelSet.FastExp.exp_zero") \ #src[`a` to the power `0` is `1`]],
   // lean:AOP.A6_4_FastExp.RelSet.FastExp.exp_zero@753de5ee
   [#leanf("Freyd.Alg.RelSet.FastExp.exp_shift") \
@@ -176,7 +176,7 @@
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.FastExp.mod_program") \
     #src[the recursion that halves `a` at each step computes the remainder of `a` by `b`]],
-  // lean:AOP.A6_4_FastExp.RelSet.FastExp.mod_program@82bb412b
+  // lean:AOP.A6_4_FastExp.RelSet.FastExp.mod_program@1e7c21a9
   [#leanf("Freyd.Alg.RelSet.FastExp.mod_zero") \ #src[`0 mod b` is `0`]],
   // lean:AOP.A6_4_FastExp.RelSet.FastExp.mod_zero@9b6e59c5
   [#leanf("Freyd.Alg.RelSet.FastExp.mod_shift") \

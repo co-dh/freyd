@@ -382,7 +382,7 @@
 // lean:AOP.A9_2_Edit.empty_iff@4bee3a1f
 // lean:AOP.A9_2_Edit.baseFn@450d4154
 // lean:AOP.A9_2_Edit.stepFn@e8719088
-// lean:AOP.A9_2_Edit.mleSpec@a6efb0e6
+// lean:AOP.A9_2_Edit.mleSpec@855914dd
 // lean:AOP.A9_2_Edit.FeditR@ec2a5698
 // lean:AOP.A9_2_Edit.α_pres_R@bd6b5083
 )]<edit-defn>
@@ -483,7 +483,7 @@
 // `A` — sugar undone at the ends too.
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Edit.edit_X") \
-     // lean:AOP.A9_2_Edit.edit_X@d05db363
+     // lean:AOP.A9_2_Edit.edit_X@b13d266a
     #src[a shortest edit sequence from which both strings can be reconstituted is one pass over the
      two of them, each step copying, deleting or inserting one character and the best sequence for
      what is left taken from the entries already computed]],
@@ -529,12 +529,12 @@
       branch per summand — `empty`, the coreflexive on `(xs,ys)` with both lists empty, is where
       `base` returns, and on it the body returns `nil`; the conditional is the union of its two
       guarded branches]])],
-     // lean:AOP.A9_2_Edit.edit_body_split@d61ac91d
+     // lean:AOP.A9_2_Edit.edit_body_split@b16116b4
   [#lean("Freyd.Alg.RelSet.Edit.edit_body_split.rhs")],
 
   [#vstep(RQ, leanc("Freyd.Alg.RelSet.Edit.edit_prog.lhs"),
     [#src[on the `step` branch
-     // lean:AOP.A9_2_Edit.edit_branch@e077c7f9
+     // lean:AOP.A9_2_Edit.edit_branch@717c4c67
      `unstep` implements #frc([`step°`])` thin(U×V)` — at most two decompositions survive, a
       copy beating a delete or an insert wherever it is available — and `minL(R)` implements
       `est(R)`. The same subproblem is solved many times over, so the running time is exponential in
@@ -559,7 +559,7 @@
   (sym: leann("Freyd.Alg.RelSet.Edit.edit_prog.rhs.f2"), type: leant("Freyd.Alg.RelSet.Edit.edit_prog.rhs.f2"),
    value: leanf("Freyd.Alg.RelSet.Edit.run_thin.rhs.rhs"),
    meaning: [`[b]` is a suffix of `[a,b]`, but `[b]` not of `[]`: both survive]),
-  // lean:AOP.A9_2_Edit.run_thin@18033c68
+  // lean:AOP.A9_2_Edit.run_thin@9598d34e
   (sym: leann("Freyd.Alg.RelSet.Edit.edit_prog.lhs.f2"), type: leant("Freyd.Alg.RelSet.Edit.edit_prog.lhs.f2"),
    value: leanf("Freyd.Alg.RelSet.Edit.run_list_cons.rhs"),
    meaning: [from the entries already computed: \ `mle([b],[b])=[cpy b]` \
@@ -679,7 +679,7 @@
   Thm[#leanf("Freyd.Alg.RelSet.Bracket.mct_cost_alg") \
     #src[pairing each subtree with its cost and its flattening and then applying `g` gives what
      building the tree by `[tip,bin]` and taking its `cost` gives]],
-     // lean:AOP.A9_3_Bracket.mct_cost_alg@3383882b
+     // lean:AOP.A9_3_Bracket.mct_cost_alg@91b5ad9e
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step1.lhs"), [])],
@@ -687,7 +687,7 @@
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step1.rhs"),
     [#src[definition of `g`; coproducts and products — @Freyd.Alg.RelSet.Bracket.g]])],
-     // lean:AOP.A9_3_Bracket.mct_cost_alg_step1@547e865e
+     // lean:AOP.A9_3_Bracket.mct_cost_alg_step1@f580c21d
   [#lean("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step1.rhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step2.rhs"),
@@ -716,7 +716,7 @@
   Thm[#leanf("Freyd.Alg.RelSet.Bracket.mct_g_mono") \
     #src[raising the cost of either subtree (`≤×𝟙` in both slots) and then applying `g` returns a
      value at least what `g` returns on the costs before raising (`g≤`)]],
-     // lean:AOP.A9_3_Bracket.mct_g_mono@f15a579d
+     // lean:AOP.A9_3_Bracket.mct_g_mono@a34e9366
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Bracket.mct_g_mono_step1.lhs"), [])],
@@ -724,7 +724,7 @@
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_g_mono_step1.rhs"),
     [#src[definition of `g` — @Freyd.Alg.RelSet.Bracket.g]])],
-     // lean:AOP.A9_3_Bracket.mct_g_mono_step1@1476b33f
+     // lean:AOP.A9_3_Bracket.mct_g_mono_step1@bd6eb69b
   [#lean("Freyd.Alg.RelSet.Bracket.mct_g_mono_step1.rhs", step: true)],
 
   [#vstep(SQ, leanc("Freyd.Alg.RelSet.Bracket.mct_g_mono_step2.rhs"),
@@ -768,11 +768,11 @@
       // lean:AOP.A9_3_Bracket.mct_mono@7974a37e
       are compared — which is Proposition 9.3 at `H°=flatten`, a map, with (9.5)
  `[tip,bin] cost=(𝟙+⟨cost,flatten⟩²)g` #src[]
-      // lean:AOP.A9_3_Bracket.mct_cost_alg@3383882b
+      // lean:AOP.A9_3_Bracket.mct_cost_alg@91b5ad9e
       (the cost of a node reads only the cost and the
       flattening of its two subtrees) and (9.6) `(𝟙+(≤×𝟙)²)g⊑g≤`
  #src[] (`g` monotonic on `≤` in its two
-      // lean:AOP.A9_3_Bracket.mct_g_mono@f15a579d
+      // lean:AOP.A9_3_Bracket.mct_g_mono@a34e9366
       cost arguments)]])],
   // `[τ,cat]°` opens the base functor `A+(−)²` inside the set and `[tip,(X×X)bin]` closes it;
   // `L` dies and is remade at both, so it runs as a loop between them.
@@ -988,23 +988,23 @@
   (sym: [input], type: leant("Freyd.Alg.RelSet.Bracket.run_mct.lhs.arg"),
    value: leanf("Freyd.Alg.RelSet.Bracket.run_mct.lhs.arg"),
    meaning: [`10×30`, `30×5`, `5×60`; a product costs rows × shared × columns]),
-  // lean:AOP.A9_3_Bracket.run_mct@d1db3b7d lean:AOP.A9_3_Bracket.chain@e4267e24
+  // lean:AOP.A9_3_Bracket.run_mct@71082441 lean:AOP.A9_3_Bracket.chain@e4267e24
   (sym: leann("Freyd.Alg.RelSet.Bracket.stepS"), type: leant("Freyd.Alg.RelSet.Bracket.run_splits.rhs"),
    value: leanf("Freyd.Alg.RelSet.Bracket.run_splits.rhs"),
    meaning: [cut after the first matrix, or after the second]),
-  // lean:AOP.A9_3_Bracket.run_splits@c65286cf lean:AOP.A9_3_Bracket.rel_stepS@9ca43557
+  // lean:AOP.A9_3_Bracket.run_splits@c65286cf lean:AOP.A9_3_Bracket.rel_stepS@ebdecc7f
   (sym: leann("Freyd.Alg.RelSet.Bracket.Xb"), type: leant("Freyd.Alg.RelSet.Bracket.run_cands.rhs"),
    value: leanf("Freyd.Alg.RelSet.Bracket.run_cands.rhs"),
    meaning: [each half bracketed by the program, the two joined: `A(BC)` and `(AB)C`]),
-  // lean:AOP.A9_3_Bracket.run_cands@541cadf4
+  // lean:AOP.A9_3_Bracket.run_cands@82d65a8b
   (sym: leann("Freyd.Alg.RelSet.Bracket.cost"), type: leant("Freyd.Alg.RelSet.Bracket.run_costs.rhs"),
    value: leanf("Freyd.Alg.RelSet.Bracket.run_costs.rhs"),
    meaning: [`A(BC)`: `30·5·60+10·30·60` \ `(AB)C`: `10·30·5+10·5·60`]),
-  // lean:AOP.A9_3_Bracket.run_costs@d06999b3
+  // lean:AOP.A9_3_Bracket.run_costs@d9fb7625
   (sym: leann("Freyd.Alg.RelSet.Bracket.mctRun"), type: leant("Freyd.Alg.RelSet.Bracket.run_mct.rhs"),
    value: leanf("Freyd.Alg.RelSet.Bracket.run_mct.rhs"),
    meaning: [`(AB)C`, cost `4500`, the least]),
-  // lean:AOP.A9_3_Bracket.run_mct@d1db3b7d lean:AOP.A9_3_Bracket.rel_stepFn@870ccb78 lean:AOP.A9_3_Bracket.mctRun_le@5cbbc2f5
+  // lean:AOP.A9_3_Bracket.run_mct@71082441 lean:AOP.A9_3_Bracket.rel_stepFn@303e5ef3 lean:AOP.A9_3_Bracket.mctRun_le@d85a9bd1
 )<mct-run>
 
 == Data compression
@@ -1051,7 +1051,7 @@
   "Freyd.Alg.RelSet.Code.mem_reduce",
   [the last code of a string: one symbol, or a pointer to its longest repeated tail],
 // lean:AOP.A9_4_Code.mem_reduce@3b6329b5
-// lean:AOP.A9_4_Code.Code.Code@1aaa6e50 lean:AOP.A9_4_Code.extendP@f49b7c97 lean:AOP.A9_4_Code.extendAlg@fa14f6ce lean:AOP.A9_4_Code.decode@6e333c71 lean:AOP.A9_4_Code.size@7aee2338 lean:AOP.A9_4_Code.size_cata@be711c4e lean:AOP.A9_4_Code.R@5c0b8251 lean:AOP.A9_4_Code.R_eq@bda84b7d lean:AOP.A9_4_Code.Q@e037d736 lean:AOP.A9_4_Code.Q_eq@ea360d8e lean:AOP.A9_4_Code.U@f6ac9e29 lean:AOP.A9_4_Code.U_eq@efe90b64 lean:AOP.A9_4_Code.prefixR@0a5c54fb lean:AOP.A9_4_Code.prefixR_eq@8fe3017c lean:AOP.A9_4_Code.cat@ad0f5eab
+// lean:AOP.A9_4_Code.Code.Code@1aaa6e50 lean:AOP.A9_4_Code.extendP@f49b7c97 lean:AOP.A9_4_Code.extendAlg@fa14f6ce lean:AOP.A9_4_Code.decode@6e333c71 lean:AOP.A9_4_Code.size@7aee2338 lean:AOP.A9_4_Code.size_cata@be711c4e lean:AOP.A9_4_Code.R@5c0b8251 lean:AOP.A9_4_Code.R_eq@bda84b7d lean:AOP.A9_4_Code.Q@e037d736 lean:AOP.A9_4_Code.Q_eq@ea360d8e lean:AOP.A9_4_Code.U@f6ac9e29 lean:AOP.A9_4_Code.U_eq@bdc41b87 lean:AOP.A9_4_Code.prefixR@0a5c54fb lean:AOP.A9_4_Code.prefixR_eq@8fe3017c lean:AOP.A9_4_Code.cat@ad0f5eab
 )]<code-defn>
 
 // ONE WIRE, `String` to `[Code]`, and one `list` lane: the string above the bead that eats it, the
@@ -1062,7 +1062,7 @@
     #src[a smallest code sequence decoding to the given string is built from the right, each step
      emitting the last character as a symbol or ending with a pointer back into what has already
      been decoded]],
-  // lean:AOP.A9_4_Code.code_laws@17753346
+  // lean:AOP.A9_4_Code.code_laws@e8912f6d
   // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
   // law's own letters, so the column has no one pair of ports.
   table.header([*circuit*], [*Hinze–Marsden*]),
@@ -1176,11 +1176,11 @@
   (sym: leann("Freyd.Alg.RelSet.Code.stepE"), type: leant("Freyd.Alg.RelSet.Code.run_cuts.rhs"),
    value: leanf("Freyd.Alg.RelSet.Code.run_cuts.rhs"),
    meaning: [the five cuts: `abab` then the symbol `a`, or a pointer back to `a`, `ba` or `aba`]),
-  // lean:AOP.A9_4_Code.run_cuts@9945dbae lean:AOP.A9_4_Code.rel_stepE@63e0183f
+  // lean:AOP.A9_4_Code.run_cuts@9945dbae lean:AOP.A9_4_Code.rel_stepE@6085ac82
   (sym: leann("Freyd.Alg.RelSet.Code.compress"), type: leant("Freyd.Alg.RelSet.Code.run_compress.rhs"),
    value: leanf("Freyd.Alg.RelSet.Code.run_compress.rhs"),
    meaning: [`a`, `b`, then a pointer copying `aba` from the start: cost `4`, the least]),
-  // lean:AOP.A9_4_Code.run_compress@fb3327f4 lean:AOP.A9_4_Code.compress_le@5cda4659
+  // lean:AOP.A9_4_Code.run_compress@fb3327f4 lean:AOP.A9_4_Code.compress_le@7fa5c68e
 )<code-run>
 
 #pagebreak(weak: true)

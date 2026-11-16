@@ -23,27 +23,27 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Pointfree.filter_pointfree") \
     #src[pairing each element with its answer under `p` (`⟨𝟙,p′⟩ zip`), keeping the pairs
      answered `true` (`filter(π₂)`) and dropping the answers (`π₁′`) is `filter(p)`]],
-  // lean:AOP.A1_7_Pointfree.RelSet.Pointfree.filter_pointfree@a554dfda
+  // lean:AOP.A1_7_Pointfree.RelSet.Pointfree.filter_pointfree@bcdac2db
   // two rows: ten panels in one row shrink the labels past reading
   lean-chain((
     (none, "Freyd.Alg.RelSet.Pointfree.filter_pointfree_step1.lhs", src[the starting composite]),
     (DF, "Freyd.Alg.RelSet.Pointfree.filter_pointfree_step1.rhs", src[definition of filter: `filter(p) ≜ (p → τ, nil)′ concat`]),
-    // lean:AOP.A1_7_Pointfree.RelSet.Pointfree.filter_pointfree_step1@fb9ec7da
+    // lean:AOP.A1_7_Pointfree.RelSet.Pointfree.filter_pointfree_step1@e203f24d
     (EQ, "Freyd.Alg.RelSet.Pointfree.filter_pointfree_step2.rhs", src[(1.6): `concat f′ = f′′ concat`]),
-    // lean:AOP.A1_7_Pointfree.RelSet.Pointfree.filter_pointfree_step2@6802e7ca
+    // lean:AOP.A1_7_Pointfree.RelSet.Pointfree.filter_pointfree_step2@1cae1806
     (EQ, "Freyd.Alg.RelSet.Pointfree.filter_pointfree_step3.rhs", src[(1.8) backwards: `f′ g′ = (fg)′`]),
-    // lean:AOP.A1_7_Pointfree.RelSet.Pointfree.filter_pointfree_step3@5c64f567
+    // lean:AOP.A1_7_Pointfree.RelSet.Pointfree.filter_pointfree_step3@80eebee9
     (EQ, "Freyd.Alg.RelSet.Pointfree.filter_pointfree_step4.rhs", src[(1.11): `(p → f, g)h = (p → fh, gh)`; (1.5): `τ f′ = f τ`; (1.4): `nil f′ = nil`]),
-    // lean:AOP.A1_7_Pointfree.RelSet.Pointfree.filter_pointfree_step4@90068b50
+    // lean:AOP.A1_7_Pointfree.RelSet.Pointfree.filter_pointfree_step4@5d1035b5
   ), (
     (EQ, "Freyd.Alg.RelSet.Pointfree.filter_pointfree_step5.rhs", src[(1.9) backwards: `𝟙 = 𝟙′`]),
-    // lean:AOP.A1_7_Pointfree.RelSet.Pointfree.filter_pointfree_step5@fdbab5ad
+    // lean:AOP.A1_7_Pointfree.RelSet.Pointfree.filter_pointfree_step5@984ce413
     (EQ, "Freyd.Alg.RelSet.Pointfree.filter_pointfree_step6.rhs", src[(1.7): `⟨f′,g′⟩ zip = ⟨f,g⟩′`]),
-    // lean:AOP.A1_7_Pointfree.RelSet.Pointfree.filter_pointfree_step6@e777fa00
+    // lean:AOP.A1_7_Pointfree.RelSet.Pointfree.filter_pointfree_step6@bfc79ac6
     (EQ, "Freyd.Alg.RelSet.Pointfree.filter_pointfree_step7.rhs", src[(1.8) backwards: `f′ g′ = (fg)′`]),
-    // lean:AOP.A1_7_Pointfree.RelSet.Pointfree.filter_pointfree_step7@77029f25
+    // lean:AOP.A1_7_Pointfree.RelSet.Pointfree.filter_pointfree_step7@0c610a66
     (EQ, "Freyd.Alg.RelSet.Pointfree.filter_pointfree_step8.rhs", src[(1.10): `h(p → f, g) = (hp → hf, hg)`; (1.1): `⟨f,g⟩π₁ = f`; (1.3): `f nil = nil`]),
-    // lean:AOP.A1_7_Pointfree.RelSet.Pointfree.filter_pointfree_step8@27010c1a
+    // lean:AOP.A1_7_Pointfree.RelSet.Pointfree.filter_pointfree_step8@0150c252
     (EQ, "Freyd.Alg.RelSet.Pointfree.filter_pointfree_step9.rhs", src[(1.12): `𝟙 f = f`]),
     // lean:AOP.A1_7_Pointfree.RelSet.Pointfree.filter_pointfree_step9@f897e875
     (EQ, "Freyd.Alg.RelSet.Pointfree.filter_pointfree_step10.rhs", src[definition of filter]),

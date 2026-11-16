@@ -13,7 +13,7 @@
 #disp[#definition[
 `(p,q)` tabulates `W≜(∋S)∩(∈\(SR°))`, and #h(4pt) `y≜` $frac(#[`(p∋S)∩(qR)`], ∋)$, a map.
 ]
-// lean:AOP.A7_2_RelSet.powerRel_comp_est@e57e00c3
+// lean:AOP.A7_2_RelSet.powerRel_comp_est@af569a45
 ]<est-79-defn>
 
 #disp[
@@ -23,7 +23,7 @@
   zpair(zsqc(`p°y`, `P(S)`), zsqc(`y°q`, `est(R)`)),
 )
 #leank("Freyd.Alg.RelSet.powerRel_comp_est")
-// lean:AOP.A7_2_RelSet.powerRel_comp_est@e57e00c3
+// lean:AOP.A7_2_RelSet.powerRel_comp_est@af569a45
 ]<est-79>
 
 #disp[
@@ -40,7 +40,7 @@
   zstep(op: sym.arrow.l.double, under: true)[`·∋⊣`$frac(#box(width: 8pt), ∋)$, `°`, meet],
   zsqc(`R°q°q`, `R°`, name: "q simple"),
 )
-// lean:AOP.A7_2_RelSet.powerRel_comp_est@e57e00c3
+// lean:AOP.A7_2_RelSet.powerRel_comp_est@af569a45
 ]<est-79-est>
 
 #disp[
@@ -63,7 +63,7 @@
   zstep(op: sym.arrow.l.double, under: true)[`°`, `T·⊣T\`],
   zsqc(`W`, `∈\(SR°)`, name: "W's right half"),
 )
-// lean:AOP.A7_2_RelSet.powerRel_comp_est@e57e00c3
+// lean:AOP.A7_2_RelSet.powerRel_comp_est@af569a45
 ]<est-79-pow>
 
 == `P(est(R)) est(R)=P(dom(est(R))) union est(R)`
@@ -320,8 +320,8 @@ N(cp P(α))(that)
   src[the fold reads the rest under `F`, then one `gen` puts the column in front],
 ))]<fold-diag>
    // lean:AOP.A7_4_Cylinder.gen_cata_comm@e977733a
-   // lean:AOP.A7_4_CylinderPaths.RelSet.Tuple.cataGen@83c39d10
-   // lean:AOP.A7_4_CylinderPaths.RelSet.Tuple.cataGen_lax_natural@8ac2b454
+   // lean:AOP.A7_4_CylinderPaths.RelSet.Tuple.cataGen@53c44080
+   // lean:AOP.A7_4_CylinderPaths.RelSet.Tuple.cataGen_lax_natural@d6e38f55
 
 #disp[#align(center)[```
 xs = [(1,2,3,4),(5,6,7,8)] = α((1,2,3,4),[(5,6,7,8)])   : L(N A)
