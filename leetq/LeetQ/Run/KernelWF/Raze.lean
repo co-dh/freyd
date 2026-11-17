@@ -480,10 +480,31 @@ theorem decode_size (w : USize) (M P : ByteArray) (n : USize) :
   rw [foldl_size ByteArray.size _ w.toNat (fun _ _ => Column.pushBits_size ..)]; simp
 
 /-- A Frame-of-Reference payload is well formed at a fixed-width type other than boolean and guid
-    exactly when its blocks cover its count. -/
+    exactly when its blocks cover its count and its metadata records a block size the layout admits. -/
 theorem wf_foR {t : QAtomicType} {n : USize} {m p : ByteArray} (hw : t.width.isSome) (hb : t ≠ .boolean)
-    (hg : t ≠ .guid) (h : n.toNat ≤ Column.blk * Column.nblk m) : Enc.WF t n (.foR m p) := by
+    (hg : t ≠ .guid) (h : n.toNat ≤ Column.blk m * Column.nblk m) (hl : Column.lgOk m = true) :
+    Enc.WF t n (.foR m p) := by
   cases t <;> simp_all [Enc.WF]
+
+/-- `n` elements fit the `⌈n/B⌉` blocks of `B` that `FoRWF.nblk` counts. -/
+private theorem le_mul_cdiv {B n : Nat} (hB : 0 < B) : n ≤ B * ((n + B - 1) / B) := by
+  have h1 := Nat.div_add_mod (n + B - 1) B
+  have h2 := Nat.mod_lt (n + B - 1) hB
+  generalize B * ((n + B - 1) / B) = q at *; omega
+
+/-- A count `n` that ends inside a block has one block past its whole ones: room for the `m` more that
+    fit before that block's end. -/
+private theorem add_le_mul_cdiv {B n m : Nat} (h0 : n % B ≠ 0) (hm : n % B + m ≤ B) :
+    n + m ≤ B * ((n + B - 1) / B) := by
+  have hB : 0 < B := by
+    rcases Nat.eq_zero_or_pos B with rfl | h
+    · simp at h0 hm; omega
+    · exact h
+  have h1 := Nat.div_add_mod' n B
+  have h2 := Nat.mod_lt n hB
+  have hq : (n + B - 1) / B = n / B + 1 :=
+    Nat.div_eq_of_lt_le (by rw [Nat.add_mul]; omega) (by rw [Nat.add_mul, Nat.add_mul]; omega)
+  rw [hq, Nat.mul_add, Nat.mul_comm B]; omega
 
 /-- `encodeBelow`'s `some` is `encode`'s answer. -/
 private theorem encodeBelow_eq {w : USize} {x : ByteArray} {mp : ByteArray × ByteArray}
@@ -498,9 +519,9 @@ private theorem encodeBelow_eq {w : USize} {x : ByteArray} {mp : ByteArray × By
 /-! ## ALP payloads -/
 
 /-- `alpBlob`'s header declares the width it was handed, at any count: byte 8 is the flag. -/
-theorem alpF32_alpBlob (f32 : Bool) (w n : Nat) (x : ByteArray) (bs : Array (Nat × Array (Option UInt64))) :
-    Column.alpF32 (Coc.alpBlob f32 w n x bs) = f32 := by
-  obtain ⟨pad, hpg, hps, hA⟩ := Verify.alpBlob_eq f32 w n x bs _ rfl
+theorem alpF32_alpBlob (f32 : Bool) (K w n : Nat) (x : ByteArray) (bs : Array (Nat × Array (Option UInt64))) :
+    Column.alpF32 (Coc.alpBlob f32 K w n x bs) = f32 := by
+  obtain ⟨pad, hpg, hps, hA⟩ := Verify.alpBlob_eq f32 K w n x bs _ rfl
   rw [hA]
   unfold Column.alpF32
   generalize hS : Column.pushBits ByteArray.empty _ 8 = S
@@ -515,17 +536,24 @@ theorem alpF32_alpBlob (f32 : Bool) (w n : Nat) (x : ByteArray) (bs : Array (Nat
 
 /-- `alpEncodeAt` lays out a block for every `blk` of its elements: `Enc.WF`'s cover condition. -/
 theorem nblk_alpEncodeAt (f32 : Bool) (x : ByteArray) :
-    x.size / (if f32 then 4 else 8) ≤ Column.blk * Column.nblk (Coc.alpEncodeAt f32 x).1 := by
+    x.size / (if f32 then 4 else 8) ≤ Column.blk (Coc.alpEncodeAt f32 x).1 * Column.nblk (Coc.alpEncodeAt f32 x).1 := by
   unfold Coc.alpEncodeAt
   simp only []
-  rw [show (8 : USize) = (8 : Nat).toUSize from rfl, Verify.nblk_encode 8 (by decide) (by decide),
-    Verify.blocks_size]
+  rw [show (8 : USize) = (8 : Nat).toUSize from rfl,
+    (Verify.nblk_encode Column.lgEnc (by decide) 8 (by decide) (by decide) _).1,
+    (Verify.nblk_encode Column.lgEnc (by decide) 8 (by decide) (by decide) _).2, Verify.blocks_size]
   simp only [Array.toList_map, Array.toList_range, List.map_map, Function.comp_def, Coc.alpBlockOf,
     Array.size_map, Array.size_range]
   rw [Verify.sum_blocks]
   generalize x.size / (if f32 then 4 else 8) = n
-  simp only [Column.blk] at *
+  simp only [Column.lgEnc, Nat.reducePow] at *
   omega
+
+/-- `alpEncodeAt`'s metadata is `encode`'s, so it passes `Enc.WF`'s `lgOk`. -/
+theorem lgOk_alpEncodeAt (f32 : Bool) (x : ByteArray) : Column.lgOk (Coc.alpEncodeAt f32 x).1 = true := by
+  unfold Coc.alpEncodeAt
+  simp only []
+  exact lgOk_encode 8 (by simp) _
 
 /-- `Coc.alpDecode` holds `n` elements of `w` bytes, as `decodeW` says of `Coc.decode`. -/
 theorem alpDecode_size (w : USize) (hw : w.toNat ≤ 8) (M P a : ByteArray) (n : USize) :
@@ -540,7 +568,8 @@ theorem alpEncodeAt_wf {t : QAtomicType} {n : USize} (f32 : Bool) (ht : Column.a
     Enc.WF t n (.alp (Coc.alpEncodeAt f32 x).1 (Coc.alpEncodeAt f32 x).2.1 (Coc.alpEncodeAt f32 x).2.2) := by
   have hF : Column.alpF32 (Coc.alpEncodeAt f32 x).2.2 = f32 := alpF32_alpBlob ..
   simp only [Enc.WF]
-  refine ⟨by cases t <;> simp_all [Column.alpEncodes], Nat.le_trans hn (nblk_alpEncodeAt f32 x), ?_⟩
+  refine ⟨by cases t <;> simp_all [Column.alpEncodes], Nat.le_trans hn (nblk_alpEncodeAt f32 x),
+    lgOk_alpEncodeAt f32 x, ?_⟩
   rw [hF, hf]; cases f32 <;> decide
 
 /-- `alpEncodeBelow`'s `some` is `alpEncodeAt`'s answer. -/
@@ -600,11 +629,15 @@ theorem answer_wf {t : QAtomicType} {n : USize} {e : Enc}
       · rename_i m p heq
         have h0 : 0 < w ∧ w ≤ 8 ∧ t ≠ .guid := by
           cases t <;> simp_all [QAtomicType.width, Column.encodes] <;> omega
-        have hk := Verify.nblk_encode w h0.1 h0.2.1 b
-        rw [← encodeBelow_eq heq] at hk
+        have hmp := encodeBelow_eq heq
+        have hk := Verify.nblk_encode Column.lgEnc (by decide) w h0.1 h0.2.1 b
+        change Column.nblk (Coc.encode _ b).1 = _ ∧ Column.blk (Coc.encode _ b).1 = _ at hk
+        rw [← hmp] at hk
         simp only [hs, Nat.mul_div_cancel _ h0.1] at hk
-        refine wf_foR (by simp [hW]) hb h0.2.2 ?_
-        rw [hk]; simp only [Column.blk]; omega
+        refine wf_foR (by simp [hW]) hb h0.2.2 ?_ ?_
+        · rw [hk.1, hk.2]; simp only [Column.lgEnc, Nat.reducePow]; omega
+        · rw [show m = _ from congrArg Prod.fst hmp]
+          exact lgOk_encode _ (by rw [toUSize_toNat (lt_usize (by omega))]; omega) b
       · exact hwf
     · exact hwf
   all_goals
@@ -954,10 +987,10 @@ theorem concatBytes_size (ps : Array ByteArray) : (concatBytes ps).size = (ps.to
     | cons a l ih => intro b; simp [ih, ByteArray.size_append]; omega
   rw [concatBytes, ← Array.foldl_toList, happ]; simp
 
-/-- `foRMeta` of `bs` blocks: four sections of eight bytes a block, the sixteen-byte trailer, a width
+/-- `foRMeta` of `bs` blocks: four sections of eight bytes a block, the 24-byte trailer, a width
     byte a block. So `nblk` reads `bs.size` back. -/
-theorem foRMeta_size (nul : UInt64) (sumn : Nat) (bs : Array (UInt64 × UInt64 × UInt64 × Nat)) :
-    (Coc.foRMeta nul sumn bs).size = 33 * bs.size + 16 := by
+theorem foRMeta_size (lg : Nat) (nul : UInt64) (sumn : Nat) (bs : Array (UInt64 × UInt64 × UInt64 × Nat)) :
+    (Coc.foRMeta lg nul sumn bs).size = 33 * bs.size + 24 := by
   have hA : ∀ (f : (UInt64 × UInt64 × UInt64 × Nat) → UInt64) (l : List (UInt64 × UInt64 × UInt64 × Nat)),
       (l.foldl (fun acc b => Column.pushBits acc (f b) 8) ByteArray.empty).size = l.length * 8 := fun f l => by
     rw [foldl_size ByteArray.size _ 8 (fun _ _ => Column.pushBits_size ..)]; simp
@@ -975,32 +1008,57 @@ theorem foRMeta_size (nul : UInt64) (sumn : Nat) (bs : Array (UInt64 × UInt64 �
 /-- `moveFoR` claims only parts in the writer's form, each `⌈n/blk⌉` blocks, and moves every block:
     the answer's blocks cover the summed count. -/
 theorem moveFoR_nblk {ps : Array ((USize × ByteArray) × ByteArray)} {m p : ByteArray}
-    (h : moveFoR ps = some (m, p)) : (ps.toList.map (·.1.1.toNat)).sum ≤ Column.blk * Column.nblk m := by
+    (h : moveFoR ps = some (m, p)) :
+    (ps.toList.map (·.1.1.toNat)).sum ≤ Column.blk m * Column.nblk m ∧ Column.lgOk m = true := by
   unfold moveFoR at h
+  dsimp only at h
+  generalize hlg : (Option.map (fun x => Column.lgOf x.fst.snd) ps[0]?).getD Column.lgEnc = lg at h
+  have h6 : 6 ≤ lg ∧ lg ≤ 16 := by
+    rw [← hlg]; cases ps[0]? <;> simp only [Option.map_none, Option.map_some, Option.getD_none,
+      Option.getD_some, Column.lgOf, Column.lgEnc] <;> omega
   split at h
   · cases h
   rename_i hc
   injection h with h; injection h with hm
   subst hm
-  have hall : ∀ x ∈ ps.toList, x.1.1.toNat ≤ Column.blk * Column.nblk x.1.2 := by
+  have hx : ∀ x ∈ ps.toList, Column.lgOf x.1.2 = lg ∧ Coc.foRStd x.1.1 x.1.2 x.2 = true := by
     intro x hx
-    have hs : Coc.foRStd x.1.1 x.1.2 x.2 = true := by
-      cases hs : Coc.foRStd x.1.1 x.1.2 x.2
-      · exfalso; apply hc
-        obtain ⟨i, hi, rfl⟩ := List.mem_iff_getElem.1 hx
-        rw [Bool.or_eq_true, Array.any_eq_true]; right
-        refine ⟨i, by simpa using hi, ?_⟩
-        simp only [Array.getElem_toList] at hs; simp [hs]
-      · rfl
-    rw [(Verify.foRStd_iff.1 hs).nblk]; simp only [Column.blk]; omega
-  rw [Column.nblk, foRMeta_size, show ∀ k, (33 * k + 16) / 33 = k from fun k => by omega,
-    ← Array.foldl_toList, foldl_append_size]
-  simpa using sum_le_mul _ _ _ _ hall
+    cases hq : (Column.lgOf x.1.2 != lg || !Coc.foRStd x.1.1 x.1.2 x.2 ||
+        decide (Column.blockStart x.1.2 (Column.nblk x.1.2) < x.2.size))
+    · simp only [Bool.or_eq_false_iff] at hq
+      exact ⟨by simpa using hq.1.1, by simpa using hq.1.2⟩
+    · exfalso; apply hc
+      obtain ⟨i, hi, rfl⟩ := List.mem_iff_getElem.1 hx
+      rw [Bool.or_eq_true, Array.any_eq_true]; right
+      refine ⟨i, by simpa using hi, ?_⟩
+      simp only [Array.getElem_toList] at hq; exact hq
+  -- every part's blocks are `2 ^ lg` long, the size the answer's metadata records
+  have hall : ∀ x ∈ ps.toList, x.1.1.toNat ≤ 2 ^ lg * Column.nblk x.1.2 := by
+    intro x hx'
+    have hB : Column.blk x.1.2 = 2 ^ lg := by simp only [Column.blk, (hx x hx').1]
+    rw [(Verify.foRStd_iff.1 (hx x hx').2).nblk, ← hB]
+    exact le_mul_cdiv (by rw [hB]; exact Nat.two_pow_pos _)
+  generalize hbs : Array.foldl _ #[] ps = bs
+  have hwid : ∀ e ∈ bs, e.2.2.2 < 256 := by
+    rw [← hbs, ← Array.foldl_toList]
+    refine foldl_inv (fun acc : Array (UInt64 × UInt64 × UInt64 × Nat) => ∀ e ∈ acc, e.2.2.2 < 256) _
+      (fun s a hs e he => ?_) _ _ (by simp)
+    rcases Array.mem_append.1 he with he | he
+    · exact hs e he
+    · obtain ⟨b, -, rfl⟩ := Array.mem_map.1 he
+      exact UInt8.toNat_lt _
+  have hsz : bs.size = (ps.toList.map fun x => Column.nblk x.1.2).sum := by
+    rw [← hbs, ← Array.foldl_toList, foldl_append_size]; simp
+  obtain ⟨hnb, hlgM, -⟩ := Verify.foRMeta_reads lg (by omega) _ _ bs (fun b h => hwid _ (Array.getElem_mem h))
+  generalize Coc.foRMeta lg _ _ bs = M at hnb hlgM ⊢
+  refine ⟨?_, by rw [Column.lgOk, hlgM]; simp [h6.1, h6.2]⟩
+  rw [Verify.blk_of_lgAt M (by rw [hlgM]; exact h6), hlgM, hnb, hsz]
+  exact sum_le_mul _ _ _ _ hall
 
 /-- `appendFoR` keeps the first part's metadata and claims only where the appended elements fit its
     last, part-filled block. -/
 theorem appendFoR_nblk {n : USize} {md pk tail m p : ByteArray} (h : appendFoR n md pk tail = some (m, p)) :
-    m = md ∧ n.toNat + tail.size / 8 ≤ Column.blk * Column.nblk md := by
+    m = md ∧ n.toNat + tail.size / 8 ≤ Column.blk md * Column.nblk md := by
   unfold appendFoR at h
   dsimp only at h
   split at h
@@ -1013,16 +1071,18 @@ theorem appendFoR_nblk {n : USize} {md pk tail m p : ByteArray} (h : appendFoR n
   simp only [Bool.or_eq_true, beq_iff_eq, decide_eq_true_eq, Bool.not_eq_true', not_or] at hc
   obtain ⟨⟨⟨h0, hlt⟩, hs⟩, -⟩ := hc
   rw [(Verify.foRStd_iff.1 (by simpa using hs)).nblk]
-  simp only [Column.blk] at *; omega
+  exact add_le_mul_cdiv h0 (by omega)
 
 /-- `concatFoR` of parts of `ns` elements answers blocks covering their sum, whichever of the move, the
     append and the re-encode it takes. -/
 theorem concatFoR_nblk {w : Nat} {ns : Array USize} {ms ps : Array ByteArray} {m p : ByteArray}
     (heq : concatFoR w.toUSize (countBytes ns) ms ps = (m, p)) (hw0 : 0 < w) (hw : w ≤ 8)
-    (hm : ms.size = ns.size) (hp : ps.size = ns.size) :
-    (ns.toList.map USize.toNat).sum ≤ Column.blk * Column.nblk m := by
+    (hm : ms.size = ns.size) (hp : ps.size = ns.size) (hl : ∀ x ∈ ms, Column.lgOk x = true) :
+    (ns.toList.map USize.toNat).sum ≤ Column.blk m * Column.nblk m ∧ Column.lgOk m = true := by
   suffices H : (ns.toList.map USize.toNat).sum ≤
-      Column.blk * Column.nblk (concatFoR w.toUSize (countBytes ns) ms ps).1 by rw [heq] at H; exact H
+      Column.blk (concatFoR w.toUSize (countBytes ns) ms ps).1 *
+        Column.nblk (concatFoR w.toUSize (countBytes ns) ms ps).1 ∧
+      Column.lgOk (concatFoR w.toUSize (countBytes ns) ms ps).1 = true by rw [heq] at H; exact H
   have hwu : w.toUSize.toNat = w := toUSize_toNat (lt_usize (by omega))
   unfold concatFoR
   dsimp only
@@ -1034,27 +1094,39 @@ theorem concatFoR_nblk {w : Nat} {ns : Array USize} {ms ps : Array ByteArray} {m
     intro i h1 h2
     simp [countBytes_size, hm, hp] at h1
     simp [countBytes_get ns i h1]
+  -- the append keeps the first part's metadata, so its `lgOk` is the part's
+  have hql : ∀ x ∈ q, Column.lgOk x.1.2 = true := by
+    rw [← hq0]; intro x hx
+    obtain ⟨k, hk, rfl⟩ := Array.mem_map.1 hx
+    have hk' : k < ms.size := by simp only [Array.mem_range] at hk; omega
+    rw [getElem!_pos ms k hk']
+    exact hl _ (Array.getElem_mem hk')
   rw [← hq]
   split
   · rename_i out heq; rcases out with ⟨m, p⟩; exact moveFoR_nblk heq
+  rename_i hnone
   rcases q with ⟨_ | ⟨⟨⟨n0, md0⟩, pk0⟩, rest⟩⟩
-  · simp
+  · simp [moveFoR] at hnone
   have hx : (List.toArray (((n0, md0), pk0) :: rest)).extract 1 (rest.length + 1) = rest.toArray := by simp
   simp only [List.size_toArray, List.length_cons, hx]
   rw [show (Array.mk (((n0, md0), pk0) :: rest)).get!Internal 0 = ((n0, md0), pk0) from rfl]
   dsimp only
+  have h0l : Column.lgOk md0 = true := hql ((n0, md0), pk0) (by simp)
   split
   · rename_i out heq; rcases out with ⟨m, p⟩
     obtain ⟨rfl, hk⟩ := appendFoR_nblk heq
+    refine ⟨?_, h0l⟩
     rw [concatBytes_size] at hk
     simp only [Array.toList_map, List.map_map, Function.comp_def, decode_size] at hk
     have h8 : USize.toNat 8 = 8 := toUSize_toNat (k := 8) (lt_usize (by decide))
     rw [sum_map_mul, h8, Nat.mul_div_cancel _ (by decide : 0 < 8)] at hk
     simpa [Nat.add_comm] using hk
-  · rw [Verify.nblk_encode w hw0 hw, concatBytes_size]
+  · refine ⟨?_, lgOk_encode _ (by rw [hwu]; exact hw) _⟩
+    rw [Coc.encode, (Verify.nblk_encode Column.lgEnc (by decide) w hw0 hw _).1,
+      (Verify.nblk_encode Column.lgEnc (by decide) w hw0 hw _).2, concatBytes_size]
     simp only [Array.toList_map, List.map_map, Function.comp_def, decode_size, hwu]
     rw [sum_map_mul, Nat.mul_div_cancel _ hw0]
-    simp only [Column.blk]; omega
+    simp only [Column.lgEnc, Nat.reducePow]; omega
 
 /-- `concatEnum` answers an interned symbol vector whose ids count it, where the parts' counts, summed,
     fit a `USize`. -/
@@ -1176,6 +1248,63 @@ theorem encodedParts_spec {t : QAtomicType} {cs : Array (USize × Enc)} {alp : B
   · rw [← Array.foldl_toList, foldl_add]; simp [Function.comp_def]
   · simp only [Bool.or_eq_true, Bool.not_eq_true', not_or] at hc
     cases h1 : Column.alpEncodes t <;> cases h2 : Column.encodes t <;> simp_all
+
+/-- A `foR` that `Enc.encode` makes of a payload that was not one is `Coc.encode`'s, so its metadata
+    passes `lgOk`. -/
+private theorem lgOk_of_encode {t : QAtomicType} {n : USize} {e : Enc} {m p : ByteArray}
+    (hne : ∀ m p, e ≠ .foR m p) (h : Enc.encode t n e = .foR m p) : Column.lgOk m = true := by
+  unfold Enc.encode at h
+  split at h
+  · rename_i w hw
+    split at h
+    · rename_i henc
+      split at h
+      · rename_i b _
+        have h8 : w ≤ 8 := by cases t <;> simp_all [QAtomicType.width, Column.encodes] <;> omega
+        generalize hE : Coc.encode w.toUSize b = E at h
+        rcases E with ⟨md, pk⟩
+        simp only [Enc.foR.injEq] at h
+        obtain ⟨rfl, rfl⟩ := h
+        have := lgOk_encode w.toUSize (by rw [toUSize_toNat (lt_usize (by omega))]; exact h8) b
+        rw [hE] at this; exact this
+      · exact absurd h (hne m p)
+    · exact absurd h (hne m p)
+  · exact absurd h (hne m p)
+
+/-- At a type `foR` is for, every metadata `encodedParts` hands on passes `lgOk`: a `foR` part's by its
+    `Enc.WF`, any other part's by `lgOk_of_encode`. -/
+theorem encodedParts_lgOk {t : QAtomicType} {cs : Array (USize × Enc)} {alp : Bool} {n : Nat}
+    {ns : Array USize} {ms ps as : Array ByteArray} (hwf : ∀ c ∈ cs, Enc.WF t c.1 c.2)
+    (ha : Column.alpEncodes t = false) (h : encodedParts t cs = some (alp, n, ns, ms, ps, as)) :
+    ∀ x ∈ ms, Column.lgOk x = true := by
+  unfold encodedParts at h
+  dsimp only at h
+  split at h
+  · cases h
+  simp only [bind, Option.bind] at h
+  split at h
+  · cases h
+  rename_i qs hq
+  simp only [Option.some.injEq, Prod.mk.injEq] at h
+  obtain ⟨-, -, -, rfl, -, -⟩ := h
+  have hk := mapM_key (key' := fun x : USize × ByteArray × ByteArray × ByteArray => decide (Column.lgOk x.2.1 = true))
+    (key := fun _ : USize × Enc => true) (fun c hc x hx => by
+      rcases c with ⟨k, e⟩
+      have hw := hwf _ hc
+      cases e <;> simp only [ha, Bool.false_eq_true, if_false] at hx <;>
+        first
+        | (cases hx; simp only [Enc.WF] at hw; exact decide_eq_true hw.2.2.2.2)
+        | cases hx
+        | (split at hx
+           · rename_i heq; cases hx; exact decide_eq_true (lgOk_of_encode (by intro _ _ h; cases h) heq)
+           · cases hx)) hq
+  intro x hx
+  obtain ⟨y, hy, rfl⟩ := Array.mem_map.1 hx
+  have hm := Array.mem_map_of_mem (f := fun x : USize × ByteArray × ByteArray × ByteArray =>
+    decide (Column.lgOk x.2.1 = true)) hy
+  rw [hk] at hm
+  obtain ⟨_, _, he⟩ := Array.mem_map.1 hm
+  exact of_decide_eq_true he.symm
 
 /-- `concatALP` of parts of `ns` elements is a well-formed ALP payload of their sum at a float type: it
     decodes every part at the type's width and encodes the join once. -/
@@ -1352,8 +1481,11 @@ theorem razeColumn_wf {t : QAtomicType} {cs : Array (USize × Enc)}
           simp only [Column.alpEncodes, Bool.false_eq_true, if_false, if_true] at hv
           cases hv
           first
-            | exact ⟨_, _, rfl, answer_wf (wf_foR rfl (by decide) (by decide) (by
-                rw [toUSize_toNat hc]; exact concatFoR_nblk rfl (by decide) (by decide) hms hps))⟩
+            | exact ⟨_, _, rfl, answer_wf (wf_foR rfl (by decide) (by decide)
+                (by rw [toUSize_toNat hc]; exact (concatFoR_nblk rfl (by decide) (by decide) hms hps
+                  (encodedParts_lgOk h rfl ‹encodedParts _ _ = some _›)).1)
+                (concatFoR_nblk rfl (by decide) (by decide) hms hps
+                  (encodedParts_lgOk h rfl ‹encodedParts _ _ = some _›)).2)⟩
             | exact ⟨_, _, rfl, answer_wf (concatALP_wf rfl rfl rfl hms hps has (toUSize_toNat hc))⟩
     · split at hv
       · rename_i hmp

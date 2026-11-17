@@ -136,6 +136,11 @@ theorem lgAt_encodeAt (lg : Nat) (hlg : lg < 2 ^ 64) (width : USize) (hw : width
   simp only [Array.getElem_map, Verify.getElem_range]
   revert this; rcases Kernel.Coc.blockOf (2 ^ lg) w n b x with ⟨_, _, _, _⟩; simp; omega
 
+/-- `encode`'s metadata passes `Enc.WF`'s `lgOk`: it is `encodeAt` at `Column.lgEnc`. -/
+theorem lgOk_encode (width : USize) (hw : width.toNat ≤ 8) (x : ByteArray) :
+    Column.lgOk (Kernel.Coc.encode width x).1 = true := by
+  rw [Kernel.Coc.encode, Column.lgOk, lgAt_encodeAt _ (by decide) _ hw]; rfl
+
 /-- `xs` Frame-of-Reference encoded is well formed at its count `n`: the checks' `foR` columns, which
     `decide` cannot evaluate through `Coc.encode`. -/
 theorem foRLongs_wf (xs : List Int64) {n : USize} (hn : xs.length = n.toNat) : Enc.WF .long n
@@ -146,8 +151,7 @@ theorem foRLongs_wf (xs : List Int64) {n : USize} (hn : xs.length = n.toNat) : E
   · show n.toNat ≤ Column.blk (Kernel.Coc.encodeAt Column.lgEnc (8 : Nat).toUSize (packLongs xs)).1 *
       Column.nblk (Kernel.Coc.encodeAt Column.lgEnc (8 : Nat).toUSize (packLongs xs)).1
     rw [h.1, h.2, ← hn]; simp only [Column.lgEnc, Nat.reducePow]; omega
-  · show Column.lgOk (Kernel.Coc.encodeAt Column.lgEnc 8 (packLongs xs)).1 = true
-    rw [Column.lgOk, lgAt_encodeAt _ (by decide) _ (by simp)]; rfl
+  · exact lgOk_encode _ (by simp) _
 
 /-- Under `wf`, a long `bytes` column holds `b.size / 8` elements. -/
 theorem Arr.n_long_bytes {m : USize} (x : Arr .long m) {b : ByteArray} (hc : x.enc = .bytes b) :
