@@ -318,7 +318,7 @@ theorem concatFoR_reads {w : Nat} (hw1 : 1 < w) (hw8 : w ≤ 8) (q : (USize × B
     simpa only [List.map_map, List.map_flatten, Function.comp_def] using this
   · have h0 : (q :: r).toArray[0]! = q := rfl
     have hx : ((q :: r).toArray.extract 1 (q :: r).toArray.size) = r.toArray := by simp
-    simp only [h0, hx, List.map_toArray] at hX
+    simp only [hx, List.map_toArray] at hX
     split at hX
     · rename_i out ha
       subst hX

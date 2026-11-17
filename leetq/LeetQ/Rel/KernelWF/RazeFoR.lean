@@ -58,8 +58,8 @@ theorem foR_part {t : QAtomicType} {w : Nat} (hen : Column.encodes t = true) (hw
       obtain ⟨rfl, rfl⟩ := he; rfl
     intro i hi
     have hib : i < b.size / w := by rw [hbs, Nat.mul_div_cancel _ (by omega)]; exact hi
-    have H := Verify.foRBits_encode_bits w hw1 hw8 b i hib
-    simp only [hE] at H
+    have H := Verify.foRBits_encode_bits Column.lgEnc (by decide) w hw1 hw8 b i hib
+    rw [show Coc.encodeAt Column.lgEnc w.toUSize b = (md, pk) from hE] at H
     rw [← get_bytesOf hw hb hwf hbo hi, get_bytes_eq hw hb hg _ hi,
       ← Verify.atomOfBits_mod hw hb hg (Column.foRBits md pk _ i), H, UInt64.ofNat_toNat]
 
