@@ -151,7 +151,7 @@ theorem alp_part {t : QAtomicType} {w : Nat} (ht : Column.alpEncodes t = true) (
       rcases hX : Coc.alpEncodeAt (w == 4) b with ⟨m', p', a'⟩
       simp only [hX, Option.some.injEq, Enc.alp.injEq] at he
       obtain ⟨rfl, rfl, rfl⟩ := he; rfl
-    have H := Verify.alpBits_alpEncodeAt (w == 4) w h48 b (by rw [hbs, Nat.mul_div_cancel _ h0]; exact hn)
+    have H := Verify.alpBits_alpEncodeAt (w == 4) Column.lgEnc (by decide) w h48 b (by rw [hbs, Nat.mul_div_cancel _ h0]; exact hn)
     simp only [hE] at H
     refine ⟨H.1, fun i hi => ?_⟩
     rw [← get_bytesOf hw hb hwf hbo hi, get_bytes_eq hw hb hg _ hi,
