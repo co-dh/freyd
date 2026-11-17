@@ -84,7 +84,7 @@ theorem grade_code (c : Code) (hw : laneOK(c.w))
   next => exact hl
 
 /-- **Every grade `gradeColumn` answers ascending is a sort of `til m`** (`indices` of a `mergeSort`): `grade`,
-    `gradeFoR`, `gradeSyms`, `gradeIds`, `gradeGuid` alike. -/
+    `gradeFoR`, `gradeSyms`, `gradeIds` alike. -/
 theorem gradeColumn_sort {t : QAtomicType} {n : USize} {e v : Enc} (h : gradeColumn t false n e = some v) :
     ∃ m le, v = .bytes (Order.indices ((List.range m).mergeSort le)) := by
   unfold gradeColumn at h
@@ -92,7 +92,6 @@ theorem gradeColumn_sort {t : QAtomicType} {n : USize} {e v : Enc} (h : gradeCol
   split at h
   all_goals first
     | (cases h; exact ⟨_, _, rfl⟩)
-    | (obtain ⟨b, -, rfl⟩ := Option.map_eq_some_iff.1 h; exact ⟨_, _, rfl⟩)
     | (split at h
        · cases h
        split at h

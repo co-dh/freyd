@@ -295,53 +295,6 @@ theorem symKey_lt_iff : ∀ (a b : List UInt8), a.length = b.length →
       Nat.add_lt_add_iff_right, symKey_lt_iff a b (by simpa using hl)]
   | [], _ :: _, hl | _ :: _, [], hl => by simp at hl
 
-/-! ## The guid: `gradeGuid` by its sixteen bytes -/
-
-/-- Element `i` of a guid column, its `Obj.key`, is its sixteen stored bytes. -/
-theorem key_guid {n : USize} (x : Arr .guid n) {b : ByteArray} (he : x.enc = .bytes b) (i : Nat)
-    (hi : i < n.toNat) :
-    (Obj.atom .guid).key (x.get ⟨i, hi⟩) = (b.extract (16 * i) (16 * i + 16)).data.toList.map (·.toNat) := by
-  have hs : b.size = n.toNat * 16 := by have := x.wf; rw [he] at this; exact this
-  rw [Arr.get_ne _ _ (by decide), he]
-  simp only [Enc.get, if_pos hi, Option.bind_some, Carrier.of?, Option.getD_some, Obj.key]
-  congr 1
-  rw [extract_toList]
-  apply List.ext_getElem (by simp; omega)
-  intro k h1 h2
-  simp only [Vector.toList_ofFn, List.getElem_ofFn, List.getElem_take, List.getElem_drop, bget]
-  rw [List.getElem?_eq_getElem (by simp at h2 ⊢; omega)]
-  simp only [Option.getD_some]; congr 1; omega
-
-theorem grade_guid {n : USize} (x : Arr .guid n) : ∃ g, gradeColumn .guid false n x.enc = some (.bytes g) ∧
-    (ids g).Perm (List.range n.toNat) ∧ (ids g).Pairwise (ascBy (.atom .guid) (n := n) x (· < ·)) := by
-  have hwf := x.wf
-  cases he : x.enc
-  case bytes b =>
-    rw [he] at hwf
-    have hs : b.size / 16 = n.toNat := by
-      have : b.size = n.toNat * 16 := hwf
-      omega
-    obtain ⟨hp, hsrt⟩ := range_mergeSort (le := fun i j => Column.symCmp (b.extract (16 * i) (16 * i + 16)) (b.extract (16 * j) (16 * j + 16)) != .gt)
-      (fun _ _ _ => symLe_trans) (fun _ _ => symLe_total _ _) (b.size / 16)
-    rw [hs] at hp hsrt
-    have hm : ∀ i ∈ (List.range n.toNat).mergeSort (fun i j => Column.symCmp (b.extract (16 * i) (16 * i + 16)) (b.extract (16 * j) (16 * j + 16)) != .gt),
-        i < 2 ^ 64 := fun i hi => Nat.lt_trans (List.mem_range.1 (hp.mem_iff.1 hi)) (usize_lt n)
-    refine ⟨_, rfl, ?_⟩
-    simp only [Order.gradeGuid, Bool.false_eq_true, ↓reduceIte, hs]
-    rw [ids_indices _ hm]
-    refine ⟨hp, ascBy_of_le x _ (fun i j hi hj => ?_) hsrt⟩
-    rw [symCmp_ne_gt]
-    show ¬ _ < _ ↔ ¬ (Obj.atom .guid).key _ < (Obj.atom .guid).key _
-    rw [key_guid x he j hj, key_guid x he i hi,
-      symKey_lt_iff _ _ (by
-        have : b.size = n.toNat * 16 := hwf
-        rw [Array.length_toList, Array.length_toList]
-        show (b.extract _ _).size = (b.extract _ _).size
-        simp only [ByteArray.size_extract]; omega)]
-  all_goals rw [he] at hwf; simp [Enc.WF] at hwf
-
-theorem sortsAsc_guid : SortsAsc (.atom .guid) := sortsAsc_atom .guid grade_guid
-
 /-! ## The symbol: `gradeSyms` and `gradeIds` by the stored bytes -/
 
 /-- Row `i` of a symbol column that `Enc.get` decodes from valid UTF-8 bytes `s`: its `Obj.key` is `s`'s symbol
@@ -870,12 +823,12 @@ theorem sortsAsc_arr {b : Obj} (hb : SortsAsc b) : SortsAsc (.arr b) := by
 
 /-! ## Every side whose atoms qlean orders
 
-A `.general` atom is left out: qlean states no order on it (`orderKind .general = none`, `Obj.key` keys it `[]`),
+A `.general` or `.guid` atom is left out: qlean states no order on it (`orderKind t = none`),
 and its rows sort by `codes`, an order of one call. -/
 
-/-- `A` holds no `.general` atom: each of its atoms is one qlean's sort kernels order. -/
+/-- `A` holds no `.general` or `.guid` atom: each of its atoms is one qlean's sort kernels order. -/
 def _root_.LeetQ.Rel.Obj.Ordered : Obj → Prop
-  | .atom t => t ≠ .general
+  | .atom t => t ≠ .general ∧ t ≠ .guid
   | .prod a b => a.Ordered ∧ b.Ordered
   | .arr b => b.Ordered
   | .sum a b => a.Ordered ∧ b.Ordered
@@ -887,19 +840,19 @@ theorem _root_.LeetQ.Rel.Obj.eq_of_not_lt (A : Obj) (hA : ∀ x y : A.El, A.key 
     (h1 : ¬ A.lt x y) (h2 : ¬ A.lt y x) : x = y :=
   hA x y (((A.lt_trichotomy x y).resolve_left h1).resolve_right h2)
 
-/-- **Every atom but `.general` sorts stably by `Obj.lt`.** -/
-theorem sortsAsc_ordered_atom {t : QAtomicType} (h : t ≠ .general) : SortsAsc (.atom t) := by
+/-- **Every atom but `.general` and `.guid` sorts stably by `Obj.lt`.** -/
+theorem sortsAsc_ordered_atom {t : QAtomicType} (h : t ≠ .general) (hu : t ≠ .guid) : SortsAsc (.atom t) := by
   cases t
   case boolean => exact sortsAsc_boolean
   case symbol => exact sortsAsc_symbol
-  case guid => exact sortsAsc_guid
+  case guid => exact absurd rfl hu
   case general => exact absurd rfl h
   all_goals exact sortsAsc_num rfl (by decide)
 
 /-- **Every ordered side sorts stably by `Obj.lt`**: atoms by their kernels, products and sums and arrays (the
     LSD passes of `Obj.sortByC`) from their parts. -/
 theorem sortsAsc_all : ∀ A : Obj, A.Ordered → SortsAsc A
-  | .atom _, h => sortsAsc_ordered_atom h
+  | .atom _, ⟨h, hu⟩ => sortsAsc_ordered_atom h hu
   | .prod a b, ⟨ha, hb⟩ => sortsAsc_prod (sortsAsc_all a ha) (sortsAsc_all b hb)
   | .arr b, h => sortsAsc_arr (sortsAsc_all b h)
   | .sum a b, ⟨ha, hb⟩ => sortsAsc_sum (sortsAsc_all a ha) (sortsAsc_all b hb)
@@ -907,7 +860,6 @@ theorem sortsAsc_all : ∀ A : Obj, A.Ordered → SortsAsc A
 #print axioms sortsAsc_all
 #print axioms sortsAsc_arr
 #print axioms sortsAsc_symbol
-#print axioms sortsAsc_guid
 #print axioms sortBy_asc
 #print axioms sortsAsc_prod
 #print axioms sortsAsc_num

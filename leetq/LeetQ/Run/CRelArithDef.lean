@@ -21,12 +21,14 @@ def sum (R : CRel A C) (S : CRel B D) : CRel (.sum A B) (.sum C D) :=
   guard (R.ok && S.ok) fun _ => ofC (sumC R.rel S.rel)
 
 /-- `<` on `U`, ok where `ltC` ran within capacity. -/
-def lt {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (h : t ≠ .general := by decide) :
-    CRel (.atom t) (.atom t) := ofC (ltC U h)
+def lt {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (h : t ≠ .general := by decide)
+    (hu : t ≠ .guid := by decide) :
+    CRel (.atom t) (.atom t) := ofC (ltC U h hu)
 
 /-- `≤` on `U`, ok where `leqC` ran within capacity. -/
-def leq {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (h : t ≠ .general := by decide) :
-    CRel (.atom t) (.atom t) := ofC (leqC U h)
+def leq {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (h : t ≠ .general := by decide)
+    (hu : t ≠ .guid := by decide) :
+    CRel (.atom t) (.atom t) := ofC (leqC U h hu)
 
 /-- `succ` on `U`, ok where `succC` ran within capacity. -/
 def succ {n : USize} (U : Vals (.atom .long) n) : CRel (.atom .long) (.atom .long) := ofC (succC U)

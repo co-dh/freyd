@@ -39,9 +39,6 @@ theorem gradeSyms_size (desc : Bool) (blob : ByteArray) (offs : Array Nat) :
     (gradeSyms desc blob offs).size = (offs.size - 1) * 8 := by
   simp [gradeSyms, indices_size]
 
-theorem gradeGuid_size (desc : Bool) (b : ByteArray) : (gradeGuid desc b).size = b.size / 16 * 8 := by
-  simp [gradeGuid, indices_size]
-
 /-- A kind other than the bitmap's holds a whole element in `width` bytes. -/
 private theorem avail_of_ne_bit {k : Scan.Kind} (hk : k ≠ .bit) (b : ByteArray) :
     k.avail b = b.size / k.width := by
@@ -84,10 +81,6 @@ theorem gradeColumn_wf {t : QAtomicType} {desc rank : Bool} {n : USize} {e v : E
     | (cases h; apply key; simp only [invert_size, gradeIds_size] <;> omega)
     | (cases h; apply key; simp only [Enc.WF] at hw
        simp only [ranks_size, grade_size, Scan.Kind.avail] <;> omega)
-    | (obtain ⟨b, hb, rfl⟩ := Option.map_eq_some_iff.1 h
-       obtain ⟨b', hb', hs⟩ := bytesOf_size (w := 16) (by decide) rfl hw
-       rw [hb] at hb'; cases hb'
-       apply key; simp only [invert_size, gradeGuid_size, hs] <;> omega)
     | (split at h
        · cases h
        rename_i k hk
@@ -107,21 +100,20 @@ theorem gradeColumn_wf {t : QAtomicType} {desc rank : Bool} {n : USize} {e v : E
            simp only [ranks_size, grade_size, min_avail hk' (Nat.le_of_not_lt hlt)]
          · cases h)
 
-/-- **`gradeColumn` answers** every well-formed payload, except a general list's: `orderKind` has no
+/-- **`gradeColumn` answers** every well-formed payload, except a general list's and a guid's: `orderKind` has no
     key for it. -/
 theorem gradeColumn_isSome {t : QAtomicType} {desc rank : Bool} {n : USize} {e : Enc}
-    (hw : Enc.WF t n e) (hg : t ≠ .general) :
+    (hw : Enc.WF t n e) (hg : t ≠ .general) (hu : t ≠ .guid) :
     (gradeColumn t desc n e rank).isSome := by
   unfold gradeColumn
   cases rank <;> simp only [Bool.false_eq_true, ↓reduceIte] <;> split
   all_goals first
     | rfl
-    | (obtain ⟨b, hb, -⟩ := bytesOf_size (w := 16) (by decide) rfl hw; simp [hb])
     | (split
        · rename_i hk
          rcases orderKind_eq_none.1 hk with rfl | rfl | rfl
          · cases e <;> simp_all [Enc.WF, QAtomicType.width]
-         · simp_all
+         · exact absurd rfl hu
          · exact absurd rfl hg
        rename_i k hk
        split
@@ -149,8 +141,8 @@ variable {t : QAtomicType}
 
 /-- `rank x` = `<<x`, key kept: the place of each element in the ascending order, on the domain
     `gradeColumn` orders by value (every atom but a general list, the witness `hg`). -/
-def rank {n : USize} (R : Arr t n) (hg : t ≠ .general) : Arr .long n :=
-  Arr.mk ((gradeColumn t false n R.enc (rank := true)).get (KernelWF.gradeColumn_isSome R.wf hg))
+def rank {n : USize} (R : Arr t n) (hg : t ≠ .general) (hu : t ≠ .guid) : Arr .long n :=
+  Arr.mk ((gradeColumn t false n R.enc (rank := true)).get (KernelWF.gradeColumn_isSome R.wf hg hu))
     (KernelWF.gradeColumn_wf R.wf (Option.some_get _).symm)
 
 end LeetQ.Rel.Ops

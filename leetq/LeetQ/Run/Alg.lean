@@ -791,10 +791,11 @@ def mapSimpleC {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) : Rel
 
 /-- The rows `<` keeps the pairs of one value from (`ltC`): `rank` of `U` (`gradeColumn`, ties in position order),
     `cross` of the positions, `Ew.cmp <` of their ranks. The domain is the types `gradeColumn` orders by value:
-    every atom but a general list, whose witness `decide` discharges. -/
-def ltRows {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (_h : t ≠ .general := by decide) :
+    every atom but a general list and a guid, whose witnesses `decide` discharges. -/
+def ltRows {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (_h : t ≠ .general := by decide)
+    (_hu : t ≠ .guid := by decide) :
     Rel (.atom t) (.atom t) :=
-  let r := longsOf (Ops.rank (t := t) U _h)
+  let r := longsOf (Ops.rank (t := t) U _h _hu)
   let c := cross n n
   longCount "<" c.1 fun nn _ =>
     let i := whereBits nn (Ew.cmp Ew.lt Ew.i64 Ew.vv (gather 8 r c.1) (gather 8 r c.2) nn)
@@ -805,24 +806,28 @@ def ltRows {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (_h : t ≠ .gen
     `U[i] < U[j]`: `ltRows` less the pairs of one value the ties' order put apart (`diffC` at `idU U`). Whether it
     ran within capacity: `diffC`'s bit `&&` `rep_lt`'s two count bounds decided. The picks of `U` stay plain: an
     atom's rows read back with no fit (`pick_row_atom`). -/
-def ltC {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (h : t ≠ .general := by decide) :
+def ltC {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (h : t ≠ .general := by decide)
+    (hu : t ≠ .guid := by decide) :
     Rel (.atom t) (.atom t) × Bool :=
-  let d := diffC (ltRows U h) (idU U)
+  let d := diffC (ltRows U h hu) (idU U)
   (d.1, d.2 && decide (n.toNat * n.toNat < USize.size) && decide (n.toNat * n.toNat < 2 ^ 63))
 
 /-- `<` on the elements of `U`: `ltC`'s relation. -/
-def lt {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (_h : t ≠ .general := by decide) : Rel (.atom t) (.atom t) :=
-  (ltC U _h).1
+def lt {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (_h : t ≠ .general := by decide)
+    (_hu : t ≠ .guid := by decide) : Rel (.atom t) (.atom t) :=
+  (ltC U _h _hu).1
 
 /-- `≤` on the elements of `U` (`leRel`, AOP/A7_2_RelSet.lean:160), `lt U ∪ 𝟙`, and whether it ran within
     capacity: `ltC`'s bit `&&` `unionC`'s. -/
-def leqC {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (h : t ≠ .general := by decide) :
+def leqC {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (h : t ≠ .general := by decide)
+    (hu : t ≠ .guid := by decide) :
     Rel (.atom t) (.atom t) × Bool :=
-  let l := ltC U h; let u := unionC l.1 (idU U); (u.1, l.2 && u.2)
+  let l := ltC U h hu; let u := unionC l.1 (idU U); (u.1, l.2 && u.2)
 
 /-- `≤` on the elements of `U`: `leqC`'s relation. -/
-def leq {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (h : t ≠ .general := by decide) : Rel (.atom t) (.atom t) :=
-  (leqC U h).1
+def leq {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (h : t ≠ .general := by decide)
+    (hu : t ≠ .guid := by decide) : Rel (.atom t) (.atom t) :=
+  (leqC U h hu).1
 
 /-- `succ : long ⟶ long` on `U` (`succ`, AOP/A5_6_ListCombinators.lean:343): each `u` to `u + 1` where `u + 1`
     is in `U`, so the range stays in `U` and the top of `U` goes to nothing. `Ew.val` add, then the rows whose

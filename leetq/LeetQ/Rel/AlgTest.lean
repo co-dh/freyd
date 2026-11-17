@@ -446,7 +446,7 @@ error: Tactic `decide` proved that the proposition
   QAtomicType.general ≠ QAtomicType.general
 is false
 ---
-info: lt gs ⋯ : Rel (Obj.atom QAtomicType.general) (Obj.atom QAtomicType.general) -/
+info: lt gs ⋯ ⋯ : Rel (Obj.atom QAtomicType.general) (Obj.atom QAtomicType.general) -/
 #guard_msgs in #check lt gs
 
 -- `succ`, `plus` on their universes
