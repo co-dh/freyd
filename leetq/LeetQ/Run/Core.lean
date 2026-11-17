@@ -121,15 +121,33 @@ def colFn (n : USize) (f : Fin n.toNat → Int64) : Arr .long n :=
     show _ = n.toNat * 8; rw [← Array.foldl_toList]
     show (packLongs (Array.ofFn f).toList).size = n.toNat * 8; rw [packLongs_size]; simp [Nat.mul_comm])
 
+/-- `encodeAt lg` records `lg` in its metadata: `foRMeta_reads` at the block widths `blockOf_bounds` caps
+    at 64, the step `Verify.foRWF_encode` takes inside its proof. -/
+theorem lgAt_encodeAt (lg : Nat) (hlg : lg < 2 ^ 64) (width : USize) (hw : width.toNat ≤ 8) (x : ByteArray) :
+    Column.lgAt (Kernel.Coc.encodeAt lg width x).1 = lg := by
+  have hKp : 0 < 2 ^ lg := Nat.two_pow_pos lg
+  simp only [Kernel.Coc.encodeAt]
+  generalize width.toNat = w at hw ⊢
+  generalize x.size / w = n
+  refine (Verify.foRMeta_reads lg hlg _ n _ fun b h => ?_).2.1
+  simp only [Array.size_map, Array.size_range] at h
+  have := (Verify.blockOf_bounds (2 ^ lg) w n b hw x (b * 2 ^ lg) (Nat.le_refl _) (by omega)
+    (Verify.mul_lt_of_lt_cdiv hKp h)).2.2
+  simp only [Array.getElem_map, Verify.getElem_range]
+  revert this; rcases Kernel.Coc.blockOf (2 ^ lg) w n b x with ⟨_, _, _, _⟩; simp; omega
+
 /-- `xs` Frame-of-Reference encoded is well formed at its count `n`: the checks' `foR` columns, which
     `decide` cannot evaluate through `Coc.encode`. -/
 theorem foRLongs_wf (xs : List Int64) {n : USize} (hn : xs.length = n.toNat) : Enc.WF .long n
     (.foR (Kernel.Coc.encode 8 (packLongs xs)).1 (Kernel.Coc.encode 8 (packLongs xs)).2) := by
-  have h := Verify.nblk_encode 8 (by decide) (by decide) (packLongs xs)
+  have h := Verify.nblk_encode Column.lgEnc (by decide) 8 (by decide) (by decide) (packLongs xs)
   rw [packLongs_size] at h
-  refine ⟨rfl, by simp, by simp, ?_⟩
-  show n.toNat ≤ Column.blk * Column.nblk (Kernel.Coc.encode (8 : Nat).toUSize (packLongs xs)).1
-  rw [h, ← hn]; simp only [Column.blk]; omega
+  refine ⟨rfl, by simp, by simp, ?_, ?_⟩
+  · show n.toNat ≤ Column.blk (Kernel.Coc.encodeAt Column.lgEnc (8 : Nat).toUSize (packLongs xs)).1 *
+      Column.nblk (Kernel.Coc.encodeAt Column.lgEnc (8 : Nat).toUSize (packLongs xs)).1
+    rw [h.1, h.2, ← hn]; simp only [Column.lgEnc, Nat.reducePow]; omega
+  · show Column.lgOk (Kernel.Coc.encodeAt Column.lgEnc 8 (packLongs xs)).1 = true
+    rw [Column.lgOk, lgAt_encodeAt _ (by decide) _ (by simp)]; rfl
 
 /-- Under `wf`, a long `bytes` column holds `b.size / 8` elements. -/
 theorem Arr.n_long_bytes {m : USize} (x : Arr .long m) {b : ByteArray} (hc : x.enc = .bytes b) :
@@ -157,9 +175,9 @@ theorem foRBits_starts (md pk : ByteArray) (i : Nat) :
     Column.foRBits md pk #[] i = Column.foRBits md pk (Column.blockStarts md) i := by
   have hs : (Column.blockStarts md).size = Column.nblk md + 1 := (Verify.blockStarts_fold md (Column.nblk md)).2.1
   unfold Column.foRBits
-  by_cases h : i / Column.blk ≤ Column.nblk md
+  by_cases h : i / Column.blk md ≤ Column.nblk md
   · simp [Verify.blockStarts_get md h]
-  · simp [Array.getElem?_eq_none (show (Column.blockStarts md).size ≤ i / Column.blk by omega)]
+  · simp [Array.getElem?_eq_none (show (Column.blockStarts md).size ≤ i / Column.blk md by omega)]
 
 /-- Under `wf`, a long `foR` column's element `i` is its `foRBits` decode, read as a long. -/
 theorem Arr.get_long_foR {m : USize} (x : Arr .long m) {md pk : ByteArray} (hc : x.enc = .foR md pk)
@@ -232,7 +250,7 @@ theorem longWords_answer {m : USize} (b : ByteArray) (hm : b.size / 8 = m.toNat)
   · rw [e]; simp only [Verify.elemsW, ← hm]
     refine congrArg some (List.map_congr_left fun i hi => UInt64.toNat_inj.1 ?_)
     rw [← Nat.mod_eq_of_lt (UInt64.toNat_lt _)]
-    exact Verify.foRBits_encode_bits 8 (by decide) (by decide) b i (List.mem_range.1 hi)
+    exact Verify.foRBits_encode_bits Column.lgEnc (by decide) 8 (by decide) (by decide) b i (List.mem_range.1 hi)
 
 /-- `alpBits` with no hoisted table reads the start `blockStarts` holds, as `foRBits_starts`. -/
 theorem alpBits_starts (md pk a : ByteArray) (i : Nat) :
@@ -311,7 +329,7 @@ theorem floatWords_answer {m : USize} (b : ByteArray) (h32 : b.size / 8 < 2 ^ 32
   rcases ha with e | e
   · rw [e]
   · rw [e]; simp only [Verify.elemsW, ← hm]
-    exact congrArg some (List.map_congr_left fun i hi => (Verify.alpBits_alpEncodeAt false 8 rfl b h32).2 i (List.mem_range.1 hi))
+    exact congrArg some (List.map_congr_left fun i hi => (Verify.alpBits_alpEncodeAt false Column.lgEnc (by decide) 8 rfl b h32).2 i (List.mem_range.1 hi))
 
 /-- An `int` answer column, dense or encoded, lists its payload's four-byte words: `longWords_answer` at
     width four, the `foR` form read back by `foRBits_encode_bits`. -/
@@ -337,7 +355,7 @@ theorem toList_answer_int {m : USize} (x : Arr .int m) {b : ByteArray} (hm : b.s
     rw [foRBits_starts]
     congr 1
     apply UInt32.toNat_inj.1
-    rw [UInt64.toNat_toUInt32, UInt64.toNat_toUInt32, Verify.foRBits_encode_bits 4 (by decide) (by decide) b i hi,
+    rw [UInt64.toNat_toUInt32, UInt64.toNat_toUInt32, Kernel.Coc.encode, Verify.foRBits_encode_bits Column.lgEnc (by decide) 4 (by decide) (by decide) b i hi,
       Nat.mod_eq_of_lt (Verify.bitsAt_lt _ _ _ (by decide))]
 
 /-- Reading a word as a long loses nothing. -/
