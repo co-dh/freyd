@@ -25,6 +25,7 @@ namespace LeetQ.Rel
 namespace Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
+open scoped LeetQ.Core.Rel
 open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 open OpsN FoldN
 /-- **A round's bit**: its step's, `nubC`'s on the step's relation, `antiJoinC`'s on the pending rows, `unionC`'s on
@@ -501,6 +502,7 @@ end Rep
 namespace CRel
 
 open QLean QLean.Kernel LeetQ.Rel.Alg LeetQ.Rel.Rep FoldN
+open scoped LeetQ.Core.Rel
 open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 /-- **`CRel.foldBy` read back under its bit**: `rep_foldByC`. -/

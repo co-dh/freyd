@@ -18,6 +18,7 @@ local notation "SP" => Obj.prod B (.arr B)
 
 section Body
 
+open scoped LeetQ.Core.Rel
 open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 /-- **`thinLOn`'s body on a coreflexive `D`, read back from its primitives' read-backs**: `(a, y)` in `D` goes to

@@ -332,6 +332,7 @@ end LeetQ.Rel.Alg
 namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg
+open scoped LeetQ.Core.Rel
 open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 open Alg.NubN
 

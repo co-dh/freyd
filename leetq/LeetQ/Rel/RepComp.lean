@@ -114,6 +114,7 @@ theorem pickFits_join_snd {A : Obj} {n : USize} (x : Vals A n) {a : Nat} {P : Na
 
 section Comp
 
+open scoped LeetQ.Core.Rel
 open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 /-- **`rep (R ≫ S) = rep R ≫ rep S`.** Hypotheses:

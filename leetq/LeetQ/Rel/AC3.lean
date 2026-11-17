@@ -20,7 +20,7 @@ import LeetQ.Run.AC3Def
 namespace LeetQ.Rel.AC3
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF LeetQ.Rel.Rep LeetQ.Rel.Rep.OpsN LeetQ.Rel.Rep.FoldN
-open (comp_apply inter_apply union_apply recip_apply Core.Rel.ext)
+open scoped LeetQ.Core.Rel
 open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 variable {V D : Obj}

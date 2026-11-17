@@ -8,6 +8,7 @@ import LeetQ.Core.Rel
 namespace LeetQ.Rel.Rep
 
 open LeetQ.Rel
+open scoped LeetQ.Core.Rel
 open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 variable {A B C : Obj}

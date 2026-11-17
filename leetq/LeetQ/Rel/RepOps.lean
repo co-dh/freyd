@@ -13,6 +13,7 @@ import LeetQ.Rel.KernelWF.CodesProdFaithful
 namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
+open scoped LeetQ.Core.Rel
 open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 variable {A B C D : Obj}

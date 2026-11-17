@@ -7,6 +7,7 @@ import LeetQ.Rel.KernelWF.SliceSpec
 namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel LeetQ.Rel LeetQ.Rel.Alg
+open scoped LeetQ.Core.Rel
 open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 /-! ## `mem`: each array to each of its elements -/

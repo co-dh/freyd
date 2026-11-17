@@ -92,6 +92,7 @@ theorem rep_cat_ok {K B : Obj} (P : Rel K (.prod (.arr B) (.arr B))) (h : catOK(
   exact rep_cat P hVa hVb _ rfl _ rfl hS hU _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
     _ rfl _ rfl _ rfl _ rfl hKf hRf hFf
 
+open scoped LeetQ.Core.Rel in
 open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc in
 /-- **`α ≜ [nil, cons]`, read back**: the copairing, out of the sum, of `nil` on the elements `I` lists (each to
     the empty array) and `cons` on the pairs `P` lists (`(b, bs)` to `b :: bs`). Hypotheses: `rep_junc_full`'s at
@@ -117,6 +118,7 @@ theorem rep_alpha {K B : Obj} {n : USize} (I : Vals K 1) (P : Vals (.prod B (.ar
 
 /-! ## `tic` -/
 
+open scoped LeetQ.Core.Rel in
 open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc in
 /-- **`tic`, read back**: a row `(b, bs)` of `P` goes to the non-empty prefixes of `b :: bs`, shortest first.
     `tic P` is `I ≫ tail I.val`, `I = C ≫ inits C.val`, `C = cons P` (bound by `hC`, `hI`). Hypotheses:

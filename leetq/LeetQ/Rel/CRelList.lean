@@ -120,6 +120,7 @@ theorem rep_consC {K B : Obj} (P : Rel K (.prod B (.arr B))) (hb : (consC P).2 =
     ∀ k ys, rep (consC P).1 k ys ↔ ∃ b bs, rep P k (b, bs) ∧ ys = b :: bs := by
   exact rep_cons_ok P (consC_ok P hb)
 
+open scoped LeetQ.Core.Rel in
 open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc in
 /-- **`rep (α)` under `alphaC`'s bit**: `need`'s guard is `rep_alpha`'s `hN`, the decided bound its `h63`, the
     raze's bit its `hF` (`razeC_fits`), `consC`'s bit its `hc` (`consC_ok`). -/
@@ -809,6 +810,7 @@ theorem rep_takewhile (P : CRel B B) (X : Vals (.arr B) n) (hb : (takewhile P X)
       (∃ j, X.row j = xs) ∧ ys = xs.takeWhile fun x => decide (∃ y, rep P.rel x y) := by
   have e : takewhile P X = _ := guard_eq ok hb; rw [e] at hb ⊢; rw [rep_ofC hb]; replace hb := (ofC_ok hb).1; exact rep_takewhileC P.rel X hb
 
+open scoped LeetQ.Core.Rel in
 open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc in
 theorem rep_alpha (I : Vals K 1) (P : Vals (.prod B (.arr B)) n) (hb : (alpha I P).ok = true) :
     rep (alpha I P).rel = Core.Rel.junc

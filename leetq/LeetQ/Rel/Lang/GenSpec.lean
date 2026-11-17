@@ -19,6 +19,7 @@ import LeetQ.Rel.CRelEst
 namespace LeetQ.Rel.Lang.Gen
 
 open LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.Rep QLean.Kernel
+open scoped LeetQ.Core.Rel
 open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 /-- The keys `D` as a relation: the coreflexive itself on demand, `𝟙` for a closed term. -/
@@ -117,11 +118,13 @@ theorem outr_sound {A B : Obj} : Sound (outr A B) (graph Prod.snd) := fun D hD h
   simp only [Gen.outr] at hb ⊢; rw [CRel.rep_ofC hb, rep_outr]
   exact ⟨fun ⟨z, h, e⟩ => (hD x z h) ▸ e, fun e => ⟨x, hx, e⟩⟩
 
-theorem inl_sound {A B : Obj} : Sound (ofVals A (.sum A B) CRel.inl) (Core.Rel.inl (α := A.El) (β := B.El)) := fun D _ hb x y hx => by
+theorem inl_sound {A B : Obj} : Sound (ofVals A (.sum A B) CRel.inl) (Core.Rel.inl (α := A.El) (β := B.El)) :=
+    fun D _ hb x y hx => by
   show rep (CRel.inl (B := B) D.val).rel x y ↔ _; rw [CRel.rep_inl _ hb]
   exact ⟨fun ⟨z, ⟨e, _⟩, h⟩ => e ▸ h, fun h => ⟨x, ⟨rfl, keyRow hx⟩, h⟩⟩
 
-theorem inr_sound {A B : Obj} : Sound (ofVals B (.sum A B) CRel.inr) (Core.Rel.inr (α := A.El) (β := B.El)) := fun D _ hb x y hx => by
+theorem inr_sound {A B : Obj} : Sound (ofVals B (.sum A B) CRel.inr) (Core.Rel.inr (α := A.El) (β := B.El)) :=
+    fun D _ hb x y hx => by
   show rep (CRel.inr (A := A) D.val).rel x y ↔ _; rw [CRel.rep_inr _ hb]
   exact ⟨fun ⟨z, ⟨e, _⟩, h⟩ => e ▸ h, fun h => ⟨x, ⟨rfl, keyRow hx⟩, h⟩⟩
 

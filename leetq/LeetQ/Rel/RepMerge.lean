@@ -113,6 +113,7 @@ local notation "SO" => Obj.prod (.prod (.arr B) (.arr B)) (.arr B)
 
 section Round
 
+open scoped LeetQ.Core.Rel
 open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 /-- **One round of `mergeOn`, read back from its primitives' read-backs**: the new states `mT` are the states
@@ -439,6 +440,7 @@ local notation "initOK" =>
 
 section Headline
 
+open scoped LeetQ.Core.Rel
 open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 /-- **`mergeOn`, read back from its rounds**: with the first state `I` read back (`h0`) and each round's states and

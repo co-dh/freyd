@@ -14,6 +14,7 @@ namespace LeetQ.Rel
 namespace Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
+open scoped LeetQ.Core.Rel
 open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 open OpsN UnionN
 
@@ -176,6 +177,7 @@ end Rep
 namespace CRel
 
 open QLean QLean.Kernel LeetQ.Rel.Alg LeetQ.Rel.Rep
+open scoped LeetQ.Core.Rel
 open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 variable {A B C D : Obj}

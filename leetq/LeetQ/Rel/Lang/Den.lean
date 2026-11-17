@@ -11,6 +11,7 @@ import LeetQ.Core.Fix
 namespace LeetQ.Rel.Lang
 
 open QLean.Kernel LeetQ.Rel LeetQ.Rel.Rep
+open scoped LeetQ.Core.Rel
 open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 /-- An arrow `A ⟶ B` of `Rel(Set)` between the elements of two objects. -/

@@ -154,6 +154,7 @@ theorem loopOn_rounds {K X Y : Obj} (F : Rel (.prod X Y) (.prod X Y) → Rel (.p
 
 section Round
 
+open scoped LeetQ.Core.Rel
 open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 /-- **One round of `loopOn`, read back from its primitives' read-backs**: the new states `T.nub` are the states
@@ -317,6 +318,7 @@ end Prim
 
 open Prim
 
+open scoped LeetQ.Core.Rel
 open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 set_option hygiene false in

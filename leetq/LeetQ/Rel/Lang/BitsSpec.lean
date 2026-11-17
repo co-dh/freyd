@@ -14,6 +14,7 @@ import LeetQ.Rel.Lang.Den
 namespace LeetQ.Rel.Lang.Bits
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.Rep
+open scoped LeetQ.Core.Rel
 open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 variable {ρ : Val}

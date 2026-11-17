@@ -98,6 +98,7 @@ theorem codesOK_long2 {n m : USize} (x : Vals .long n) (y : Vals .long m) (hN : 
       (#v[⟨n, x⟩, ⟨m, y⟩] : Vector (Part .long) 2)) :=
   (codes_faithful_wf .long _ (codesFit_atom_count _ (by simpa using hN) (.inr (.inl rfl)))).1
 
+open scoped LeetQ.Core.Rel in
 open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc in
 /-- **A round's leftovers, read back**: `(antiJoin pend° (idU el.key))°` holds the pairs of `pend` whose row has
     no element this round, given `antiJoin` read back there (`hA`, `rep_antiJoin`'s or `rep_antiJoinC`'s). -/
@@ -418,6 +419,7 @@ theorem rounds_rep {E V : Obj} (pend₀ : Rel .long V) (step : Rel .long E → R
     (fun i _ => roundRB_of_ok pend₀ step elK f hR i) j trivial
   ⟨rounds_count pend₀ step elK f hf j, h.1 trivial, h.2⟩
 
+open scoped LeetQ.Core.Rel in
 open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc in
 /-- **`demandStep Sf`, read back** from `pair` and `≫` read back at its round (`h1`, `h2`: `rep_pair`'s and
     `rep_comp`'s, or their twins'). -/
@@ -695,6 +697,7 @@ theorem reads_mod_le {A : Obj} {m : USize} (e : Vals A m) : ∀ N : Nat,
     rw [Nat.add_one_mul N m.toNat, List.range_add, List.map_append, hm, Nat.add_one_mul (N + 1)]
     exact Nat.le_trans (reads_append e _ _) (Nat.add_le_add_right (reads_mod_le e N) _)
 
+open scoped LeetQ.Core.Rel in
 open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc in
 /-- **`foldBy`, read back**: an array `xs` of `X` goes to `w` when a chain `ys` of steps runs along `xs` from
     a value of `e` (`ys[|xs|]`) to `w` (`ys[0]`), `ys[t+1]` to `ys[t]` on the element `xs[t]` by `Sr k`,
