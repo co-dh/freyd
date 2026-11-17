@@ -1,7 +1,7 @@
 /-
   `⟦−⟧`: the meaning of a core term `Tm` as an arrow of `Rel(Set)` (`doc/rel-denotation-design.md` §1, §2, §7.3).
   Total and structural: each node is the `T` its `Gen.*_sound` lemma proves, written with the allegory's operators
-  (`≫ ° ∩ ∪ 𝟙 𝟘`, D3 = E); `μ`, `ν` are `lfp`, `gfp`, defined for every body, so no monotonicity is assumed here.
+  (`≫ ° ∩ ∪ 𝟙 𝟘`, D3 = E); `μ`, `ν` are `Core.Rel.mu`, `nu`, defined for every body, so no monotonicity is assumed here.
 -/
 import LeetQ.Run.Lang.Tm
 import LeetQ.Rel.Rep
@@ -35,39 +35,7 @@ theorem Val.bind_ne {ρ : Val} {k j : Nat} {A B : Obj} {X : Den A B} (h : j ≠ 
 theorem Val.bind_same {ρ ρ' : Val} {k : Nat} {A B : Obj} {X : Den A B} : ρ.bind k X k = ρ'.bind k X k := by
   funext A' B'; simp [Val.bind]
 
-/-! ### Fixed points -/
-
-/-- The least fixed point of `Φ`, below every pre-fixed point: defined for every `Φ`, a fixed point when `Φ` is
-    monotone (`lfp_fix`). -/
-def lfp {A B : Obj} (Φ : Den A B → Den A B) : Den A B := fun x y => ∀ Y : Den A B, Φ Y ⊑ Y → Y x y
-
-/-- The greatest fixed point of `Φ`, above every post-fixed point. -/
-def gfp {A B : Obj} (Φ : Den A B → Den A B) : Den A B := fun x y => ∃ Y : Den A B, Y ⊑ Φ Y ∧ Y x y
-
 variable {A B C : Obj} {Φ Ψ : Den A B → Den A B} {Y : Den A B}
-
-theorem le_refl' (X : Den A B) : X ⊑ X := le_iff.2 fun _ _ h => h
-
-theorem lfp_le (h : Φ Y ⊑ Y) : lfp Φ ⊑ Y := le_iff.2 fun _ _ hx => hx Y h
-
-theorem le_gfp (h : Y ⊑ Φ Y) : Y ⊑ gfp Φ := le_iff.2 fun _ _ hy => ⟨Y, h, hy⟩
-
-theorem lfp_fix (hΦ : ∀ X Y : Den A B, X ⊑ Y → Φ X ⊑ Φ Y) : Φ (lfp Φ) = lfp Φ := by
-  have h1 : Φ (lfp Φ) ⊑ lfp Φ :=
-    le_iff.2 fun x y hx Y hY => le_iff.1 hY x y (le_iff.1 (hΦ _ _ (lfp_le hY)) x y hx)
-  exact Core.Rel.ext fun x y => ⟨le_iff.1 h1 x y, le_iff.1 (lfp_le (hΦ _ _ h1)) x y⟩
-
-theorem gfp_fix (hΦ : ∀ X Y : Den A B, X ⊑ Y → Φ X ⊑ Φ Y) : Φ (gfp Φ) = gfp Φ := by
-  have h1 : gfp Φ ⊑ Φ (gfp Φ) :=
-    le_iff.2 fun x y ⟨Y, hY, hy⟩ => le_iff.1 (hΦ _ _ (le_gfp hY)) x y (le_iff.1 hY x y hy)
-  exact Core.Rel.ext fun x y => ⟨le_iff.1 (le_gfp (hΦ _ _ h1)) x y, le_iff.1 h1 x y⟩
-
-/-- `lfp` is monotone in its body, pointwise: no monotonicity of either body is needed. -/
-theorem lfp_mono (h : ∀ X, Φ X ⊑ Ψ X) : lfp Φ ⊑ lfp Ψ :=
-  le_iff.2 fun _ _ hx Y hY => hx Y (le_iff.2 fun a b h' => le_iff.1 hY a b (le_iff.1 (h Y) a b h'))
-
-theorem gfp_mono (h : ∀ X, Φ X ⊑ Ψ X) : gfp Φ ⊑ gfp Ψ :=
-  le_iff.2 fun _ _ ⟨Y, hY, hy⟩ => ⟨Y, le_iff.2 fun a b h' => le_iff.1 (h Y) a b (le_iff.1 hY a b h'), hy⟩
 
 /-! ### The named meanings: each the `T` of its node's `Gen.*_sound` lemma -/
 
@@ -186,9 +154,9 @@ noncomputable def Tm.den : Val → {A B : Obj} → {d : Bool} → Tm A B d → D
   | ρ, A, B, _, .var k => ρ k A B
   | _, _, _, _, .call .. => 𝟘
   | _, _, _, _, .arg .. => 𝟘
-  | ρ, _, _, _, .nu k _ b => gfp fun X => b.den (ρ.bind k X)
-  | ρ, _, _, _, .mu k _ _ b => lfp fun X => b.den (ρ.bind k X)
-  | ρ, _, _, _, .refold k _ _ b => lfp fun X => b.den (ρ.bind k X)
+  | ρ, _, _, _, .nu k _ b => Core.Rel.nu fun X => b.den (ρ.bind k X)
+  | ρ, _, _, _, .mu k _ _ b => Core.Rel.mu fun X => b.den (ρ.bind k X)
+  | ρ, _, _, _, .refold k _ _ b => Core.Rel.mu fun X => b.den (ρ.bind k X)
 
 /-- `⟦t⟧` reads `ρ` only at the variables free in `t`. -/
 theorem Tm.den_congr : ∀ {A B : Obj} {d : Bool} (t : Tm A B d) (ρ ρ' : Val), (∀ i ∈ t.fv, ρ i = ρ' i) →
@@ -244,7 +212,7 @@ theorem Val.Grow.of_le {k : Nat} {ρ : Val} {X Y : Den A B} (hXY : X ⊑ Y) : Gr
   simp only [Val.bind, if_true]
   by_cases h : A = A' ∧ B = B'
   · obtain ⟨rfl, rfl⟩ := h; simpa using hXY
-  · simp only [dif_neg h]; exact le_refl' _
+  · simp only [dif_neg h]; exact Core.Rel.le_refl _
 
 section ops
 variable {D E F : Obj}
@@ -289,7 +257,7 @@ theorem junc_le {X X' : Den A C} {Y Y' : Den B C} (hX : X ⊑ X') (hY : Y ⊑ Y'
 
 end ops
 
-theorem sle.refl {s : Bool} (X : Den A B) : sle s X X := by cases s <;> exact le_refl' X
+theorem sle.refl {s : Bool} (X : Den A B) : sle s X X := by cases s <;> exact Core.Rel.le_refl X
 
 theorem sle.of_eq {s : Bool} {X Y : Den A B} (h : X = Y) : sle s X Y := h ▸ sle.refl X
 
@@ -312,15 +280,15 @@ theorem sle.map3 {A' B' A'' B'' A''' B''' : Obj} {f : Den A B → Den A' B' → 
     ∀ {s X X' Y Y' Z Z'}, sle s X X' → sle s Y Y' → sle s Z Z' → sle s (f X Y Z) (f X' Y' Z')
   | true, _, _, _, _, _, _, h1, h2, h3 | false, _, _, _, _, _, _, h1, h2, h3 => hf h1 h2 h3
 
-theorem sle.lfp {s : Bool} (h : ∀ X, sle s (Φ X) (Ψ X)) : sle s (lfp Φ) (lfp Ψ) := by
+theorem sle.lfp {s : Bool} (h : ∀ X, sle s (Φ X) (Ψ X)) : sle s (Core.Rel.mu Φ) (Core.Rel.mu Ψ) := by
   cases s
-  · exact lfp_mono h
-  · exact lfp_mono h
+  · exact Core.Rel.mu_mono h
+  · exact Core.Rel.mu_mono h
 
-theorem sle.gfp {s : Bool} (h : ∀ X, sle s (Φ X) (Ψ X)) : sle s (gfp Φ) (gfp Ψ) := by
+theorem sle.gfp {s : Bool} (h : ∀ X, sle s (Φ X) (Ψ X)) : sle s (Core.Rel.nu Φ) (Core.Rel.nu Ψ) := by
   cases s
-  · exact gfp_mono h
-  · exact gfp_mono h
+  · exact Core.Rel.nu_mono h
+  · exact Core.Rel.nu_mono h
 
 /-- **Polarity**: where `t.pol s k`, growing the variable `k` moves `⟦t⟧` with the sign `s`. `den_mono` and
     `den_anti` are its two signs, one induction. -/
@@ -334,15 +302,15 @@ theorem Tm.den_pol (k : Nat) : ∀ {A B : Obj} {d : Bool} (t : Tm A B d) (s : Bo
     by_cases e : j = k
     · subst e; simp only [Tm.pol, beq_self_eq_true, if_true] at hp; subst hp; exact g.1 _ _
     · rw [g.2 j e]; exact sle.refl _
-  | top V ih => intro s ρ ρ' hp g; exact sle.map1 (comp_le' (le_refl' _)) (ih s ρ ρ' hp g)
+  | top V ih => intro s ρ ρ' hp g; exact sle.map1 (comp_le' (Core.Rel.le_refl _)) (ih s ρ ρ' hp g)
   | conv R ih => intro s ρ ρ' hp g; exact sle.map1 conv_le' (ih s ρ ρ' hp g)
   | own R ih => intro s ρ ρ' hp g; exact ih s ρ ρ' hp g
   | dom R ih =>
     intro s ρ ρ' hp g
-    exact sle.map1 (fun h => inter_le' (le_refl' _) (comp_le' h (conv_le' h))) (ih s ρ ρ' hp g)
+    exact sle.map1 (fun h => inter_le' (Core.Rel.le_refl _) (comp_le' h (conv_le' h))) (ih s ρ ρ' hp g)
   | ran R ih =>
     intro s ρ ρ' hp g
-    exact sle.map1 (fun h => inter_le' (le_refl' _) (comp_le' (conv_le' h) (conv_le' (conv_le' h)))) (ih s ρ ρ' hp g)
+    exact sle.map1 (fun h => inter_le' (Core.Rel.le_refl _) (comp_le' (conv_le' h) (conv_le' (conv_le' h)))) (ih s ρ ρ' hp g)
   | comp R S ihR ihS =>
     intro s ρ ρ' hp g; simp only [Tm.pol, Bool.and_eq_true] at hp
     exact sle.map2 comp_le' (ihR s ρ ρ' hp.1 g) (ihS s ρ ρ' hp.2 g)
@@ -399,6 +367,6 @@ theorem Tm.den_anti {A' B' : Obj} {d : Bool} {t : Tm A' B' d} {k : Nat} (h : t.p
   t.den_pol k false _ _ h (Val.Grow.of_le hXY)
 
 #print axioms Tm.den_pol
-#print axioms lfp_fix
+#print axioms Core.Rel.mu_fix
 
 end LeetQ.Rel.Lang
