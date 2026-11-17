@@ -3,8 +3,8 @@
   at a byte lane as its little-endian field, and a payload that holds all its ids.
 -/
 import LeetQ.Run.Code
-import QLean.Verify.Ids
-import QLean.Verify.Encoding
+import QLean.RelPart.Kernel.Scan
+import QLean.RelPart.Verify.Encoding
 
 namespace LeetQ.Rel.Alg
 

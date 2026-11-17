@@ -4,7 +4,7 @@
   no equality. `valEq` compares everything but those cells; it is reflexive everywhere and is `=` on a value
   that holds no cell (`cellFree`).
 -/
-import QLean.Value
+import QLean.RelPart.Value
 
 namespace LeetQ.Rel
 

@@ -2,8 +2,7 @@
   `bitRowsOver` read back: bit `j` of row `g` of the answer is the `∃` (`∨`) or `∀` (`∧`) over the positions
   `k` of segment `g` of bit `j` of row `idx[k]` of the matrix. The rule `Bits.comp` and `Bits.ldiv` stand on.
 -/
-import QLean.Kernel.Reduce
-import QLean.Verify.Gather
+import QLean.RelPart.Verify.Gather
 
 namespace LeetQ.Rel.Alg
 

@@ -39,8 +39,9 @@ lean_lib LeetQ where
 lean_exe «relc-1a» where
   root := `LeetQ.Rel.Lang.TestNative
 
-/-- The C `relc-1a` prints, linked with qlean's `libqleankernel.a` and `c/rt.c` and nothing of Lean's: the static
-    library contributes only the objects the program calls, and `rt.c` the runtime symbols those reach. -/
+/-- The C `relc-1a` prints, linked with qlean's `libqleankernel.a` and `qrt.o` and nothing of Lean's: the static
+    library contributes only the objects the program calls, and `qrt.o` (qlean's `rust/build.sh rt`, from
+    `rust/relk/rt`) the runtime symbols those reach. -/
 target «rel-native-1a» pkg : System.FilePath := do
   let some q ← findPackageByName? `qlean | error "rel-native-1a: the package `qlean` is not in the workspace"
   let dir := pkg.buildDir / "native"
@@ -54,7 +55,15 @@ target «rel-native-1a» pkg : System.FilePath := do
     let out ← IO.Process.output { cmd := exe.toString, args := #["c", c.toString], env }
     unless out.exitCode == 0 do error s!"{exe} c {c}: exit {out.exitCode}: {out.stderr}"
     return c
-  let rtO ← buildO (dir / "rt.o") (← inputTextFile (q.dir / "c" / "rt.c")) #["-I", inc] #["-O2", "-fPIC"]
+  -- keyed on the crate's sources and build files, as qlean's `qrs.o`; the cargo target dir is ours, so the object's
+  -- path is known here rather than re-derived from build.sh's default
+  let rust := q.dir / "rust"
+  let cargo := dir / "cargo"
+  let src ← inputDir (rust / "relk" / "rt" / "src") (text := true) (·.extension == some "rs")
+  let cfg ← #["relk/rt/Cargo.toml", "relk/rt/Cargo.lock", "rust-toolchain.toml", "build.sh"].mapM
+    fun (f : String) => inputTextFile (rust / f)
+  let rtO ← buildFileAfterDep (cargo / "qrt.o") (cfg.foldl (fun j f => j.zipWith (fun s _ => s) f) src) fun _ =>
+    proc { cmd := "sh", args := #[(rust / "build.sh").toString, "rt"], env := #[("CARGO_TARGET_DIR", cargo.toString)] }
   let mainO ← buildO (dir / "rel-native-1a.o") cJob #["-I", inc] #["-O2"]
   let kern := q.staticLibDir / nameToStaticLib "qleankernel"
   mainO.bindM fun m => rtO.mapM fun r => do

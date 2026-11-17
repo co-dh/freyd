@@ -5,7 +5,7 @@ import LeetQ.Run.Lang.Expand
 
 The C has no plan interpreter: one line per instruction. A literal is a static Lean object with `m_rc = 0` (a
 persistent object, never counted or freed), a kernel a direct call to its C symbol, `fail` a message and exit 1.
-It is linked against qlean's `libqleankernel.a` and `c/rt.c`, not against the Lean runtime. -/
+It is linked against qlean's `libqleankernel.a` and `qrt.o` (`rust/build.sh rt`), not against the Lean runtime. -/
 
 namespace LeetQ.Rel.Lang.Plan
 

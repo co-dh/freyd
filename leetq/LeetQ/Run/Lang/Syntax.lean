@@ -1,5 +1,5 @@
 import Lean
-import QLean.Kernel.Elementwise
+import QLean.RelPart.Kernel.Elementwise
 import LeetQ.Run.CRelDef
 import LeetQ.Run.CRelArithDef
 import LeetQ.Run.CRelRelDef
