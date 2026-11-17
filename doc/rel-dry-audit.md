@@ -11,32 +11,32 @@
 
 ### 1.1 表
 
-| #  | 副本(file:line)                                              | 它重复的 source                         | 做法                                  | 行数  | 风险 |
+| #  | 副本(file:line)                                                | 它重复的 source                         | 做法                                  | 行数  | 风险 |
 |----|----------------------------------------------------------------|-----------------------------------------|---------------------------------------|-------|------|
-| 1  | `Parse.lean:150-446` 文本 grammar(`expr`…`program`)          | `Embed.lean:81-154` 的 Lean grammar     | 删;lexer helper 留下                 | ≈260  | 中   |
+| 1  | `Parse.lean:150-446` 文本 grammar(`expr`…`program`)            | `Embed.lean:81-154` 的 Lean grammar     | 删;lexer helper 留下                  | ≈260  | 中   |
 | 2  | `Embed.lean:335-365 defn`、`309-316 at(i)`                     | `Parse.lean:339-407 decl`、`240-246`    | 随 #1 只剩一份                        | ≈40   | 低   |
 | 3  | `Parse.lean:411 after`、`433 scope`、`S.known/objs/taken`      | Lean 的 `import`/`open`/`namespace`     | 做成 Lean module 的 instance          | ≈40   | 中   |
-| 4  | `Embed.lean:402-425 programOf`、`Chain`、`chainOf`、`scopeOf`  | Lean environment 里的常量               | 同 #3,按 `rel-module-design.md`      | ≈25   | 中   |
-| 5  | `Embed.lean:455-477 elabRelVariant`(`from … upto`)            | 带参数的 module(设计 §2.1)            | module 落地后删                       | ≈25   | 中   |
-| 6  | `Embed.lean:17-25 deriving ToExpr`(整个 AST)                  | 只为 #4 把 `Program` 存进常量           | 随 #4 删                              | ≈10   | 低   |
-| 7  | `Elab.lean:267-316` `fresh/zonk/occurs/unify`                  | Lean elaborator 的 unifier              | 长期:类型交给 Lean(`Calc` 已这样)  | ≈50   | 高   |
-| 8  | `Elab.lean:1006 inferSig`、`1029 mkDef`、`339-391 polarity`    | 同上(泛化、签名推断)                  | 随 #7                                 | ≈110  | 高   |
-| 9  | 每个 builtin 的类型写四遍,见 1.2                              | CRel op 的 Lean 签名                    | 一张表生成其余三份                    | ≈350  | 中   |
-| 10 | `Elab.lean:156-217 Pre` 与 `21-100 Tm` 同一 constructor 列表   | 彼此                                    | 一个 inductive,对象参数化            | ≈60   | 中   |
-| 11 | `Bits.lean:28-35 Route` + `Gen.lean:109-118,232-245`              | `Tm` 的 `comp/meet/diff/ldiv` 四个结点  | `Route` 做成 `Tm` 的一个谓词             | ≈40   | 中   |
+| 4  | `Embed.lean:402-425 programOf`、`Chain`、`chainOf`、`scopeOf`  | Lean environment 里的常量               | 同 #3,按 `rel-module-design.md`       | ≈25   | 中   |
+| 5  | `Embed.lean:455-477 elabRelVariant`(`from … upto`)             | 带参数的 module(设计 §2.1)              | module 落地后删                       | ≈25   | 中   |
+| 6  | `Embed.lean:17-25 deriving ToExpr`(整个 AST)                   | 只为 #4 把 `Program` 存进常量           | 随 #4 删                              | ≈10   | 低   |
+| 7  | `Elab.lean:267-316` `fresh/zonk/occurs/unify`                  | Lean elaborator 的 unifier              | 长期:类型交给 Lean(`Calc` 已这样)     | ≈50   | 高   |
+| 8  | `Elab.lean:1006 inferSig`、`1029 mkDef`、`339-391 polarity`    | 同上(泛化、签名推断)                    | 随 #7                                 | ≈110  | 高   |
+| 9  | 每个 builtin 的类型写四遍,见 1.2                               | CRel op 的 Lean 签名                    | 一张表生成其余三份                    | ≈350  | 中   |
+| 10 | `Elab.lean:156-217 Pre` 与 `21-100 Tm` 同一 constructor 列表   | 彼此                                    | 一个 inductive,对象参数化             | ≈60   | 中   |
+| 11 | `Bits.lean:28-35 Route` + `Gen.lean:109-118,232-245`           | `Tm` 的 `comp/meet/diff/ldiv` 四个结点  | `Route` 做成 `Tm` 的一个谓词          | ≈40   | 中   |
 | 12 | `Elab.lean:434-478 keyed`                                      | `482-563 lComp/lThen/lPair/lProd/lDom`  | 构造和识别从一张 row 表出             | ≈45   | 中   |
-| 13 | `Elab.lean:117-123 OTy.render`                                 | `Syntax.lean:186-191 OExp.render`       | 一个 render,另一个经转换调用         | 7     | 低   |
+| 13 | `Elab.lean:117-123 OTy.render`                                 | `Syntax.lean:186-191 OExp.render`       | 一个 render,另一个经转换调用          | 7     | 低   |
 | 14 | `Expand.lean:45 arrText`                                       | `Syntax.lean:99-106 Tup.render`         | 调 `Tup.render`                       | 5     | 低   |
-| 15 | `Syntax.lean:224-241 Expr.render`                              | 源文本(`FileMap` 里已有)              | 报错引用源区间,删 render             | ≈18   | 低   |
+| 15 | `Syntax.lean:224-241 Expr.render`                              | 源文本(`FileMap` 里已有)                | 报错引用源区间,删 render              | ≈18   | 低   |
 | 16 | `Calc.lean:95 prelude` 写死 `∈ ↦ ∋°`                           | `Programs/Prelude.lean` 的 `∈`          | 从 Prelude 的定义读                   | 3     | 低   |
 | 17 | `Calc.lean:231-250 rEst/rThin/rPow` + `lift`                   | `Embed.lean:31-63 relTokenTable`        | 同一个 token 冲突只修一处             | ≈20   | 中   |
-| 18 | `Expand.lean:31-39 preludeDef` 按名字 `"perm"` 分支            | `Tm`/声明本身                           | 按 constructor 判,不按字符串         | ≈9    | 低   |
-| 19 | `SudokuPC.lean`、`SudokuPC9.lean` 共有 9 个 def                | 彼此                                    | 一个 `csp` module(设计 §2.1)        | ≈35   | 低   |
+| 18 | `Expand.lean:31-39 preludeDef` 按名字 `"perm"` 分支            | `Tm`/声明本身                           | 按 constructor 判,不按字符串          | ≈9    | 低   |
+| 19 | `SudokuPC.lean`、`SudokuPC9.lean` 共有 9 个 def                | 彼此                                    | 一个 `csp` module(设计 §2.1)          | ≈35   | 低   |
 | 20 | `SudokuAC.lean` 的 `peer/AC3/s₀/s` + 9×9 `unit` 字面量         | `SudokuPC9.lean`                        | 同 #19                                | ≈20   | 低   |
 | 21 | 每个 Programs 文件 `import Lang.Embed`                         | `Programs/Prelude.lean` 已 import       | 删这一行                              | 9     | 无   |
-| 22 | `Bits.lean:258-262 orLeaf`                                     | 无使用者(原使用者 `Eval` 已删)        | 删                                    | 5     | 无   |
+| 22 | `Bits.lean:258-262 orLeaf`                                     | 无使用者(原使用者 `Eval` 已删)          | 删                                    | 5     | 无   |
 | 23 | `Syntax.lean:5`、`Bits.lean:41,227` 提到 evaluator / `ev`      | 已删的 `Lang/Eval.lean`                 | 改注释                                | 3     | 无   |
-| 24 | `Bits.lean:239-246 run`(只被 `runC` 的 check 模式用)         | `Gen` 的同一 op                         | 并进 `runC`                           | 8     | 低   |
+| 24 | `Bits.lean:239-246 run`(只被 `runC` 的 check 模式用)           | `Gen` 的同一 op                         | 并进 `runC`                           | 8     | 低   |
 
 ### 1.2 #9 的展开:一个 builtin 的知识落在哪些地方
 
@@ -105,8 +105,8 @@
 
 | 起点                         | Freyd | AOP | `Rep*` | `KernelWF` | QLean |
 |------------------------------|-------|-----|--------|------------|-------|
-| `CRelEst`(`Gen` 现在的入口) | 44    | 15  | 23     | 49         | 31    |
-| `Algebra`(run path 的最小)  | 0     | 0   | 0      | 3          | 22    |
+| `CRelEst`(`Gen` 现在的入口)  | 44    | 15  | 23     | 49         | 31    |
+| `Algebra`(run path 的最小)   | 0     | 0   | 0      | 3          | 22    |
 | `Lang/Calc.lean`             | 44    | 20  | —      | —          | —     |
 
 - run path 的最小集合:Lang 七个文件 + `Alg`/`Code`/`Core` + `CRel` 的 def + `AC3Def` + QLean。
@@ -116,14 +116,14 @@
 
 | module                 | 用到的常量                                                  | 用途        | 使用者     | cone | 做法                       |
 |------------------------|-------------------------------------------------------------|-------------|------------|------|----------------------------|
-| `Freyd.S1_10`(31 行)  | `Cat.Hom`、`comp`、`id`                                     | 类型        | 32 module  | 1    | 留                         |
-| `Freyd.S1_41`(135 行) | 无直接使用,`S2_10` import 它                               | —           | —          | 1    | 留                         |
-| `Freyd.S2_10`(1214)   | `Allegory.inter/recip/toCat/le/le_antisymm/le_trans`        | 类型 + 证明 | 19         | 3    | 留                         |
-| `Freyd.S2_20`(1532)   | `DistributiveAllegory.union/zero`、`Coproduct`、`u₁`、`u₂`  | 类型 + 证明 | 17         | 4    | 留                         |
-| `Freyd.S2_22`(2182)   | `UnionAllegory.toAllegory`、`…_isUnionAllegory`             | 证明        | 2          | ≈6   | 留                         |
-| `AOP.A6_1_RelSet`      | 94 个声明里的 18 个,见下                                   | 类型 + 证明 | 34         | 59   | 拆出只 import `S2_20` 的底 |
-| `AOP.A5_3`(511)       | `Freyd.Alg.junc`                                            | 证明        | 5          | 49   | 把 `junc` 挪到 Freyd       |
-| `AOP.A4_*`…`A8_1`      | `Calc.toTerm` 引用的记号,见下                              | spec 项     | `Calc` 2   | 64   | 留,保持隔离               |
+| `Freyd.S1_10`(31 行)   | `Cat.Hom`、`comp`、`id`                                     | 类型        | 32 module  | 1    | 留                         |
+| `Freyd.S1_41`(135 行)  | 无直接使用,`S2_10` import 它                                | —           | —          | 1    | 留                         |
+| `Freyd.S2_10`(1214)    | `Allegory.inter/recip/toCat/le/le_antisymm/le_trans`        | 类型 + 证明 | 19         | 3    | 留                         |
+| `Freyd.S2_20`(1532)    | `DistributiveAllegory.union/zero`、`Coproduct`、`u₁`、`u₂`  | 类型 + 证明 | 17         | 4    | 留                         |
+| `Freyd.S2_22`(2182)    | `UnionAllegory.toAllegory`、`…_isUnionAllegory`             | 证明        | 2          | ≈6   | 留                         |
+| `AOP.A6_1_RelSet`      | 94 个声明里的 18 个,见下                                    | 类型 + 证明 | 34         | 59   | 拆出只 import `S2_20` 的底 |
+| `AOP.A5_3`(511)        | `Freyd.Alg.junc`                                            | 证明        | 5          | 49   | 把 `junc` 挪到 Freyd       |
+| `AOP.A4_*`…`A8_1`      | `Calc.toTerm` 引用的记号,见下                               | spec 项     | `Calc` 2   | 64   | 留,保持隔离                |
 
 - `AOP.A6_1_RelSet` 用到的 18 个:`RelSet`、`carrier`、`mk`、`instCat`、`instAllegory`、
   `instDistributiveAllegory`、`comp_apply`、`inter_apply`、`recip_apply`、`union_apply`、`hom_ext`、`le_iff`、
