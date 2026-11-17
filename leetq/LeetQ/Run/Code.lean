@@ -12,13 +12,11 @@
 -/
 import LeetQ.Run.KernelWF.Gather
 import LeetQ.Run.ValEq
-import QLean.Kernel.Sort
-import QLean.Kernel.Structural
-import QLean.Kernel.Reduce
-import QLean.Kernel.Elementwise
-import QLean.Kernel.Coc
-import QLean.Verify.Grade
-import QLean.Verify.Chain
+import QLean.RelPart.Verify.Chain
+import QLean.RelPart.Verify.EwEnc
+import QLean.RelPart.Verify.Grade
+import QLean.RelPart.Verify.Ids
+import QLean.RelPart.Verify.Search
 import LeetQ.Run.KernelWF.Reduce
 
 namespace LeetQ.Rel.Alg

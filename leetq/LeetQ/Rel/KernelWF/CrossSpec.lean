@@ -7,9 +7,10 @@
 -/
 import LeetQ.Run.Alg
 import LeetQ.Rel.KernelWF.RazeSpec
-import QLean.Verify.Structural
-import QLean.Verify.Chain
-import QLean.Verify.Elementwise
+import QLean.RelPart.Verify.Chain
+import QLean.RelPart.Verify.Elementwise
+import QLean.RelPart.Verify.Gather
+import QLean.RelPart.Verify.Structural
 
 namespace LeetQ.Rel.KernelWF
 

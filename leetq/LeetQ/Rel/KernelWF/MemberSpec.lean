@@ -7,12 +7,10 @@
   A well-formed code is the hypothesis pair `w` a lane and `b` exactly `⌈n·w/8⌉` bytes.
 -/
 import LeetQ.Rel.KernelWF.Lane
-import QLean.Verify.Where
-import QLean.Verify.FindMember
-import QLean.Verify.Elementwise
-import QLean.Verify.Encoding
-import QLean.Verify.Search
-import QLean.Verify.Group
+import QLean.RelPart.Verify.Elementwise
+import QLean.RelPart.Verify.Ids
+import QLean.RelPart.Verify.Search
+import QLean.RelPart.Verify.Where
 
 namespace LeetQ.Rel.Alg
 

@@ -3,10 +3,7 @@
   that let `pick`, `longBytes` and `gens` drop their `Except`. Each hypothesis is one a
   caller holding an `Arr` already has: `x.wf`, an index `.bytes i` of `i.size / 8` longs.
 -/
-import QLean.Kernel.Structural
-import QLean.Verify.Gather
-import QLean.Verify.Raw
-import QLean.Verify.Alp
+import QLean.RelPart.Verify.SymFind
 import LeetQ.Run.KernelWF.Raze
 
 namespace LeetQ.Rel.KernelWF

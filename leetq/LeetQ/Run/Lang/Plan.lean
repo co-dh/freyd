@@ -1,5 +1,6 @@
 import LeetQ.Run.Lang.Tm
-import QLean.Db.Own
+import QLean.RelPart.Db.Own
+import QLean.RelPart.Kernel.Elementwise
 
 /-! # A program as kernel calls (`doc/rel-native-design.md` §6), stage 1a: `lit`, `call`, `fail`
 

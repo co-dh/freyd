@@ -5,8 +5,8 @@
   the Frame-of-Reference join (`concatFoR`) is left open as `hJ`.
 -/
 import LeetQ.Rel.KernelWF.RazeRowAll
-import QLean.Verify.Raw
-import QLean.Verify.AlpConcat
+import QLean.RelPart.Dep.Monadic
+import QLean.RelPart.Verify.AlpConcat
 
 namespace LeetQ.Rel.KernelWF
 

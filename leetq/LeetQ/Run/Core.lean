@@ -5,17 +5,9 @@
   `Column.get` (qlean's one-element reader over `bitsAt`/`bitAt`/`foRBits`/`symBytes`), never
   `Column.atoms`. Lists exist in proofs only (`toList`).
 -/
-import QLean.Value
-import QLean.Dep.Val
-import QLean.Dep.Monadic
-import QLean.Kernel.Sort
-import QLean.Kernel.Search
-import QLean.Kernel.Structural
-import QLean.Kernel.Elementwise
-import QLean.Kernel.Scan
-import QLean.Verify.Encoding
-import QLean.Verify.SymFind
-import QLean.Verify.Alp
+import QLean.RelPart.Dep.Monadic
+import QLean.RelPart.Verify.Alp
+import QLean.RelPart.Verify.SymFind
 
 namespace LeetQ.Rel
 

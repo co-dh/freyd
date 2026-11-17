@@ -4,9 +4,7 @@
   body answers; each declining input is a hypothesis.
 -/
 import LeetQ.Run.KernelWF.Raze
-import QLean.Kernel.Scan
-import QLean.Kernel.Search
-import QLean.Dep.Table
+import QLean.RelPart.Kernel.Sort
 
 namespace LeetQ.Rel.KernelWF
 

@@ -3,10 +3,11 @@
   below `2^63`, `sums` as the running total, and `classSizes` as the rows of each class.
 -/
 import LeetQ.Rel.KernelWF.JoinSpec
-import QLean.Verify.Chain
-import QLean.Verify.ScanOver
-import QLean.Verify.BinWin
-import QLean.Verify.Structural
+import QLean.RelPart.Verify.BinWin
+import QLean.RelPart.Verify.Chain
+import QLean.RelPart.Verify.Grade
+import QLean.RelPart.Verify.ScanOver
+import QLean.RelPart.Verify.Structural
 
 namespace LeetQ.Rel.Alg
 

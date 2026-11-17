@@ -3,16 +3,9 @@
   `Arr.mk` takes (`Enc.WF t n e`), and the `isSome` facts that make `codes` total. Gathering kernels (`gatherColumn`, `bytesOf`, `longBytes`, `gens`) are in
   `KernelWF/Gather`.
 -/
-import QLean.Kernel.Structural
-import QLean.Kernel.Sort
-import QLean.Kernel.Reduce
-import QLean.Kernel.Elementwise
-import QLean.Verify.Group
-import QLean.Verify.Raw
-import QLean.Verify.Ids
-import QLean.Verify.Alp
-import QLean.Verify.EwEnc
-import QLean.Verify.Gather
+import QLean.RelPart.Verify.Alp
+import QLean.RelPart.Verify.Gather
+import QLean.RelPart.Verify.SymFind
 import LeetQ.Run.Core
 
 -- the lane widths a `Code` may have: one home for the disjunction every `Code.w` hypothesis states (here, the

@@ -6,8 +6,9 @@
   below `lo` read back as they were (`resAt_lt`), and an appended residual adds back to its element.
 -/
 import LeetQ.Rel.KernelWF.RazeEnc
-import QLean.Verify.Alp
-import QLean.Verify.Group
+import QLean.RelPart.Kernel.Structural
+import QLean.RelPart.Verify.Alp
+import QLean.RelPart.Verify.Group
 
 namespace LeetQ.Rel.KernelWF
 

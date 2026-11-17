@@ -7,8 +7,9 @@ import LeetQ.Rel.KernelWF.CodesSpec
 import LeetQ.Rel.KernelWF.RazeSpec
 import LeetQ.Rel.KernelWF.Lane
 import LeetQ.Rel.KernelWF.ComposeKey
-import QLean.Verify.Codes
-import QLean.Verify.SymFind
+import QLean.RelPart.Verify.Gather
+import QLean.RelPart.Verify.Search
+import QLean.RelPart.Verify.SymFind
 
 namespace LeetQ.Rel.Alg
 

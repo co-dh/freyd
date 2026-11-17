@@ -10,7 +10,9 @@ import LeetQ.Rel.KernelWF.RazeSpec
 import LeetQ.Rel.ObjOrder
 import LeetQ.Rel.KernelWF.PickRow
 import LeetQ.Rel.KernelWF.CodesRec
-import QLean.Verify.Grade
+import QLean.RelPart.Dep.Monadic
+import QLean.RelPart.Verify.Grade
+import QLean.RelPart.Verify.SymFind
 
 namespace LeetQ.Rel.Alg
 

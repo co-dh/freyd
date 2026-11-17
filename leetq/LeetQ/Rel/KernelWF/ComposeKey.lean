@@ -2,10 +2,10 @@
   What `composeKey` CONTAINS: the chain it builds, read back stage by stage. First the program's stage
   count, for a build of any number of stages (qlean's `Verify.prog_one` is the build of none).
 -/
-import QLean.Verify.Chain
-import QLean.Verify.Where
-import QLean.Verify.Group
-import QLean.Verify.Ids
+import QLean.RelPart.Verify.Chain
+import QLean.RelPart.Verify.Ids
+import QLean.RelPart.Verify.Search
+import QLean.RelPart.Verify.Where
 import LeetQ.Rel.KernelWF.Lane
 import LeetQ.Rel.KernelWF.CodesSpec
 

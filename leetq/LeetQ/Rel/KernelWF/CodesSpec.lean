@@ -6,7 +6,12 @@
 -/
 import LeetQ.Rel.KernelWF.JoinSpec
 import LeetQ.Rel.KernelWF.PickSpec
-import QLean.Verify.ScanOver
+import QLean.RelPart.Dep.Monadic
+import QLean.RelPart.Verify.EwEnc
+import QLean.RelPart.Verify.Gather
+import QLean.RelPart.Verify.Ids
+import QLean.RelPart.Verify.ScanOver
+import QLean.RelPart.Verify.Search
 
 namespace LeetQ.Rel.Alg
 

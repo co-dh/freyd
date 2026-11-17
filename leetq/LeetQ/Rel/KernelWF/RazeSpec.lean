@@ -4,8 +4,8 @@
   dense payload is read off its own `w` bytes only.
 -/
 import LeetQ.Rel.KernelWF.PickSpec
-import QLean.Verify.Raw
-import QLean.Verify.AlpConcat
+import QLean.RelPart.Dep.Monadic
+import QLean.RelPart.Verify.AlpConcat
 
 namespace LeetQ.Rel.KernelWF
 

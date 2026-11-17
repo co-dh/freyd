@@ -5,9 +5,9 @@
   little-endian element at `8 … 64` (`idAt_one`, `resAt_lane`).
 -/
 import LeetQ.Rel.KernelWF.Lane
-import QLean.Verify.FindMember
-import QLean.Verify.SymFind
-import QLean.Verify.Encoding
+import QLean.RelPart.Verify.Gather
+import QLean.RelPart.Verify.Search
+import QLean.RelPart.Verify.SymFind
 
 namespace LeetQ.Rel.Alg
 
