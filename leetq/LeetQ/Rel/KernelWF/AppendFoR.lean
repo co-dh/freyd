@@ -85,6 +85,17 @@ theorem div_ceil_of_mod {B n : Nat} (hB : 0 < B) (h : n % B ≠ 0) : (n + B - 1)
     have := Nat.mod_add_div n B; rw [Nat.mul_succ]; omega
   rw [e, Nat.add_mul_div_left _ _ hB, Nat.div_eq_of_lt (by omega), Nat.zero_add]
 
+/-- `n` on a block boundary: it is the block size times its block count rounded up. -/
+theorem mul_ceil_of_mod {B n : Nat} (hB : 0 < B) (h : n % B = 0) : n = B * ((n + B - 1) / B) := by
+  have e : n + B - 1 = (B - 1) + B * (n / B) := by have := Nat.mod_add_div n B; omega
+  rw [e, Nat.add_mul_div_left _ _ hB, Nat.div_eq_of_lt (by omega), Nat.zero_add]
+  have := Nat.mod_add_div n B; omega
+
+/-- Every element below `n` lies in one of the `n` elements' blocks, rounded up. -/
+theorem div_lt_ceil {B i n : Nat} (hB : 0 < B) (hi : i < n) : i / B < (n + B - 1) / B := by
+  have : (i + B) / B ≤ (n + B - 1) / B := Nat.div_le_div_right (by omega)
+  rw [Nat.add_div_right i hB] at this; omega
+
 /-- `k` more than `n` inside `n`'s block: same block, `k` further in. -/
 theorem div_mod_add {B n k : Nat} (h : n % B + k < B) : (n + k) / B = n / B ∧ (n + k) % B = n % B + k := by
   have hB : 0 < B := by omega

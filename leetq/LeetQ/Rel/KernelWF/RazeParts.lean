@@ -72,12 +72,14 @@ theorem foldl_arr_mem {α β : Type} (f : α → Array β) : ∀ (l : List α) (
     patch list, the pack is the packs end to end, and the metadata is `foRMeta` of the parts' blocks in turn. -/
 theorem moveFoR_list {l : List ((USize × ByteArray) × ByteArray)} {M P : ByteArray}
     (h : moveFoR l.toArray = some (M, P)) :
-    (∀ q ∈ l.dropLast, q.1.1.toNat % Column.blk = 0) ∧
+    (∀ q ∈ l.dropLast, q.1.1.toNat % Column.blk q.1.2 = 0) ∧
     (∀ q ∈ l, Coc.foRStd q.1.1 q.1.2 q.2 = true ∧ q.2.size ≤ Column.blockStart q.1.2 (Column.nblk q.1.2)) ∧
     P = concatBytes (l.map (·.2)).toArray ∧
-    ∃ nul sumn, M = Coc.foRMeta nul sumn (l.foldl (fun a p => a ++ (Array.range (Column.nblk p.1.2)).map fun b =>
+    ∃ lg nul sumn, 6 ≤ lg ∧ lg ≤ 16 ∧ (∀ q ∈ l, Column.lgOf q.1.2 = lg) ∧
+      M = Coc.foRMeta lg nul sumn (l.foldl (fun a p => a ++ (Array.range (Column.nblk p.1.2)).map fun b =>
         (Column.baseAt p.1.2 b, Column.maxvAt p.1.2 b, Column.bsumAt p.1.2 b, Column.widthAt p.1.2 b)) #[]) := by
   unfold moveFoR at h
+  dsimp only at h
   split at h
   · cases h
   rename_i hc
@@ -86,20 +88,22 @@ theorem moveFoR_list {l : List ((USize × ByteArray) × ByteArray)} {M P : ByteA
   simp only [List.foldl_toArray'] at hM
   simp at hc
   refine ⟨fun ⟨⟨a, b⟩, c⟩ hq => by simpa using hc.1 a b c hq,
-    fun ⟨⟨a, b⟩, c⟩ hq => by have := hc.2 a b c hq; exact ⟨by simpa using this.1, by simpa using this.2⟩,
-    by rw [← hP, List.map_toArray], _, _, hM.symm⟩
+    fun ⟨⟨a, b⟩, c⟩ hq => by have := hc.2 a b c hq; exact ⟨by simpa using this.1.2, by simpa using this.2⟩,
+    by rw [← hP, List.map_toArray], _, _, _, ?_, ?_,
+    fun ⟨⟨a, b⟩, c⟩ hq => by simpa using (hc.2 a b c hq).1.1, hM.symm⟩
+  all_goals (cases l <;> simp [Column.lgEnc, Column.lgOf] <;> omega)
 
 /-- **The moved join** lists every part's elements in turn: part `k`'s blocks follow the blocks before it, each
     block's base, width and residuals carried over (`foRMeta_reads`). `f` is `moveFoR`'s block table of a part. -/
 theorem move_core (f : (USize × ByteArray) × ByteArray → Array (UInt64 × UInt64 × UInt64 × Nat))
     (hfs : ∀ p, (f p).size = Column.nblk p.1.2)
     (hfb : ∀ p b (hb : b < (f p).size), (f p)[b].1 = Column.baseAt p.1.2 b ∧ (f p)[b].2.2.2 = Column.widthAt p.1.2 b)
-    {l : List ((USize × ByteArray) × ByteArray)} (hz : ∀ q ∈ l.dropLast, q.1.1.toNat % Column.blk = 0)
+    {l : List ((USize × ByteArray) × ByteArray)} (hz : ∀ q ∈ l.dropLast, q.1.1.toNat % Column.blk q.1.2 = 0)
     (hs : ∀ q ∈ l, Coc.foRStd q.1.1 q.1.2 q.2 = true ∧ q.2.size ≤ Column.blockStart q.1.2 (Column.nblk q.1.2))
-    (nul : UInt64) (sumn : Nat) :
+    (lg : Nat) (hlg : 6 ≤ lg ∧ lg ≤ 16) (hl : ∀ q ∈ l, Column.lgOf q.1.2 = lg) (nul : UInt64) (sumn : Nat) :
     (List.range (l.map (·.1.1.toNat)).sum).map (fun i => Column.foRBits
-      (Coc.foRMeta nul sumn (l.foldl (fun a p => a ++ f p) #[])) (concatBytes (l.map (·.2)).toArray)
-      (Column.blockStarts (Coc.foRMeta nul sumn (l.foldl (fun a p => a ++ f p) #[]))) i) =
+      (Coc.foRMeta lg nul sumn (l.foldl (fun a p => a ++ f p) #[])) (concatBytes (l.map (·.2)).toArray)
+      (Column.blockStarts (Coc.foRMeta lg nul sumn (l.foldl (fun a p => a ++ f p) #[]))) i) =
       (l.map fun q => (List.range q.1.1.toNat).map (Column.foRBits q.1.2 q.2 (Column.blockStarts q.1.2))).flatten := by
   generalize hT : l.foldl (fun a p => a ++ f p) #[] = T
   generalize hP : concatBytes (l.map (·.2)).toArray = P
@@ -110,8 +114,10 @@ theorem move_core (f : (USize × ByteArray) × ByteArray → Array (UInt64 × UI
     · obtain ⟨b, hb, he⟩ := Array.mem_iff_getElem.1 hm
       rw [← he, (hfb p b hb).2]
       exact Nat.lt_of_le_of_lt ((Verify.foRStd_iff.1 (hs p hp).1).width b (by rw [← hfs p]; exact hb)) (by decide)
-  obtain ⟨hnb, hRb⟩ := Verify.foRMeta_reads nul sumn T hwT
-  generalize Coc.foRMeta nul sumn T = M at hnb hRb ⊢
+  obtain ⟨hnb, hlM, hRb⟩ := Verify.foRMeta_reads lg (by omega) nul sumn T hwT
+  generalize Coc.foRMeta lg nul sumn T = M at hnb hlM hRb ⊢
+  have hBM : Column.blk M = 2 ^ lg := by rw [Verify.blk_of_lgAt M (by rw [hlM]; exact hlg), hlM]
+  have hBq : ∀ q ∈ l, Column.blk q.1.2 = Column.blk M := fun q hq => by rw [hBM]; unfold Column.blk; rw [hl q hq]
   have hTB : ∀ k (hk : k < l.length) b, b < Column.nblk l[k].1.2 →
       Column.baseAt M (((l.take k).map fun p => Column.nblk p.1.2).sum + b) = Column.baseAt l[k].1.2 b ∧
       Column.widthAt M (((l.take k).map fun p => Column.nblk p.1.2).sum + b) = Column.widthAt l[k].1.2 b := by
@@ -139,12 +145,12 @@ theorem move_core (f : (USize × ByteArray) × ByteArray → Array (UInt64 × UI
         List.sum_append_nat]
       simp only [List.map_cons, List.map_nil, List.sum_cons, List.sum_nil, Nat.add_zero]
       have hk' : k < l.length := by omega
-      rw [blockStart_shift (M := M) (m := l[k].1.2) _ (Column.nblk l[k].1.2) (fun c hc => (hTB k hk' c hc).2),
+      rw [blockStart_shift (M := M) (m := l[k].1.2) _ (hBq _ (List.getElem_mem hk')).symm (Column.nblk l[k].1.2) (fun c hc => (hTB k hk' c hc).2),
         ih (by omega), he _ (List.getElem_mem hk')]
   have hBS : ∀ k (hk : k < l.length) b, b ≤ Column.nblk l[k].1.2 →
       Column.blockStart M (((l.take k).map fun p => Column.nblk p.1.2).sum + b) =
         ((l.take k).map fun q => q.2.size).sum + Column.blockStart l[k].1.2 b := fun k hk b hb => by
-    rw [blockStart_shift (M := M) (m := l[k].1.2) _ b (fun c hc => (hTB k hk c (by omega)).2), hBS0 k (by omega)]
+    rw [blockStart_shift (M := M) (m := l[k].1.2) _ (hBq _ (List.getElem_mem hk)).symm b (fun c hc => (hTB k hk c (by omega)).2), hBS0 k (by omega)]
   have hba : ∀ (B : ByteArray) (x : Nat), B[x]? = B.data[x]? := fun B x => by
     by_cases h : x < B.size
     · rw [getElem?_pos B x h, getElem?_pos B.data x h]; rfl
@@ -162,16 +168,16 @@ theorem move_core (f : (USize × ByteArray) × ByteArray → Array (UInt64 × UI
     rw [hnb, ← hT, foldl_arr_size, Array.size_empty, Nat.zero_add]
     simp only [hfs]
     rw [h1, ← hP, concatBytes_size]; simp [Function.comp_def]
-  have hfull : ∀ k (hk : k + 1 < l.length), l[k].1.1.toNat = Column.blk * Column.nblk l[k].1.2 := by
+  have hfull : ∀ k (hk : k + 1 < l.length), l[k].1.1.toNat = Column.blk M * Column.nblk l[k].1.2 := by
     intro k hk
     have hk0 : k < l.length := by omega
     have hm := List.getElem_mem (l := l.dropLast) (by simp; omega : k < l.dropLast.length)
     rw [List.getElem_dropLast] at hm
     have hz' := hz _ hm
     have w := (Verify.foRStd_iff.1 (hs _ (List.getElem_mem hk0)).1).nblk
-    rw [w]; unfold Column.blk at *; omega
+    rw [w, ← hBq _ (List.getElem_mem hk0)]; exact mul_ceil_of_mod (Verify.blk_pos _) hz'
   have hO : ∀ k, k < l.length → ((l.take k).map (·.1.1.toNat)).sum =
-      Column.blk * ((l.take k).map fun p => Column.nblk p.1.2).sum := by
+      Column.blk M * ((l.take k).map fun p => Column.nblk p.1.2).sum := by
     intro k; induction k with
     | zero => intro _; simp
     | succ k ih =>
@@ -184,26 +190,24 @@ theorem move_core (f : (USize × ByteArray) × ByteArray → Array (UInt64 × UI
   dsimp only at hi ⊢
   have hq := hs _ (List.getElem_mem hk)
   have w := Verify.foRStd_iff.1 hq.1
-  have hib : i / Column.blk < Column.nblk l[k].1.2 := by have := w.nblk; unfold Column.blk at *; omega
-  rw [hO k hk, foRBits_plain hPs, foRBits_plain hq.2]
-  have hd : (Column.blk * ((l.take k).map fun p => Column.nblk p.1.2).sum + i) / Column.blk =
-      ((l.take k).map fun p => Column.nblk p.1.2).sum + i / Column.blk := by unfold Column.blk; omega
-  have hr : (Column.blk * ((l.take k).map fun p => Column.nblk p.1.2).sum + i) % Column.blk = i % Column.blk := by
-    unfold Column.blk; omega
-  rw [hd, hr, (hTB k hk _ hib).1, (hTB k hk _ hib).2, hBS k hk _ (Nat.le_of_lt hib)]
+  have hib : i / Column.blk M < Column.nblk l[k].1.2 := by
+    rw [w.nblk, ← hBq _ (List.getElem_mem hk)]; exact div_lt_ceil (Verify.blk_pos _) hi
+  rw [hO k hk, foRBits_plain hPs, foRBits_plain hq.2, hBq _ (List.getElem_mem hk), Nat.mul_add_div (Verify.blk_pos M),
+    Nat.mul_add_mod]
+  rw [(hTB k hk _ hib).1, (hTB k hk _ hib).2, hBS k hk _ (Nat.le_of_lt hib)]
   congr 1
   apply resAt_congr; intro x hx
-  have hr := resAt_reach (w := Column.widthAt l[k].1.2 (i / Column.blk)) (Nat.mod_lt i (by unfold Column.blk; decide))
+  have hr := resAt_reach (w := Column.widthAt l[k].1.2 (i / Column.blk M)) (Verify.blk_dvd8 M) (Nat.mod_lt i (Verify.blk_pos M))
   have hle := blockStart_mono l[k].1.2 (Nat.succ_le_of_lt hib)
-  rw [blockStart_succ] at hle
+  rw [blockStart_succ, hBq _ (List.getElem_mem hk)] at hle
   rw [Nat.add_assoc, hPk k hk _ (by rw [he _ (List.getElem_mem hk)]; omega)]
 
 theorem move_list {l : List ((USize × ByteArray) × ByteArray)} {M P : ByteArray}
     (h : moveFoR l.toArray = some (M, P)) :
     (List.range (l.map (·.1.1.toNat)).sum).map (fun i => Column.foRBits M P (Column.blockStarts M) i) =
       (l.map fun q => (List.range q.1.1.toNat).map (Column.foRBits q.1.2 q.2 (Column.blockStarts q.1.2))).flatten := by
-  obtain ⟨hz, hs, rfl, nul, sumn, rfl⟩ := moveFoR_list h
-  exact move_core _ (fun p => by simp) (fun p b hb => by simp) hz hs nul sumn
+  obtain ⟨hz, hs, rfl, lg, nul, sumn, h6, h16, hl, rfl⟩ := moveFoR_list h
+  exact move_core _ (fun p => by simp) (fun p b hb => by simp) hz hs lg ⟨h6, h16⟩ hl nul sumn
 
 /-- The `w`-byte elements of the parts' decodes end to end are each part's elements cut to `8w` bits. -/
 theorem elemsW_decodes {w : Nat} (hw0 : 0 < w) (hw8 : w ≤ 8) (l : List ((USize × ByteArray) × ByteArray)) :
@@ -273,7 +277,8 @@ theorem reencode_list {w : Nat} (hw1 : 1 < w) (hw8 : w ≤ 8) (l : List ((USize 
     simpa [Verify.elemsW, List.length_flatten, Function.comp_def] using congrArg List.length hE
   have hR : ∀ i < X.size / w, (Column.foRBits M P (Column.blockStarts M) i).toNat % 2 ^ (8 * w) =
       (Column.bitsAt X (i * w) w).toNat := by
-    intro i hi; have := Verify.foRBits_encode_bits w hw1 hw8 X i hi; simp only [hX] at this; exact this
+    intro i hi; have := Verify.foRBits_encode_bits Column.lgEnc (by decide) w hw1 hw8 X i hi
+    rw [show Coc.encodeAt Column.lgEnc w.toUSize X = (M, P) from hX] at this; exact this
   have h2 : (List.range (X.size / w)).map (fun i => (Column.foRBits M P (Column.blockStarts M) i).toNat % 2 ^ (8 * w)) =
       (Verify.elemsW w X).map (·.toNat) := by
     rw [Verify.elemsW, List.map_map]
