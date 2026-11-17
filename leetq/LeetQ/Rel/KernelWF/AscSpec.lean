@@ -11,6 +11,7 @@ import LeetQ.Rel.ObjOrder
 import LeetQ.Rel.KernelWF.PickRow
 import LeetQ.Rel.KernelWF.CodesRec
 import QLean.Verify.Grade
+import QLean.RelPart.Verify.FindMember
 
 namespace LeetQ.Rel.Alg
 
@@ -401,9 +402,23 @@ theorem idxOf_le_iff {dict : ByteArray} {dof : Array Nat}
     subst hab
     exact Nat.lt_irrefl _ hlt
 
-/-- **`gradeIds` sorts an `.enum` column by `Obj.lt`**, stable. -/
+/-- Over numbers below `2^64`, `Nat.toUInt64` keeps every first position. -/
+private theorem idxOf_map_toUInt64 : ∀ (L : List Nat) {k : Nat}, k < 2 ^ 64 → (∀ a ∈ L, a < 2 ^ 64) →
+    (L.map Nat.toUInt64).idxOf k.toUInt64 = L.idxOf k
+  | [], _, _, _ => rfl
+  | a :: L, k, hk, hL => by
+    have ih := idxOf_map_toUInt64 L hk fun b h => hL b (List.mem_cons_of_mem _ h)
+    have ha := hL a (by simp)
+    by_cases h : a = k
+    · subst h; simp [List.idxOf_cons]
+    · have h' : (UInt64.ofNat a == UInt64.ofNat k) = false := beq_false_of_ne fun e => h (by
+        have := congrArg UInt64.toNat e; simp at this; omega)
+      simp [List.idxOf_cons, h', beq_false_of_ne h, ih]
+
+/-- **`gradeIds` sorts an `.enum` column by `Obj.lt`**, stable, on a dictionary whose ranks fit the `i32` key. -/
 theorem grade_ids {n : USize} (x : Arr .symbol n) {dict : ByteArray} {dof : Array Nat} {ids' : ByteArray}
-    (he : x.enc = .enum dict dof ids') : ∃ g, gradeColumn .symbol false n x.enc = some (.bytes g) ∧
+    (he : x.enc = .enum dict dof ids') (hd : dof.size - 1 ≤ 2 ^ 31) :
+    ∃ g, gradeColumn .symbol false n x.enc = some (.bytes g) ∧
       (ids g).Perm (List.range n.toNat) ∧ (ids g).Pairwise (ascBy (.atom .symbol) (n := n) x (· < ·)) := by
   have hwf := x.wf; rw [he] at hwf
   obtain ⟨-, -, hin, hnd, hv⟩ := hwf
@@ -411,21 +426,73 @@ theorem grade_ids {n : USize} (x : Arr .symbol n) {dict : ByteArray} {dof : Arra
   let ord := (List.range (dof.size - 1)).mergeSort fun a b =>
     Column.symCmp (Column.symKey dict dof a) (Column.symKey dict dof b) != .gt
   let rank (i : Nat) : Nat := ord.idxOf (Column.idAt ids' w i)
+  let G := Order.gradeSyms false dict dof
   have hk : ∀ i (hi : i < n.toNat), (Obj.atom .symbol).key (x.get ⟨i, hi⟩) =
       (Column.symKey dict dof (Column.idAt ids' w i)).data.toList.map (·.toNat + 1) ++ [0] := fun i hi =>
     key_symAt x hi (hv _ (hin i hi)) (by rw [he]; simp only [Enc.get, if_pos hi]; rfl)
-  obtain ⟨hp, hsrt⟩ := range_mergeSort (le := fun i j => decide (rank i ≤ rank j))
-    (fun _ _ _ h1 h2 => by simp only [decide_eq_true_eq] at *; omega)
-    (fun a b => by simp only [Bool.or_eq_true, decide_eq_true_eq]; omega) n.toNat
-  have hm : ∀ i ∈ (List.range n.toNat).mergeSort (fun i j => decide (rank i ≤ rank j)), i < 2 ^ 64 :=
-    fun i hi => Nat.lt_trans (List.mem_range.1 (hp.mem_iff.1 hi)) (usize_lt n)
+  obtain ⟨hpo, -⟩ := range_mergeSort
+    (le := fun a b => Column.symCmp (Column.symKey dict dof a) (Column.symKey dict dof b) != .gt)
+    (fun _ _ _ => symLe_trans) (fun _ _ => symLe_total _ _) (dof.size - 1)
+  have hlt : ∀ a ∈ ord, a < dof.size - 1 := fun a h => List.mem_range.1 (hpo.mem_iff.1 h)
+  -- `G` holds `ord` as longs, so the search in `gradeIds` reads `ord` back
+  have hG : ids G = ord := by
+    simp only [G, Order.gradeSyms, Bool.false_eq_true, ↓reduceIte]
+    exact ids_indices _ fun a h => by have := hlt a h; omega
+  have hlen : ord.length = dof.size - 1 := by rw [hpo.length_eq, List.length_range]
+  have hGs : G.size / 8 = dof.size - 1 := by
+    have := congrArg List.length hG; rwa [ids, List.length_map, List.length_range, hlen] at this
+  have hmap : (List.range (dof.size - 1)).map (fun j => Column.bitsAt G (j * 8) 8) = ord.map Nat.toUInt64 := by
+    rw [← hG, ids, hGs, List.map_map]; exact List.map_congr_left fun j _ => by simp
+  have hrank : ∀ i < n.toNat, rank i < dof.size - 1 ∧ ((List.range (dof.size - 1)).find? fun j =>
+      Column.bitsAt G (j * 8) 8 == (Column.idAt ids' w i).toUInt64).getD 0 = rank i := by
+    intro i hi
+    have hmem : Column.idAt ids' w i ∈ ord := hpo.mem_iff.2 (List.mem_range.2 (hin i hi))
+    have hr : rank i < dof.size - 1 := hlen ▸ List.idxOf_lt_length_of_mem hmem
+    have e := find?_range_getD (fun j => Column.bitsAt G (j * 8) 8) (Column.idAt ids' w i).toUInt64 (dof.size - 1)
+    rw [hmap, idxOf_map_toUInt64 ord (Nat.lt_of_lt_of_le (hin i hi) (by omega))
+      fun a h => Nat.lt_of_lt_of_le (hlt a h) (by omega)] at e
+    refine ⟨hr, ?_⟩
+    cases hF : (List.range (dof.size - 1)).find? fun j =>
+        Column.bitsAt G (j * 8) 8 == (Column.idAt ids' w i).toUInt64 <;>
+      simp only [hF, Option.getD_none, Option.getD_some] at e ⊢
+    · exact absurd (show rank i = dof.size - 1 from e.symm) (Nat.ne_of_lt hr)
+    · exact e
+  -- the `i32` payload `gradeIds` grades: element `i`'s rank, read back below `2^31`
+  let r (i : Nat) : UInt64 := (((List.range (dof.size - 1)).find? fun j =>
+    Column.bitsAt G (j * 8) 8 == (Column.idAt ids' w i).toUInt64).getD 0).toUInt64
+  let B := (List.range n.toNat).foldl (fun acc i => Column.pushBits acc (r i) 4) ByteArray.empty
+  have hB : Order.gradeIds false n dict dof ids' = Order.grade .i32 false n B := rfl
+  obtain ⟨hBs, -, hBb⟩ := foldl_pushBits r 4 (by decide) (List.range n.toNat) ByteArray.empty
+  have hkey : ∀ i < n.toNat, (Order.keyAt .i32 B i).toNat = rank i + 2 ^ 31 := by
+    intro i hi
+    obtain ⟨hr, hf⟩ := hrank i hi
+    have hb := hBb i (by simpa using hi)
+    rw [show ByteArray.empty.size + 4 * i = i * 4 by simp [Nat.mul_comm], List.getElem_range] at hb
+    have hv : (UInt64.ofNat ((r i).toNat % 2 ^ (8 * 4))).toNat = rank i := by
+      simp only [r, hf]; simp; omega
+    show (Column.bitsAt B (i * 4) 4 ^^^ 0x80000000).toNat = _
+    rw [hb, UInt64.toNat_xor, hv, show (0x80000000 : UInt64).toNat = 2 ^ 31 from rfl,
+      xor_top 31 _ (by omega), if_pos (by omega)]
+  have hle : ∀ i j, i < n.toNat → j < n.toNat →
+      (keyOrd false (Order.keyAt .i32 B i) (Order.keyAt .i32 B j) ↔ rank i ≤ rank j) := fun i j hi hj => by
+    simp only [keyOrd, Bool.false_eq_true, ↓reduceIte, UInt64.le_iff_toNat_le, hkey i hi, hkey j hj]; omega
+  obtain ⟨hp, hsrt⟩ := grade_spec .i32 false n B
+  have hav : min n.toNat (Scan.Kind.avail .i32 B) = n.toNat := by
+    show min n.toNat (B.size / 4) = n.toNat
+    rw [hBs]; simp
+  rw [hav] at hp
+  have hm : ∀ {i}, i ∈ ids (Order.grade .i32 false n B) → i < n.toNat := fun h => List.mem_range.1 (hp.mem_iff.1 h)
   refine ⟨_, by rw [he]; rfl, ?_⟩
-  simp only [Order.gradeIds, Bool.false_eq_true, ↓reduceIte]
-  rw [ids_indices _ hm]
-  refine ⟨hp, ascBy_of_le x _ (fun i j hi hj => ?_) hsrt⟩
-  rw [decide_eq_true_iff, idxOf_le_iff hnd (hin i hi) (hin j hj), symCmp_ne_gt]
-  show ¬ _ < _ ↔ ¬ (Obj.atom .symbol).key _ < (Obj.atom .symbol).key _
-  rw [hk j hj, hk i hi]
+  rw [hB]
+  refine ⟨hp, ascBy_of_le x (fun i j => decide (rank i ≤ rank j)) (fun i j hi hj => ?_)
+    (hsrt.imp_of_mem fun hi hj h => ?_)⟩
+  · rw [decide_eq_true_iff, idxOf_le_iff hnd (hin i hi) (hin j hj), symCmp_ne_gt]
+    show ¬ _ < _ ↔ ¬ (Obj.atom .symbol).key _ < (Obj.atom .symbol).key _
+    rw [hk j hj, hk i hi]
+  · obtain ⟨h1, h2⟩ := h
+    rw [hle _ _ (hm hi) (hm hj)] at h1
+    rw [hle _ _ (hm hj) (hm hi)] at h2
+    exact ⟨decide_eq_true h1, fun h' => h2 (of_decide_eq_true h')⟩
 
 /-- **The symbol sorts stably by `Obj.lt`**, on both of its encodings. -/
 theorem sortsAsc_symbol : SortsAsc (.atom .symbol) := sortsAsc_atom .symbol fun x => by
