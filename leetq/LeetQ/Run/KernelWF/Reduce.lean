@@ -56,9 +56,7 @@ private theorem min_avail {k : Scan.Kind} (hk : k ≠ .bit) {n : Nat} {b : ByteA
 
 theorem gradeIds_size (desc : Bool) (n : USize) (dict : ByteArray) (dof : Array Nat) (ids : ByteArray) :
     (gradeIds desc n dict dof ids).size = n.toNat * 8 := by
-  simp only [gradeIds, grade_size]
-  rw [min_avail (by decide)]
-  rw [foldl_size ByteArray.size _ 4 (fun _ _ => Column.pushBits_size ..)]; simp [Scan.Kind.width]
+  simp [gradeIds, indices_size]
 
 /-- The decoded Frame-of-Reference column `gradeFoR`/`ranksFoR` read holds all `n` elements. -/
 private theorem min_avail_decode {k : Scan.Kind} (hk : k ≠ .bit) {n : USize}
