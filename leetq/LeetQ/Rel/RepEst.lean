@@ -41,7 +41,7 @@ theorem rep_pairsIn {B : Obj} (Q : Rel B B) (D : Rel (.prod B B) (.prod B B))
   have e := rep_comp _ _ (codes_faithful_wf _ _ hf).1 h1 h2 h3 h4
   intro p p'
   rw [show pairsIn Q D = D ≫ idU (t := .prod B B) (m := Rel.n Q) (Rel.key Q, Rel.val Q) from rfl, e,
-    Freyd.Alg.RelSet.comp_apply]
+    Core.Rel.comp_apply]
   constructor
   · rintro ⟨w, hw, hu⟩
     obtain ⟨rfl, i, hi⟩ := (idU_holds _ w p').1 hu
@@ -66,7 +66,7 @@ theorem rep_swapIn {B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B
     rw [hs, rep_pair _ _ (codes_faithful_wf _ _ hpf).1 p1 p2 p3 p4 p5]
     exact and_congr (outr_holds D x u) (outl_holds D x v)
   have eM : ∀ x w, rep M x w ↔ ∃ m, rep s x m ∧ rep (q E) m w := fun x w => by
-    rw [hM, rep_comp _ _ (codes_faithful_wf _ _ hcf).1 c1 c2 c3 c4, Freyd.Alg.RelSet.comp_apply]
+    rw [hM, rep_comp _ _ (codes_faithful_wf _ _ hcf).1 c1 c2 c3 c4, Core.Rel.comp_apply]
   intro p p'
   rw [show swapIn q D = dom M by rw [hM, hE, hs]; rfl, rep_dom_corefl M (one_ok _ hdf) (hdp)]
   show (p = p' ∧ ∃ w, rep M p w) ↔ _
@@ -112,7 +112,7 @@ theorem rep_estOn {A B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B 
   have eZ : ∀ x x', rep Z x x' ↔ rep Y x x' ∧ ¬ rep N x x' := fun x x' => by
     rw [hZ]; exact rep_diff Y N z1 z3 z4 x x'
   have eM : ∀ a b, rep M a b ↔ ∃ x, rep P a x ∧ ∃ z, rep Z x (b, z) := fun a b => by
-    rw [hM, rep_comp _ _ (codes_faithful_wf _ _ hMf).1 m1 m2 m3 m4, Freyd.Alg.RelSet.comp_apply]
+    rw [hM, rep_comp _ _ (codes_faithful_wf _ _ hMf).1 m1 m2 m3 m4, Core.Rel.comp_apply]
     exact exists_congr fun x => and_congr Iff.rfl (outl_holds Z x b)
   have eE : ∀ a b, rep (estOn q G) a b ↔ rep G a b ∧ ¬ rep M a b := fun a b => by
     rw [show estOn q G = G \ M by rw [hM, hZ, hY, hN, hW, hV, hD, hP]; rfl]
@@ -188,7 +188,7 @@ theorem rep_thinOn {A B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B
   have eY : ∀ x x', rep Y x x' ↔ rep (q D) x x' ∧ ¬ rep S x x' := fun x x' => by
     rw [hY]; exact rep_diff (q D) S y1 y3 y4 x x'
   have eM : ∀ a c, rep M a c ↔ ∃ x, rep P a x ∧ ∃ y, rep Y x (y, c) := fun a c => by
-    rw [hM, rep_comp _ _ (codes_faithful_wf _ _ hMf).1 m1 m2 m3 m4, Freyd.Alg.RelSet.comp_apply]
+    rw [hM, rep_comp _ _ (codes_faithful_wf _ _ hMf).1 m1 m2 m3 m4, Core.Rel.comp_apply]
     exact exists_congr fun x => and_congr Iff.rfl (outr_holds Y x c)
   have eE : ∀ a c, rep (thinOn q G) a c ↔ rep G a c ∧ ¬ rep M a c := fun a c => by
     rw [show thinOn q G = G \ M by rw [hM, hY, hS, hD, hP]; rfl]

@@ -7,7 +7,7 @@ import LeetQ.Rel.KernelWF.CodesAll
 namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
-open Freyd Freyd.Alg Freyd.Alg.RelSet
+open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 variable {A B : Obj}
 
@@ -50,8 +50,8 @@ theorem vals_member (R : Rel A B) (T : Rel B B) (hc : codesOK(avc(B, R, T), avp(
     Hypotheses: the joint value codes faithful and well formed (`hc`), `R`'s columns picking back at the kept rows. -/
 theorem rep_antiJoin (R : Rel A B) (T : Rel B B) (hc : codesOK(avc(B, R, T), avp(B, R, T)))
     (hk : Vals.PickFits A R.key (List.range R.n.toNat)) (hv : Vals.PickFits B R.val (List.range R.n.toNat)) :
-    rep (antiJoin R T) = rep R ≫ corefl (A := (⟨B.El⟩ : RelSet.{0})) fun b => ¬ ∃ y, rep T y b :=
-  hom_ext fun a b => by
+    rep (antiJoin R T) = rep R ≫ corefl (α := B.El) fun b => ¬ ∃ y, rep T y b :=
+  Core.Rel.ext fun a b => by
     obtain ⟨hw0, hn0, hs0, -⟩ := hc.2 (k := 0) (by decide)
     obtain ⟨hw1, -, hs1, -⟩ := hc.2 (k := 1) (by decide)
     have hI := (anti_ids _ _ hw0 hw1 hs0 hs1).1
@@ -95,7 +95,7 @@ end OpsN
 open OpsN
 
 /-- `U? ⊑ dom S`, both coreflexives: every element `U` lists has an image under `S`. -/
-theorem corefl_le_dom {X Y : RelSet.{0}} (P : X.carrier → Prop) (S : X ⟶ Y) :
+theorem corefl_le_dom {X Y : Type} (P : X → Prop) (S : Core.Rel X Y) :
     corefl P ⊑ corefl (fun a => ∃ b, S a b) ↔ ∀ a, P a → ∃ b, S a b := by
   rw [le_iff]
   exact ⟨fun h a ha => (h a a ⟨rfl, ha⟩).2, fun h a b ⟨e, ha⟩ => ⟨e, h a ha⟩⟩

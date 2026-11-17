@@ -24,7 +24,8 @@ namespace LeetQ.Rel
 
 namespace Rep
 
-open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF Freyd Freyd.Alg Freyd.Alg.RelSet
+open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
+open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 open OpsN FoldN
 /-- **A round's bit**: its step's, `nubC`'s on the step's relation, `antiJoinC`'s on the pending rows, `unionC`'s on
     the leftovers, at the round's element `el`. -/
@@ -161,7 +162,7 @@ theorem rep_foldOnC {E V : Obj} {m n : USize} (e : Vals V m)
       simp only [hstep, false_and, or_false]
       refine (step_rep_of (elK i) _ (fun D => (SC D).1) (rep_pairC _ _ hp) (rep_compC _ _ hc) r v).trans ?_
       -- the pair a row meets is in the round's `D i`: `ranC`'s and `pairC`'s bits read it back
-      have hDi : rep (D i) = corefl (A := (⟨(Obj.prod E V).El⟩ : RelSet.{0}))
+      have hDi : rep (D i) = corefl (α := (Obj.prod E V).El)
           fun b => ∃ a, rep (pairC (elK i) (f^[i] (pend₀, Alg.zero, 0)).1).1 a b := by
         rw [hD i, show ran (pair (elK i) (f^[i] (pend₀, Alg.zero, 0)).1) = (ranC (pairC (elK i)
           (f^[i] (pend₀, Alg.zero, 0)).1).1).1 from rfl, (rep_ranC _ hd).trans (dom_corefl _)]
@@ -381,7 +382,7 @@ theorem rep_permC {B : Obj} {n : USize} (X : Vals (.arr B) n)
       (fun t a b => Iff.of_eq (congrFun (congrFun (rep_pairC _ _ hW) t) (a, b))) (rep_consC _ hCn)
       (fun t xs ys => Iff.of_eq (congrFun (congrFun (rep_pairC _ _ hV) t) (xs, ys))) (rep_catC _ hCt)
       (fun r v => Iff.of_eq (congrFun (congrFun (rep_compC _ _ hR) r) v)) r v
-    rw [rep_compC _ _ hU, Freyd.Alg.RelSet.comp_apply]
+    rw [rep_compC _ _ hU, Core.Rel.comp_apply]
     refine ⟨fun ⟨u, hu, hx⟩ => ⟨u, hu, ((rep_uncatC _ hun u ys zs).1 hx).2⟩,
       fun ⟨u, hu, e⟩ => ⟨u, hu, (rep_uncatC _ hun u ys zs).2 ⟨?_, e⟩⟩⟩
     -- `u` is a list `pend` holds, so a row of `ran pend`
@@ -419,7 +420,7 @@ theorem rep_subseqC {B : Obj} {n : USize} (X : Vals (.arr B) n)
 theorem thinBodyC_rep {B : Obj}
     (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B) × Bool) (le : B.El → B.El → Bool)
     (hq : ∀ (D : Rel (.prod B B) (.prod B B)) (S : (Obj.prod B B).El → Prop),
-      rep D = corefl (A := (⟨(Obj.prod B B).El⟩ : RelSet.{0})) S → (q D).2 = true →
+      rep D = corefl (α := (Obj.prod B B).El) S → (q D).2 = true →
       ∀ a b, S (a, b) → ((∃ c, rep (q D).1 (a, b) c) ↔ le a b = true))
     (D : Rel (.prod B (.arr B)) (.prod B (.arr B))) (hD : ∀ s s', rep D s s' → s = s')
     (hb : (thinBodyC q D).2 = true) :
@@ -432,8 +433,8 @@ theorem thinBodyC_rep {B : Obj}
   -- `swapInC`'s bit, its pieces' bits
   simp only [swapInC, okbit] at hsw
   obtain ⟨⟨⟨⟨hss, hrs⟩, hG2⟩, hq2⟩, hsw⟩ := hsw
-  have eD : rep D = corefl (A := (⟨(Obj.prod B (.arr B)).El⟩ : RelSet.{0})) fun s => rep D s s :=
-    hom_ext fun s s' => ⟨fun h => ⟨hD s s' h, by obtain rfl := hD s s' h; exact h⟩, fun ⟨e, h⟩ => e ▸ h⟩
+  have eD : rep D = corefl (α := (Obj.prod B (.arr B)).El) fun s => rep D s s :=
+    Core.Rel.ext fun s s' => ⟨fun h => ⟨hD s s' h, by obtain rfl := hD s s' h; exact h⟩, fun ⟨e, h⟩ => e ▸ h⟩
   have eab := (rep_ranC _ hrab).trans (dom_corefl _); have ers := (rep_ranC _ hrs).trans (dom_corefl _)
   exact thin_body_set le D _ eD _ rfl _ rfl _ (rep_unconsC _ hun) (rep_compC _ _ hu) _ (rep_pairC _ _ hab)
     _ eab _ (fun a b h => hq _ _ eab hG1 a b (by rw [eab] at h; exact h.2)) _ (rep_compC _ _ hq1)
@@ -467,7 +468,7 @@ def thinLDen {B : Obj} (le : B.El → B.El → Bool) (xs w : List B.El) : Prop :
 theorem rep_thinLOnC {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B) × Bool)
     (le : B.El → B.El → Bool) (X : Vals (.arr B) n)
     (hq : ∀ (D : Rel (.prod B B) (.prod B B)) (S : (Obj.prod B B).El → Prop),
-      rep D = corefl (A := (⟨(Obj.prod B B).El⟩ : RelSet.{0})) S → (q D).2 = true →
+      rep D = corefl (α := (Obj.prod B B).El) S → (q D).2 = true →
       ∀ a b, S (a, b) → ((∃ c, rep (q D).1 (a, b) c) ↔ le a b = true))
     (hb : (thinLOnC q X).2 = true) :
     ∀ (xs : List B.El) w, rep (thinLOnC q X).1 xs w ↔ (∃ i, X.row i = xs) ∧ thinLDen le xs w :=
@@ -499,7 +500,8 @@ end Rep
 
 namespace CRel
 
-open QLean QLean.Kernel LeetQ.Rel.Alg Freyd Freyd.Alg Freyd.Alg.RelSet LeetQ.Rel.Rep FoldN
+open QLean QLean.Kernel LeetQ.Rel.Alg LeetQ.Rel.Rep FoldN
+open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 /-- **`CRel.foldBy` read back under its bit**: `rep_foldByC`. -/
 theorem rep_foldBy {E V : Obj} {m n : USize} (e : Vals V m) (X : Vals (.arr E) n)
@@ -601,7 +603,7 @@ theorem rep_subseq {B : Obj} {n : USize} (X : Vals (.arr B) n)
 theorem rep_thinLOn {B : Obj} {n : USize} (q : CRel (.prod B B) (.prod B B) → CRel (.prod B B) (.prod B B))
     (le : B.El → B.El → Bool) (X : Vals (.arr B) n)
     (hq : ∀ (D : Rel (.prod B B) (.prod B B)) (S : (Obj.prod B B).El → Prop),
-      rep D = corefl (A := (⟨(Obj.prod B B).El⟩ : RelSet.{0})) S → (q ⟨D, true⟩).ok = true →
+      rep D = corefl (α := (Obj.prod B B).El) S → (q ⟨D, true⟩).ok = true →
       ∀ a b, S (a, b) → ((∃ c, rep (q ⟨D, true⟩).rel (a, b) c) ↔ le a b = true))
     (hb : (thinLOn q X).ok = true) :
     ∀ (xs : List B.El) w, rep (thinLOn q X).rel xs w ↔ (∃ i, X.row i = xs) ∧ thinLDen le xs w :=

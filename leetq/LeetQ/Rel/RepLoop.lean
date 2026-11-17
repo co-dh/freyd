@@ -154,7 +154,7 @@ theorem loopOn_rounds {K X Y : Obj} (F : Rel (.prod X Y) (.prod X Y) → Rel (.p
 
 section Round
 
-open Freyd Freyd.Alg Freyd.Alg.RelSet
+open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 /-- **One round of `loopOn`, read back from its primitives' read-backs**: the new states `T.nub` are the states
     `(c, y :: ys)` stepped to `(c', ys)` by `G = F(ran p)`, and the new `out ∪ O` adds the values of the states
@@ -166,8 +166,8 @@ theorem loop_round_set {K X Y : Obj} (out : Rel K X) (St : Rel K (.prod X (.arr 
     (p : Rel (.prod X (.arr Y)) (.prod X Y)) (G : Rel (.prod X Y) X) (Q : Rel (.prod X (.arr Y)) X)
     (R : Rel (.prod X (.arr Y)) (.prod X (.arr Y))) (T : Rel K (.prod X (.arr Y)))
     (A : Rel (.prod X (.arr Y)) (.prod X (.arr Y))) (O : Rel K X)
-    (hD : rep D = corefl (A := (⟨(Obj.prod X (.arr Y)).El⟩ : RelSet.{0})) fun s => ∃ k, rep St k s)
-    (hW : rep (ran (outr D)) = corefl (A := (⟨(Obj.arr Y).El⟩ : RelSet.{0})) fun ys => ∃ s, rep (outr D) s ys)
+    (hD : rep D = corefl (α := (Obj.prod X (.arr Y)).El) fun s => ∃ k, rep St k s)
+    (hW : rep (ran (outr D)) = corefl (α := (Obj.arr Y).El) fun ys => ∃ s, rep (outr D) s ys)
     (hUn : ∀ (xs : List Y.El) b bs, rep (uncons (ran (outr D)).val) xs (b, bs) ↔
       (∃ j, (ran (outr D)).val.row j = xs) ∧ xs = b :: bs)
     (hu : rep u = rep (outr D) ≫ rep (uncons (ran (outr D)).val))
@@ -175,8 +175,8 @@ theorem loop_round_set {K X Y : Obj} (out : Rel K X) (St : Rel K (.prod X (.arr 
     (Gr : X.El × Y.El → X.El → Prop) (hG : ∀ cy c', (∃ s, rep p s cy) → (rep G cy c' ↔ Gr cy c'))
     (hQ : rep Q = rep p ≫ rep G)
     (hR : rep R = rpair (rep Q) (rep (outr u))) (hT : rep T = rep St ≫ rep R) (hN : rep (Rel.nub T) = rep T)
-    (hdu : rep (dom u) = corefl (A := (⟨(Obj.prod X (.arr Y)).El⟩ : RelSet.{0})) fun s => ∃ b, rep u s b)
-    (hA : rep A = rep D ≫ corefl (A := (⟨(Obj.prod X (.arr Y)).El⟩ : RelSet.{0})) fun s => ¬ ∃ y, rep (dom u) y s)
+    (hdu : rep (dom u) = corefl (α := (Obj.prod X (.arr Y)).El) fun s => ∃ b, rep u s b)
+    (hA : rep A = rep D ≫ corefl (α := (Obj.prod X (.arr Y)).El) fun s => ¬ ∃ y, rep (dom u) y s)
     (hO : rep O = rep St ≫ rep (outl A)) (hU : rep (out ∪ O) = rep out ∪ rep O) :
     (∀ k (c' : X.El) (ys : List Y.El), rep (Rel.nub T) k (c', ys) ↔
       ∃ c y, rep St k (c, y :: ys) ∧ Gr (c, y) c') ∧
@@ -317,7 +317,7 @@ end Prim
 
 open Prim
 
-open Freyd Freyd.Alg Freyd.Alg.RelSet
+open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 set_option hygiene false in
 /-- `P`'s rows are pairwise distinct: two rows holding one pair are one row (`nub_rows_inj`'s conclusion). -/
@@ -454,16 +454,16 @@ theorem rep_fixOn {A B : Obj} (n : Nat) (φ : Rel A B → Rel A B) (X₀ : Rel A
       have heq : rep (g^[i] X₀.nub) = rep (g^[i + 1] X₀.nub) := by
         rcases hch with hh | hh
         · have hl := hup i (Nat.le_refl _) hh
-          exact Freyd.Alg.le_antisymm hl ((rows_le_of_inj _ _ (hu i (by omega)) hl).2 (by omega))
+          exact Core.Rel.le_antisymm hl ((rows_le_of_inj _ _ (hu i (by omega)) hl).2 (by omega))
         · have hl := hdn i (Nat.le_refl _) hh
-          exact (Freyd.Alg.le_antisymm hl ((rows_le_of_inj _ _ (hu (i + 1) (Nat.le_refl _)) hl).2 (by omega))).symm
+          exact (Core.Rel.le_antisymm hl ((rows_le_of_inj _ _ (hu (i + 1) (Nat.le_refl _)) hl).2 (by omega))).symm
       show Φ (rep (g^[i + 1] X₀.nub)) = rep (g^[i + 1] X₀.nub)
       rw [← heq]; exact (hg i (by omega)).symm.trans heq.symm
   · -- every iterate from below a pre-fixed point stays below it
     have hY' : ∀ i x, x ⊑ Y → Φ^[i] x ⊑ Y := fun i => by
       induction i with
       | zero => exact fun _ hx => hx
-      | succ i ih => exact fun x hx => Freyd.Alg.le_trans (hm _ _ (ih x hx)) hY
+      | succ i ih => exact fun x hx => Core.Rel.le_trans (hm _ _ (ih x hx)) hY
     rw [hr j (Nat.le_refl _)]; exact hY' j _ h0
   · -- run out of fuel, the count moved by one each round and stayed within `U`'s rows
     refine Nat.lt_of_le_of_ne hjn fun hj => ?_

@@ -18,7 +18,8 @@ namespace LeetQ.Rel
 
 namespace Rep
 
-open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF Freyd Freyd.Alg Freyd.Alg.RelSet
+open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
+open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 open OpsN
 
 variable {A B C D E : Obj}
@@ -26,7 +27,7 @@ variable {A B C D E : Obj}
 /-- **`rep (distinctCorefl t x) = x?` under `distinctCoreflC`'s bit**: the code's bit gives `hK` (`oneOK_of_codesC`),
     the `fitsN` bit `hp`. -/
 theorem rep_distinctCoreflC (t : Obj) {n : USize} (x : Vals t n) (hb : (distinctCoreflC t x).2 = true) :
-    rep (distinctCoreflC t x).1 = corefl (A := (⟨t.El⟩ : RelSet.{0})) fun a => ∃ i, x.row i = a := by
+    rep (distinctCoreflC t x).1 = corefl (α := t.El) fun a => ∃ i, x.row i = a := by
   simp only [distinctCoreflC, okbit] at hb
   exact rep_distinctCorefl t x (oneOK_of_codesC t x hb.1) (pickFits_range _ _ hb.2)
 
@@ -43,7 +44,7 @@ theorem rep_ranC (R : Rel A B) (hb : (ranC R).2 = true) : rep (ranC R).1 = 𝟙 
 /-- **`rep (antiJoin R T) = rep R ≫ ¬ran(rep T)` under `antiJoinC`'s bit**: the joint codes' bit gives `hc`
     (`codesC_fits`, `codes_faithful_wf`), the `fitsN` bits `hk`, `hv`. -/
 theorem rep_antiJoinC (R : Rel A B) (T : Rel B B) (hb : (antiJoinC R T).2 = true) :
-    rep (antiJoinC R T).1 = rep R ≫ corefl (A := (⟨B.El⟩ : RelSet.{0})) fun b => ¬ ∃ y, rep T y b := by
+    rep (antiJoinC R T).1 = rep R ≫ corefl (α := B.El) fun b => ¬ ∃ y, rep T y b := by
   simp only [antiJoinC, okbit] at hb
   refine rep_antiJoin R T (codes_faithful_wf B _ (Obj.codesC_fits B _ hb.1.1)).1 ?_ ?_ <;> simp only [okbit, hb]
 
@@ -61,8 +62,8 @@ theorem canon_antiJoinC (R : Rel A B) (T : Rel B B) (hb : (antiJoinC R T).2 = tr
 /-- **`rep (top Ua Ub) = Ua? ⊤ Ub?` under `topC`'s bit**: the decided counts are `hN`, `h63`, the `fitsN` bits at the
     `ma · mb` rows `hA`, `hB`. -/
 theorem rep_topC {ma mb : USize} (Ua : Vals A ma) (Ub : Vals B mb) (hb : (topC Ua Ub).2 = true) :
-    rep (topC Ua Ub).1 = corefl (A := (⟨A.El⟩ : RelSet.{0})) (fun a => ∃ i, Ua.row i = a) ≫
-      relTop ≫ corefl (A := (⟨B.El⟩ : RelSet.{0})) (fun b => ∃ j, Ub.row j = b) := by
+    rep (topC Ua Ub).1 = corefl (α := A.El) (fun a => ∃ i, Ua.row i = a) ≫
+      Core.Rel.top ≫ corefl (α := B.El) (fun b => ∃ j, Ub.row j = b) := by
   simp only [topC, okbit] at hb; apply rep_top <;> simp only [okbit, hb]
 
 /-- **`rep (num R k)` under `numC`'s bit**: the decided bound is `hk`, the `fitsN` bit `hv`. -/
@@ -295,7 +296,8 @@ end Rep
 
 namespace CRel
 
-open QLean QLean.Kernel LeetQ.Rel.Alg Freyd Freyd.Alg Freyd.Alg.RelSet LeetQ.Rel.Rep
+open QLean QLean.Kernel LeetQ.Rel.Alg LeetQ.Rel.Rep
+open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 variable {A B C D E : Obj}
 
@@ -318,7 +320,7 @@ theorem rep_rightDiv {ma mb : USize} (R : CRel C A) (S : CRel B A) (Ua : Vals C 
   have e : R.rightDiv S Ua Ub = _ := guard_eq ok hb; rw [e] at hb ⊢; rw [rep_ofC hb]; replace hb := (ofC_ok hb).1; exact rep_rightDivC R.rel S.rel Ua Ub hb x y
 
 theorem rep_antiJoin (R : CRel A B) (T : CRel B B) (hb : (R.antiJoin T).ok = true) :
-    rep (R.antiJoin T).rel = rep R.rel ≫ corefl (A := (⟨B.El⟩ : RelSet.{0})) fun b => ¬ ∃ y, rep T.rel y b := by
+    rep (R.antiJoin T).rel = rep R.rel ≫ corefl (α := B.El) fun b => ¬ ∃ y, rep T.rel y b := by
   have e : R.antiJoin T = _ := guard_eq ok hb; rw [e] at hb ⊢; exact rep_antiJoinC R.rel T.rel hb
 
 /-- **`CRel.antiJoin` is canonical where `R` is**: `canon_antiJoinC`. -/
@@ -327,12 +329,12 @@ theorem canon_antiJoin (R : CRel A B) (T : CRel B B) (hb : (R.antiJoin T).ok = t
   have e : R.antiJoin T = _ := guard_eq ok hb; rw [e] at hb ⊢; exact canon_antiJoinC R.rel T.rel hb hR
 
 theorem rep_top {ma mb : USize} (Ua : Vals A ma) (Ub : Vals B mb) (hb : (top Ua Ub).ok = true) :
-    rep (top Ua Ub).rel = corefl (A := (⟨A.El⟩ : RelSet.{0})) (fun a => ∃ i, Ua.row i = a) ≫
-      relTop ≫ corefl (A := (⟨B.El⟩ : RelSet.{0})) (fun b => ∃ j, Ub.row j = b) :=
+    rep (top Ua Ub).rel = corefl (α := A.El) (fun a => ∃ i, Ua.row i = a) ≫
+      Core.Rel.top ≫ corefl (α := B.El) (fun b => ∃ j, Ub.row j = b) :=
   by unfold CRel.top at hb ⊢; rw [rep_ofC hb]; exact rep_topC Ua Ub (ofC_ok hb).1
 
 theorem rep_distinctCorefl (t : Obj) {n : USize} (x : Vals t n) (hb : (distinctCorefl t x).ok = true) :
-    rep (distinctCorefl t x).rel = corefl (A := (⟨t.El⟩ : RelSet.{0})) fun a => ∃ i, x.row i = a :=
+    rep (distinctCorefl t x).rel = corefl (α := t.El) fun a => ∃ i, x.row i = a :=
   by unfold CRel.distinctCorefl at hb ⊢; rw [rep_ofC hb]; exact rep_distinctCoreflC t x (ofC_ok hb).1
 
 /-- **`𝟙 R` is `R` on data**: `𝟙` the coreflexive on `U`, which holds every source of the canonical `R`. -/
@@ -342,7 +344,7 @@ theorem id_comp {m : USize} (U : Vals A m) (R : CRel A B) (hb : ((distinctCorefl
   have hl := guard_ok_left hb; simp only [Bool.and_eq_true] at hl
   refine canon_eq (canon_comp _ _ hb ho hi) hR ?_
   rw [rep_comp _ _ hb, rep_distinctCorefl A U hl.1]
-  refine hom_ext fun x y => ⟨?_, fun h => ⟨x, ⟨rfl, hU x y h⟩, h⟩⟩
+  refine Core.Rel.ext fun x y => ⟨?_, fun h => ⟨x, ⟨rfl, hU x y h⟩, h⟩⟩
   rintro ⟨z, ⟨rfl, -⟩, h⟩; exact h
 
 /-- **`R 𝟙` is `R` on data**: `𝟙` the coreflexive on `U`, which holds every target of the canonical `R`. -/
@@ -352,7 +354,7 @@ theorem comp_id {m : USize} (R : CRel A B) (U : Vals B m) (hb : (R.comp (distinc
   have hl := guard_ok_left hb; simp only [Bool.and_eq_true] at hl
   refine canon_eq (canon_comp _ _ hb ho hi) hR ?_
   rw [rep_comp _ _ hb, rep_distinctCorefl B U hl.2]
-  refine hom_ext fun x y => ⟨?_, fun h => ⟨y, h, rfl, hU x y h⟩⟩
+  refine Core.Rel.ext fun x y => ⟨?_, fun h => ⟨y, h, rfl, hU x y h⟩⟩
   rintro ⟨z, h, rfl, -⟩; exact h
 
 theorem rep_dom (R : CRel A B) (hb : R.dom.ok = true) : rep R.dom.rel = 𝟙 _ ∩ rep R.rel ≫ (rep R.rel)° := by

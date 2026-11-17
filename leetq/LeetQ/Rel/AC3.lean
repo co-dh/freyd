@@ -20,7 +20,8 @@ import LeetQ.Run.AC3Def
 namespace LeetQ.Rel.AC3
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF LeetQ.Rel.Rep LeetQ.Rel.Rep.OpsN LeetQ.Rel.Rep.FoldN
-open Freyd.Alg.RelSet (comp_apply inter_apply union_apply recip_apply hom_ext)
+open (comp_apply inter_apply union_apply recip_apply Core.Rel.ext)
+open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 variable {V D : Obj}
 
@@ -430,7 +431,7 @@ theorem acFix_eq_fixOn (s : Rel V D) (as : List (Revise V D)) (U : Rel V V) (n :
         exact ⟨fun ⟨hs, hN⟩ => hXn x d hs hN, fun hx => ⟨hXs x d hx, fun a ha =>
           ⟨fun w hA => hXo a ha x d hx w (hz w w) hA, hXv a ha x d hx⟩⟩⟩
       exact naive_fixed_eq s as hcF hfix x d
-  exact hom_ext fun x d => (hA x d).trans (hB x d).symm
+  exact Core.Rel.ext fun x d => (hA x d).trans (hB x d).symm
 
 #print axioms acFix_eq_fixOn
 

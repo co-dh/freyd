@@ -18,7 +18,7 @@ local notation "SP" => Obj.prod B (.arr B)
 
 section Body
 
-open Freyd Freyd.Alg Freyd.Alg.RelSet
+open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 /-- **`thinLOn`'s body on a coreflexive `D`, read back from its primitives' read-backs**: `(a, y)` in `D` goes to
     `[a]` when `y` is empty; with `y = b :: bs`, to `a :: bs` when `le a b`, to `y` when `le b a`, and to `a :: y`
@@ -26,7 +26,7 @@ open Freyd Freyd.Alg Freyd.Alg.RelSet
     `rep_pair`, `rep_ran`, `rep_dom`, `rep_diff`, `rep_union_full`, `rep_cons`); `ht1`, `ht2` read the test on the
     pairs of heads `rab` the body meets, and on their swaps `rs`. -/
 theorem thin_body_set {B : Obj} (le : B.El → B.El → Bool) (D : Rel SP SP) (Dm : (SP).El → Prop)
-    (hD : rep D = corefl (A := (⟨(SP).El⟩ : RelSet.{0})) Dm)
+    (hD : rep D = corefl (α := (SP).El) Dm)
     (ta : Rel SP B) (hta : ta = outl D) (ty : Rel SP (.arr B)) (hty : ty = outr D)
     (tu : Rel SP (.prod B (.arr B)))
     (hUn : ∀ (xs : List B.El) b bs, rep (uncons (Rel.val ty)) xs (b, bs) ↔
@@ -34,20 +34,20 @@ theorem thin_body_set {B : Obj} (le : B.El → B.El → Bool) (D : Rel SP SP) (D
     (htu : rep tu = rep ty ≫ rep (uncons (Rel.val ty)))
     (tab : Rel SP (.prod B B)) (htab : rep tab = rpair (rep ta) (rep (outl tu)))
     (rab : Rel (.prod B B) (.prod B B))
-    (hrab : rep rab = corefl (A := (⟨(Obj.prod B B).El⟩ : RelSet.{0})) fun c => ∃ s, rep tab s c)
+    (hrab : rep rab = corefl (α := (Obj.prod B B).El) fun c => ∃ s, rep tab s c)
     (G1 : Rel (.prod B B) (.prod B B)) (ht1 : ∀ a b, rep rab (a, b) (a, b) → ((∃ c, rep G1 (a, b) c) ↔ le a b = true))
     (tq1 : Rel SP (.prod B B)) (htq1 : rep tq1 = rep tab ≫ rep G1)
-    (tup : Rel SP SP) (htup : rep tup = corefl (A := (⟨(SP).El⟩ : RelSet.{0})) fun s => ∃ c, rep tq1 s c)
+    (tup : Rel SP SP) (htup : rep tup = corefl (α := (SP).El) fun s => ∃ c, rep tq1 s c)
     (ss : Rel (.prod B B) (.prod B B)) (hss : rep ss = rpair (rep (outr rab)) (rep (outl rab)))
     (rs : Rel (.prod B B) (.prod B B))
-    (hrs : rep rs = corefl (A := (⟨(Obj.prod B B).El⟩ : RelSet.{0})) fun c => ∃ x, rep ss x c)
+    (hrs : rep rs = corefl (α := (Obj.prod B B).El) fun c => ∃ x, rep ss x c)
     (G2 : Rel (.prod B B) (.prod B B)) (ht2 : ∀ a b, rep rs (b, a) (b, a) → ((∃ c, rep G2 (b, a) c) ↔ le b a = true))
     (tq2 : Rel (.prod B B) (.prod B B)) (htq2 : rep tq2 = rep ss ≫ rep G2)
     (sw : Rel (.prod B B) (.prod B B))
-    (hsw : rep sw = corefl (A := (⟨(Obj.prod B B).El⟩ : RelSet.{0})) fun x => ∃ c, rep tq2 x c)
+    (hsw : rep sw = corefl (α := (Obj.prod B B).El) fun x => ∃ c, rep tq2 x c)
     (tq3 : Rel SP (.prod B B)) (htq3 : rep tq3 = rep tab ≫ rep sw)
-    (tdn : Rel SP SP) (htdn : rep tdn = corefl (A := (⟨(SP).El⟩ : RelSet.{0})) fun s => ∃ c, rep tq3 s c)
-    (du : Rel SP SP) (hdu : rep du = corefl (A := (⟨(SP).El⟩ : RelSet.{0})) fun s => ∃ c, rep tu s c)
+    (tdn : Rel SP SP) (htdn : rep tdn = corefl (α := (SP).El) fun s => ∃ c, rep tq3 s c)
+    (du : Rel SP SP) (hdu : rep du = corefl (α := (SP).El) fun s => ∃ c, rep tu s c)
     (l1 : Rel SP SP) (hl1 : ∀ s s', rep l1 s s' ↔ rep D s s' ∧ ¬ rep du s s')
     (l2 : Rel SP SP) (hl2 : ∀ s s', rep l2 s s' ↔ rep du s s' ∧ ¬ rep tup s s')
     (l3 : Rel SP SP) (hl3 : ∀ s s', rep l3 s s' ↔ rep l2 s s' ∧ ¬ rep tdn s s')
@@ -56,7 +56,7 @@ theorem thin_body_set {B : Obj} (le : B.El → B.El → Bool) (D : Rel SP SP) (D
     (ua : Rel SP B) (hua : rep ua = rep tup ≫ rep ta)
     (uu : Rel SP (.prod B (.arr B))) (huu : rep uu = rep tup ≫ rep tu)
     (ru : Rel (.prod B (.arr B)) (.prod B (.arr B)))
-    (hru : rep ru = corefl (A := (⟨(Obj.prod B (.arr B)).El⟩ : RelSet.{0})) fun c => ∃ s, rep tu s c)
+    (hru : rep ru = corefl (α := (Obj.prod B (.arr B)).El) fun c => ∃ s, rep tu s c)
     (ut : Rel SP (.arr B)) (hut : rep ut = rep uu ≫ rep (outr ru))
     (pu : Rel SP (.prod B (.arr B))) (hpu : rep pu = rpair (rep ua) (rep ut))
     (c2 : Rel SP (.arr B)) (hc2 : ∀ s z, rep c2 s z ↔ ∃ b bs, rep pu s (b, bs) ∧ z = b :: bs)

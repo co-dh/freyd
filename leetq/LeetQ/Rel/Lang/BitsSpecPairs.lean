@@ -9,7 +9,8 @@ import LeetQ.Rel.RepSymDiv
 
 namespace LeetQ.Rel.Lang.Bits
 
-open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.Rep Freyd Freyd.Alg Freyd.Alg.RelSet
+open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.Rep
+open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 variable {ρ : Val}
 

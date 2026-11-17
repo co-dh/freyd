@@ -10,53 +10,41 @@ import LeetQ.Rel.Lang.GenSpec
 
 namespace LeetQ.Rel.Refold
 
+open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
+
 variable {α β : Type}
 
-/-- A relation `α ⟶ β` as a predicate. -/
-abbrev Rl (α β : Type) := α → β → Prop
-
-/-- The least fixed point of `Φ`: the pairs in every pre-fixed point. -/
-def lfp (Φ : Rl α β → Rl α β) : Rl α β := fun a b => ∀ Y : Rl α β, (∀ a b, Φ Y a b → Y a b) → Y a b
-
-def Mono (Φ : Rl α β → Rl α β) : Prop := ∀ X Y : Rl α β, (∀ a b, X a b → Y a b) → ∀ a b, Φ X a b → Φ Y a b
-
 /-- `Φ X` at `a` reads `X` only at the children of `a`. -/
-def Local (ch : α → α → Prop) (Φ : Rl α β → Rl α β) : Prop :=
+def Local (ch : α → α → Prop) (Φ : Core.Rel α β → Core.Rel α β) : Prop :=
   ∀ X Y a, (∀ a', ch a a' → ∀ b, (X a' b ↔ Y a' b)) → ∀ b, (Φ X a b ↔ Φ Y a b)
 
 /-- A pending node none of whose children is pending. -/
 def ready (ch : α → α → Prop) (pend : α → Prop) (a : α) : Prop := pend a ∧ ∀ a', ch a a' → ¬ pend a'
 
 /-- `n` rounds from the pending nodes `pend` and the values `X`: the ready nodes valued by `Φ X` and dropped. -/
-def rounds (ch : α → α → Prop) (Φ : Rl α β → Rl α β) : Nat → (α → Prop) → Rl α β → (α → Prop) × Rl α β
+def rounds (ch : α → α → Prop) (Φ : Core.Rel α β → Core.Rel α β) : Nat → (α → Prop) → Core.Rel α β → (α → Prop) × Core.Rel α β
   | 0, pend, X => (pend, X)
   | n + 1, pend, X =>
     rounds ch Φ n (fun a => pend a ∧ ¬ ready ch pend a) (fun a b => X a b ∨ (ready ch pend a ∧ Φ X a b))
 
 /-- What the rounds keep: pending nodes lie in `N` and have no value, a node of `N` done has the least fixed
     point's value, and its children are done. -/
-def Inv (ch : α → α → Prop) (Φ : Rl α β → Rl α β) (N pend : α → Prop) (X : Rl α β) : Prop :=
-  (∀ a, pend a → N a) ∧ (∀ a, N a → ¬ pend a → ∀ b, (X a b ↔ lfp Φ a b)) ∧ (∀ a, pend a → ∀ b, ¬ X a b) ∧
+def Inv (ch : α → α → Prop) (Φ : Core.Rel α β → Core.Rel α β) (N pend : α → Prop) (X : Core.Rel α β) : Prop :=
+  (∀ a, pend a → N a) ∧ (∀ a, N a → ¬ pend a → ∀ b, (X a b ↔ mu Φ a b)) ∧ (∀ a, pend a → ∀ b, ¬ X a b) ∧
     (∀ a a', N a → ¬ pend a → ch a a' → ¬ pend a')
 
-theorem lfp_pre {Φ : Rl α β → Rl α β} (hm : Mono Φ) : ∀ a b, Φ (lfp Φ) a b → lfp Φ a b :=
-  fun a b h Y hY => hY a b (hm (lfp Φ) Y (fun _ _ h' => h' Y hY) a b h)
-
-theorem lfp_post {Φ : Rl α β → Rl α β} (hm : Mono Φ) : ∀ a b, lfp Φ a b → Φ (lfp Φ) a b :=
-  fun _ _ h => h (Φ (lfp Φ)) (hm (Φ (lfp Φ)) (lfp Φ) (lfp_pre hm))
-
-/-- One round keeps `Inv`: a ready node's children are done, so `Φ X` there is `Φ (lfp Φ)` (`Local`), the least
+/-- One round keeps `Inv`: a ready node's children are done, so `Φ X` there is `Φ (mu Φ)` (`Local`), the least
     fixed point's value. -/
-theorem round_inv {ch : α → α → Prop} {Φ : Rl α β → Rl α β} {N pend : α → Prop} {X : Rl α β} (hm : Mono Φ)
+theorem round_inv {ch : α → α → Prop} {Φ : Core.Rel α β → Core.Rel α β} {N pend : α → Prop} {X : Core.Rel α β} (hm : Monotonic Φ)
     (hl : Local ch Φ) (hN : ∀ a a', N a → ch a a' → N a') (h : Inv ch Φ N pend X) :
     Inv ch Φ N (fun a => pend a ∧ ¬ ready ch pend a) (fun a b => X a b ∨ (ready ch pend a ∧ Φ X a b)) := by
   obtain ⟨hs, hd, he, hk⟩ := h
   refine ⟨fun a ha => hs a ha.1, fun a hNa hp b => ?_, fun a hp b hx => ?_, fun a a' hNa hp hc hp' => ?_⟩
   · by_cases hpa : pend a
     · have hr : ready ch pend a := Classical.byContradiction fun hr => hp ⟨hpa, hr⟩
-      have key : Φ X a b ↔ lfp Φ a b :=
-        (hl X (lfp Φ) a (fun a' hc b' => hd a' (hN a a' hNa hc) (hr.2 a' hc) b') b).trans
-          ⟨lfp_pre hm a b, lfp_post hm a b⟩
+      have key : Φ X a b ↔ mu Φ a b :=
+        (hl X (mu Φ) a (fun a' hc b' => hd a' (hN a a' hNa hc) (hr.2 a' hc) b') b).trans
+          (by rw [mu_fix hm])
       exact ⟨fun hx => hx.elim (fun hx => absurd hx (he a hpa b)) (fun hx => key.1 hx.2),
         fun hx => Or.inr ⟨hr, key.2 hx⟩⟩
     · exact ⟨fun hx => hx.elim (hd a hNa hpa b).1 (fun hx => absurd hx.1.1 hpa),
@@ -66,17 +54,17 @@ theorem round_inv {ch : α → α → Prop} {Φ : Rl α β → Rl α β} {N pend
     · exact (Classical.byContradiction fun hr => hp ⟨hpa, hr⟩ : ready ch pend a).2 a' hc hp'.1
     · exact hk a a' hNa hpa hc hp'.1
 
-theorem rounds_inv {ch : α → α → Prop} {Φ : Rl α β → Rl α β} {N : α → Prop} (hm : Mono Φ) (hl : Local ch Φ)
+theorem rounds_inv {ch : α → α → Prop} {Φ : Core.Rel α β → Core.Rel α β} {N : α → Prop} (hm : Monotonic Φ) (hl : Local ch Φ)
     (hN : ∀ a a', N a → ch a a' → N a') :
     ∀ n pend X, Inv ch Φ N pend X → Inv ch Φ N (rounds ch Φ n pend X).1 (rounds ch Φ n pend X).2
   | 0, _, _, h => h
   | n + 1, _, _, h => rounds_inv hm hl hN n _ _ (round_inv hm hl hN h)
 
 /-- **`refold` computes the least fixed point**: from the nodes `N` closed under `ch`, all pending and none valued,
-    rounds that leave nothing pending value every node of `N` as `lfp Φ`, `Φ X = c G(X) S`. -/
-theorem rounds_lfp {ch : α → α → Prop} {Φ : Rl α β → Rl α β} {N : α → Prop} (hm : Mono Φ) (hl : Local ch Φ)
+    rounds that leave nothing pending value every node of `N` as `mu Φ`, `Φ X = c G(X) S`. -/
+theorem rounds_lfp {ch : α → α → Prop} {Φ : Core.Rel α β → Core.Rel α β} {N : α → Prop} (hm : Monotonic Φ) (hl : Local ch Φ)
     (hN : ∀ a a', N a → ch a a' → N a') (n : Nat) (hdone : ∀ a, ¬ (rounds ch Φ n N fun _ _ => False).1 a) :
-    ∀ a, N a → ∀ b, ((rounds ch Φ n N fun _ _ => False).2 a b ↔ lfp Φ a b) := fun a hNa b =>
+    ∀ a, N a → ∀ b, ((rounds ch Φ n N fun _ _ => False).2 a b ↔ mu Φ a b) := fun a hNa b =>
   (rounds_inv hm hl hN n N _ ⟨fun _ h => h, fun _ h hn => absurd h hn, fun _ _ _ h => h,
     fun _ _ h hn => absurd h hn⟩).2.1 a hNa (hdone a) b
 
@@ -94,12 +82,13 @@ end LeetQ.Rel.Refold
 
 namespace LeetQ.Rel.Lang.Gen
 
-open LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.Rep LeetQ.Rel.Refold Freyd Freyd.Alg Freyd.Alg.RelSet
+open LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.Rep LeetQ.Rel.Refold
+open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 variable {A B : Obj}
 
 /-- A relation with no rows relates nothing. -/
-theorem rep_empty {C : Obj} {R : Rel A C} (h : (R.n == 0) = true) (a : A.El) (c : C.El) : ¬ rep R a c := by
+theorem rep_empty {C : Obj} {R : Core.Rel A C} (h : (R.n == 0) = true) (a : A.El) (c : C.El) : ¬ rep R a c := by
   rintro ⟨i, -⟩
   have : R.n.toNat = 0 := by simp [beq_iff_eq.1 h]
   exact absurd i.2 (by omega)
@@ -124,22 +113,22 @@ theorem refoldRounds_ok {chN : CRel A A} {φ : CRel A B → CRel A A → CRel A 
 
 /-- **`refoldRounds` read back** (`rounds_lfp` on arrays): from the nodes `N` (a coreflexive closed under the
     children `chN`), all pending and none valued, rounds whose bits say the pending nodes emptied and the value is
-    ok leave `Refold.lfp Φ` at every node of `N`, where `φ X P` is `Φ` at the nodes `P` (`onNodes`) and `Φ` is monotonic
+    ok leave `mu Φ` at every node of `N`, where `φ X P` is `Φ` at the nodes `P` (`onNodes`) and `Φ` is monotonic
     and local along `chN`. Rounds stuck are `stuck_not_acc`. -/
-theorem rep_refold {chN : CRel A A} {φ : CRel A B → CRel A A → CRel A B} {Φ : Rl A.El B.El → Rl A.El B.El}
-    (hm : Mono Φ) (hl : Local (fun a a' => rep chN.rel a a') Φ)
+theorem rep_refold {chN : CRel A A} {φ : CRel A B → CRel A A → CRel A B} {Φ : Core.Rel A.El B.El → Core.Rel A.El B.El}
+    (hm : Monotonic Φ) (hl : Local (fun a a' => rep chN.rel a a') Φ)
     (hφ : ∀ X P, (φ X P).ok = true → (∀ x y, rep P.rel x y → x = y) →
       ∀ a b, (rep (φ X P).rel a b ↔ rep P.rel a a ∧ Φ (fun a b => rep X.rel a b) a b))
     {N : CRel A A} (hc : ∀ x y, rep N.rel x y → x = y)
     (hN : ∀ a a', rep N.rel a a → rep chN.rel a a' → rep N.rel a' a') (f : Nat)
     (hb : (refoldRounds chN φ f N ⟨Alg.zero, true⟩).2 = true)
     (hx : (refoldRounds chN φ f N ⟨Alg.zero, true⟩).1.ok = true) :
-    ∀ a, rep N.rel a a → ∀ b, (rep (refoldRounds chN φ f N ⟨Alg.zero, true⟩).1.rel a b ↔ Refold.lfp Φ a b) := by
+    ∀ a, rep N.rel a a → ∀ b, (rep (refoldRounds chN φ f N ⟨Alg.zero, true⟩).1.rel a b ↔ mu Φ a b) := by
   suffices h : ∀ f (pend : CRel A A) (X : CRel A B), (refoldRounds chN φ f pend X).2 = true →
       (refoldRounds chN φ f pend X).1.ok = true → (∀ x y, rep pend.rel x y → x = y) →
       Inv (fun a a' => rep chN.rel a a') Φ (fun a => rep N.rel a a) (fun a => rep pend.rel a a)
         (fun a b => rep X.rel a b) →
-      ∀ a, rep N.rel a a → ∀ b, (rep (refoldRounds chN φ f pend X).1.rel a b ↔ Refold.lfp Φ a b) from
+      ∀ a, rep N.rel a a → ∀ b, (rep (refoldRounds chN φ f pend X).1.rel a b ↔ mu Φ a b) from
     h f N _ hb hx hc ⟨fun _ h => h, fun _ h hn => absurd h hn,
       fun _ _ _ h => by rw [rep_zero] at h; exact h, fun _ _ h hn => absurd h hn⟩
   intro f

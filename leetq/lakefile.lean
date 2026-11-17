@@ -32,7 +32,7 @@ lean_lib LeetQRun where
     code, and `lake build LeetQ` builds it too, since they import it. -/
 @[default_target]
 lean_lib LeetQ where
-  globs := #[.submodules `LeetQ.Rel]
+  globs := #[.submodules `LeetQ.Core, .submodules `LeetQ.Rel]
 
 /-- Stage 1a of the native backend (`doc/rel-native-design.md` §13): `TestNative`'s `main`, which prints its plan as C
     (`relc-1a c FILE`) and writes the Lean side's column directory (`lean DIR`, `plan DIR`). -/

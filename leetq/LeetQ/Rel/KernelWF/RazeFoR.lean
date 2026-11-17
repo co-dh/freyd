@@ -9,7 +9,7 @@ import LeetQ.Rel.KernelWF.RazeParts
 namespace LeetQ.Rel.KernelWF
 
 open QLean QLean.Kernel QLean.Dep LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.Rep
-open Freyd Freyd.Alg Freyd.Alg.RelSet
+open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 /-- A type Frame of Reference encodes is two to eight bytes wide, and neither `boolean` nor `guid`. -/
 theorem foR_width {t : QAtomicType} {w : Nat} (he : Column.encodes t = true) (hw : t.width = some w) :
@@ -307,7 +307,8 @@ end LeetQ.Rel.Alg
 
 namespace LeetQ.Rel.Rep
 
-open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF Freyd Freyd.Alg Freyd.Alg.RelSet
+open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
+open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 variable {A B C : Obj}
 
@@ -352,7 +353,7 @@ theorem rep_union_full (R S : Rel A B) (hN : R.n.toNat + S.n.toNat < USize.size)
 /-- **`rep (junc R S)`**, no hypothesis on the encoding. -/
 theorem rep_junc_full (R : Rel A C) (S : Rel B C) (hN : R.n.toNat + S.n.toNat < USize.size)
     (h63 : R.n.toNat + S.n.toNat ≤ 2 ^ 63) (hF : Vals.RazeFits C R.val S.val) :
-    rep (LeetQ.Rel.Alg.junc R S) = Freyd.Alg.junc (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩) (rep R) (rep S) :=
+    rep (LeetQ.Rel.Alg.junc R S) = Core.Rel.junc (rep R) (rep S) :=
   rep_junc R S hN h63 (raze_row C R.val S.val hF)
 
 end LeetQ.Rel.Rep

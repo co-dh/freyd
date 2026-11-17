@@ -15,7 +15,8 @@ namespace LeetQ.Rel
 
 namespace Rep
 
-open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF Freyd Freyd.Alg Freyd.Alg.RelSet
+open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
+open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 open CompN OpsN
 
 variable {A B C : Obj}
@@ -205,7 +206,7 @@ theorem canonC_sorted {k v : Obj} (R : Rel k v) (hb : (canonC R).2 = true) :
 theorem rep_canonC {k v : Obj} (R : Rel k v) (hb : (canonC R).2 = true) : rep (canonC R).1 = rep R := by
   obtain ⟨hp, hS⟩ := canonC_sorted R hb
   rw [show (canonC R).1 = (nubC (R.rows _)).1 from rfl, rep_nubC _ (canonC_bits R hb).2.2.2]
-  refine hom_ext fun x y => ?_
+  refine Core.Rel.ext fun x y => ?_
   rw [rep_apply, rep_apply, Rel.holds_iff_mem_toList, Rel.holds_iff_mem_toList, hS, toList_rowAt]
   exact (hp.map _).mem_iff
 
@@ -281,7 +282,8 @@ end Rep
 
 namespace CRel
 
-open QLean QLean.Kernel LeetQ.Rel.Alg Freyd Freyd.Alg.RelSet LeetQ.Rel.Rep
+open QLean QLean.Kernel LeetQ.Rel.Alg LeetQ.Rel.Rep
+open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 variable {A B C : Obj}
 
@@ -344,17 +346,17 @@ theorem comp_assoc {D : Obj} (R : CRel A B) (S : CRel B C) (T : CRel C D) (h₁ 
     ((R.comp S).comp T).rel.toList = (R.comp (S.comp T)).rel.toList := by
   have hl := guard_ok_left h₁; have hr := guard_ok_left h₂; simp only [Bool.and_eq_true] at hl hr
   refine canon_eq (canon_comp _ _ h₁ ho hi) (canon_comp _ _ h₂ ho hi) ?_
-  rw [rep_comp _ _ h₁, rep_comp _ _ hl.1, rep_comp _ _ h₂, rep_comp _ _ hr.2, Cat.assoc]
+  rw [rep_comp _ _ h₁, rep_comp _ _ hl.1, rep_comp _ _ h₂, rep_comp _ _ hr.2, Core.Rel.comp_assoc]
 
 /-- **`R ∩ R` is `R` on data**, for a canonical `R`. -/
 theorem inter_self (R : CRel A B) (hb : (R.inter R).ok = true) (hR : R.rel.Canon) :
     (R.inter R).rel.toList = R.rel.toList :=
-  canon_eq (canon_inter _ _ hb hR) hR (by rw [rep_inter _ _ hb, Freyd.Alg.Allegory.inter_idem])
+  canon_eq (canon_inter _ _ hb hR) hR (by rw [rep_inter _ _ hb, Core.Rel.inter_idem])
 
 /-- **`R ∪ R` is `R` on data**, for a canonical `R`. -/
 theorem union_self (R : CRel A B) (hb : (R.union R).ok = true) (hR : R.rel.Canon) (ho : (Obj.prod A B).Ordered)
     (hi : (Obj.prod A B).KeyInj) : (R.union R).rel.toList = R.rel.toList :=
-  canon_eq (canon_union _ _ hb ho hi) hR (by rw [rep_union _ _ hb, Freyd.Alg.DistributiveAllegory.union_idem])
+  canon_eq (canon_union _ _ hb ho hi) hR (by rw [rep_union _ _ hb, Core.Rel.union_idem])
 
 end CRel
 

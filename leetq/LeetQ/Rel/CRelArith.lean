@@ -13,27 +13,28 @@ namespace LeetQ.Rel
 
 namespace Rep
 
-open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF Freyd Freyd.Alg Freyd.Alg.RelSet
+open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
+open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 open OpsN UnionN
 
 variable {A B C D : Obj}
 
 /-- **`rep (inl X) = X? ι₁` under `inlC`'s bit**: the bit is `rep_inl`'s `h63`. -/
 theorem rep_inlC {n : USize} (X : Vals A n) (hb : (inlC (B := B) X).2 = true) :
-    rep (inlC (B := B) X).1 = corefl (A := (⟨A.El⟩ : RelSet.{0})) (fun x => ∃ i, X.row i = x) ≫
-      (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩).u₁ :=
+    rep (inlC (B := B) X).1 = corefl (α := A.El) (fun x => ∃ i, X.row i = x) ≫
+      (Core.Rel.inl (α := A.El) (β := B.El)) :=
   rep_inl X (of_decide_eq_true hb)
 
 /-- **`rep (inr Y) = Y? ι₂` under `inrC`'s bit**: the bit is `rep_inr`'s `h63`. -/
 theorem rep_inrC {n : USize} (Y : Vals B n) (hb : (inrC (A := A) Y).2 = true) :
-    rep (inrC (A := A) Y).1 = corefl (A := (⟨B.El⟩ : RelSet.{0})) (fun y => ∃ i, Y.row i = y) ≫
-      (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩).u₂ :=
+    rep (inrC (A := A) Y).1 = corefl (α := B.El) (fun y => ∃ i, Y.row i = y) ≫
+      (Core.Rel.inr (α := A.El) (β := B.El)) :=
   rep_inr Y (of_decide_eq_true hb)
 
 /-- **`rep [R, S] = [rep R, rep S]` under `juncC`'s bit**: `need`'s guard is `rep_junc_full`'s `hN`, the decided
     bound its `h63`, the raze's bit its `hF` (`razeC_fits`). -/
 theorem rep_juncC (R : Rel A C) (S : Rel B C) (hb : (juncC R S).2 = true) :
-    rep (juncC R S).1 = Freyd.Alg.junc (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩) (rep R) (rep S) := by
+    rep (juncC R S).1 = Core.Rel.junc (rep R) (rep S) := by
   unfold juncC need at hb
   split at hb
   · rename_i hN
@@ -44,8 +45,8 @@ theorem rep_juncC (R : Rel A C) (S : Rel B C) (hb : (juncC R S).2 = true) :
 /-- **`rep (R + S) = ι₁° rep R ι₁ ∪ ι₂° rep S ι₂` under `sumC`'s bit**: the bit is `rep_sum`'s `hN` and `h63`. -/
 theorem rep_sumC (R : Rel A C) (S : Rel B D) (hb : (sumC R S).2 = true) :
     rep (sumC R S).1 =
-      ((sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩).u₁° ≫ rep R ≫ (sumCop (⟨C.El⟩ : RelSet.{0}) ⟨D.El⟩).u₁) ∪
-      ((sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩).u₂° ≫ rep S ≫ (sumCop (⟨C.El⟩ : RelSet.{0}) ⟨D.El⟩).u₂) := by
+      ((Core.Rel.inl (α := A.El) (β := B.El))° ≫ rep R ≫ (Core.Rel.inl (α := C.El) (β := D.El))) ∪
+      ((Core.Rel.inr (α := A.El) (β := B.El))° ≫ rep S ≫ (Core.Rel.inr (α := C.El) (β := D.El))) := by
   simp only [sumC, okbit] at hb; exact rep_sum R S hb.1 hb.2
 
 /-- **`rep (lt U)` under `ltC`'s bit**: the decided bounds are `rep_lt`'s `hN`, `h63`, the diff's pair codes' bit
@@ -174,28 +175,29 @@ end Rep
 
 namespace CRel
 
-open QLean QLean.Kernel LeetQ.Rel.Alg Freyd Freyd.Alg Freyd.Alg.RelSet LeetQ.Rel.Rep
+open QLean QLean.Kernel LeetQ.Rel.Alg LeetQ.Rel.Rep
+open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 variable {A B C D : Obj}
 
 theorem rep_inl {n : USize} (X : Vals A n) (hb : (inl (B := B) X).ok = true) :
-    rep (inl (B := B) X).rel = corefl (A := (⟨A.El⟩ : RelSet.{0})) (fun x => ∃ i, X.row i = x) ≫
-      (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩).u₁ :=
+    rep (inl (B := B) X).rel = corefl (α := A.El) (fun x => ∃ i, X.row i = x) ≫
+      (Core.Rel.inl (α := A.El) (β := B.El)) :=
   by unfold CRel.inl at hb ⊢; rw [rep_ofC hb]; exact rep_inlC X (ofC_ok hb).1
 
 theorem rep_inr {n : USize} (Y : Vals B n) (hb : (inr (A := A) Y).ok = true) :
-    rep (inr (A := A) Y).rel = corefl (A := (⟨B.El⟩ : RelSet.{0})) (fun y => ∃ i, Y.row i = y) ≫
-      (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩).u₂ :=
+    rep (inr (A := A) Y).rel = corefl (α := B.El) (fun y => ∃ i, Y.row i = y) ≫
+      (Core.Rel.inr (α := A.El) (β := B.El)) :=
   by unfold CRel.inr at hb ⊢; rw [rep_ofC hb]; exact rep_inrC Y (ofC_ok hb).1
 
 theorem rep_junc (R : CRel A C) (S : CRel B C) (hb : (R.junc S).ok = true) :
-    rep (R.junc S).rel = Freyd.Alg.junc (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩) (rep R.rel) (rep S.rel) := by
+    rep (R.junc S).rel = Core.Rel.junc (rep R.rel) (rep S.rel) := by
   have e : R.junc S = _ := guard_eq ok hb; rw [e] at hb ⊢; rw [rep_ofC hb]; replace hb := (ofC_ok hb).1; exact rep_juncC R.rel S.rel hb
 
 theorem rep_sum (R : CRel A C) (S : CRel B D) (hb : (R.sum S).ok = true) :
     rep (R.sum S).rel =
-      ((sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩).u₁° ≫ rep R.rel ≫ (sumCop (⟨C.El⟩ : RelSet.{0}) ⟨D.El⟩).u₁) ∪
-      ((sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩).u₂° ≫ rep S.rel ≫ (sumCop (⟨C.El⟩ : RelSet.{0}) ⟨D.El⟩).u₂) := by
+      ((Core.Rel.inl (α := A.El) (β := B.El))° ≫ rep R.rel ≫ (Core.Rel.inl (α := C.El) (β := D.El))) ∪
+      ((Core.Rel.inr (α := A.El) (β := B.El))° ≫ rep S.rel ≫ (Core.Rel.inr (α := C.El) (β := D.El))) := by
   have e : R.sum S = _ := guard_eq ok hb; rw [e] at hb ⊢; rw [rep_ofC hb]; replace hb := (ofC_ok hb).1; exact rep_sumC R.rel S.rel hb
 
 theorem rep_lt {n : USize} (U : Vals (.atom .long) n) (h : QAtomicType.long ≠ .general) (hb : (lt U h).ok = true)

@@ -15,7 +15,8 @@ import LeetQ.Run.CRelLoopDef
 
 namespace LeetQ.Rel
 
-open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF Freyd Freyd.Alg Freyd.Alg.RelSet
+open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
+open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 open LeetQ.Rel.Rep LeetQ.Rel.Rep.FoldN LeetQ.Rel.Rep.OpsN LeetQ.Rel.Rep.Prim LeetQ.Rel.Rep.ListN
 
 namespace Rep
@@ -39,7 +40,7 @@ theorem rep_loopOnC {K X Y : Obj} (F : Rel (.prod X Y) (.prod X Y) → Rel (.pro
     (P : Rel K (.prod X (.arr Y))) (hb : (loopOnC F P).2 = true)
     (Fr : X.El × Y.El → X.El → Prop)
     (hS : ∀ (D : Rel (.prod X Y) (.prod X Y)) (S : (Obj.prod X Y).El → Prop),
-      rep D = corefl (A := (⟨(Obj.prod X Y).El⟩ : RelSet.{0})) S → (F D).2 = true →
+      rep D = corefl (α := (Obj.prod X Y).El) S → (F D).2 = true →
       ∀ cy c', S cy → (Fr cy c' ↔ rep (F D).1 cy c')) :
     ∀ k c, rep (loopOnC F P).1 k c ↔ ∃ c₀ xs, rep P k (c₀, xs) ∧ ∃ g : Nat → X.El, g 0 = c₀ ∧
       (∀ t (ht : t < xs.length), Fr (g t, xs[t]'ht) (g (t + 1))) ∧ c = g xs.length := by
@@ -93,7 +94,7 @@ theorem rep_loopC {K X Y : Obj} (F : Rel (.prod X Y) X) (P : Rel K (.prod X (.ar
 set_option hygiene false in
 local notation "testOK(" q ")" =>
   ∀ (D : Rel (.prod B B) (.prod B B)) (S : (Obj.prod B B).El → Prop),
-    rep D = corefl (A := (⟨(Obj.prod B B).El⟩ : RelSet.{0})) S → (q D).2 = true →
+    rep D = corefl (α := (Obj.prod B B).El) S → (q D).2 = true →
     ∀ a b, S (a, b) → ((∃ c, rep (q D).1 (a, b) c) ↔ le a b = true)
 
 /-- **One round of `mergeOn` under its bit**: `merge_round_set` at its twins' read-backs — `ranC`'s and `domC`'s
@@ -252,7 +253,7 @@ theorem rep_tic (P : CRel K (.prod B (.arr B))) (hb : (tic P).ok = true) :
 theorem rep_loopOn (F : CRel (.prod X Y) (.prod X Y) → CRel (.prod X Y) X) (P : CRel K (.prod X (.arr Y)))
     (hb : (loopOn F P).ok = true) (Fr : X.El × Y.El → X.El → Prop)
     (hS : ∀ (D : Rel (.prod X Y) (.prod X Y)) (S : (Obj.prod X Y).El → Prop),
-      rep D = corefl (A := (⟨(Obj.prod X Y).El⟩ : RelSet.{0})) S → (F ⟨D, true⟩).ok = true →
+      rep D = corefl (α := (Obj.prod X Y).El) S → (F ⟨D, true⟩).ok = true →
       ∀ cy c', S cy → (Fr cy c' ↔ rep (F ⟨D, true⟩).rel cy c')) :
     ∀ k c, rep (loopOn F P).rel k c ↔ ∃ c₀ xs, rep P.rel k (c₀, xs) ∧ ∃ g : Nat → X.El, g 0 = c₀ ∧
       (∀ t (ht : t < xs.length), Fr (g t, xs[t]'ht) (g (t + 1))) ∧ c = g xs.length := by
@@ -267,7 +268,7 @@ theorem rep_loop (F : CRel (.prod X Y) X) (P : CRel K (.prod X (.arr Y))) (hb : 
 theorem rep_mergeOn (q : CRel (.prod B B) (.prod B B) → CRel (.prod B B) (.prod B B))
     (P : CRel K (.prod (.arr B) (.arr B))) (le : B.El → B.El → Bool)
     (hq : ∀ (D : Rel (.prod B B) (.prod B B)) (S : (Obj.prod B B).El → Prop),
-      rep D = corefl (A := (⟨(Obj.prod B B).El⟩ : RelSet.{0})) S → (q ⟨D, true⟩).ok = true →
+      rep D = corefl (α := (Obj.prod B B).El) S → (q ⟨D, true⟩).ok = true →
       ∀ a b, S (a, b) → ((∃ c, rep (q ⟨D, true⟩).rel (a, b) c) ↔ le a b = true))
     (hb : (mergeOn q P).ok = true) :
     ∀ k zs, rep (mergeOn q P).rel k zs ↔ ∃ xs ys, rep P.rel k (xs, ys) ∧ zs = List.merge xs ys le := by

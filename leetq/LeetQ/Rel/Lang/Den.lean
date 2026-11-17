@@ -6,14 +6,15 @@
 import LeetQ.Run.Lang.Tm
 import LeetQ.Rel.Rep
 import LeetQ.Rel.ObjOrder
-import Freyd.Junc
+import LeetQ.Core.Fix
 
 namespace LeetQ.Rel.Lang
 
-open QLean.Kernel LeetQ.Rel LeetQ.Rel.Rep Freyd Freyd.Alg Freyd.Alg.RelSet
+open QLean.Kernel LeetQ.Rel LeetQ.Rel.Rep
+open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 /-- An arrow `A ⟶ B` of `Rel(Set)` between the elements of two objects. -/
-abbrev Den (A B : Obj) := (⟨A.El⟩ : RelSet.{0}) ⟶ ⟨B.El⟩
+abbrev Den (A B : Obj) := Core.Rel (A.El) (B.El)
 
 /-- The meaning of each variable `k`, at the objects the term asks for. -/
 abbrev Val := Nat → (A B : Obj) → Den A B
@@ -53,12 +54,12 @@ theorem le_gfp (h : Y ⊑ Φ Y) : Y ⊑ gfp Φ := le_iff.2 fun _ _ hy => ⟨Y, h
 theorem lfp_fix (hΦ : ∀ X Y : Den A B, X ⊑ Y → Φ X ⊑ Φ Y) : Φ (lfp Φ) = lfp Φ := by
   have h1 : Φ (lfp Φ) ⊑ lfp Φ :=
     le_iff.2 fun x y hx Y hY => le_iff.1 hY x y (le_iff.1 (hΦ _ _ (lfp_le hY)) x y hx)
-  exact hom_ext fun x y => ⟨le_iff.1 h1 x y, le_iff.1 (lfp_le (hΦ _ _ h1)) x y⟩
+  exact Core.Rel.ext fun x y => ⟨le_iff.1 h1 x y, le_iff.1 (lfp_le (hΦ _ _ h1)) x y⟩
 
 theorem gfp_fix (hΦ : ∀ X Y : Den A B, X ⊑ Y → Φ X ⊑ Φ Y) : Φ (gfp Φ) = gfp Φ := by
   have h1 : gfp Φ ⊑ Φ (gfp Φ) :=
     le_iff.2 fun x y ⟨Y, hY, hy⟩ => le_iff.1 (hΦ _ _ (le_gfp hY)) x y (le_iff.1 hY x y hy)
-  exact hom_ext fun x y => ⟨le_iff.1 (le_gfp (hΦ _ _ h1)) x y, le_iff.1 h1 x y⟩
+  exact Core.Rel.ext fun x y => ⟨le_iff.1 (le_gfp (hΦ _ _ h1)) x y, le_iff.1 h1 x y⟩
 
 /-- `lfp` is monotone in its body, pointwise: no monotonicity of either body is needed. -/
 theorem lfp_mono (h : ∀ X, Φ X ⊑ Ψ X) : lfp Φ ⊑ lfp Ψ :=
@@ -149,7 +150,7 @@ noncomputable def Tm.den : Val → {A B : Obj} → {d : Bool} → Tm A B d → D
   | _, _, _, _, .uni U => rep (Alg.idU U)
   | _, _, _, _, .zero => 𝟘
   | _, _, _, _, .id => 𝟙 _
-  | ρ, _, _, _, .top V => relTop ≫ V.den ρ
+  | ρ, _, _, _, .top V => Core.Rel.top ≫ V.den ρ
   | _, _, _, _, .outl => graph Prod.fst
   | _, _, _, _, .outr => graph Prod.snd
   | ρ, _, _, _, .comp R S => R.den ρ ≫ S.den ρ
@@ -163,8 +164,8 @@ noncomputable def Tm.den : Val → {A B : Obj} → {d : Bool} → Tm A B d → D
   | ρ, _, _, _, .rdiv R S U V => rdivDen (R.den ρ) (S.den ρ) (U.den ρ) (V.den ρ)
   | ρ, _, _, _, .pair R S => rpair (R.den ρ) (S.den ρ)
   | ρ, _, _, _, .prod R S => rprodMap (R.den ρ) (S.den ρ)
-  | ρ, _, _, _, .junc R S => Freyd.Alg.junc (sumCop _ _) (R.den ρ) (S.den ρ)
-  | ρ, _, _, _, .juncD R S => Freyd.Alg.junc (sumCop _ _) (R.den ρ) (S.den ρ)
+  | ρ, _, _, _, .junc R S => Core.Rel.junc (R.den ρ) (S.den ρ)
+  | ρ, _, _, _, .juncD R S => Core.Rel.junc (R.den ρ) (S.den ρ)
   | ρ, _, _, _, .lam R => lamDen (R.den ρ)
   | ρ, _, _, _, .E R => EDen (R.den ρ)
   | ρ, _, _, _, .est Q => estDen (Q.den ρ)
@@ -280,9 +281,9 @@ theorem prod_le {X X' : Den A B} {Y Y' : Den C D} (hX : X ⊑ X') (hY : Y ⊑ Y'
   le_iff.2 fun _ _ h => ⟨le_iff.1 hX _ _ h.1, le_iff.1 hY _ _ h.2⟩
 
 theorem junc_le {X X' : Den A C} {Y Y' : Den B C} (hX : X ⊑ X') (hY : Y ⊑ Y') :
-    Freyd.Alg.junc (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩) X Y ⊑ Freyd.Alg.junc (sumCop _ _) X' Y' :=
+    Core.Rel.junc X Y ⊑ Core.Rel.junc X' Y' :=
   le_iff.2 fun x c h => by
-    simp only [Freyd.Alg.junc, union_apply, comp_apply] at h ⊢
+    simp only [Core.Rel.junc, union_apply, comp_apply] at h ⊢
     exact h.imp (fun ⟨b, h1, h2⟩ => ⟨b, h1, le_iff.1 hX _ _ h2⟩) (fun ⟨b, h1, h2⟩ => ⟨b, h1, le_iff.1 hY _ _ h2⟩)
 
 end ops

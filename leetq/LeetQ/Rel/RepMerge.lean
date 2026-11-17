@@ -113,7 +113,7 @@ local notation "SO" => Obj.prod (.prod (.arr B) (.arr B)) (.arr B)
 
 section Round
 
-open Freyd Freyd.Alg Freyd.Alg.RelSet
+open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 /-- **One round of `mergeOn`, read back from its primitives' read-backs**: the new states `mT` are the states
     with both sides non-empty, stepped by the test `le` on their heads, and `mU` adds to `out` the states with a
@@ -127,7 +127,7 @@ theorem merge_round_set {K B : Obj} (le : B.El → B.El → Bool) (out : Rel K (
     (mA1 mA2 : Rel SO (.prod (.arr B) (.arr B))) (mS1 mS2 : Rel SO (.prod (.arr B) B)) (mN1 mN2 : Rel SO (.arr B))
     (mP1 mP2 mL1 mL2 mnb mtk mfl : Rel SO SO) (mT mSf : Rel K SO) (mc1 mc2 : Rel SO (.prod (.arr B) (.arr B)))
     (mC1 mC2 : Rel SO (.arr B)) (mO mU : Rel K (.arr B))
-    (hD : rep mD = corefl (A := (⟨(SO).El⟩ : RelSet.{0})) fun s => ∃ k, rep St k s)
+    (hD : rep mD = corefl (α := (SO).El) fun s => ∃ k, rep St k s)
     (hx : mx = outl (outl mD)) (hy : my = outr (outl mD)) (hacc : macc = outr mD)
     (hUx : ∀ (xs : List B.El) b bs, rep (uncons (Rel.val mx)) xs (b, bs) ↔
       (∃ j, (Rel.val mx).row j = xs) ∧ xs = b :: bs)
@@ -136,21 +136,21 @@ theorem merge_round_set {K B : Obj} (le : B.El → B.El → Bool) (out : Rel K (
       (∃ j, (Rel.val my).row j = xs) ∧ xs = b :: bs)
     (huy : rep muy = rep my ≫ rep (uncons (Rel.val my)))
     (hpu : rep mpu = rpair (rep mux) (rep muy))
-    (hboth : rep mboth = corefl (A := (⟨(SO).El⟩ : RelSet.{0})) fun s => ∃ p, rep mpu s p)
+    (hboth : rep mboth = corefl (α := (SO).El) fun s => ∃ p, rep mpu s p)
     (hh : rep mh = rpair (rep (outl mux)) (rep (outl muy)))
-    (hrh : rep mrh = corefl (A := (⟨(Obj.prod B B).El⟩ : RelSet.{0})) fun ab => ∃ s, rep mh s ab)
+    (hrh : rep mrh = corefl (α := (Obj.prod B B).El) fun ab => ∃ s, rep mh s ab)
     (htest : ∀ a b, rep mrh (a, b) (a, b) → ((∃ c, rep G (a, b) c) ↔ le a b = true))
     (hhq : rep mhq = rep mh ≫ rep G)
-    (hl : rep ml = corefl (A := (⟨(SO).El⟩ : RelSet.{0})) fun s => ∃ c, rep mhq s c)
+    (hl : rep ml = corefl (α := (SO).El) fun s => ∃ c, rep mhq s c)
     (hA1 : rep mA1 = rpair (rep (outr mux)) (rep my)) (hS1 : rep mS1 = rpair (rep macc) (rep (outl mux)))
     (hN1 : ∀ s z, rep mN1 s z ↔ ∃ bs b, rep mS1 s (bs, b) ∧ z = bs ++ [b])
     (hP1 : rep mP1 = rpair (rep mA1) (rep mN1)) (hL1 : rep mL1 = rep ml ≫ rep mP1)
-    (hnb : rep mnb = rep mboth ≫ corefl (A := (⟨(SO).El⟩ : RelSet.{0})) fun s => ¬ ∃ y, rep ml y s)
+    (hnb : rep mnb = rep mboth ≫ corefl (α := (SO).El) fun s => ¬ ∃ y, rep ml y s)
     (hA2 : rep mA2 = rpair (rep mx) (rep (outr muy))) (hS2 : rep mS2 = rpair (rep macc) (rep (outl muy)))
     (hN2 : ∀ s z, rep mN2 s z ↔ ∃ bs b, rep mS2 s (bs, b) ∧ z = bs ++ [b])
     (hP2 : rep mP2 = rpair (rep mA2) (rep mN2)) (hL2 : rep mL2 = rep mnb ≫ rep mP2)
     (htk : rep mtk = rep mL1 ∪ rep mL2) (hT : rep mT = rep St ≫ rep mtk)
-    (hfl : rep mfl = rep mD ≫ corefl (A := (⟨(SO).El⟩ : RelSet.{0})) fun s => ¬ ∃ y, rep mboth y s)
+    (hfl : rep mfl = rep mD ≫ corefl (α := (SO).El) fun s => ¬ ∃ y, rep mboth y s)
     (hSf : rep mSf = rep St ≫ rep mfl)
     (hc1 : rep mc1 = rpair (rep macc) (rep mx))
     (hC1 : ∀ s z, rep mC1 s z ↔ ∃ xs ys, rep mc1 s (xs, ys) ∧ z = xs ++ ys)
@@ -439,7 +439,7 @@ local notation "initOK" =>
 
 section Headline
 
-open Freyd Freyd.Alg Freyd.Alg.RelSet
+open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 /-- **`mergeOn`, read back from its rounds**: with the first state `I` read back (`h0`) and each round's states and
     `out` read back (`hS`, `hO`, internal: `rep_mergeOn` discharges them from the primitives), `mergeOn q P` takes

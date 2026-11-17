@@ -8,7 +8,7 @@ import LeetQ.Rel.KernelWF.RazeRowRec
 namespace LeetQ.Rel.KernelWF
 
 open QLean QLean.Kernel QLean.Dep LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.Rep
-open Freyd Freyd.Alg Freyd.Alg.RelSet
+open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 /-- The size bounds under which two parts' `raze` reads back row by row (`raze_row`):
     - an atom: the parts' dictionaries, a blob counting its rows, fit a `USize` (`razeTo2_symbol`'s `hD`), and at

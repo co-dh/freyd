@@ -18,7 +18,8 @@ import LeetQ.Rel.CRelEst
 
 namespace LeetQ.Rel.Lang.Gen
 
-open LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.Rep Freyd Freyd.Alg Freyd.Alg.RelSet QLean.Kernel
+open LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.Rep QLean.Kernel
+open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 /-- The keys `D` as a relation: the coreflexive itself on demand, `𝟙` for a closed term. -/
 def keys : {d : Bool} → {A : Obj} → Dem d A → Den A A
@@ -38,7 +39,7 @@ def Sound {d : Bool} {A B : Obj} (f : Fn d A B) (T : Den A B) : Prop :=
 /-- A closed term's `Sound` is the equation of its relation. -/
 theorem Sound.eq {A B : Obj} {f : Fn false A B} {T : Den A B} (h : Sound f T) (hb : (f ()).ok = true) :
     rep (f ()).rel = T :=
-  hom_ext fun x y => h () trivial hb x y rfl
+  Core.Rel.ext fun x y => h () trivial hb x y rfl
 
 /-- A plan computes `T` on its keys, read by `⟦−⟧` at `Val.empty` (a plan is closed). -/
 def PSound {d : Bool} {A B : Obj} (p : Pl d A B) (T : Den A B) : Prop :=
@@ -116,11 +117,11 @@ theorem outr_sound {A B : Obj} : Sound (outr A B) (graph Prod.snd) := fun D hD h
   simp only [Gen.outr] at hb ⊢; rw [CRel.rep_ofC hb, rep_outr]
   exact ⟨fun ⟨z, h, e⟩ => (hD x z h) ▸ e, fun e => ⟨x, hx, e⟩⟩
 
-theorem inl_sound {A B : Obj} : Sound (ofVals A (.sum A B) CRel.inl) (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩).u₁ := fun D _ hb x y hx => by
+theorem inl_sound {A B : Obj} : Sound (ofVals A (.sum A B) CRel.inl) (Core.Rel.inl (α := A.El) (β := B.El)) := fun D _ hb x y hx => by
   show rep (CRel.inl (B := B) D.val).rel x y ↔ _; rw [CRel.rep_inl _ hb]
   exact ⟨fun ⟨z, ⟨e, _⟩, h⟩ => e ▸ h, fun h => ⟨x, ⟨rfl, keyRow hx⟩, h⟩⟩
 
-theorem inr_sound {A B : Obj} : Sound (ofVals B (.sum A B) CRel.inr) (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩).u₂ := fun D _ hb x y hx => by
+theorem inr_sound {A B : Obj} : Sound (ofVals B (.sum A B) CRel.inr) (Core.Rel.inr (α := A.El) (β := B.El)) := fun D _ hb x y hx => by
   show rep (CRel.inr (A := A) D.val).rel x y ↔ _; rw [CRel.rep_inr _ hb]
   exact ⟨fun ⟨z, ⟨e, _⟩, h⟩ => e ▸ h, fun h => ⟨x, ⟨rfl, keyRow hx⟩, h⟩⟩
 
@@ -265,7 +266,7 @@ open Classical in
     something. -/
 theorem test_le {B : Obj} {Q : Fn true (.prod B B) (.prod B B)} {TQ : Den (.prod B B) (.prod B B)} (hQ : Sound Q TQ) :
     ∀ (E : Rel (.prod B B) (.prod B B)) (S : (Obj.prod B B).El → Prop),
-      rep E = corefl (A := (⟨(Obj.prod B B).El⟩ : RelSet.{0})) S → (Q E).ok = true →
+      rep E = corefl (α := (Obj.prod B B).El) S → (Q E).ok = true →
       ∀ a b, S (a, b) → ((∃ c, rep (Q E).rel (a, b) c) ↔ decide (∃ c, TQ (a, b) c) = true) := fun E S hE hb a b hS => by
   have hC : Cor (d := true) E := fun u v h => (show corefl S u v by rw [← hE]; exact h).1
   have hk : rep E (a, b) (a, b) := by rw [hE]; exact ⟨rfl, hS⟩
@@ -291,7 +292,7 @@ theorem thinL_sound {B : Obj} {Q : Fn true (.prod B B) (.prod B B)} {TQ : Den (.
 /-- A step run on a round's coreflexive `D` of the pairs `S` (`onKeys`) computes `T` at those pairs: `D` has a
     row, so the step ran. -/
 theorem onKeys_sound {A B : Obj} {d : Bool} {F : Fn d A B} {T : Den A B} (hF : Sound F T) (D : Rel A A)
-    (S : A.El → Prop) (hD : rep D = corefl (A := (⟨A.El⟩ : RelSet.{0})) S) (hb : (onKeys d F ⟨D, true⟩).ok = true) :
+    (S : A.El → Prop) (hD : rep D = corefl (α := A.El) S) (hb : (onKeys d F ⟨D, true⟩).ok = true) :
     ∀ x y, S x → (rep (onKeys d F ⟨D, true⟩).rel x y ↔ T x y) := fun x y hx => by
   have hk : rep D x x := by rw [hD]; exact ⟨rfl, hx⟩
   unfold onKeys at hb ⊢; dsimp only at hb ⊢
@@ -406,7 +407,7 @@ theorem prod_sound {A B C D : Obj} {R : Fn false A B} {S : Fn false C D} {TR : D
 
 theorem junc_sound {A B C : Obj} {R : Fn false A C} {S : Fn false B C} {TR : Den A C} {TS : Den B C}
     (hR : Sound R TR) (hS : Sound S TS) :
-    Sound (junc A B C R S) (Freyd.Alg.junc (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩) TR TS) := fun ⟨⟩ _ hb x y _ => by
+    Sound (junc A B C R S) (Core.Rel.junc TR TS) := fun ⟨⟩ _ hb x y _ => by
   have hc := ok_and hb; rw [Bool.and_eq_true] at hc
   show rep (CRel.junc _ _).rel x y ↔ _; rw [CRel.rep_junc _ _ hb, hR.eq hc.1, hS.eq hc.2]
 
@@ -430,7 +431,7 @@ theorem succ_sound {U : Fn false .long .long} {TU : Den .long .long} (hU : Sound
     simp only [succ, also, Bool.and_eq_true] at hb ⊢
     obtain ⟨hu0, hc⟩ := hb
     have h2 := ok_and hc; rw [Bool.and_eq_true] at h2
-    rw [CRel.rep_comp _ _ hc, Freyd.Alg.RelSet.comp_apply]
+    rw [CRel.rep_comp _ _ hc, Core.Rel.comp_apply]
     have e : ∀ u', rep (CRel.succ (U ()).rel.key).rel u' w ↔ (∃ v, TU u' v) ∧ w = Ew.intStep Ew.add nul u' 1 ∧
         ∃ v, TU w v := fun u' => by
       rw [CRel.rep_succ _ h2.2, keyRowRep, keyRowRep, hU.eq hu0]
@@ -453,7 +454,7 @@ theorem arith_sound (k : UInt8) {U : Fn false .long .long} {TU : Den .long .long
   fun D _ hb p w hp => by
     have hc := ok_and hb; rw [Bool.and_eq_true] at hc
     show rep (CRel.comp _ _).rel p w ↔ _
-    rw [CRel.rep_comp _ _ hb, hU.eq hc.2, Freyd.Alg.RelSet.comp_apply, arithDen, Freyd.Alg.RelSet.comp_apply]
+    rw [CRel.rep_comp _ _ hb, hU.eq hc.2, Core.Rel.comp_apply, arithDen, Core.Rel.comp_apply]
     obtain ⟨a, b⟩ := p
     exact exists_congr fun v => and_congr_left fun _ => (rep_arith k D.val a b v).trans (and_iff_right (keyRow hp))
 
@@ -513,7 +514,7 @@ theorem est_sound {B : Obj} {Q : Fn true (.prod B B) (.prod B B)} {TQ : Den (.pr
     fun ⟨hc, hne, hn⟩ => ⟨⟨hr, hc⟩, hne, fun t => hn ((hQ _ hC hq _ _ (hk c hc)).1 t)⟩⟩
 
 theorem top_sound {A B : Obj} {V : Fn false B B} {TV : Den B B} (hV : Sound V TV) :
-    Sound (top A B V) (relTop ≫ TV) := fun D _ hb x y hx => by
+    Sound (top A B V) (Core.Rel.top ≫ TV) := fun D _ hb x y hx => by
   simp only [top, also, Bool.and_eq_true] at hb ⊢; rw [CRel.rep_ofC hb.2]; replace hb := And.intro hb.1 (CRel.ofC_ok hb.2).1
   rw [rep_topC _ _ hb.2, ← hV.eq hb.1]
   exact ⟨fun ⟨_, _, _, _, e, hq⟩ => let ⟨a, h⟩ := (valRow _ _).1 hq; ⟨a, trivial, e ▸ h⟩,

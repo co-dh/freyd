@@ -92,7 +92,7 @@ theorem rep_cat_ok {K B : Obj} (P : Rel K (.prod (.arr B) (.arr B))) (h : catOK(
   exact rep_cat P hVa hVb _ rfl _ rfl hS hU _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
     _ rfl _ rfl _ rfl _ rfl hKf hRf hFf
 
-open Freyd Freyd.Alg Freyd.Alg.RelSet in
+open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc in
 /-- **`α ≜ [nil, cons]`, read back**: the copairing, out of the sum, of `nil` on the elements `I` lists (each to
     the empty array) and `cons` on the pairs `P` lists (`(b, bs)` to `b :: bs`). Hypotheses: `rep_junc_full`'s at
     `nil I`, `cons (idU P)` (`hN`, `h63`, `hF`), `rep_cons`'s at `idU P` (`hc`). -/
@@ -101,23 +101,23 @@ theorem rep_alpha {K B : Obj} {n : USize} (I : Vals K 1) (P : Vals (.prod B (.ar
     (h63 : (Alg.nil (B := B) I).n.toNat + (cons (idU P)).n.toNat ≤ 2 ^ 63)
     (hF : Vals.RazeFits (.arr B) (Alg.nil (B := B) I).val (cons (idU P)).val)
     (hc : consOK(.prod B (.arr B), B, idU P)) :
-    rep (alpha I P) = Freyd.Alg.junc (sumCop (⟨K.El⟩ : RelSet.{0}) ⟨B.El × List B.El⟩)
-      (corefl (A := (⟨K.El⟩ : RelSet.{0})) (fun u => ∃ i, I.row i = u) ≫
-        (graph (fun _ => []) :(⟨K.El⟩ : RelSet.{0}) ⟶ ⟨List B.El⟩))
-      (corefl (A := (⟨B.El × List B.El⟩ : RelSet.{0})) (fun p => ∃ i, P.row i = p) ≫
-        (graph (fun p => p.1 :: p.2) :(⟨B.El × List B.El⟩ : RelSet.{0}) ⟶ ⟨List B.El⟩)) := by
+    rep (alpha I P) = Core.Rel.junc
+      (corefl (α := K.El) (fun u => ∃ i, I.row i = u) ≫
+        (graph (fun _ => []) :Core.Rel (K.El) (List B.El)))
+      (corefl (α := B.El × List B.El) (fun p => ∃ i, P.row i = p) ≫
+        (graph (fun p => p.1 :: p.2) :Core.Rel (B.El × List B.El) (List B.El))) := by
   rw [show alpha I P = junc (nil I) (cons (idU P)) from rfl, rep_junc_full _ _ hN h63 hF, ← rep_idU P]
   congr 1
-  · refine hom_ext fun u xs => (rep_nil I u xs).trans ⟨?_, ?_⟩
+  · refine Core.Rel.ext fun u xs => (rep_nil I u xs).trans ⟨?_, ?_⟩
     · rintro ⟨h, rfl⟩; exact ⟨u, ⟨rfl, h⟩, rfl⟩
     · rintro ⟨v, ⟨rfl, h⟩, rfl⟩; exact ⟨h, rfl⟩
-  · refine hom_ext fun p ys => (rep_cons_ok _ hc p ys).trans ⟨?_, ?_⟩
+  · refine Core.Rel.ext fun p ys => (rep_cons_ok _ hc p ys).trans ⟨?_, ?_⟩
     · rintro ⟨b, bs, h, rfl⟩; exact ⟨(b, bs), h, rfl⟩
     · rintro ⟨⟨b, bs⟩, h, rfl⟩; exact ⟨b, bs, h, rfl⟩
 
 /-! ## `tic` -/
 
-open Freyd Freyd.Alg Freyd.Alg.RelSet in
+open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc in
 /-- **`tic`, read back**: a row `(b, bs)` of `P` goes to the non-empty prefixes of `b :: bs`, shortest first.
     `tic P` is `I ≫ tail I.val`, `I = C ≫ inits C.val`, `C = cons P` (bound by `hC`, `hI`). Hypotheses:
     `rep_cons`'s at `P` (`hc`), `rep_comp`'s at `I` (`h1`) and at the result (`h2`), `rep_inits`'s at `C.val`
@@ -136,7 +136,7 @@ theorem tic_of {K B : Obj} (P : Rel K (.prod B (.arr B))) (C : Rel K (.arr B)) (
   have eI : ∀ k yss, rep I k yss ↔ ∃ b bs, rep P k (b, bs) ∧
       yss = (List.range ((b :: bs).length + 1)).map fun j => (b :: bs).take j := by
     intro k yss
-    rw [hI, e1, Freyd.Alg.RelSet.comp_apply]
+    rw [hI, e1, Core.Rel.comp_apply]
     constructor
     · rintro ⟨ys, hy, hn⟩
       obtain ⟨-, rfl⟩ := (eN ys yss).1 hn
@@ -153,7 +153,7 @@ theorem tic_of {K B : Obj} (P : Rel K (.prod B (.arr B))) (C : Rel K (.arr B)) (
     rw [List.length_cons, List.range_succ_eq_map, List.map_cons, List.map_map]
     rfl
   intro k zss
-  rw [show tic P = I ≫ tail (Rel.val I) by rw [hI, hC]; rfl, e2, Freyd.Alg.RelSet.comp_apply]
+  rw [show tic P = I ≫ tail (Rel.val I) by rw [hI, hC]; rfl, e2, Core.Rel.comp_apply]
   constructor
   · rintro ⟨yss, hy, ht⟩
     obtain ⟨-, y, e⟩ := (eT yss zss).1 ht
@@ -334,7 +334,7 @@ theorem rep_snoc {K B : Obj} (P : Rel K (.prod (.arr B) B))
   -- `outr D ≫ τ`: a pair of `P` to the array of its second part alone
   have hT : ∀ p Y, rep (outr (ran P) ≫ τ (outr (ran P)).val) p Y ↔ (∃ k, rep P k p) ∧ Y = [p.2] := by
     intro p Y
-    rw [eT, Freyd.Alg.RelSet.comp_apply]
+    rw [eT, Core.Rel.comp_apply]
     constructor
     · rintro ⟨b, hb, hτ⟩
       obtain ⟨y, hy⟩ := (outr_holds (ran P) p b).1 hb
@@ -351,7 +351,7 @@ theorem rep_snoc {K B : Obj} (P : Rel K (.prod (.arr B) B))
     unfold snoc snocC ranC ran τ cat; dsimp only; rw [ht]; rfl, eC]
   constructor
   · rintro ⟨xs, Y, hM, rfl⟩
-    rw [eM, Freyd.Alg.RelSet.comp_apply] at hM
+    rw [eM, Core.Rel.comp_apply] at hM
     obtain ⟨p, hp, hq⟩ := hM
     have hq' : rep (outl (ran P)) p xs ∧ rep (outr (ran P) ≫ τ (outr (ran P)).val) p Y :=
       (Iff.of_eq (congrFun (congrFun eQ p) (xs, Y))).1 hq
@@ -361,7 +361,7 @@ theorem rep_snoc {K B : Obj} (P : Rel K (.prod (.arr B) B))
     exact ⟨xs, z, hp, rfl⟩
   · rintro ⟨bs, b, hp, rfl⟩
     refine ⟨bs, [b], ?_, rfl⟩
-    rw [eM, Freyd.Alg.RelSet.comp_apply]
+    rw [eM, Core.Rel.comp_apply]
     refine ⟨(bs, b), hp, (Iff.of_eq (congrFun (congrFun eQ (bs, b)) (bs, [b]))).2 ⟨?_, (hT _ _).2 ⟨⟨k, hp⟩, rfl⟩⟩⟩
     exact (outl_holds (ran P) (bs, b) bs).2 ⟨b, (hD _ _).2 ⟨rfl, k, hp⟩⟩
 

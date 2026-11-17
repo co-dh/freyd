@@ -183,7 +183,7 @@ theorem rep_leq {n : USize} (U : Vals (.atom .long) n) (h : QAtomicType.long ≠
   subst hV
   have e : leq U h = lt U h ∪ idU U := rfl
   rw [e, rep_union_full (lt U h) (idU U) hNU (razeFits_atom_count _ _ hNU (by decide) rfl)
-    (razeFits_atom_count _ _ hNU (by decide) rfl) huK huV huk huv, Freyd.Alg.RelSet.union_apply,
+    (razeFits_atom_count _ _ hNU (by decide) rfl) huK huV huk huv, Core.Rel.union_apply,
     rep_lt U h hN h63 L hL hc hk hv, rep_apply, idU_holds, Int64.le_iff_lt_or_eq]
   constructor
   · rintro (⟨ha, hb, hlt⟩ | ⟨e, ha⟩)

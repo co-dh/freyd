@@ -10,7 +10,7 @@ import LeetQ.Rel.RepOps
 namespace LeetQ.Rel.KernelWF
 
 open QLean QLean.Kernel QLean.Dep LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.Rep
-open Freyd Freyd.Alg Freyd.Alg.RelSet
+open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 /-- A value moved along an equation is the value. -/
 theorem ndrec_heq {α : Sort u} {φ : α → Sort v} {a b : α} (h : a = b) (x : φ a) :
@@ -126,7 +126,8 @@ end LeetQ.Rel.KernelWF
 
 namespace LeetQ.Rel.Rep
 
-open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF Freyd Freyd.Alg Freyd.Alg.RelSet
+open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
+open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 variable {A B : Obj}
 
@@ -179,7 +180,7 @@ theorem rep_union (R S : Rel A B) (hN : R.n.toNat + S.n.toNat < USize.size)
     rep (R ∪ S) = rep R ∪ rep S := by
   rw [union_eq_nub R S hN, rep_nub (Uc) hK hV hk hv]
   have hn : (Uc).n.toNat = R.n.toNat + S.n.toNat := raze2_cnt R.key S.key (raze2_lt hN)
-  refine hom_ext fun a b => ?_
+  refine Core.Rel.ext fun a b => ?_
   rw [union_apply]
   exact holds_two (Uc).key (Uc).val R S hn (fun k hk => hA k hk) (fun k hk => hB k hk) a b
 

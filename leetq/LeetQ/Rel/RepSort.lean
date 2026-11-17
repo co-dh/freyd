@@ -79,7 +79,7 @@ theorem rep_orderedOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) →
   have eU := rep_uncons (Rel.val Wu) _ rfl _ rfl _ rfl u1
   -- `T`: an array to the head and tail of each of its non-empty suffixes
   have eT : ∀ xs (p : (Obj.prod B (.arr B)).El), rep T xs p ↔ rep Su xs (p.1 :: p.2) := fun xs p => by
-    rw [hT, rep_comp _ _ (codes_faithful_wf _ _ hcf).1 c1 c2 c3 c4, Freyd.Alg.RelSet.comp_apply]
+    rw [hT, rep_comp _ _ (codes_faithful_wf _ _ hcf).1 c1 c2 c3 c4, Core.Rel.comp_apply]
     constructor
     · rintro ⟨a, ha, hu⟩
       obtain ⟨-, rfl⟩ := (eU a p.1 p.2).1 hu
@@ -101,7 +101,7 @@ theorem rep_orderedOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) →
     rw [hV, rep_ran_corefl O (one_ok _ hOf) (hOp)]; exact Iff.rfl
   have eMem := rep_mem (Rel.val V) hVv hVk
   have eM : ∀ p z, rep M p z ↔ (∃ xs, rep T xs p) ∧ z ∈ p.2 := fun p z => by
-    rw [hM, rep_comp _ _ (codes_faithful_wf _ _ hmf).1 m1 m2 m3 m4, Freyd.Alg.RelSet.comp_apply]
+    rw [hM, rep_comp _ _ (codes_faithful_wf _ _ hmf).1 m1 m2 m3 m4, Core.Rel.comp_apply]
     constructor
     · rintro ⟨a, ho, hm⟩
       obtain ⟨hx, rfl⟩ := (eO p a).1 ho
@@ -126,12 +126,12 @@ theorem rep_orderedOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) →
   have eE : ∀ w w', rep E w w' ↔ w = w' ∧ ∃ p, rep yz p w := fun w w' => by
     rw [hE, rep_ran_corefl yz (one_ok _ hyf) (hyp)]; exact Iff.rfl
   have ebad : ∀ p v, rep bad p v ↔ rep yz p v ∧ ¬ ∃ w, rep (q E) w v := fun p v => by
-    rw [hbad, rep_antiJoin yz (q E) (codes_faithful_wf _ _ hbf).1 b1 b2, Freyd.Alg.RelSet.comp_apply]
+    rw [hbad, rep_antiJoin yz (q E) (codes_faithful_wf _ _ hbf).1 b1 b2, Core.Rel.comp_apply]
     exact ⟨fun ⟨_, h1, rfl, h2⟩ => ⟨h1, h2⟩, fun ⟨h1, h2⟩ => ⟨v, h1, rfl, h2⟩⟩
   have edb : ∀ p p', rep (dom bad) p p' ↔ p = p' ∧ ∃ v, rep bad p v := fun p p' => by
     rw [rep_dom_corefl bad (one_ok _ hdf) (hdp)]; exact Iff.rfl
   have eC : ∀ xs p, rep C xs p ↔ rep T xs p ∧ ∃ v, rep bad p v := fun xs p => by
-    rw [hC, rep_comp _ _ (codes_faithful_wf _ _ hCf).1 k1 k2 k3 k4, Freyd.Alg.RelSet.comp_apply]
+    rw [hC, rep_comp _ _ (codes_faithful_wf _ _ hCf).1 k1 k2 k3 k4, Core.Rel.comp_apply]
     constructor
     · rintro ⟨p', ht, hd⟩
       obtain ⟨rfl, hv⟩ := (edb _ _).1 hd
@@ -142,7 +142,7 @@ theorem rep_orderedOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) →
     rw [rep_dom_corefl C (one_ok _ hDf) (hDp)]; exact Iff.rfl
   have eA : ∀ xs ys, rep (antiJoin (idU X) (dom C)) xs ys ↔
       rep (idU X) xs ys ∧ ¬ ∃ w, rep (dom C) w ys := fun xs ys => by
-    rw [rep_antiJoin (idU X) (dom C) (codes_faithful_wf _ _ hAf).1 a1 a2, Freyd.Alg.RelSet.comp_apply]
+    rw [rep_antiJoin (idU X) (dom C) (codes_faithful_wf _ _ hAf).1 a1 a2, Core.Rel.comp_apply]
     exact ⟨fun ⟨_, h1, rfl, h2⟩ => ⟨h1, h2⟩, fun ⟨h1, h2⟩ => ⟨ys, h1, rfl, h2⟩⟩
   -- the suffix `y :: zs` of a row `xs` and `z` of `zs` give the pair `(y, z)` of `yz`
   have hyz' : ∀ xs y zs z, (∃ i, X.row i = xs) → (y :: zs) <:+ xs → z ∈ zs → rep yz (y, zs) (y, z) :=
@@ -201,7 +201,7 @@ theorem rep_sortSet {B : Obj} {n : USize} (Q : Rel B B) (Y : Vals (.arr B) n)
   obtain ⟨c1, c2, c3, c4⟩ := h' _ rfl
   intro s ys
   rw [show sortSet Q Y = (setify Y)° ≫ ordered Q Y from rfl,
-    rep_comp _ _ (codes_faithful_wf _ _ hf).1 c1 c2 c3 c4, Freyd.Alg.RelSet.comp_apply]
+    rep_comp _ _ (codes_faithful_wf _ _ hf).1 c1 c2 c3 c4, Core.Rel.comp_apply]
   constructor
   · rintro ⟨m, hm, ho⟩
     obtain ⟨hx, rfl, hp⟩ := (eO m ys).1 ho

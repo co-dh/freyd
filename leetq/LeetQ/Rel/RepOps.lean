@@ -4,7 +4,7 @@
   it picks.
 -/
 import LeetQ.Rel.RepComp
-import Freyd.Junc
+import LeetQ.Core.Fix
 import LeetQ.Rel.KernelWF.NubSpec
 import LeetQ.Rel.KernelWF.CrossSpec
 import LeetQ.Rel.KernelWF.MemberSpec
@@ -13,7 +13,7 @@ import LeetQ.Rel.KernelWF.CodesProdFaithful
 namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
-open Freyd Freyd.Alg Freyd.Alg.RelSet
+open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 variable {A B C D : Obj}
 
@@ -28,12 +28,12 @@ section Sum
 theorem rep_sum (R : Rel A C) (S : Rel B D) (hN : R.n.toNat + S.n.toNat < USize.size)
     (h63 : R.n.toNat + S.n.toNat ≤ 2 ^ 63) :
     rep (LeetQ.Rel.Alg.sum R S) =
-      ((sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩).u₁° ≫ rep R ≫ (sumCop (⟨C.El⟩ : RelSet.{0}) ⟨D.El⟩).u₁) ∪
-      ((sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩).u₂° ≫ rep S ≫ (sumCop (⟨C.El⟩ : RelSet.{0}) ⟨D.El⟩).u₂) := by
+      ((Core.Rel.inl (α := A.El) (β := B.El))° ≫ rep R ≫ (Core.Rel.inl (α := C.El) (β := D.El))) ∪
+      ((Core.Rel.inr (α := A.El) (β := B.El))° ≫ rep S ≫ (Core.Rel.inr (α := C.El) (β := D.El))) := by
   have e : LeetQ.Rel.Alg.sum R S = ⟨R.n + S.n, sumVals R.key S.key hN, sumVals R.val S.val hN⟩ := by
     unfold LeetQ.Rel.Alg.sum need; rw [dif_pos hN]; rfl
   rw [e]
-  refine hom_ext fun s t => ?_
+  refine Core.Rel.ext fun s t => ?_
   show (∃ k, Vals.row (A := .sum A B) (sumVals R.key S.key hN) k = s ∧
       Vals.row (A := .sum C D) (sumVals R.val S.val hN) k = t) ↔
     (∃ a, s = Sum.inl a ∧ ∃ c, R.Holds a c ∧ t = Sum.inl c) ∨
@@ -82,9 +82,9 @@ theorem inr_row {n : USize} (Y : Vals B n) (h63 : n.toNat ≤ 2 ^ 63) (i : Fin n
     itself when `X` lists every element of `A`, as `rep_idU`. `h63`: `X`'s count is at most `2^63`, where the
     tag and position columns read `til` as nonnegative longs. -/
 theorem rep_inl {n : USize} (X : Vals A n) (h63 : n.toNat ≤ 2 ^ 63) :
-    rep (inl (B := B) X) = corefl (A := (⟨A.El⟩ : RelSet.{0})) (fun x => ∃ i, X.row i = x) ≫
-      (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩).u₁ :=
-  hom_ext fun x s => by
+    rep (inl (B := B) X) = corefl (α := A.El) (fun x => ∃ i, X.row i = x) ≫
+      (Core.Rel.inl (α := A.El) (β := B.El)) :=
+  Core.Rel.ext fun x s => by
     show (∃ i, Vals.row (inl (B := B) X).key i = x ∧ Vals.row (A := .sum A B) (inl (B := B) X).val i = s) ↔
       ∃ y, (x = y ∧ ∃ i, X.row i = x) ∧ s = Sum.inl y
     constructor
@@ -96,9 +96,9 @@ theorem rep_inl {n : USize} (X : Vals A n) (h63 : n.toNat ≤ 2 ^ 63) :
 
 /-- **`rep (inr Y) = Y? ι₂`**, as `rep_inl`. -/
 theorem rep_inr {n : USize} (Y : Vals B n) (h63 : n.toNat ≤ 2 ^ 63) :
-    rep (inr (A := A) Y) = corefl (A := (⟨B.El⟩ : RelSet.{0})) (fun y => ∃ i, Y.row i = y) ≫
-      (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩).u₂ :=
-  hom_ext fun y s => by
+    rep (inr (A := A) Y) = corefl (α := B.El) (fun y => ∃ i, Y.row i = y) ≫
+      (Core.Rel.inr (α := A.El) (β := B.El)) :=
+  Core.Rel.ext fun y s => by
     show (∃ i, Vals.row (inr (A := A) Y).key i = y ∧ Vals.row (A := .sum A B) (inr (A := A) Y).val i = s) ↔
       ∃ z, (y = z ∧ ∃ i, Y.row i = y) ∧ s = Sum.inr z
     constructor
@@ -164,7 +164,7 @@ theorem rep_distinctCorefl (t : Obj) {n : USize} (x : Vals t n)
         (dc).b.size = ((dc).n.toNat * (dc).w + 7) / 8 ∧
         ((dc).w < 8 → (dc).card < USize.size ∧ ∀ i < (dc).n.toNat, Column.idAt (dc).b (dc).w i < (dc).card))
     (hp : Vals.PickFits t x (List.range n.toNat)) :
-    rep (distinctCorefl t x) = corefl (A := (⟨t.El⟩ : RelSet.{0})) fun a => ∃ i, x.row i = a := by
+    rep (distinctCorefl t x) = corefl (α := t.El) fun a => ∃ i, x.row i = a := by
   rw [show distinctCorefl t x = (idU x).rows (dc).groupIds.2 by
     unfold distinctCorefl distinctCoreflC; simp only [Obj.codesC_fst]]
   obtain ⟨hF, hw, hn, hs, hcard⟩ := hK
@@ -176,7 +176,7 @@ theorem rep_distinctCorefl (t : Obj) {n : USize} (x : Vals t n)
     rw [groupIds_firsts (dc) hw hs hcard, hn]
     exact Nat.le_trans (List.length_filter_le _ _) (Nat.le_of_eq (List.length_range ..))
   have hlen : len (dc).groupIds.2 < USize.size := by rw [len_eq_ids]; exact Nat.lt_of_le_of_lt hle n.toNat_lt_size
-  exact hom_ext fun a b => distinct_holds t x _ _ hlen hlt hex (fun hi hj h => (hF hi hj).1 h) hp a b
+  exact Core.Rel.ext fun a b => distinct_holds t x _ _ hlen hlt hex (fun hi hj h => (hF hi hj).1 h) hp a b
 
 namespace OpsN
 -- the one-part code `distinctCorefl` groups, and `rep_dom`'s hypothesis on it. The index proof is a term: a bare
@@ -195,8 +195,8 @@ end OpsN
 open OpsN
 
 /-- `dom S ≜ 𝟙 ∩ S S°` (§2.122) in `Rel(Set)` is the coreflexive on the `a` with a pair. -/
-theorem dom_corefl {X Y : RelSet.{0}} (S : X ⟶ Y) : 𝟙 X ∩ S ≫ S° = corefl fun a => ∃ b, S a b :=
-  hom_ext fun _ _ => ⟨fun ⟨e, b, h, _⟩ => ⟨e, b, h⟩, fun ⟨e, b, h⟩ => ⟨e, b, h, by subst e; exact h⟩⟩
+theorem dom_corefl {X Y : Type} (S : Core.Rel X Y) : 𝟙 X ∩ S ≫ S° = corefl fun a => ∃ b, S a b :=
+  Core.Rel.ext fun _ _ => ⟨fun ⟨e, b, h, _⟩ => ⟨e, b, h⟩, fun ⟨e, b, h⟩ => ⟨e, b, h, by subst e; exact h⟩⟩
 
 /-- **`rep (dom R) = 𝟙 ∩ rep R (rep R)°`**, the allegory's `dom` (§2.122): `dom R` is `distinctCorefl` of the
     keys, whose elements are the `a` with a pair (`dom_corefl`). Hypotheses: `rep_distinctCorefl`'s at `R.key`. -/
@@ -216,13 +216,13 @@ theorem rep_ran (R : Rel A B) (hK : oneOK(B, R.n, R.val))
 /-- `rep_dom` read pointwise, `{(a, a) ∣ ∃ b, rep R(a, b)}` (`dom_corefl`). -/
 theorem rep_dom_corefl (R : Rel A B) (hK : oneOK(A, R.n, R.key))
     (hp : Vals.PickFits A R.key (List.range R.n.toNat)) :
-    rep (dom R) = corefl (A := (⟨A.El⟩ : RelSet.{0})) fun a => ∃ b, rep R a b :=
+    rep (dom R) = corefl (α := A.El) fun a => ∃ b, rep R a b :=
   (rep_dom R hK hp).trans (dom_corefl _)
 
 /-- `rep_ran` read pointwise, `{(b, b) ∣ ∃ a, rep R(a, b)}` (`dom_corefl`). -/
 theorem rep_ran_corefl (R : Rel A B) (hK : oneOK(B, R.n, R.val))
     (hp : Vals.PickFits B R.val (List.range R.n.toNat)) :
-    rep (ran R) = corefl (A := (⟨B.El⟩ : RelSet.{0})) fun b => ∃ a, rep R a b :=
+    rep (ran R) = corefl (α := B.El) fun b => ∃ a, rep R a b :=
   (rep_ran R hK hp).trans (dom_corefl _)
 
 end Distinct
@@ -351,10 +351,10 @@ theorem rep_top {ma mb : USize} (Ua : Vals A ma) (Ub : Vals B mb) (hN : ma.toNat
     -- discharges them by `pickFits_cross_left`/`_right`
     (hA : Vals.PickFits A Ua ((List.range (ma.toNat * mb.toNat)).map (· / mb.toNat)))
     (hB : Vals.PickFits B Ub ((List.range (ma.toNat * mb.toNat)).map (· % mb.toNat))) :
-    rep (LeetQ.Rel.Alg.top Ua Ub) = corefl (A := (⟨A.El⟩ : RelSet.{0})) (fun a => ∃ i, Ua.row i = a) ≫
-      relTop ≫ corefl (A := (⟨B.El⟩ : RelSet.{0})) (fun b => ∃ j, Ub.row j = b) := by
+    rep (LeetQ.Rel.Alg.top Ua Ub) = corefl (α := A.El) (fun a => ∃ i, Ua.row i = a) ≫
+      Core.Rel.top ≫ corefl (α := B.El) (fun b => ∃ j, Ub.row j = b) := by
   have hlen : len (cross ma mb).1 < USize.size := by rw [len_eq_ids, (cross_ids hN h63).1]; simpa using hN
-  refine hom_ext fun a b => ?_
+  refine Core.Rel.ext fun a b => ?_
   show (longCount "⊤" (cross ma mb).1 fun m h => (⟨m, Vals.pick A Ua (cross ma mb).1 m h,
       Vals.pick B Ub (cross ma mb).2 m ((cross_len ma mb).trans h)⟩ : Rel A B)).Holds a b ↔
     ∃ a', (a = a' ∧ ∃ i, Ua.row i = a) ∧ ∃ b', True ∧ (b' = b ∧ ∃ j, Ub.row j = b')
@@ -395,7 +395,7 @@ theorem rep_prod (R : Rel A B) (S : Rel C D) (hN : R.n.toNat * S.n.toNat < USize
   replace hC := pickFits_cross_right (ma := R.n) S.key hC
   replace hD := pickFits_cross_right (ma := R.n) S.val hD
   have hlen : len (cross R.n S.n).1 < USize.size := by rw [len_eq_ids, (cross_ids hN h63).1]; simpa using hN
-  refine hom_ext fun p p' => ?_
+  refine Core.Rel.ext fun p p' => ?_
   show (longCount "×" (cross R.n S.n).1 fun m h => (⟨m,
       (Vals.pick A R.key (cross R.n S.n).1 m h, Vals.pick C S.key (cross R.n S.n).2 m ((cross_len R.n S.n).trans h)),
       (Vals.pick B R.val (cross R.n S.n).1 m h, Vals.pick D S.val (cross R.n S.n).2 m ((cross_len R.n S.n).trans h))⟩ :
@@ -542,7 +542,7 @@ theorem rows_keep (R : Rel A B) (I : ByteArray) (f : Nat → Bool) (hI : ids I =
     and `R`'s two columns picking back at the kept rows. -/
 theorem rep_inter (R S : Rel A B) (hc : pairsOK(R, S)) (hk : Vals.PickFits A R.key (List.range R.n.toNat))
     (hv : Vals.PickFits B R.val (List.range R.n.toNat)) : rep (R ∩ S) = rep R ∩ rep S :=
-  hom_ext fun a b => by
+  Core.Rel.ext fun a b => by
     rw [show R ∩ S = R.rows (hits) from
       congrArg (fun c : Vector Code 2 => R.rows (whereBits R.n (c[0].member c[1]))) (pairs_codesC R S)]
     show (R.rows (hits)).Holds a b ↔ R.Holds a b ∧ S.Holds a b
@@ -615,7 +615,7 @@ theorem rep_le (R S : Rel A B) (hc : pairsOK(R, S)) : (R ⊑ S) = true ↔ rep R
 theorem rep_eq (R S : Rel A B) (hc : pairsOK(R, S)) (hc' : pairsOK(S, R)) : (R == S) = true ↔ rep R = rep S := by
   show ((R ⊑ S) && (S ⊑ R)) = true ↔ _
   rw [Bool.and_eq_true, rep_le R S hc, rep_le S R hc', le_iff, le_iff]
-  exact ⟨fun ⟨h1, h2⟩ => hom_ext fun a b => ⟨h1 a b, h2 a b⟩,
+  exact ⟨fun ⟨h1, h2⟩ => Core.Rel.ext fun a b => ⟨h1 a b, h2 a b⟩,
     fun h => by rw [h]; exact ⟨fun _ _ x => x, fun _ _ x => x⟩⟩
 
 /-! ### `⟨R, S⟩`: the join on the keys -/
@@ -648,7 +648,7 @@ theorem rep_pair (R : Rel A B) (S : Rel A C) (hc : codesOK(kc, kp(R, S))) (hrn :
   obtain ⟨hlt, hZ⟩ := join_rows _ _ hlw hls hrw hrs hrc (by rw [hrn']; exact hrn) (by rw [hln, hrn']; exact hM)
   have hP := mem_joinPairs (kc[0]'Nat.zero_lt_two) (kc[1]'Nat.one_lt_two)
   rw [hln, hrn'] at hP
-  refine hom_ext fun a p => ?_
+  refine Core.Rel.ext fun a p => ?_
   -- the codes twin's `.1` read as `kc` while an argument of `pairJoinC`, then the picks' twins
   show ((pairJoinC R S ((A.codesC kp(R, S)).1[0]) ((A.codesC kp(R, S)).1[1])).1).Holds a p ↔
     R.Holds a p.1 ∧ S.Holds a p.2
@@ -834,7 +834,7 @@ theorem rep_junc (R : Rel A C) (S : Rel B C) (hN : R.n.toNat + S.n.toNat < USize
       if h : k < R.n.toNat then Vals.row R.val ⟨k, h⟩
       else Vals.row S.val ⟨k - R.n.toNat, by have := raze2_cnt R.val S.val hN'; omega⟩) :
     rep (LeetQ.Rel.Alg.junc R S) =
-      Freyd.Alg.junc (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩) (rep R) (rep S) := by
+      Core.Rel.junc (rep R) (rep S) := by
   have hN' : ((#[⟨R.n, R.val⟩, ⟨S.n, S.val⟩] : Array (Part C)).toList.map fun c : Part C => c.1.toNat).sum <
       USize.size := raze2_lt hN
   have e : LeetQ.Rel.Alg.junc R S = ⟨R.n + S.n, sumVals R.key S.key hN,
@@ -842,7 +842,7 @@ theorem rep_junc (R : Rel A C) (S : Rel B C) (hN : R.n.toNat + S.n.toNat < USize
     unfold LeetQ.Rel.Alg.junc juncC; rw [need_fst]; simp only [razeC_fst]
     unfold need; rw [dif_pos hN]
   rw [e]
-  refine hom_ext fun s c => ?_
+  refine Core.Rel.ext fun s c => ?_
   have hval : ∀ k : Fin (R.n + S.n).toNat, Vals.row (toUSize_eq (by rw [toNat_add_fits hN]) ▸
       C.raze #[⟨_, R.val⟩, ⟨_, S.val⟩] hN' : Vals C (R.n + S.n)) k =
       if h : k.1 < R.n.toNat then Vals.row R.val ⟨k.1, h⟩

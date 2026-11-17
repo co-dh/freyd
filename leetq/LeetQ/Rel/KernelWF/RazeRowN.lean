@@ -8,7 +8,7 @@ import LeetQ.Rel.KernelWF.RazeFoR
 namespace LeetQ.Rel.KernelWF
 
 open QLean QLean.Kernel QLean.Dep LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.Rep
-open Freyd Freyd.Alg Freyd.Alg.RelSet
+open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 theorem foldl_add_sum' : ∀ (L : List Nat) (s : Nat), L.foldl (· + ·) s = s + L.sum
   | [], s => by simp

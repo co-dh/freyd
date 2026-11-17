@@ -12,7 +12,8 @@ namespace LeetQ.Rel
 
 namespace Rep
 
-open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg Freyd Freyd.Alg Freyd.Alg.RelSet
+open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg
+open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 section Reduce
 

@@ -8,7 +8,7 @@ import LeetQ.Rel.KernelWF.RazeSym
 namespace LeetQ.Rel.KernelWF
 
 open QLean QLean.Kernel QLean.Dep LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.Rep
-open Freyd Freyd.Alg Freyd.Alg.RelSet
+open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 /-- `raze_row_atom`'s `hA` at `symbol` (`razeTo_toList_symbol`); `hD`: the parts' dictionaries, a blob counting
     its rows, fit a `USize`. -/

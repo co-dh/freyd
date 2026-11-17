@@ -331,7 +331,8 @@ end LeetQ.Rel.Alg
 
 namespace LeetQ.Rel.Rep
 
-open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg Freyd Freyd.Alg.RelSet
+open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg
+open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 open Alg.NubN
 
 /-- **`rep (nub R) = rep R`**: `rep` reads a relation as the set of its pairs, so dropping repeated rows
@@ -350,7 +351,7 @@ theorem rep_nub {k v : Obj} (R : Rel k v)
     (hk : Vals.PickFits k R.key (List.range R.n.toNat)) (hv : Vals.PickFits v R.val (List.range R.n.toNat)) :
     rep R.nub = rep R := by
   obtain ⟨hn, hrow⟩ := nub_row R hK hV hk hv
-  refine hom_ext fun a c => ?_
+  refine Core.Rel.ext fun a c => ?_
   show R.nub.Holds a c ↔ R.Holds a c
   simp only [Rel.Holds]
   constructor

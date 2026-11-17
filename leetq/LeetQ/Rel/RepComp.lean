@@ -114,7 +114,7 @@ theorem pickFits_join_snd {A : Obj} {n : USize} (x : Vals A n) {a : Nat} {P : Na
 
 section Comp
 
-open Freyd Freyd.Alg.RelSet
+open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 
 /-- **`rep (R ≫ S) = rep R ≫ rep S`.** Hypotheses:
     - `hc`, the middle side's joint codes identify rows and are well formed — what `CodesSpec` concludes;
@@ -148,7 +148,7 @@ theorem rep_comp (R : Rel A B) (S : Rel B C)
   obtain ⟨hlt, hZ⟩ := join_rows _ _ hlw hls hrw hrs hrc (by rw [hrn']; exact hrn) (by rw [hln, hrn']; exact hM)
   have hP := mem_joinPairs (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)
   rw [hln, hrn'] at hP
-  refine hom_ext fun a c => ?_
+  refine Core.Rel.ext fun a c => ?_
   -- the codes twin's `.1` read as `jc` while an argument of `joinC`, then the picks' twins
   show ((joinC "≫" (keyPart R) (valPart S) ((B.codesC jcs).1[0]) ((B.codesC jcs).1[1])).1).Holds a c ↔ ∃ b, R.Holds a b ∧ S.Holds b c
   rw [Obj.codesC_fst]; unfold joinC longCount; rw [need_fst]; simp only [pickC_fst, keyPart, valPart]

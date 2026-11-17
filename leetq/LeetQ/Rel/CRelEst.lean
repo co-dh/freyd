@@ -15,7 +15,8 @@ import LeetQ.Run.CRelEstDef
 
 namespace LeetQ.Rel
 
-open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF Freyd Freyd.Alg Freyd.Alg.RelSet
+open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
+open LeetQ.Core.Rel hiding id comp recip inter union zero le inl inr junc
 open LeetQ.Rel.Rep LeetQ.Rel.Rep.FoldN LeetQ.Rel.Rep.OpsN LeetQ.Rel.Rep.Prim LeetQ.Rel.Rep.ListN
 
 namespace Rep
@@ -196,7 +197,7 @@ theorem rep_thinLC (Q : Rel B B) {n : USize} (X : Vals (.arr B) n) (hb : (thinLC
   generalize (memC St.val).1 = mS at eM hQS hRd hLd hT hH hG hr ⊢
   have eX : ∀ a s, rep (mS°) a s ↔ (∃ i, St.val.row i = s) ∧ a ∈ s := fun a s => by rw [rep_conv]; exact eM s a
   have eQS : ∀ a t, rep (compC (Q°) (mS°)).1 a t ↔ ∃ y, rep Q y a ∧ (∃ j, St.val.row j = t) ∧ y ∈ t := fun a t => by
-    rw [rep_compC _ _ hQS, Freyd.Alg.RelSet.comp_apply]
+    rw [rep_compC _ _ hQS, Core.Rel.comp_apply]
     exact exists_congr fun y => and_congr (by rw [rep_conv]; exact Iff.rfl) (eX y t)
   generalize (compC (Q°) (mS°)).1 = QS at eQS hLd hT hH hG hr ⊢
   -- `⊇ ∩ (∈ \ Q°∈)` on two sets of `St.val`: the second a subset of the first, each element of the first above one
@@ -219,10 +220,10 @@ theorem rep_thinLC (Q : Rel B B) {n : USize} (X : Vals (.arr B) n) (hb : (thinLC
       exact ⟨y, hq, ht, hy⟩
   generalize (interC (rightDivC mS mS St.val St.val).1 (leftDivC (mS°) QS St.val St.val).1).1 = Tt at eT hH hG hr ⊢
   have eH : ∀ xs t, rep (compC St Tt).1 xs t ↔ ∃ s, rep St xs s ∧ rep Tt s t := fun xs t => by
-    rw [rep_compC _ _ hH, Freyd.Alg.RelSet.comp_apply]
+    rw [rep_compC _ _ hH, Core.Rel.comp_apply]
   generalize (compC St Tt).1 = H at eH hG hr ⊢
   have eG : ∀ xs ys, rep (compC H (St°)).1 xs ys ↔ ∃ t, rep H xs t ∧ rep St ys t := fun xs ys => by
-    rw [rep_compC _ _ hG, Freyd.Alg.RelSet.comp_apply]
+    rw [rep_compC _ _ hG, Core.Rel.comp_apply]
     exact exists_congr fun t => and_congr Iff.rfl (by rw [rep_conv]; exact Iff.rfl)
   generalize (compC H (St°)).1 = G at eG hr ⊢
   -- a row of `W.val`: an array `U` reaches
